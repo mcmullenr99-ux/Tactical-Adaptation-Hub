@@ -4,6 +4,16 @@
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
 
+## Artifacts
+
+### TAG - Tactical Adaptation Group Website (`artifacts/tag-website`)
+- React + Vite frontend-only website for the TAG gaming community
+- Pages: Home, About, Games, Training, Join
+- Dark military tactical theme (dark background, olive green + amber accents)
+- All 11 supported games listed: Arma 3, Arma Reforger, Squad, Bellum, Ground Branch, Ready Or Not, EFT, DayZ, Exfil, Grey Zone Warfare, Body Cam
+- Uses framer-motion for animations
+- No backend required — all content is static
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces

@@ -1,0 +1,17 @@
+packages:
+  "framer-motion": "Used for premium scroll animations and page transitions"
+
+images:
+  - path: "artifacts/tag-website/public/images/hero-bg.png"
+    description: "Dark, gritty military camouflage pattern with subtle topographical map lines, low contrast, perfect for a dark background"
+    aspect_ratio: "16:9"
+  - path: "artifacts/tag-website/public/images/tactical-texture.png"
+    description: "Abstract dark grunge texture with subtle carbon fiber or kevlar pattern, very dark grey and black"
+    aspect_ratio: "16:9"
+  - path: "artifacts/tag-website/public/images/tag-logo.png"
+    description: "Minimalist modern military tactical logo, geometric shapes resembling a shield or spearhead, olive green and amber on transparent background"
+    aspect_ratio: "1:1"
+
+notes:
+  - Static frontend-only application
+  - No backend API integration required
