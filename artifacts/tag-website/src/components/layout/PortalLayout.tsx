@@ -4,7 +4,7 @@ import { MainLayout } from "./MainLayout";
 import { useLocation, Link } from "wouter";
 import {
   Mail, PenTool, LayoutDashboard, ShieldCheck, Settings,
-  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert, Calendar, Award,
+  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert, Calendar,
 } from "lucide-react";
 import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -86,7 +86,6 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     { href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "MilSim Group" },
     { href: "/portal/friends", icon: <Users className="w-4 h-4 text-primary" />, label: "Connections", badge: pendingFriends > 0 ? pendingFriends : 0 },
     { href: "/portal/profile", icon: <User className="w-4 h-4 text-primary" />, label: "My Profile" },
-    { href: "/portal/veteran-app", icon: <Award className="w-4 h-4 text-primary" />, label: "Veteran App" },
     { href: "/ops", icon: <Calendar className="w-4 h-4 text-primary" />, label: "Ops Calendar" },
     ...(user.role === "member"
       ? [{ href: "/portal/apply", icon: <PenTool className="w-4 h-4 text-primary" />, label: "Staff App" }]
