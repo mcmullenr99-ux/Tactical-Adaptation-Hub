@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, pool } from "@workspace/db";
 import { eq, or, sql } from "drizzle-orm";
 import { RegisterBody, LoginBody } from "@workspace/api-zod";
 import { requireAuth } from "../lib/auth";
@@ -201,10 +201,11 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
   const token = crypto.randomBytes(32).toString("hex");
   const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-  await db.execute(sql`DELETE FROM password_reset_tokens WHERE user_id = ${user.id}`);
-  await db.execute(sql`
-    INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (${user.id}, ${token}, ${expires})
-  `);
+  await pool.query("DELETE FROM password_reset_tokens WHERE user_id = $1", [user.id]);
+  await pool.query(
+    "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)",
+    [user.id, token, expires]
+  );
 
   try {
     await sendEmail(
@@ -227,15 +228,16 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     return;
   }
 
-  const result = await db.execute(sql`
-    SELECT * FROM password_reset_tokens WHERE token = ${token} AND used = false AND expires_at > NOW()
-  `);
+  const result = await pool.query(
+    "SELECT * FROM password_reset_tokens WHERE token = $1 AND used = false AND expires_at > NOW()",
+    [token]
+  );
   const row = result.rows[0] as any;
   if (!row) { res.status(400).json({ error: "Invalid or expired reset token" }); return; }
 
   const hash = await bcrypt.hash(newPassword, 10);
   await db.update(usersTable).set({ passwordHash: hash }).where(eq(usersTable.id, row.user_id));
-  await db.execute(sql`UPDATE password_reset_tokens SET used = true WHERE id = ${row.id}`);
+  await pool.query("UPDATE password_reset_tokens SET used = true WHERE id = $1", [row.id]);
   res.json({ success: true });
 });
 
