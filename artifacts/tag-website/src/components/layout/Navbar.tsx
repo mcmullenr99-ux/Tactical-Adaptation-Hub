@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/components/auth/AuthContext";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -15,6 +16,7 @@ export function Navbar() {
   const [location] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -48,7 +50,7 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-6">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
@@ -65,17 +67,25 @@ export function Navbar() {
               </Link>
             ))}
             
-            <Link
-              href="/join"
-              className="ml-4 font-display font-bold uppercase tracking-wider text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 rounded clip-angled-sm shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_hsla(var(--primary),0.4)] transition-all active:scale-95"
-            >
-              Enlist Now
-            </Link>
+            <div className="flex items-center gap-3 ml-4 pl-4 border-l border-border">
+              <Link
+                href={isAuthenticated ? "/portal/dashboard" : "/portal/login"}
+                className="font-display font-bold uppercase tracking-wider text-sm border border-primary text-primary hover:bg-primary/10 px-5 py-2 rounded clip-angled-sm transition-all active:scale-95"
+              >
+                {isAuthenticated ? "HQ Portal" : "Member Login"}
+              </Link>
+              <Link
+                href="/join"
+                className="font-display font-bold uppercase tracking-wider text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2 rounded clip-angled-sm shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_hsla(var(--primary),0.4)] transition-all active:scale-95"
+              >
+                Enlist Now
+              </Link>
+            </div>
           </nav>
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-muted-foreground hover:text-foreground"
+            className="lg:hidden p-2 text-muted-foreground hover:text-foreground"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -90,7 +100,7 @@ export function Navbar() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="md:hidden absolute top-20 left-0 w-full bg-background border-b border-border shadow-xl"
+            className="lg:hidden absolute top-20 left-0 w-full bg-background border-b border-border shadow-xl"
           >
             <div className="px-4 pt-2 pb-6 flex flex-col gap-4">
               {NAV_LINKS.map((link) => (
@@ -107,7 +117,14 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
-              <div className="pt-4 px-4">
+              <div className="pt-4 px-4 flex flex-col gap-3">
+                <Link
+                  href={isAuthenticated ? "/portal/dashboard" : "/portal/login"}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block w-full text-center font-display font-bold uppercase tracking-wider border border-primary text-primary hover:bg-primary/10 px-6 py-3 rounded clip-angled-sm transition-all"
+                >
+                  {isAuthenticated ? "HQ Portal" : "Member Login"}
+                </Link>
                 <Link
                   href="/join"
                   onClick={() => setMobileMenuOpen(false)}
