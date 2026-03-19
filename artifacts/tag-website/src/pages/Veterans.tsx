@@ -264,7 +264,7 @@ export default function Veterans() {
           >
             <Shield className="w-12 h-12 text-primary mx-auto mb-6" />
             <h2 className="font-display font-black text-3xl md:text-4xl uppercase tracking-tight text-foreground mb-6">
-              Come Find Your People
+              Regroup With Some Battle Buddies
             </h2>
             <p className="font-sans text-muted-foreground text-lg leading-relaxed mb-10 max-w-xl mx-auto">
               Whether you're a veteran, active duty, or just someone who thinks in tactics —
