@@ -139,6 +139,12 @@ importers:
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
+      stripe:
+        specifier: ^20.0.0
+        version: 20.0.0(@types/node@25.3.5)
+      stripe-replit-sync:
+        specifier: ^1.0.0
+        version: 1.0.0(stripe@20.0.0(@types/node@25.3.5))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
