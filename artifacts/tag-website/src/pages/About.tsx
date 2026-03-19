@@ -84,7 +84,7 @@ export default function About() {
               {
                 icon: <Award className="w-8 h-8 text-primary" />,
                 title: "Excellence",
-                desc: "We continuously train to improve our individual mechanics and team cohesion. Complacency gets you killed."
+                desc: "We're always learning and refining. Our SOPs are tested, proven, and built to make every player — new or veteran — more effective."
               }
             ].map((val, i) => (
               <motion.div 

@@ -25,7 +25,7 @@ export default function Training() {
             <div className="relative z-10">
               <h2 className="text-2xl font-display font-bold uppercase tracking-wider text-primary mb-4">Our Training Philosophy</h2>
               <p className="text-lg text-muted-foreground font-sans leading-relaxed max-w-4xl">
-                Mechanics alone don't win matches—positioning, intelligence, and coordination do. TAG's training doctrine strips away bad habits learned in casual lobbies and replaces them with structured, repeatable systems. We run regular training scenarios focused on individual proficiency and team geometry.
+                Mechanics alone don't win matches — positioning, awareness, and coordination do. Every SOP and technique TAG teaches has been field-tested and proven to actually work in the games we play. We don't guess; we refine. Each game has its own tailored doctrine built around how that title plays, so whether you're deep in an Arma mil-sim or pushing a compound in Ground Branch, the fundamentals translate.
               </p>
             </div>
           </div>
