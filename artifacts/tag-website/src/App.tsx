@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/components/auth/AuthContext";
+import MacEasterEgg from "@/components/MacEasterEgg";
 
 // Public Pages
 import Home from "@/pages/Home";
@@ -87,6 +88,7 @@ function App() {
             <Router />
           </WouterRouter>
           <Toaster />
+          <MacEasterEgg />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
