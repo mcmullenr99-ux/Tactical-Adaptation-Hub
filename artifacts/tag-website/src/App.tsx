@@ -11,6 +11,7 @@ import Games from "@/pages/Games";
 import Training from "@/pages/Training";
 import Join from "@/pages/Join";
 import Donate from "@/pages/Donate";
+import Veterans from "@/pages/Veterans";
 import NotFound from "@/pages/not-found";
 
 // Portal Pages
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/training" component={Training} />
       <Route path="/join" component={Join} />
       <Route path="/donate" component={Donate} />
+      <Route path="/veterans" component={Veterans} />
       
       {/* Portal Routes */}
       <Route path="/portal/login" component={Login} />

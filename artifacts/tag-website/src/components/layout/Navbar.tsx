@@ -13,6 +13,8 @@ const NAV_LINKS = [
   { href: "/donate", label: "Donate" },
 ];
 
+const VETERANS_LINK = { href: "/veterans", label: "Veterans" };
+
 export function Navbar() {
   const [location] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -67,6 +69,21 @@ export function Navbar() {
                 <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-accent transition-all duration-300 group-hover:w-full opacity-0 group-hover:opacity-100" />
               </Link>
             ))}
+
+            <Link
+              href={VETERANS_LINK.href}
+              className={`font-display font-semibold tracking-wider uppercase text-sm transition-all duration-200 relative group py-2 ${
+                location === VETERANS_LINK.href
+                  ? "text-accent"
+                  : "text-accent/70 hover:text-accent"
+              }`}
+            >
+              {VETERANS_LINK.label}
+              {location === VETERANS_LINK.href && (
+                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-accent" />
+              )}
+              <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-accent transition-all duration-300 group-hover:w-full opacity-0 group-hover:opacity-100" />
+            </Link>
             
             <div className="flex items-center gap-3 ml-4 pl-4 border-l border-border">
               <Link
@@ -118,6 +135,17 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              <Link
+                href={VETERANS_LINK.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`font-display font-semibold tracking-wider uppercase text-lg px-4 py-3 rounded-md transition-colors ${
+                  location === VETERANS_LINK.href
+                    ? "bg-accent/10 text-accent border-l-4 border-accent"
+                    : "text-accent/70 hover:bg-accent/10 hover:text-accent border-l-4 border-transparent"
+                }`}
+              >
+                {VETERANS_LINK.label}
+              </Link>
               <div className="pt-4 px-4 flex flex-col gap-3">
                 <Link
                   href={isAuthenticated ? "/portal/dashboard" : "/portal/login"}
