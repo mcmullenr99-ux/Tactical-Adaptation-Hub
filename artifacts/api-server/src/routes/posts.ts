@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, pool } from "@workspace/db";
+import { db, pool, rawQuery } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth";
 import { moderateText, moderateImage } from "../lib/moderation";
@@ -143,7 +143,7 @@ router.post("/posts", requireAuth, async (req, res): Promise<void> => {
   let groupName: string | null = null;
   let groupId: number | null = null;
   if (milsim_group_id) {
-    const groupResult = await db.execute(sql`
+    const groupResult = await rawQuery(sql`
       SELECT mg.id, mg.name FROM milsim_group_members mgm
       JOIN milsim_groups mg ON mg.id = mgm.milsim_group_id
       WHERE mgm.user_id = ${actor.id} AND mgm.milsim_group_id = ${milsim_group_id}
@@ -158,7 +158,7 @@ router.post("/posts", requireAuth, async (req, res): Promise<void> => {
   // Construct the serving URL from objectPath
   const mediaUrl = mediaPath ? `/api/storage${mediaPath}` : null;
 
-  const result = await db.execute(sql`
+  const result = await rawQuery(sql`
     INSERT INTO posts (user_id, username, milsim_group_id, milsim_group_name, category, title, content, image_url)
     VALUES (${actor.id}, ${actor.username}, ${groupId}, ${groupName}, ${cat}, ${title.trim()}, ${content.trim()}, ${mediaUrl})
     RETURNING *
@@ -174,7 +174,7 @@ router.patch("/posts/:id", requireAuth, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
   const { title, content, category } = req.body as Record<string, any>;
 
-  const existing = await db.execute(sql`SELECT * FROM posts WHERE id = ${id}`);
+  const existing = await rawQuery(sql`SELECT * FROM posts WHERE id = ${id}`);
   const post = existing.rows[0] as any;
   if (!post) { res.status(404).json({ error: "Not found." }); return; }
   if (post.user_id !== actor.id && !["moderator", "admin"].includes(actor.role)) {
@@ -192,7 +192,7 @@ router.patch("/posts/:id", requireAuth, async (req, res): Promise<void> => {
   const validCategories = ["gaming", "unit", "recruitment", "general"];
   const cat = validCategories.includes(category) ? category : post.category;
 
-  const updated = await db.execute(sql`
+  const updated = await rawQuery(sql`
     UPDATE posts SET
       title = ${title?.trim() ?? post.title},
       content = ${content?.trim() ?? post.content},
@@ -211,13 +211,13 @@ router.delete("/posts/:id", requireAuth, async (req, res): Promise<void> => {
   const actor = (req as any).user;
   const id = parseInt(req.params.id, 10);
 
-  const existing = await db.execute(sql`SELECT user_id FROM posts WHERE id = ${id}`);
+  const existing = await rawQuery(sql`SELECT user_id FROM posts WHERE id = ${id}`);
   if (!existing.rows[0]) { res.status(404).json({ error: "Not found." }); return; }
   if ((existing.rows[0] as any).user_id !== actor.id && !["moderator", "admin"].includes(actor.role)) {
     res.status(403).json({ error: "Not authorised." }); return;
   }
 
-  await db.execute(sql`DELETE FROM posts WHERE id = ${id}`);
+  await rawQuery(sql`DELETE FROM posts WHERE id = ${id}`);
   res.json({ ok: true });
 });
 
@@ -225,7 +225,7 @@ router.delete("/posts/:id", requireAuth, async (req, res): Promise<void> => {
 
 router.post("/posts/:id/pin", ...adminGuard, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
-  const result = await db.execute(sql`
+  const result = await rawQuery(sql`
     UPDATE posts SET pinned = NOT pinned WHERE id = ${id} RETURNING pinned
   `);
   res.json({ pinned: (result.rows[0] as any)?.pinned ?? false });
@@ -237,17 +237,17 @@ router.post("/posts/:id/react", requireAuth, async (req, res): Promise<void> => 
   const actor = (req as any).user;
   const id = parseInt(req.params.id, 10);
 
-  const existing = await db.execute(sql`
+  const existing = await rawQuery(sql`
     SELECT id FROM post_reactions WHERE post_id = ${id} AND user_id = ${actor.id}
   `);
 
   if (existing.rows.length > 0) {
-    await db.execute(sql`DELETE FROM post_reactions WHERE post_id = ${id} AND user_id = ${actor.id}`);
-    await db.execute(sql`UPDATE posts SET reaction_count = GREATEST(0, reaction_count - 1) WHERE id = ${id}`);
+    await rawQuery(sql`DELETE FROM post_reactions WHERE post_id = ${id} AND user_id = ${actor.id}`);
+    await rawQuery(sql`UPDATE posts SET reaction_count = GREATEST(0, reaction_count - 1) WHERE id = ${id}`);
     res.json({ reacted: false });
   } else {
-    await db.execute(sql`INSERT INTO post_reactions (post_id, user_id) VALUES (${id}, ${actor.id})`);
-    await db.execute(sql`UPDATE posts SET reaction_count = reaction_count + 1 WHERE id = ${id}`);
+    await rawQuery(sql`INSERT INTO post_reactions (post_id, user_id) VALUES (${id}, ${actor.id})`);
+    await rawQuery(sql`UPDATE posts SET reaction_count = reaction_count + 1 WHERE id = ${id}`);
     res.json({ reacted: true });
   }
 });
@@ -268,16 +268,16 @@ router.post("/posts/:id/comments", requireAuth, async (req, res): Promise<void> 
     return;
   }
 
-  const postCheck = await db.execute(sql`SELECT id FROM posts WHERE id = ${id}`);
+  const postCheck = await rawQuery(sql`SELECT id FROM posts WHERE id = ${id}`);
   if (!postCheck.rows[0]) { res.status(404).json({ error: "Post not found." }); return; }
 
-  const result = await db.execute(sql`
+  const result = await rawQuery(sql`
     INSERT INTO post_comments (post_id, user_id, username, content)
     VALUES (${id}, ${actor.id}, ${actor.username}, ${content.trim()})
     RETURNING *
   `);
 
-  await db.execute(sql`UPDATE posts SET comment_count = comment_count + 1 WHERE id = ${id}`);
+  await rawQuery(sql`UPDATE posts SET comment_count = comment_count + 1 WHERE id = ${id}`);
   res.status(201).json(result.rows[0]);
 });
 
@@ -288,14 +288,14 @@ router.delete("/posts/:postId/comments/:commentId", requireAuth, async (req, res
   const postId = parseInt(req.params.postId, 10);
   const commentId = parseInt(req.params.commentId, 10);
 
-  const existing = await db.execute(sql`SELECT user_id FROM post_comments WHERE id = ${commentId} AND post_id = ${postId}`);
+  const existing = await rawQuery(sql`SELECT user_id FROM post_comments WHERE id = ${commentId} AND post_id = ${postId}`);
   if (!existing.rows[0]) { res.status(404).json({ error: "Not found." }); return; }
   if ((existing.rows[0] as any).user_id !== actor.id && !["moderator", "admin"].includes(actor.role)) {
     res.status(403).json({ error: "Not authorised." }); return;
   }
 
-  await db.execute(sql`DELETE FROM post_comments WHERE id = ${commentId}`);
-  await db.execute(sql`UPDATE posts SET comment_count = GREATEST(0, comment_count - 1) WHERE id = ${postId}`);
+  await rawQuery(sql`DELETE FROM post_comments WHERE id = ${commentId}`);
+  await rawQuery(sql`UPDATE posts SET comment_count = GREATEST(0, comment_count - 1) WHERE id = ${postId}`);
   res.json({ ok: true });
 });
 

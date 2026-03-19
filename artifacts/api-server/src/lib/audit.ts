@@ -1,4 +1,4 @@
-import { db } from "@workspace/db";
+import { rawQuery } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import type { Request } from "express";
 
@@ -29,7 +29,7 @@ export interface AuditParams {
 
 export async function logAudit(params: AuditParams): Promise<void> {
   try {
-    await db.execute(sql`
+    await rawQuery(sql`
       INSERT INTO audit_logs
         (user_id, username, ip_address, user_agent, method, path, action_type,
          target_table, target_id, description, old_snapshot, new_snapshot, request_body)

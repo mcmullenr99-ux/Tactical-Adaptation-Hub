@@ -31,10 +31,7 @@ export default function UserPublicProfile() {
 
   const { data: profile, isLoading, isError } = useQuery<PublicProfile>({
     queryKey: ["public-profile", username],
-    queryFn: () => apiFetch(`/api/users/profile/${username}`).then(r => {
-      if (!r.ok) throw new Error("User not found");
-      return r.json();
-    }),
+    queryFn: () => apiFetch(`/api/users/profile/${username}`),
     enabled: !!username,
   });
 

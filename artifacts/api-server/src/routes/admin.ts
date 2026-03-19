@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, pool, usersTable } from "@workspace/db";
+import { db, pool, rawQuery, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth";
 import { logAudit, buildAuditFromReq } from "../lib/audit";
@@ -43,7 +43,7 @@ router.get("/admin/lockdown", ...staffGuard, async (req, res): Promise<void> => 
 // PATCH /api/admin/lockdown — admin only
 router.patch("/admin/lockdown", ...adminGuard, async (req, res): Promise<void> => {
   const { active } = req.body as { active: boolean };
-  await db.execute(sql`
+  await rawQuery(sql`
     UPDATE site_settings SET value = ${active ? "true" : "false"} WHERE key = 'lockdown_mode'
   `);
   const actor = (req as any).user;
@@ -201,7 +201,7 @@ router.delete("/admin/users/:id", ...adminGuard, async (req, res): Promise<void>
 // ─── MilSim Groups ────────────────────────────────────────────────────────────
 
 router.get("/admin/milsim-groups", ...staffGuard, async (req, res): Promise<void> => {
-  const rows = await db.execute(sql`
+  const rows = await rawQuery(sql`
     SELECT
       g.id, g.name, g.slug, g.status, g.tag_line, g.description,
       g.discord_url, g.website_url, g.logo_url, g.created_at,
@@ -221,8 +221,8 @@ router.patch("/admin/milsim-groups/:id/status", ...staffGuard, async (req, res):
   const validStatuses = ["pending", "approved", "featured", "rejected"];
   if (!validStatuses.includes(status)) { res.status(400).json({ error: "Invalid status" }); return; }
 
-  const [before] = await db.execute(sql`SELECT * FROM milsim_groups WHERE id = ${id}`) as any;
-  await db.execute(sql`UPDATE milsim_groups SET status = ${status} WHERE id = ${id}`);
+  const before = (await rawQuery(sql`SELECT * FROM milsim_groups WHERE id = ${id}`)).rows[0] as any;
+  await rawQuery(sql`UPDATE milsim_groups SET status = ${status} WHERE id = ${id}`);
   const actor = (req as any).user;
 
   await logAudit(buildAuditFromReq(req, {
@@ -240,10 +240,10 @@ router.delete("/admin/milsim-groups/:id", ...adminGuard, async (req, res): Promi
   const id    = parseInt(req.params.id, 10);
   const actor = (req as any).user as typeof usersTable.$inferSelect;
 
-  const beforeResult = await db.execute(sql`SELECT * FROM milsim_groups WHERE id = ${id}`);
+  const beforeResult = await rawQuery(sql`SELECT * FROM milsim_groups WHERE id = ${id}`);
   const before = beforeResult.rows[0] ?? null;
 
-  await db.execute(sql`DELETE FROM milsim_groups WHERE id = ${id}`);
+  await rawQuery(sql`DELETE FROM milsim_groups WHERE id = ${id}`);
 
   await logAudit(buildAuditFromReq(req, {
     actionType: "DELETE",
@@ -265,12 +265,12 @@ router.post("/admin/broadcast", ...adminGuard, async (req, res): Promise<void> =
   if (body.length > 5000) { res.status(400).json({ error: "Body too long (max 5000 chars)" }); return; }
 
   // Get all active non-admin users
-  const usersResult = await db.execute(sql`SELECT id FROM users WHERE status = 'active' AND id != ${actor.id}`);
+  const usersResult = await rawQuery(sql`SELECT id FROM users WHERE status = 'active' AND id != ${actor.id}`);
   const recipients = usersResult.rows as Array<{ id: number }>;
 
   if (!recipients.length) { res.json({ sent: 0 }); return; }
 
-  await db.execute(sql`
+  await rawQuery(sql`
     INSERT INTO messages (sender_id, recipient_id, subject, body)
     SELECT ${actor.id}, u.id, ${subject}, ${body}
     FROM unnest(ARRAY[${sql.raw(recipients.map(r => r.id).join(","))}]::int[]) AS u(id)
@@ -287,7 +287,7 @@ router.post("/admin/broadcast", ...adminGuard, async (req, res): Promise<void> =
 
 // GET /api/admin/reset-tokens — admin can look up pending reset tokens
 router.get("/admin/reset-tokens", ...adminGuard, async (req, res): Promise<void> => {
-  const result = await db.execute(sql`
+  const result = await rawQuery(sql`
     SELECT t.id, t.token, t.expires_at, t.used, t.created_at, u.username, u.email
     FROM password_reset_tokens t
     JOIN users u ON t.user_id = u.id

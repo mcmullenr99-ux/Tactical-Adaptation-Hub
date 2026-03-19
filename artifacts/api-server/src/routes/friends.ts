@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, friendshipsTable } from "@workspace/db";
+import { db, rawQuery, usersTable, friendshipsTable } from "@workspace/db";
 import { eq, or, and, sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
 
@@ -22,7 +22,7 @@ async function getFriendship(userA: number, userB: number) {
 // GET /api/friends — list accepted friends with their profile
 router.get("/friends", requireAuth, async (req, res): Promise<void> => {
   const me = (req.session as any).userId as number;
-  const rows = await db.execute(sql`
+  const rows = await rawQuery(sql`
     SELECT
       f.id AS friendship_id,
       f.created_at AS friends_since,
@@ -41,7 +41,7 @@ router.get("/friends", requireAuth, async (req, res): Promise<void> => {
 // GET /api/friends/requests — pending incoming requests
 router.get("/friends/requests", requireAuth, async (req, res): Promise<void> => {
   const me = (req.session as any).userId as number;
-  const rows = await db.execute(sql`
+  const rows = await rawQuery(sql`
     SELECT
       f.id AS friendship_id,
       f.created_at,
@@ -119,7 +119,7 @@ router.delete("/friends/:userId", requireAuth, async (req, res): Promise<void> =
 router.get("/users/search", requireAuth, async (req, res): Promise<void> => {
   const q = String(req.query.q ?? "").trim().toLowerCase();
   if (q.length < 2) { res.json([]); return; }
-  const rows = await db.execute(sql`
+  const rows = await rawQuery(sql`
     SELECT id, username, role, bio, discord_tag, created_at
     FROM users
     WHERE LOWER(username) LIKE ${'%' + q + '%'}

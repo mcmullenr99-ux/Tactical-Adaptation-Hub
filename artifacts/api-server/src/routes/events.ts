@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db } from "@workspace/db";
+import { rawQuery } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth";
 import { logAudit, buildAuditFromReq } from "../lib/audit";
@@ -9,7 +9,7 @@ const staffGuard = [requireAuth, requireRole("staff", "moderator", "admin")];
 
 // GET /api/events — public
 router.get("/events", async (_req, res): Promise<void> => {
-  const result = await db.execute(sql`
+  const result = await rawQuery(sql`
     SELECT * FROM ops_events ORDER BY event_date ASC
   `);
   res.json(result.rows);
@@ -29,7 +29,7 @@ router.post("/events", ...staffGuard, async (req, res): Promise<void> => {
     return;
   }
 
-  const result = await db.execute(sql`
+  const result = await rawQuery(sql`
     INSERT INTO ops_events (title, game, description, event_date, end_date, organizer_id, organizer_username, max_slots, event_type, location)
     VALUES (${title}, ${game ?? null}, ${description ?? null}, ${new Date(eventDate)},
             ${endDate ? new Date(endDate) : null}, ${actor.id}, ${actor.username}, ${maxSlots ?? null},
@@ -54,10 +54,10 @@ router.patch("/events/:id", ...staffGuard, async (req, res): Promise<void> => {
   const actor = (req as any).user;
   const { title, game, description, eventDate, endDate, maxSlots, status, eventType, location } = req.body as any;
 
-  const before = await db.execute(sql`SELECT * FROM ops_events WHERE id = ${id}`);
+  const before = await rawQuery(sql`SELECT * FROM ops_events WHERE id = ${id}`);
   if (!before.rows[0]) { res.status(404).json({ error: "Event not found" }); return; }
 
-  await db.execute(sql`
+  await rawQuery(sql`
     UPDATE ops_events SET
       title = COALESCE(${title ?? null}, title),
       game = COALESCE(${game ?? null}, game),
@@ -79,7 +79,7 @@ router.patch("/events/:id", ...staffGuard, async (req, res): Promise<void> => {
     oldSnapshot: before.rows[0] as any,
   }));
 
-  const updated = await db.execute(sql`SELECT * FROM ops_events WHERE id = ${id}`);
+  const updated = await rawQuery(sql`SELECT * FROM ops_events WHERE id = ${id}`);
   res.json(updated.rows[0]);
 });
 
@@ -87,7 +87,7 @@ router.patch("/events/:id", ...staffGuard, async (req, res): Promise<void> => {
 router.delete("/events/:id", ...staffGuard, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
   const actor = (req as any).user;
-  await db.execute(sql`DELETE FROM ops_events WHERE id = ${id}`);
+  await rawQuery(sql`DELETE FROM ops_events WHERE id = ${id}`);
   await logAudit(buildAuditFromReq(req, {
     actionType: "DELETE",
     targetTable: "ops_events",

@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, usersTable } from "@workspace/db";
+import { db, rawQuery, usersTable } from "@workspace/db";
 import { eq, sql, desc, and } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth";
 import { logAudit, buildAuditFromReq, getClientIp } from "../lib/audit";
@@ -38,7 +38,7 @@ router.get("/security/evidence/:userId", ...adminGuard, async (req: Request, res
   const [targetUser] = await db.select().from(usersTable).where(eq(usersTable.id, targetId));
   if (!targetUser) { res.status(404).json({ error: "User not found" }); return; }
 
-  const logsResult = await db.execute(sql`
+  const logsResult = await rawQuery(sql`
     SELECT * FROM audit_logs WHERE user_id = ${targetId} ORDER BY created_at ASC
   `);
   const logs = logsResult.rows as any[];
@@ -88,10 +88,10 @@ router.post("/security/emergency", ...adminGuard, async (req: Request, res: Resp
   const actor = (req as any).user;
 
   // 1. Activate lockdown
-  await db.execute(sql`UPDATE site_settings SET value = 'true' WHERE key = 'lockdown_mode'`);
+  await rawQuery(sql`UPDATE site_settings SET value = 'true' WHERE key = 'lockdown_mode'`);
 
   // 2. Terminate ALL non-admin sessions from the DB
-  const terminatedResult = await db.execute(sql`
+  const terminatedResult = await rawQuery(sql`
     DELETE FROM user_sessions
     WHERE sess::jsonb->'userId' IS NOT NULL
       AND (
@@ -102,7 +102,7 @@ router.post("/security/emergency", ...adminGuard, async (req: Request, res: Resp
   const terminatedCount = (terminatedResult.rows ?? []).length;
 
   // 3. Gather recent suspicious activity (last 100 actions)
-  const recentResult = await db.execute(sql`
+  const recentResult = await rawQuery(sql`
     SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 100
   `);
   const recentLogs = recentResult.rows;
@@ -115,7 +115,7 @@ router.post("/security/emergency", ...adminGuard, async (req: Request, res: Resp
   }
 
   // 5. Create security incident record
-  await db.execute(sql`
+  await rawQuery(sql`
     INSERT INTO security_incidents
       (triggered_by, triggered_by_username, description, affected_user_id, affected_username, evidence_summary, status)
     VALUES
@@ -162,7 +162,7 @@ router.post("/security/rollback/:userId", ...adminGuard, async (req: Request, re
   }
 
   // Fetch all rollback-able logs for this user in reverse order (newest first)
-  const logsResult = await db.execute(sql`
+  const logsResult = await rawQuery(sql`
     SELECT * FROM audit_logs
     WHERE user_id = ${targetId}
       AND old_snapshot IS NOT NULL
@@ -188,12 +188,12 @@ router.post("/security/rollback/:userId", ...adminGuard, async (req: Request, re
 
       if (actionType === "CREATE" && table) {
         // Undo a creation by deleting the record
-        await db.execute(sql`DELETE FROM ${sql.raw(table)} WHERE id = ${recordId}`);
+        await rawQuery(sql`DELETE FROM ${sql.raw(table)} WHERE id = ${recordId}`);
         results.push({ logId: log.id, action: `DELETE from ${table} id=${recordId}`, status: "ok" });
       } else if ((actionType === "UPDATE" || actionType === "BAN" || actionType === "UNBAN" || actionType === "ROLE_CHANGE") && oldSnap) {
         // Restore old snapshot — build SET clauses from old_snapshot
         if (table === "users") {
-          await db.execute(sql`
+          await rawQuery(sql`
             UPDATE users SET
               role       = ${oldSnap.role as string},
               status     = ${oldSnap.status as string},
@@ -202,7 +202,7 @@ router.post("/security/rollback/:userId", ...adminGuard, async (req: Request, re
             WHERE id = ${recordId}
           `);
         } else if (table === "milsim_groups") {
-          await db.execute(sql`
+          await rawQuery(sql`
             UPDATE milsim_groups SET
               name        = ${oldSnap.name as string},
               tag_line    = ${(oldSnap.tagLine as string | null) ?? null},
@@ -213,7 +213,7 @@ router.post("/security/rollback/:userId", ...adminGuard, async (req: Request, re
             WHERE id = ${recordId}
           `);
         } else if (table === "messages") {
-          await db.execute(sql`
+          await rawQuery(sql`
             UPDATE messages SET subject = ${oldSnap.subject as string}, body = ${oldSnap.body as string}
             WHERE id = ${recordId}
           `);
@@ -222,7 +222,7 @@ router.post("/security/rollback/:userId", ...adminGuard, async (req: Request, re
       } else if (actionType === "DELETE" && oldSnap) {
         // Re-insert a deleted record — only for milsim_groups
         if (table === "milsim_groups") {
-          await db.execute(sql`
+          await rawQuery(sql`
             INSERT INTO milsim_groups (id, owner_id, name, slug, tag_line, description, status, sops, orbat, discord_url, website_url, logo_url, created_at)
             VALUES (
               ${oldSnap.id as number}, ${oldSnap.ownerId as number},
@@ -264,7 +264,7 @@ router.post("/security/rollback/:userId", ...adminGuard, async (req: Request, re
 // ── GET /api/security/incidents ── list incidents, admin only ─────────────────
 
 router.get("/security/incidents", ...adminGuard, async (_req: Request, res: Response): Promise<void> => {
-  const result = await db.execute(sql`
+  const result = await rawQuery(sql`
     SELECT * FROM security_incidents ORDER BY created_at DESC LIMIT 50
   `);
   res.json(result.rows);
@@ -275,7 +275,7 @@ router.get("/security/incidents", ...adminGuard, async (_req: Request, res: Resp
 router.patch("/security/incidents/:id/resolve", ...adminGuard, async (req: Request, res: Response): Promise<void> => {
   const id = parseInt(req.params.id, 10);
   const actor = (req as any).user;
-  await db.execute(sql`
+  await rawQuery(sql`
     UPDATE security_incidents
     SET status = 'resolved', resolved_by = ${actor.id}, resolved_at = NOW()
     WHERE id = ${id}
