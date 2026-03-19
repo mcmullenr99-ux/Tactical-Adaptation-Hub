@@ -138,7 +138,7 @@ export default function Dashboard() {
                 <CalendarDays className="w-4 h-4 text-primary" />
                 <h2 className="font-display font-bold uppercase tracking-widest text-sm">Upcoming Ops</h2>
               </div>
-              <Link href="/portal/ops-calendar" className="text-xs text-primary hover:underline flex items-center gap-1">
+              <Link href="/ops" className="text-xs text-primary hover:underline flex items-center gap-1">
                 Full Calendar <ChevronRight className="w-3 h-3" />
               </Link>
             </div>
