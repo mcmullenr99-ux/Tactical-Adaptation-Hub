@@ -1,4 +1,17 @@
-const BREVO_API_KEY = process.env["BREVO_API_KEY"];
+// Support both the raw xkeysib-... key and the base64-JSON wrapper Brevo
+// sometimes shows in the UI ({"api_key":"xkeysib-..."}).
+function resolveBrevoKey(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  if (raw.startsWith("xkeysib-")) return raw;
+  try {
+    const decoded = JSON.parse(Buffer.from(raw, "base64").toString("utf8"));
+    return decoded.api_key ?? raw;
+  } catch {
+    return raw;
+  }
+}
+
+const BREVO_API_KEY = resolveBrevoKey(process.env["BREVO_API_KEY"]);
 const FROM_EMAIL    = process.env["FROM_EMAIL"] ?? "TAG <noreply@tagtacticaladaptationgroup.com>";
 const APP_URL       = process.env["APP_URL"] ?? "https://tag-website.replit.app";
 
@@ -10,10 +23,12 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   }
 
   // Parse "Display Name <address@domain.com>" or plain address
-  const match = FROM_EMAIL.match(/^(.+?)\s*<(.+?)>$/);
+  // Strip any stray whitespace / newline characters that might come from secrets
+  const fromClean = FROM_EMAIL.trim().replace(/[\r\n]/g, "");
+  const match = fromClean.match(/^(.+?)\s*<(.+?)>$/);
   const sender = match
     ? { name: match[1].trim(), email: match[2].trim() }
-    : { name: "TAG", email: FROM_EMAIL.trim() };
+    : { name: "TAG", email: fromClean };
 
   const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
