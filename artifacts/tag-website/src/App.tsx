@@ -20,6 +20,7 @@ import NotFound from "@/pages/not-found";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
 import OpsCalendar from "@/pages/OpsCalendar";
+import Forum from "@/pages/Forum";
 import UserPublicProfile from "@/pages/UserPublicProfile";
 
 // Portal Pages
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
       <Route path="/ops" component={OpsCalendar} />
+      <Route path="/forum" component={Forum} />
       <Route path="/u/:username" component={UserPublicProfile} />
       
       {/* Portal Routes */}

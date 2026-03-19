@@ -1,0 +1,596 @@
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { useAuth } from "@/components/auth/AuthContext";
+import { apiFetch } from "@/lib/apiFetch";
+import { Link } from "wouter";
+import {
+  MessageSquare, ThumbsUp, Pin, Plus, X, ChevronDown, ChevronUp,
+  Loader2, Trash2, Shield, Pencil, Send, Filter, StickyNote,
+  Megaphone, Gamepad2, Users
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface Post {
+  id: number;
+  user_id: number;
+  username: string;
+  milsim_group_id: number | null;
+  milsim_group_name: string | null;
+  category: string;
+  title: string;
+  content: string;
+  image_url: string | null;
+  pinned: boolean;
+  reaction_count: number;
+  comment_count: number;
+  viewer_reacted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Comment {
+  id: number;
+  post_id: number;
+  user_id: number;
+  username: string;
+  content: string;
+  created_at: string;
+}
+
+interface MilsimGroup {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+// ── Category config ───────────────────────────────────────────────────────────
+
+const CATEGORIES = [
+  { key: "all",         label: "All Posts",    icon: StickyNote,  color: "text-muted-foreground" },
+  { key: "gaming",      label: "Gaming",       icon: Gamepad2,    color: "text-blue-400"  },
+  { key: "unit",        label: "Unit News",    icon: Shield,      color: "text-primary"   },
+  { key: "recruitment", label: "Recruitment",  icon: Megaphone,   color: "text-amber-400" },
+  { key: "general",     label: "General",      icon: Users,       color: "text-purple-400" },
+];
+
+const CATEGORY_BADGE: Record<string, string> = {
+  gaming:      "text-blue-400 border-blue-400/30 bg-blue-400/10",
+  unit:        "text-primary border-primary/30 bg-primary/10",
+  recruitment: "text-amber-400 border-amber-400/30 bg-amber-400/10",
+  general:     "text-purple-400 border-purple-400/30 bg-purple-400/10",
+};
+
+// ── Create Post Modal ─────────────────────────────────────────────────────────
+
+function CreatePostModal({
+  onClose,
+  onCreated,
+  userGroups,
+}: {
+  onClose: () => void;
+  onCreated: (post: Post) => void;
+  userGroups: MilsimGroup[];
+}) {
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [category, setCategory] = useState("general");
+  const [milsimGroupId, setMilsimGroupId] = useState<number | "">("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !content.trim()) { setError("Title and content are required."); return; }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const post = await apiFetch<Post>("/api/posts", {
+        method: "POST",
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim(),
+          category,
+          milsim_group_id: milsimGroupId || undefined,
+        }),
+      });
+      toast({ title: "Post published!" });
+      onCreated(post);
+      onClose();
+    } catch (e: any) {
+      setError(e.message ?? "Failed to post.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="bg-background border border-border rounded-xl w-full max-w-2xl shadow-2xl">
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <h2 className="font-display font-black text-xl uppercase tracking-wider">New Post</h2>
+          <button onClick={onClose} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          {error && (
+            <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded p-3">{error}</div>
+          )}
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Category</label>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.filter(c => c.key !== "all").map(c => (
+                <button key={c.key} onClick={() => setCategory(c.key)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded border font-display font-bold uppercase tracking-wider text-xs transition-all ${
+                    category === c.key ? "bg-primary border-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-primary/50"
+                  }`}>
+                  <c.icon className="w-3.5 h-3.5" />
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {userGroups.length > 0 && (
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Post on behalf of (optional)</label>
+              <select value={milsimGroupId} onChange={e => setMilsimGroupId(e.target.value ? parseInt(e.target.value, 10) : "")}
+                className="mf-input w-full">
+                <option value="">Just me</option>
+                {userGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Title *</label>
+            <input value={title} onChange={e => setTitle(e.target.value)} maxLength={200}
+              className="mf-input w-full" placeholder="What's happening?" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Content *</label>
+            <textarea value={content} onChange={e => setContent(e.target.value)} rows={5} maxLength={5000}
+              className="mf-input w-full resize-none"
+              placeholder="Share your update, news, recruitment post, or whatever's on your mind..." />
+            <p className="text-xs text-muted-foreground mt-1 text-right">{content.length}/5000</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-3 px-5 pb-5">
+          <button onClick={onClose} className="px-5 py-2 font-display font-bold uppercase tracking-wider text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Cancel
+          </button>
+          <button onClick={handleSubmit} disabled={submitting || !title.trim() || !content.trim()}
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm rounded clip-angled-sm transition-all disabled:opacity-50">
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            Publish
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ── Post Card ─────────────────────────────────────────────────────────────────
+
+function PostCard({
+  post: initialPost,
+  currentUserId,
+  currentUserRole,
+  onDelete,
+}: {
+  post: Post;
+  currentUserId: number | null;
+  currentUserRole: string | null;
+  onDelete: (id: number) => void;
+}) {
+  const [post, setPost] = useState(initialPost);
+  const [expanded, setExpanded] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [reacting, setReacting] = useState(false);
+  const { toast } = useToast();
+
+  const isOwner = currentUserId === post.user_id;
+  const canModerate = currentUserRole === "moderator" || currentUserRole === "admin";
+  const canDelete = isOwner || canModerate;
+
+  const loadComments = async () => {
+    if (comments.length > 0) return;
+    setCommentsLoading(true);
+    try {
+      const data = await apiFetch<{ post: Post; comments: Comment[] }>(`/api/posts/${post.id}`);
+      setComments(data.comments);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const toggleComments = () => {
+    const next = !expanded;
+    setExpanded(next);
+    if (next && comments.length === 0) loadComments();
+  };
+
+  const toggleReact = async () => {
+    if (!currentUserId) return;
+    if (reacting) return;
+    setReacting(true);
+    try {
+      const data = await apiFetch<{ reacted: boolean }>(`/api/posts/${post.id}/react`, { method: "POST" });
+      setPost(p => ({
+        ...p,
+        viewer_reacted: data.reacted,
+        reaction_count: data.reacted ? p.reaction_count + 1 : Math.max(0, p.reaction_count - 1),
+      }));
+    } finally {
+      setReacting(false);
+    }
+  };
+
+  const submitComment = async () => {
+    if (!newComment.trim() || posting) return;
+    setPosting(true);
+    try {
+      const comment = await apiFetch<Comment>(`/api/posts/${post.id}/comments`, {
+        method: "POST",
+        body: JSON.stringify({ content: newComment.trim() }),
+      });
+      setComments(c => [...c, comment]);
+      setPost(p => ({ ...p, comment_count: p.comment_count + 1 }));
+      setNewComment("");
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const deleteComment = async (cid: number) => {
+    try {
+      await apiFetch(`/api/posts/${post.id}/comments/${cid}`, { method: "DELETE" });
+      setComments(c => c.filter(x => x.id !== cid));
+      setPost(p => ({ ...p, comment_count: Math.max(0, p.comment_count - 1) }));
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const deletePost = async () => {
+    if (!confirm("Delete this post?")) return;
+    try {
+      await apiFetch(`/api/posts/${post.id}`, { method: "DELETE" });
+      onDelete(post.id);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const catConfig = CATEGORIES.find(c => c.key === post.category);
+
+  return (
+    <motion.div layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+      className={`bg-card border rounded-lg overflow-hidden transition-colors ${
+        post.pinned ? "border-primary/40 shadow-[0_0_20px_hsla(var(--primary),0.08)]" : "border-border"
+      }`}>
+
+      {/* Pin strip */}
+      {post.pinned && (
+        <div className="flex items-center gap-1.5 px-4 py-1.5 bg-primary/10 border-b border-primary/20">
+          <Pin className="w-3 h-3 text-primary" />
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest text-primary">Pinned</span>
+        </div>
+      )}
+
+      <div className="p-5">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              {catConfig && (
+                <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border font-display font-bold uppercase tracking-widest ${CATEGORY_BADGE[post.category] ?? ""}`}>
+                  <catConfig.icon className="w-3 h-3" />
+                  {catConfig.label}
+                </span>
+              )}
+              {post.milsim_group_name && (
+                <Link href={`/milsim/${post.milsim_group_id}`}>
+                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-primary/30 bg-primary/5 text-primary font-display font-bold uppercase tracking-widest cursor-pointer hover:bg-primary/10 transition-colors">
+                    <Shield className="w-3 h-3" />
+                    {post.milsim_group_name}
+                  </span>
+                </Link>
+              )}
+            </div>
+            <h3 className="font-display font-black text-base sm:text-lg uppercase tracking-wide text-foreground leading-tight">
+              {post.title}
+            </h3>
+          </div>
+          {canDelete && (
+            <button onClick={deletePost} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0">
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Author */}
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
+            <span className="text-[10px] font-display font-bold text-primary">{post.username[0].toUpperCase()}</span>
+          </div>
+          <Link href={`/u/${post.username}`}>
+            <span className="text-sm font-display font-bold text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+              {post.username}
+            </span>
+          </Link>
+          <span className="text-muted-foreground/50 text-xs">·</span>
+          <span className="text-xs text-muted-foreground">
+            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+          </span>
+        </div>
+
+        {/* Content */}
+        <p className="font-sans text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap mb-4">
+          {post.content}
+        </p>
+
+        {/* Actions */}
+        <div className="flex items-center gap-4 pt-3 border-t border-border/50">
+          <button onClick={toggleReact}
+            disabled={!currentUserId}
+            className={`flex items-center gap-1.5 text-sm font-display font-bold uppercase tracking-wider transition-all disabled:opacity-40 ${
+              post.viewer_reacted ? "text-primary" : "text-muted-foreground hover:text-primary"
+            }`}>
+            <ThumbsUp className={`w-4 h-4 ${post.viewer_reacted ? "fill-primary" : ""}`} />
+            <span>{post.reaction_count}</span>
+          </button>
+
+          <button onClick={toggleComments}
+            className="flex items-center gap-1.5 text-sm font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+            <MessageSquare className="w-4 h-4" />
+            <span>{post.comment_count}</span>
+            {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Comments section */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
+            className="border-t border-border/60 bg-secondary/20">
+
+            {commentsLoading ? (
+              <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+            ) : (
+              <div className="p-4 space-y-3">
+                {comments.length === 0 && (
+                  <p className="text-center text-xs text-muted-foreground py-3 font-display uppercase tracking-widest">No comments yet</p>
+                )}
+                {comments.map(c => (
+                  <div key={c.id} className="flex items-start gap-2.5 group">
+                    <div className="w-6 h-6 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-[9px] font-display font-bold text-muted-foreground">{c.username[0].toUpperCase()}</span>
+                    </div>
+                    <div className="flex-1 min-w-0 bg-secondary/40 rounded-lg px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <Link href={`/u/${c.username}`}>
+                            <span className="text-xs font-display font-bold text-foreground hover:text-primary transition-colors cursor-pointer">{c.username}</span>
+                          </Link>
+                          <span className="text-[10px] text-muted-foreground/60">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
+                        </div>
+                        {(currentUserId === c.user_id || canModerate) && (
+                          <button onClick={() => deleteComment(c.id)}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 text-muted-foreground hover:text-destructive transition-all">
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{c.content}</p>
+                    </div>
+                  </div>
+                ))}
+
+                {currentUserId && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <input value={newComment} onChange={e => setNewComment(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
+                      className="mf-input flex-1 text-sm py-2" placeholder="Add a comment..." maxLength={2000} />
+                    <button onClick={submitComment} disabled={!newComment.trim() || posting}
+                      className="p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded disabled:opacity-40 transition-all">
+                      {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
+export default function Forum() {
+  const { user, isAuthenticated } = useAuth();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [showCreate, setShowCreate] = useState(false);
+  const [userGroups, setUserGroups] = useState<MilsimGroup[]>([]);
+  const PAGE_SIZE = 15;
+  const { toast } = useToast();
+
+  const fetchPosts = async (category: string, offset: number, append: boolean) => {
+    if (offset === 0) setLoading(true); else setLoadingMore(true);
+    try {
+      const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
+      if (category !== "all") params.set("category", category);
+      const data = await apiFetch<{ posts: Post[]; total: number }>(`/api/posts?${params}`);
+      setPosts(p => append ? [...p, ...data.posts] : data.posts);
+      setTotal(data.total);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts(activeCategory, 0, false);
+  }, [activeCategory]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      apiFetch<MilsimGroup[]>("/api/milsim-groups/mine/memberships")
+        .then(setUserGroups)
+        .catch(() => setUserGroups([]));
+    }
+  }, [isAuthenticated]);
+
+  const handleCreated = (post: Post) => {
+    setPosts(p => [post, ...p]);
+    setTotal(t => t + 1);
+  };
+
+  const handleDelete = (id: number) => {
+    setPosts(p => p.filter(x => x.id !== id));
+    setTotal(t => Math.max(0, t - 1));
+  };
+
+  return (
+    <MainLayout>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+
+        {/* Page Header */}
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <div>
+            <h1 className="font-display font-black text-3xl sm:text-4xl uppercase tracking-wider text-foreground mb-2">
+              Community Board
+            </h1>
+            <p className="text-muted-foreground font-sans leading-relaxed">
+              Gaming updates, unit news, recruitment calls, and everything in between.
+            </p>
+          </div>
+          {isAuthenticated && (
+            <button onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider px-5 py-2.5 rounded clip-angled-sm shadow-[0_0_20px_hsla(var(--primary),0.2)] hover:shadow-[0_0_24px_hsla(var(--primary),0.4)] transition-all shrink-0">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Post</span>
+            </button>
+          )}
+        </div>
+
+        {/* Category Tabs */}
+        <div className="flex flex-wrap gap-2 mb-8 p-1 bg-secondary/30 border border-border rounded-lg">
+          {CATEGORIES.map(cat => {
+            const Icon = cat.icon;
+            return (
+              <button key={cat.key} onClick={() => { setActiveCategory(cat.key); }}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded font-display font-bold uppercase tracking-wider text-xs transition-all ${
+                  activeCategory === cat.key
+                    ? "bg-card border border-border text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}>
+                <Icon className={`w-3.5 h-3.5 ${activeCategory === cat.key ? cat.color : ""}`} />
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Post count */}
+        {!loading && (
+          <p className="text-xs font-display uppercase tracking-widest text-muted-foreground mb-4">
+            {total} {total === 1 ? "post" : "posts"}
+            {activeCategory !== "all" && ` in ${CATEGORIES.find(c => c.key === activeCategory)?.label}`}
+          </p>
+        )}
+
+        {/* Posts */}
+        {loading ? (
+          <div className="flex justify-center py-24">
+            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="text-center py-24 border border-dashed border-border rounded-lg">
+            <MessageSquare className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">No posts yet</p>
+            {isAuthenticated ? (
+              <button onClick={() => setShowCreate(true)} className="text-sm text-primary hover:text-primary/80 font-display uppercase tracking-wider transition-colors">
+                Be the first to post →
+              </button>
+            ) : (
+              <Link href="/portal/login">
+                <span className="text-sm text-primary hover:text-primary/80 font-display uppercase tracking-wider transition-colors cursor-pointer">
+                  Log in to post →
+                </span>
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {posts.map(post => (
+              <PostCard key={post.id} post={post}
+                currentUserId={user?.id ?? null}
+                currentUserRole={user?.role ?? null}
+                onDelete={handleDelete} />
+            ))}
+
+            {posts.length < total && (
+              <div className="flex justify-center pt-4">
+                <button onClick={() => fetchPosts(activeCategory, posts.length, true)}
+                  disabled={loadingMore}
+                  className="flex items-center gap-2 px-6 py-2.5 border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 font-display font-bold uppercase tracking-wider text-sm rounded transition-all disabled:opacity-50">
+                  {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : "Load More"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Not logged in CTA */}
+        {!isAuthenticated && (
+          <div className="mt-10 p-6 bg-card border border-border rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <p className="font-display font-bold uppercase tracking-wider text-foreground">Want to post or react?</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Join TAG to contribute to the community board.</p>
+            </div>
+            <div className="flex gap-3">
+              <Link href="/portal/login">
+                <span className="px-5 py-2 border border-primary text-primary font-display font-bold uppercase tracking-wider text-sm rounded clip-angled-sm hover:bg-primary/10 transition-all cursor-pointer">
+                  Log In
+                </span>
+              </Link>
+              <Link href="/join">
+                <span className="px-5 py-2 bg-primary text-primary-foreground font-display font-bold uppercase tracking-wider text-sm rounded clip-angled-sm hover:bg-primary/90 transition-all cursor-pointer">
+                  Enlist
+                </span>
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Create post modal */}
+      <AnimatePresence>
+        {showCreate && (
+          <CreatePostModal onClose={() => setShowCreate(false)} onCreated={handleCreated} userGroups={userGroups} />
+        )}
+      </AnimatePresence>
+    </MainLayout>
+  );
+}

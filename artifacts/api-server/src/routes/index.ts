@@ -11,6 +11,7 @@ import securityRouter from "./security";
 import notificationsRouter from "./notifications";
 import eventsRouter from "./events";
 import milsimApplicationsRouter from "./milsim-applications";
+import postsRouter from "./posts";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(securityRouter);
 router.use(notificationsRouter);
 router.use(eventsRouter);
 router.use(milsimApplicationsRouter);
+router.use(postsRouter);
 
 export default router;

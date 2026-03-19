@@ -86,6 +86,18 @@ router.get("/milsim-groups/mine/own", requireAuth, async (req, res): Promise<voi
   res.json(detail);
 });
 
+router.get("/milsim-groups/mine/memberships", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const result = await db.execute(rawSql`
+    SELECT mg.id, mg.name, mg.slug
+    FROM milsim_group_members mgm
+    JOIN milsim_groups mg ON mg.id = mgm.milsim_group_id
+    WHERE mgm.user_id = ${userId}
+    ORDER BY mg.name ASC
+  `);
+  res.json(result.rows);
+});
+
 router.post("/milsim-groups", requireAuth, async (req, res): Promise<void> => {
   const userId = (req as any).user.id;
   const parsed = CreateGroupBody.safeParse(req.body);
