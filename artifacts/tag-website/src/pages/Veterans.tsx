@@ -381,13 +381,24 @@ COUNTRY_OPTIONS.push({ code: "OTHER", label: "Other / International" });
 // ── Geo detection hook ─────────────────────────────────────────────────────────
 
 function useGeoCountry() {
-  const [countryCode, setCountryCode] = useState<string | null>(null);
-  const [countryName, setCountryName] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  // Check for ?country=XX test override in the URL
+  const urlParam = new URLSearchParams(window.location.search).get("country")?.toUpperCase() ?? null;
+  const paramData = urlParam
+    ? COUNTRY_RESOURCES[urlParam]
+      ? { code: urlParam, label: COUNTRY_RESOURCES[urlParam].label }
+      : urlParam === "OTHER"
+        ? { code: "OTHER", label: "International" }
+        : null
+    : null;
+
+  const [countryCode, setCountryCode] = useState<string | null>(paramData?.code ?? null);
+  const [countryName, setCountryName] = useState<string>(paramData?.label ?? "");
+  const [loading, setLoading] = useState(!paramData);
   const [overridden, setOverridden] = useState(false);
+  const testMode = !!paramData;
 
   useEffect(() => {
-    if (overridden) return;
+    if (paramData || overridden) return;
     setLoading(true);
     fetch("https://ipapi.co/json/")
       .then(r => r.json())
@@ -410,7 +421,7 @@ function useGeoCountry() {
     setLoading(false);
   };
 
-  return { countryCode, countryName, loading, overridden, override };
+  return { countryCode, countryName, loading, overridden, override, testMode };
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -421,7 +432,7 @@ export default function Veterans() {
     description: "TAG's veterans support resources — local mental health crisis lines and veteran services based on your location.",
   });
 
-  const { countryCode, countryName, loading, overridden, override } = useGeoCountry();
+  const { countryCode, countryName, loading, overridden, override, testMode } = useGeoCountry();
   const [showPicker, setShowPicker] = useState(false);
 
   const countryData = countryCode ? COUNTRY_RESOURCES[countryCode] : null;
@@ -430,6 +441,14 @@ export default function Veterans() {
 
   return (
     <MainLayout>
+
+      {/* Test mode banner */}
+      {testMode && (
+        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 bg-yellow-500/10 border border-yellow-500/40 rounded-lg text-yellow-400 text-xs font-display font-bold uppercase tracking-widest shadow-xl">
+          <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+          Test mode — country override: {countryCode}
+        </div>
+      )}
 
       {/* Hero */}
       <section className="relative pt-36 pb-24 overflow-hidden">
