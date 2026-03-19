@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/games", label: "Games" },
   { href: "/training", label: "Training" },
   { href: "/join", label: "Join" },
+  { href: "/donate", label: "Donate" },
 ];
 
 export function Navbar() {
