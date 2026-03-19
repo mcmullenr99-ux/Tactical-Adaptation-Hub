@@ -35,6 +35,7 @@ import CommandCenter from "@/pages/portal/CommandCenter";
 import Friends from "@/pages/portal/Friends";
 import SecurityProtocol from "@/pages/portal/SecurityProtocol";
 import Profile from "@/pages/portal/Profile";
+import VeteranAdvisoryApp from "@/pages/portal/VeteranAdvisoryApp";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/portal/command" component={CommandCenter} />
       <Route path="/portal/friends" component={Friends} />
       <Route path="/portal/security" component={SecurityProtocol} />
+      <Route path="/portal/veteran-app" component={VeteranAdvisoryApp} />
       
       <Route component={NotFound} />
     </Switch>
