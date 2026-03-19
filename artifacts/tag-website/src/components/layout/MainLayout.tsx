@@ -1,6 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
+import { DevBanner } from "./DevBanner";
 import { useLocation } from "wouter";
 
 export function MainLayout({ children }: { children: ReactNode }) {
@@ -15,6 +16,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-primary selection:text-white">
       <Navbar />
       <main className="flex-grow pt-20">
+        <DevBanner />
         {children}
       </main>
       <Footer />
