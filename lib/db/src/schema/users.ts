@@ -7,13 +7,15 @@ export const usersTable = pgTable("users", {
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  role: text("role").notNull().default("member"), // member | staff | moderator | admin
-  status: text("status").notNull().default("active"), // active | suspended | banned
+  role: text("role").notNull().default("member"),
+  status: text("status").notNull().default("active"),
   banReason: text("ban_reason"),
   bannedAt: timestamp("banned_at", { withTimezone: true }),
   bio: text("bio"),
   discordTag: text("discord_tag"),
   nationality: text("nationality"),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

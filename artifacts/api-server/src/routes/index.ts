@@ -14,6 +14,7 @@ import eventsRouter from "./events";
 import milsimApplicationsRouter from "./milsim-applications";
 import postsRouter from "./posts";
 import storageRouter from "./storage";
+import stripeRouter from "./stripe";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(eventsRouter);
 router.use(milsimApplicationsRouter);
 router.use(postsRouter);
 router.use(storageRouter);
+router.use(stripeRouter);
 
 export default router;

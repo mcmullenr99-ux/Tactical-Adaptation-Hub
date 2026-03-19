@@ -15,7 +15,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - Dark military tactical theme (dark background, olive green + amber accents)
 - All 11 supported games listed
 - Uses framer-motion for animations, react-hook-form for forms
-- Donate page: Ko-fi integration (`https://ko-fi.com/tagtacticaladaptationgroup`)
+- Donate page: Ko-fi + Stripe integration; Stripe products: "TAG Supporter" (£4.99/mo, £49.99/yr subscription) and "TAG Donation" (£5/£10/£25 one-time); checkout requires TAG account login
 - Veterans page: direct outreach with real support resources (VCL, Headstrong, Give an Hour, Team RWB, Mission22)
 - Auth: bcryptjs + express-session + connect-pg-simple
 - Role hierarchy: member < staff < moderator < admin
@@ -28,7 +28,8 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - Notification polling (30s): unread message dot + pending friend request dot in portal sidebar
 - Forgot password: POST /api/auth/forgot-password returns reset token; staff delivers link via Discord DM
 - DB tables: `password_reset_tokens`, `ops_events`, `milsim_group_applications`, `site_settings`
-- API routes: notifications/counts, events CRUD, milsim-applications, users/search, users/profile/:username, auth/forgot-password, auth/reset-password, auth/account (DELETE), admin/broadcast, admin/reset-tokens, messages/mark-all-read, storage uploads/request-url, storage/objects/*
+- API routes: notifications/counts, events CRUD, milsim-applications, users/search, users/profile/:username, auth/forgot-password, auth/reset-password, auth/account (DELETE), admin/broadcast, admin/reset-tokens, messages/mark-all-read, storage uploads/request-url, storage/objects/*, stripe/products, stripe/checkout, stripe/portal, stripe/subscription, stripe/webhook
+- Stripe: Replit-native integration (stripe-replit-sync); stripe schema in PostgreSQL; products: "TAG Supporter" (£4.99/mo, £49.99/yr) + "TAG Donation" (£5/£10/£25); webhook auto-syncs; users.stripe_customer_id + users.stripe_subscription_id; stripeClient.ts (lib/), stripeStorage.ts (lib/), webhookHandlers.ts (lib/), routes/stripe.ts; seed: `pnpm --filter @workspace/scripts run seed-products`
 - Community Board (`/forum`): 4 categories (Gaming, Unit News, Recruitment, General), reactions, comments, MilSim group tagging, pagination, pinning
 - Forum media upload: Images (JPEG/PNG/WebP/GIF up to 8 MB) and videos (MP4/WebM/MOV up to 100 MB) via presigned GCS uploads
 - AI content moderation (`lib/moderation.ts`): text moderation via OpenAI omni-moderation-latest API; image moderation via GPT-5.2 vision; applied to all post/comment creation and edits; flagged content is auto-rejected with reason
