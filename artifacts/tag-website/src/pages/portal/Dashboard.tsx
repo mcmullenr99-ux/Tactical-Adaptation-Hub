@@ -26,7 +26,7 @@ export default function Dashboard() {
   const { data: upcomingOps = [] } = useQuery<OpsEvent[]>({
     queryKey: ["ops-upcoming"],
     queryFn: () =>
-      apiFetch("/api/events").then(r => r.json()).then((evs: OpsEvent[]) =>
+      apiFetch("/api/events").then((evs: OpsEvent[]) =>
         evs.filter(e => new Date(e.event_date) >= new Date()).slice(0, 3)),
     staleTime: 60_000,
   });

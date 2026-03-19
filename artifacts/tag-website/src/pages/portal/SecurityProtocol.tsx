@@ -141,12 +141,12 @@ export default function SecurityProtocol() {
 
   const { data: logs = [], isLoading: logsLoading } = useQuery<AuditLog[]>({
     queryKey: ["audit-logs", filterUserIdApplied],
-    queryFn: () => apiFetch(logsUrl).then(r => r.json()),
+    queryFn: () => apiFetch(logsUrl),
   });
 
   const { data: incidents = [] } = useQuery<SecurityIncident[]>({
     queryKey: ["security-incidents"],
-    queryFn: () => apiFetch("/api/security/incidents").then(r => r.json()),
+    queryFn: () => apiFetch("/api/security/incidents"),
   });
 
   const emergencyMutation = useMutation({
@@ -158,7 +158,7 @@ export default function SecurityProtocol() {
           description: emergencyReason || "Emergency protocol triggered",
           affectedUserId: emergencyTarget ? parseInt(emergencyTarget) : undefined,
         }),
-      }).then(r => r.json()),
+      }),
     onSuccess: (data) => {
       toast({
         title: "⚠️ Emergency Protocol Activated",
@@ -175,7 +175,7 @@ export default function SecurityProtocol() {
 
   const rollbackMutation = useMutation({
     mutationFn: (userId: number) =>
-      apiFetch(`/api/security/rollback/${userId}`, { method: "POST" }).then(r => r.json()),
+      apiFetch(`/api/security/rollback/${userId}`, { method: "POST" }),
     onSuccess: (data) => {
       toast({
         title: "Rollback Complete",
@@ -190,8 +190,7 @@ export default function SecurityProtocol() {
 
   const downloadEvidence = async (userId: number) => {
     try {
-      const res = await apiFetch(`/api/security/evidence/${userId}`);
-      const data = await res.json();
+      const data = await apiFetch(`/api/security/evidence/${userId}`);
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -207,7 +206,7 @@ export default function SecurityProtocol() {
 
   const resolveIncident = useMutation({
     mutationFn: (id: number) =>
-      apiFetch(`/api/security/incidents/${id}/resolve`, { method: "PATCH" }).then(r => r.json()),
+      apiFetch(`/api/security/incidents/${id}/resolve`, { method: "PATCH" }),
     onSuccess: () => {
       toast({ title: "Incident Resolved" });
       qc.invalidateQueries({ queryKey: ["security-incidents"] });

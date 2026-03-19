@@ -55,12 +55,11 @@ export default function Profile() {
     }
     setSavingPassword(true);
     try {
-      const res = await apiFetch("/api/auth/password", {
+      await apiFetch("/api/auth/password", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
       toast({ title: "Password Changed", description: "Your new password is active." });
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     } catch (e: any) {
@@ -73,12 +72,11 @@ export default function Profile() {
   const deleteAccount = async () => {
     setDeleting(true);
     try {
-      const res = await apiFetch("/api/auth/account", {
+      await apiFetch("/api/auth/account", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: deletePassword }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
       qc.clear();
       window.location.href = "/";
     } catch (e: any) {

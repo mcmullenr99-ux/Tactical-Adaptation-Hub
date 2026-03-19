@@ -28,7 +28,7 @@ function RecipientSearch({ onChange }: { onChange: (id: number) => void }) {
 
   const { data: results = [] } = useQuery<UserResult[]>({
     queryKey: ["user-search", q],
-    queryFn: () => apiFetch(`/api/users/search?q=${encodeURIComponent(q)}`).then(r => r.json()),
+    queryFn: () => apiFetch(`/api/users/search?q=${encodeURIComponent(q)}`),
     enabled: q.length >= 2,
     staleTime: 5_000,
   });
