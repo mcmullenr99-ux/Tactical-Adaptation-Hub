@@ -76,6 +76,15 @@ router.get("/messages/sent", requireAuth, async (req, res): Promise<void> => {
   );
 });
 
+router.patch("/messages/read-all", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  await db
+    .update(messagesTable)
+    .set({ isRead: true })
+    .where(and(eq(messagesTable.recipientId, userId), eq(messagesTable.isRead, false)));
+  res.json({ success: true });
+});
+
 router.post("/messages", requireAuth, async (req, res): Promise<void> => {
   const userId = (req as any).user.id;
   const parsed = SendMessageBody.safeParse(req.body);
@@ -85,6 +94,8 @@ router.post("/messages", requireAuth, async (req, res): Promise<void> => {
   }
 
   const { recipientId, subject, body } = parsed.data;
+  if (body.length > 5000) { res.status(400).json({ error: "Message body too long (max 5000 characters)" }); return; }
+  if (subject.length > 200) { res.status(400).json({ error: "Subject too long (max 200 characters)" }); return; }
 
   const [recipient] = await db.select().from(usersTable).where(eq(usersTable.id, recipientId));
   if (!recipient) {

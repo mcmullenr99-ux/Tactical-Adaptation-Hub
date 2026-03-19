@@ -9,7 +9,8 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 ### TAG - Tactical Adaptation Group Website (`artifacts/tag-website`)
 - React + Vite full-stack website for the TAG tactical gaming community
 - Public Pages: Home, About, Games, Training, Join, Donate, Veterans, MilSim Registry
-- Portal Pages: Login, Register, Dashboard, Inbox, Compose, Staff Apply, Mod Panel, Admin Panel, MilSim Manage
+- Portal Pages: Login, Register, Dashboard, Inbox, Compose, Staff Apply, Mod Panel, Admin Panel, MilSim Manage, Profile, OpsCalendar
+- Public pages: PrivacyPolicy (`/privacy`), TermsOfService (`/terms`), OpsCalendar (`/ops-calendar`), UserPublicProfile (`/u/:username`)
 - MilSim Registry (`/milsim`): public listing of tactical groups with roles, ranks, roster, SOPs, ORBAT, application questions
 - Dark military tactical theme (dark background, olive green + amber accents)
 - All 11 supported games listed
@@ -18,6 +19,16 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - Veterans page: direct outreach with real support resources (VCL, Headstrong, Give an Hour, Team RWB, Mission22)
 - Auth: bcryptjs + express-session + connect-pg-simple
 - Role hierarchy: member < staff < moderator < admin
+- Cookie consent banner (GDPR/UK PECR compliant) on all public pages
+- useSEO hook applied to all pages (title + description meta tags)
+- Rate limiting: global, auth, register limiters + `app.set("trust proxy", 1)` for Replit proxy
+- Secure session cookies (production: secure=true, sameSite=strict)
+- Admin panel: Personnel tab, Broadcast tab (send to all members), Password Resets tab (copy token link)
+- Dashboard: activity feed with Recent Comms + Upcoming Ops panels
+- Notification polling (30s): unread message dot + pending friend request dot in portal sidebar
+- Forgot password: POST /api/auth/forgot-password returns reset token; staff delivers link via Discord DM
+- DB tables: `password_reset_tokens`, `ops_events`, `milsim_group_applications`, `site_settings`
+- API routes: notifications/counts, events CRUD, milsim-applications, users/search, users/profile/:username, auth/forgot-password, auth/reset-password, auth/account (DELETE), admin/broadcast, admin/reset-tokens, messages/mark-all-read
 
 ## Stack
 

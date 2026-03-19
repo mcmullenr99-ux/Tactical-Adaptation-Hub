@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Play, Crosshair, User, UserCheck } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 interface GameData {
   name: string;
@@ -116,6 +117,7 @@ const GAMES_DATA: GameData[] = [
 ];
 
 export default function Games() {
+  useSEO({ title: "Supported Games", description: "TAG supports a range of tactical games — Arma Reforger, Squad, Hell Let Loose, and more. Find your battlefield." });
   return (
     <MainLayout>
       {/* Header */}

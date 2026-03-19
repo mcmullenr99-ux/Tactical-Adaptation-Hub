@@ -2,12 +2,14 @@ import { useState } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { useGetInbox, useGetSent, useMarkMessageRead, useDeleteMessage } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Mail, MailOpen, Trash2, Send, Plus, UserPlus, UserCheck, Loader2 } from "lucide-react";
+import { Mail, MailOpen, Trash2, Send, Plus, UserPlus, UserCheck, Loader2, CheckCheck, ChevronLeft, ChevronRight as ChevRight } from "lucide-react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/apiFetch";
+
+const PAGE_SIZE = 10;
 
 interface FriendStatus { status: "none"|"pending"|"accepted"; iAmRequester?: boolean; friendshipId?: number; }
 
@@ -36,6 +38,7 @@ function AddFriendButton({ userId, username }: { userId: number; username: strin
 export default function Inbox() {
   const [tab, setTab] = useState<'inbox' | 'sent'>('inbox');
   const [expandedMsg, setExpandedMsg] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
   
   const { data: inbox, refetch: refetchInbox } = useGetInbox();
   const { data: sent, refetch: refetchSent } = useGetSent();
@@ -45,7 +48,15 @@ export default function Inbox() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const messages = tab === 'inbox' ? inbox : sent;
+  const allMessages = tab === 'inbox' ? inbox : sent;
+  const totalPages = Math.ceil((allMessages?.length ?? 0) / PAGE_SIZE);
+  const messages = allMessages?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const markAllRead = useMutation({
+    mutationFn: () => apiFetch("/api/messages/read-all", { method: "PATCH" }),
+    onSuccess: () => { refetchInbox(); queryClient.invalidateQueries({ queryKey: ["notification-counts"] }); toast({ title: "All messages marked as read." }); },
+    onError: () => toast({ title: "Error", description: "Could not mark all as read.", variant: "destructive" }),
+  });
 
   const handleExpand = (id: number, isRead: boolean) => {
     if (expandedMsg === id) {
@@ -76,17 +87,28 @@ export default function Inbox() {
       <div className="h-full flex flex-col">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <h1 className="text-3xl font-display font-bold uppercase tracking-wider">Secure Comms</h1>
-          <Link 
-            href="/portal/compose"
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded clip-angled-sm font-display font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors w-fit"
-          >
-            <Plus className="w-4 h-4" /> New Dispatch
-          </Link>
+          <div className="flex items-center gap-2">
+            {tab === 'inbox' && inbox && inbox.some(m => !m.isRead) && (
+              <button
+                onClick={() => markAllRead.mutate()}
+                disabled={markAllRead.isPending}
+                className="flex items-center gap-2 px-3 py-2 border border-border rounded text-sm font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <CheckCheck className="w-4 h-4" /> Mark All Read
+              </button>
+            )}
+            <Link 
+              href="/portal/compose"
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded clip-angled-sm font-display font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" /> New Dispatch
+            </Link>
+          </div>
         </div>
 
         <div className="flex gap-2 mb-6 border-b border-border">
           <button
-            onClick={() => { setTab('inbox'); setExpandedMsg(null); }}
+            onClick={() => { setTab('inbox'); setExpandedMsg(null); setPage(1); }}
             className={`px-6 py-3 font-display font-bold uppercase tracking-widest text-sm transition-colors border-b-2 ${
               tab === 'inbox' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
@@ -94,7 +116,7 @@ export default function Inbox() {
             Inbox {inbox && inbox.filter(m => !m.isRead).length > 0 && `(${inbox.filter(m => !m.isRead).length})`}
           </button>
           <button
-            onClick={() => { setTab('sent'); setExpandedMsg(null); }}
+            onClick={() => { setTab('sent'); setExpandedMsg(null); setPage(1); }}
             className={`px-6 py-3 font-display font-bold uppercase tracking-widest text-sm transition-colors border-b-2 ${
               tab === 'sent' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
@@ -184,6 +206,28 @@ export default function Inbox() {
             ))
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 pt-6 border-t border-border mt-4">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-2 rounded border border-border text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-sm font-display uppercase tracking-widest text-muted-foreground">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="p-2 rounded border border-border text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+            >
+              <ChevRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
     </PortalLayout>
   );

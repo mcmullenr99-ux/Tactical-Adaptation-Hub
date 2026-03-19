@@ -2,8 +2,10 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Crosshair, Shield, Users, Target, ArrowRight } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function Home() {
+  useSEO({ title: "Home", description: "Tactical Adaptation Group — a premier tactical gaming community dedicated to mastering warfighting fundamentals and building brotherhood." });
   return (
     <MainLayout>
       {/* Hero Section */}

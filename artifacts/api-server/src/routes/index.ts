@@ -8,6 +8,9 @@ import milsimRouter from "./milsim";
 import adminRouter from "./admin";
 import friendsRouter from "./friends";
 import securityRouter from "./security";
+import notificationsRouter from "./notifications";
+import eventsRouter from "./events";
+import milsimApplicationsRouter from "./milsim-applications";
 
 const router: IRouter = Router();
 
@@ -20,5 +23,8 @@ router.use(milsimRouter);
 router.use(adminRouter);
 router.use(friendsRouter);
 router.use(securityRouter);
+router.use(notificationsRouter);
+router.use(eventsRouter);
+router.use(milsimApplicationsRouter);
 
 export default router;

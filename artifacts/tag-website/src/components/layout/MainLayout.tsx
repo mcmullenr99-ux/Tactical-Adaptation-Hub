@@ -2,6 +2,7 @@ import { ReactNode, useEffect } from "react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { DevBanner } from "./DevBanner";
+import { CookieBanner } from "@/components/CookieBanner";
 import { useLocation } from "wouter";
 
 export function MainLayout({ children }: { children: ReactNode }) {
@@ -20,6 +21,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
         {children}
       </main>
       <Footer />
+      <CookieBanner />
     </div>
   );
 }

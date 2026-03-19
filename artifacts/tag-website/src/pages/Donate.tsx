@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Heart, Server, Shield, Crosshair, Users, ExternalLink } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 const KOFI_URL = "https://ko-fi.com/tagtacticaladaptationgroup";
 
@@ -35,6 +36,7 @@ const TIERS = [
 ];
 
 export default function Donate() {
+  useSEO({ title: "Support TAG", description: "Support TAG via Ko-fi. Your donations fund servers, events, and keep the community running." });
   return (
     <MainLayout>
       {/* Hero */}

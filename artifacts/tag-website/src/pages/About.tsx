@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Shield, Target, Award, Users } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function About() {
+  useSEO({ title: "About Us", description: "Learn about TAG — Tactical Adaptation Group's history, values, and the brotherhood behind the community." });
   return (
     <MainLayout>
       {/* Header */}

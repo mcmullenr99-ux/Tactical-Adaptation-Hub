@@ -1,0 +1,96 @@
+import { Router, type IRouter } from "express";
+import { db } from "@workspace/db";
+import { sql } from "drizzle-orm";
+import { requireAuth, requireRole } from "../lib/auth";
+import { logAudit, buildAuditFromReq } from "../lib/audit";
+
+const router: IRouter = Router();
+const staffGuard = [requireAuth, requireRole("staff", "moderator", "admin")];
+
+// GET /api/events — public
+router.get("/events", async (_req, res): Promise<void> => {
+  const result = await db.execute(sql`
+    SELECT * FROM ops_events ORDER BY event_date ASC
+  `);
+  res.json(result.rows);
+});
+
+// POST /api/events — staff+
+router.post("/events", ...staffGuard, async (req, res): Promise<void> => {
+  const actor = (req as any).user;
+  const { title, game, description, eventDate, endDate, maxSlots } = req.body as {
+    title: string; game?: string; description?: string;
+    eventDate: string; endDate?: string; maxSlots?: number;
+  };
+
+  if (!title || !eventDate) {
+    res.status(400).json({ error: "Title and event date are required" });
+    return;
+  }
+
+  const result = await db.execute(sql`
+    INSERT INTO ops_events (title, game, description, event_date, end_date, organizer_id, organizer_username, max_slots)
+    VALUES (${title}, ${game ?? null}, ${description ?? null}, ${new Date(eventDate)},
+            ${endDate ? new Date(endDate) : null}, ${actor.id}, ${actor.username}, ${maxSlots ?? null})
+    RETURNING *
+  `);
+
+  await logAudit(buildAuditFromReq(req, {
+    actionType: "CREATE",
+    targetTable: "ops_events",
+    targetId: (result.rows[0] as any)?.id,
+    description: `${actor.username} created event: ${title}`,
+    newSnapshot: result.rows[0] as any,
+  }));
+
+  res.status(201).json(result.rows[0]);
+});
+
+// PATCH /api/events/:id — staff+
+router.patch("/events/:id", ...staffGuard, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  const actor = (req as any).user;
+  const { title, game, description, eventDate, endDate, maxSlots, status } = req.body as any;
+
+  const before = await db.execute(sql`SELECT * FROM ops_events WHERE id = ${id}`);
+  if (!before.rows[0]) { res.status(404).json({ error: "Event not found" }); return; }
+
+  await db.execute(sql`
+    UPDATE ops_events SET
+      title = COALESCE(${title ?? null}, title),
+      game = COALESCE(${game ?? null}, game),
+      description = COALESCE(${description ?? null}, description),
+      event_date = COALESCE(${eventDate ? new Date(eventDate) : null}, event_date),
+      end_date = COALESCE(${endDate ? new Date(endDate) : null}, end_date),
+      max_slots = COALESCE(${maxSlots ?? null}, max_slots),
+      status = COALESCE(${status ?? null}, status)
+    WHERE id = ${id}
+  `);
+
+  await logAudit(buildAuditFromReq(req, {
+    actionType: "UPDATE",
+    targetTable: "ops_events",
+    targetId: id,
+    description: `${actor.username} updated event id=${id}`,
+    oldSnapshot: before.rows[0] as any,
+  }));
+
+  const updated = await db.execute(sql`SELECT * FROM ops_events WHERE id = ${id}`);
+  res.json(updated.rows[0]);
+});
+
+// DELETE /api/events/:id — staff+
+router.delete("/events/:id", ...staffGuard, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  const actor = (req as any).user;
+  await db.execute(sql`DELETE FROM ops_events WHERE id = ${id}`);
+  await logAudit(buildAuditFromReq(req, {
+    actionType: "DELETE",
+    targetTable: "ops_events",
+    targetId: id,
+    description: `${actor.username} deleted event id=${id}`,
+  }));
+  res.json({ success: true });
+});
+
+export default router;

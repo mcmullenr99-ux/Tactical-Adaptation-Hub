@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Crosshair, Map, Mic, Users, ShieldAlert, Footprints } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function Training() {
+  useSEO({ title: "Training Doctrine", description: "TAG's tactical training framework — communication standards, squad movement, and warfighting fundamentals." });
   return (
     <MainLayout>
       <div className="bg-secondary/50 border-b border-border py-16 relative overflow-hidden">

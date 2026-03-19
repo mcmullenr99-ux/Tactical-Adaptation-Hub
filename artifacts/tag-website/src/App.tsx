@@ -17,6 +17,10 @@ import MilsimGroup from "@/pages/MilsimGroup";
 import MilsimRegister from "@/pages/MilsimRegister";
 import MilsimManage from "@/pages/portal/MilsimManage";
 import NotFound from "@/pages/not-found";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
+import OpsCalendar from "@/pages/OpsCalendar";
+import UserPublicProfile from "@/pages/UserPublicProfile";
 
 // Portal Pages
 import Login from "@/pages/portal/Login";
@@ -30,6 +34,7 @@ import AdminPanel from "@/pages/portal/AdminPanel";
 import CommandCenter from "@/pages/portal/CommandCenter";
 import Friends from "@/pages/portal/Friends";
 import SecurityProtocol from "@/pages/portal/SecurityProtocol";
+import Profile from "@/pages/portal/Profile";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +52,10 @@ function Router() {
       <Route path="/milsim/register" component={MilsimRegister} />
       <Route path="/milsim/:slug" component={MilsimGroup} />
       <Route path="/portal/milsim" component={MilsimManage} />
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms" component={TermsOfService} />
+      <Route path="/ops" component={OpsCalendar} />
+      <Route path="/u/:username" component={UserPublicProfile} />
       
       {/* Portal Routes */}
       <Route path="/portal/login" component={Login} />
@@ -55,6 +64,7 @@ function Router() {
       <Route path="/portal/inbox" component={Inbox} />
       <Route path="/portal/compose" component={Compose} />
       <Route path="/portal/apply" component={Apply} />
+      <Route path="/portal/profile" component={Profile} />
       <Route path="/portal/mod" component={ModPanel} />
       <Route path="/portal/admin" component={AdminPanel} />
       <Route path="/portal/command" component={CommandCenter} />

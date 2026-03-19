@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { apiFetch } from "@/lib/apiFetch";
+import { useSEO } from "@/hooks/useSEO";
 import { Shield, Globe, Star, Users, Plus, ExternalLink, Loader2 } from "lucide-react";
 
 interface MilsimGroup {
@@ -19,6 +20,7 @@ interface MilsimGroup {
 }
 
 export default function MilsimRegistry() {
+  useSEO({ title: "MilSim Registry", description: "Browse TAG's registered MilSim groups — find your unit and enlist in organised tactical play." });
   const [groups, setGroups] = useState<MilsimGroup[]>([]);
   const [loading, setLoading] = useState(true);
 

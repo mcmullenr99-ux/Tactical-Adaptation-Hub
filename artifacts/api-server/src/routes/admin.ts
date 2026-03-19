@@ -252,5 +252,46 @@ router.delete("/admin/milsim-groups/:id", ...adminGuard, async (req, res): Promi
   res.json({ success: true });
 });
 
+// POST /api/admin/broadcast — admin only, sends message to all active members from System
+router.post("/admin/broadcast", ...adminGuard, async (req, res): Promise<void> => {
+  const actor = (req as any).user;
+  const { subject, body } = req.body as { subject: string; body: string };
+
+  if (!subject || !body) { res.status(400).json({ error: "Subject and body required" }); return; }
+  if (body.length > 5000) { res.status(400).json({ error: "Body too long (max 5000 chars)" }); return; }
+
+  // Get all active non-admin users
+  const usersResult = await db.execute(sql`SELECT id FROM users WHERE status = 'active' AND id != ${actor.id}`);
+  const recipients = usersResult.rows as Array<{ id: number }>;
+
+  if (!recipients.length) { res.json({ sent: 0 }); return; }
+
+  await db.execute(sql`
+    INSERT INTO messages (sender_id, recipient_id, subject, body)
+    SELECT ${actor.id}, u.id, ${subject}, ${body}
+    FROM unnest(ARRAY[${sql.raw(recipients.map(r => r.id).join(","))}]::int[]) AS u(id)
+  `);
+
+  await logAudit(buildAuditFromReq(req, {
+    actionType: "CREATE",
+    targetTable: "messages",
+    description: `${actor.username} sent broadcast to ${recipients.length} members: "${subject}"`,
+  }));
+
+  res.json({ sent: recipients.length });
+});
+
+// GET /api/admin/reset-tokens — admin can look up pending reset tokens
+router.get("/admin/reset-tokens", ...adminGuard, async (req, res): Promise<void> => {
+  const result = await db.execute(sql`
+    SELECT t.id, t.token, t.expires_at, t.used, t.created_at, u.username, u.email
+    FROM password_reset_tokens t
+    JOIN users u ON t.user_id = u.id
+    WHERE t.used = false AND t.expires_at > NOW()
+    ORDER BY t.created_at DESC
+  `);
+  res.json(result.rows);
+});
+
 export { getLockdown };
 export default router;

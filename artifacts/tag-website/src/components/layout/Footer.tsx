@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Shield, Disc, Twitter, Youtube, Github } from "lucide-react";
+import { Shield, Disc, Twitter, Youtube, Coffee } from "lucide-react";
 
 export function Footer() {
   return (
@@ -35,24 +35,27 @@ export function Footer() {
               <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
               <li><Link href="/games" className="hover:text-primary transition-colors">Supported Games</Link></li>
               <li><Link href="/training" className="hover:text-primary transition-colors">Training Doctrine</Link></li>
+              <li><Link href="/ops" className="hover:text-primary transition-colors">Ops Calendar</Link></li>
               <li><Link href="/join" className="hover:text-accent transition-colors">Enlistment</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-display font-bold text-foreground tracking-wider mb-6">Comms</h4>
-            <div className="flex gap-4">
-              <a href="https://discord.gg/matmFhU4yg" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded bg-secondary flex items-center justify-center text-muted-foreground hover:bg-[#5865F2] hover:text-white transition-all clip-angled-sm" title="Join our Discord">
-                <Disc className="w-5 h-5" />
+            <div className="flex flex-wrap gap-3 mb-6">
+              <a href="https://discord.gg/matmFhU4yg" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded bg-secondary text-muted-foreground hover:bg-[#5865F2] hover:text-white transition-all text-sm font-display font-bold uppercase tracking-wider" title="Join our Discord">
+                <Disc className="w-4 h-4" /> Discord
               </a>
-              <a href="#" className="w-10 h-10 rounded bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all clip-angled-sm">
-                <Twitter className="w-5 h-5" />
+              <a href="https://ko-fi.com/tagtacticaladaptationgroup" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded bg-secondary text-muted-foreground hover:bg-[#FF5E5B] hover:text-white transition-all text-sm font-display font-bold uppercase tracking-wider" title="Support us on Ko-fi">
+                <Coffee className="w-4 h-4" /> Ko-fi
               </a>
-              <a href="#" className="w-10 h-10 rounded bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all clip-angled-sm">
-                <Youtube className="w-5 h-5" />
+            </div>
+            <div className="flex gap-3">
+              <a href="#" className="w-8 h-8 rounded bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all">
+                <Twitter className="w-4 h-4" />
               </a>
-              <a href="#" className="w-10 h-10 rounded bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all clip-angled-sm">
-                <Github className="w-5 h-5" />
+              <a href="#" className="w-8 h-8 rounded bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all">
+                <Youtube className="w-4 h-4" />
               </a>
             </div>
           </div>
@@ -64,8 +67,8 @@ export function Footer() {
             &copy; {new Date().getFullYear()} Tactical Adaptation Group. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground font-sans">
-            <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>

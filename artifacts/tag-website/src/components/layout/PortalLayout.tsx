@@ -4,12 +4,13 @@ import { MainLayout } from "./MainLayout";
 import { useLocation, Link } from "wouter";
 import {
   Mail, PenTool, LayoutDashboard, ShieldCheck, Settings,
-  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert,
+  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert, Calendar,
 } from "lucide-react";
 import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiFetch } from "@/lib/apiFetch";
 
 export function PortalLayout({ children, requireRole }: { children: React.ReactNode, requireRole?: string[] }) {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -18,6 +19,13 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const { data: notifCounts } = useQuery({
+    queryKey: ["notification-counts"],
+    queryFn: () => apiFetch("/api/notifications/counts").then(r => r.json()),
+    enabled: isAuthenticated,
+    refetchInterval: 30_000,
+  });
 
   useEffect(() => {
     if (isLoading) return;
@@ -69,11 +77,16 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     admin: "text-destructive",
   };
 
+  const unreadMsgs: number = notifCounts?.unreadMessages ?? 0;
+  const pendingFriends: number = notifCounts?.pendingFriendRequests ?? 0;
+
   const navLinks = [
     { href: "/portal/dashboard", icon: <LayoutDashboard className="w-4 h-4 text-primary" />, label: "Dashboard" },
-    { href: "/portal/inbox", icon: <Mail className="w-4 h-4 text-primary" />, label: "Comms" },
+    { href: "/portal/inbox", icon: <Mail className="w-4 h-4 text-primary" />, label: "Comms", badge: unreadMsgs > 0 ? unreadMsgs : 0 },
     { href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "MilSim Group" },
-    { href: "/portal/friends", icon: <Users className="w-4 h-4 text-primary" />, label: "Connections" },
+    { href: "/portal/friends", icon: <Users className="w-4 h-4 text-primary" />, label: "Connections", badge: pendingFriends > 0 ? pendingFriends : 0 },
+    { href: "/portal/profile", icon: <User className="w-4 h-4 text-primary" />, label: "My Profile" },
+    { href: "/ops", icon: <Calendar className="w-4 h-4 text-primary" />, label: "Ops Calendar" },
     ...(user.role === "member"
       ? [{ href: "/portal/apply", icon: <PenTool className="w-4 h-4 text-primary" />, label: "Staff App" }]
       : []),
@@ -89,7 +102,7 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
           { href: "/portal/security", icon: <ShieldAlert className="w-4 h-4 text-red-500" />, label: "Security Protocol" },
         ]
       : []),
-  ];
+  ] as { href: string; icon: React.ReactNode; label: string; badge?: number; divider?: boolean }[];
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -123,7 +136,13 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
             >
               {link.icon}
               {link.label}
-              {location === link.href && <ChevronRight className="w-3 h-3 ml-auto text-primary" />}
+              {link.badge ? (
+                <span className="ml-auto flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                  {link.badge > 9 ? "9+" : link.badge}
+                </span>
+              ) : location === link.href ? (
+                <ChevronRight className="w-3 h-3 ml-auto text-primary" />
+              ) : null}
             </Link>
           </React.Fragment>
         ))}

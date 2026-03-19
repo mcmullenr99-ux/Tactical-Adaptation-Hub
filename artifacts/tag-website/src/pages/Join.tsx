@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Disc, CheckCircle2, ChevronRight, Info } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function Join() {
+  useSEO({ title: "Enlist", description: "Join TAG — Tactical Adaptation Group. Enlist today and become part of an elite tactical gaming community." });
   const handleJoinClick = () => {
     window.open("https://discord.gg/matmFhU4yg", "_blank");
   };

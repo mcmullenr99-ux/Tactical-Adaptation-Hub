@@ -107,13 +107,23 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="mt-8 text-center border-t border-border pt-6">
-              <p className="text-muted-foreground font-sans text-sm">
+            <div className="mt-8 border-t border-border pt-6 space-y-4">
+              <p className="text-center text-muted-foreground font-sans text-sm">
                 No access credentials?{" "}
                 <Link href="/portal/register" className="text-primary hover:text-accent transition-colors font-bold">
                   Request Access
                 </Link>
               </p>
+              <div className="bg-secondary/50 border border-border rounded-lg p-4 text-center">
+                <p className="text-xs font-display uppercase tracking-widest text-muted-foreground mb-2">Forgot Your Passcode?</p>
+                <p className="text-sm text-muted-foreground font-sans">
+                  Contact a TAG staff member on{" "}
+                  <a href="https://discord.gg/matmFhU4yg" target="_blank" rel="noopener noreferrer" className="text-[#5865F2] hover:underline font-bold">
+                    Discord
+                  </a>
+                  {" "}with your username and they will issue you a reset link.
+                </p>
+              </div>
             </div>
           </div>
         </motion.div>

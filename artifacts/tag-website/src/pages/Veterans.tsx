@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Link } from "wouter";
 import { Phone, MessageSquare, ExternalLink, Shield, Users, Heart, Compass } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 const RESOURCES = [
   {
@@ -48,6 +49,7 @@ const RESOURCES = [
 ];
 
 export default function Veterans() {
+  useSEO({ title: "Veterans Support", description: "TAG's veterans support resources — mental health, crisis lines, and community for military and ex-military gamers." });
   return (
     <MainLayout>
 

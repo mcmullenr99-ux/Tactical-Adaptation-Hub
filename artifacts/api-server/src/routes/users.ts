@@ -29,6 +29,37 @@ router.get(
   }
 );
 
+// Public profile by username — no auth required
+router.get("/users/profile/:username", async (req, res): Promise<void> => {
+  const username = req.params.username as string;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.username, username));
+  if (!user || user.status === "banned") {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  res.json({
+    id: user.id,
+    username: user.username,
+    role: user.role,
+    bio: user.bio ?? null,
+    discordTag: user.discordTag ?? null,
+    createdAt: user.createdAt.toISOString(),
+  });
+});
+
+// User search by username fragment (for compose autocomplete)
+router.get("/users/search", requireAuth, async (req, res): Promise<void> => {
+  const q = String(req.query.q ?? "").trim().slice(0, 50);
+  if (!q || q.length < 2) { res.json([]); return; }
+  const { ilike } = await import("drizzle-orm");
+  const results = await db.select({
+    id: usersTable.id,
+    username: usersTable.username,
+    role: usersTable.role,
+  }).from(usersTable).where(ilike(usersTable.username, `%${q}%`)).limit(10);
+  res.json(results);
+});
+
 router.get("/users/:id", requireAuth, async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
