@@ -5,6 +5,7 @@ import { eq, or } from "drizzle-orm";
 import { RegisterBody, LoginBody } from "@workspace/api-zod";
 import { requireAuth } from "../lib/auth";
 import { getLockdown } from "./admin";
+import { logAudit, getClientIp } from "../lib/audit";
 
 const router: IRouter = Router();
 
@@ -54,6 +55,13 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     .returning();
 
   req.session.userId = user.id;
+  await logAudit({
+    userId: user.id, username: user.username,
+    ip: getClientIp(req), userAgent: req.headers["user-agent"],
+    method: "POST", path: "/auth/register",
+    actionType: "REGISTER",
+    description: `New account registered: ${username} (${email})`,
+  });
   res.status(201).json(toAuthUser(user));
 });
 
@@ -69,12 +77,26 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
 
   if (!user) {
+    await logAudit({
+      ip: getClientIp(req), userAgent: req.headers["user-agent"],
+      method: "POST", path: "/auth/login",
+      actionType: "FAILED_LOGIN",
+      description: `Failed login attempt for unknown email: ${email}`,
+      requestBody: { email },
+    });
     res.status(401).json({ error: "Invalid email or password" });
     return;
   }
 
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
+    await logAudit({
+      userId: user.id, username: user.username,
+      ip: getClientIp(req), userAgent: req.headers["user-agent"],
+      method: "POST", path: "/auth/login",
+      actionType: "FAILED_LOGIN",
+      description: `Failed login attempt for ${user.username} (wrong password)`,
+    });
     res.status(401).json({ error: "Invalid email or password" });
     return;
   }
@@ -91,6 +113,13 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   req.session.userId = user.id;
+  await logAudit({
+    userId: user.id, username: user.username,
+    ip: getClientIp(req), userAgent: req.headers["user-agent"],
+    method: "POST", path: "/auth/login",
+    actionType: "LOGIN",
+    description: `${user.username} logged in`,
+  });
   res.json(toAuthUser(user));
 });
 

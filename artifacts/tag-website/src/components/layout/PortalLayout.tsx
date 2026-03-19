@@ -4,7 +4,7 @@ import { MainLayout } from "./MainLayout";
 import { useLocation, Link } from "wouter";
 import {
   Mail, PenTool, LayoutDashboard, ShieldCheck, Settings,
-  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight,
+  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert,
 } from "lucide-react";
 import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -84,7 +84,10 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
         ]
       : []),
     ...(user.role === "admin"
-      ? [{ href: "/portal/admin", icon: <Settings className="w-4 h-4 text-destructive" />, label: "Admin Panel" }]
+      ? [
+          { href: "/portal/admin", icon: <Settings className="w-4 h-4 text-destructive" />, label: "Admin Panel" },
+          { href: "/portal/security", icon: <ShieldAlert className="w-4 h-4 text-red-500" />, label: "Security Protocol" },
+        ]
       : []),
   ];
 

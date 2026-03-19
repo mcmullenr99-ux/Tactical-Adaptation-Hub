@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth";
+import { logAudit, buildAuditFromReq } from "../lib/audit";
 
 const router: IRouter = Router();
 
@@ -41,6 +42,11 @@ router.patch("/admin/lockdown", ...adminGuard, async (req, res): Promise<void> =
   await db.execute(sql`
     UPDATE site_settings SET value = ${active ? "true" : "false"} WHERE key = 'lockdown_mode'
   `);
+  const actor = (req as any).user;
+  await logAudit(buildAuditFromReq(req, {
+    actionType: active ? "LOCKDOWN_ON" : "LOCKDOWN_OFF",
+    description: `Lockdown ${active ? "activated" : "deactivated"} by ${actor.username}`,
+  }));
   res.json({ active });
 });
 
@@ -75,8 +81,23 @@ router.patch("/admin/users/:id/role", ...adminGuard, async (req, res): Promise<v
   const { role } = req.body as { role: string };
   const validRoles = ["member", "staff", "moderator", "admin"];
   if (!validRoles.includes(role)) { res.status(400).json({ error: "Invalid role" }); return; }
+
+  const [before] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+  if (!before) { res.status(404).json({ error: "User not found" }); return; }
+
   const [user] = await db.update(usersTable).set({ role }).where(eq(usersTable.id, id)).returning();
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+  const actor = (req as any).user;
+  await logAudit(buildAuditFromReq(req, {
+    actionType: "ROLE_CHANGE",
+    targetTable: "users",
+    targetId: id,
+    description: `${actor.username} changed role of ${before.username} from ${before.role} to ${role}`,
+    oldSnapshot: toProfile(before),
+    newSnapshot: toProfile(user),
+  }));
+
   res.json(toProfile(user));
 });
 
@@ -86,17 +107,14 @@ router.patch("/admin/users/:id/ban", ...staffGuard, async (req, res): Promise<vo
   const actor   = (req as any).user as typeof usersTable.$inferSelect;
   const id      = parseInt(req.params.id, 10);
 
-  // Fetch target
   const [target] = await db.select().from(usersTable).where(eq(usersTable.id, id));
   if (!target) { res.status(404).json({ error: "User not found" }); return; }
 
-  // Anti-raid: mods cannot act on admins or other mods
   if (actor.role === "moderator" && (target.role === "admin" || target.role === "moderator")) {
     res.status(403).json({ error: "Moderators cannot ban admins or other moderators" });
     return;
   }
 
-  // Anti-raid: rate limit
   if (!checkBanRateLimit(actorId)) {
     res.status(429).json({ error: "Ban rate limit exceeded. Max 5 bans per 60 seconds." });
     return;
@@ -108,6 +126,16 @@ router.patch("/admin/users/:id/ban", ...staffGuard, async (req, res): Promise<vo
     .set({ status: "banned", banReason: reason ?? "TOS Violation", bannedAt: new Date() })
     .where(eq(usersTable.id, id))
     .returning();
+
+  await logAudit(buildAuditFromReq(req, {
+    actionType: "BAN",
+    targetTable: "users",
+    targetId: id,
+    description: `${actor.username} banned ${target.username}. Reason: ${reason ?? "TOS Violation"}`,
+    oldSnapshot: toProfile(target),
+    newSnapshot: toProfile(user!),
+  }));
+
   res.json(toProfile(user!));
 });
 
@@ -129,22 +157,45 @@ router.patch("/admin/users/:id/unban", ...staffGuard, async (req, res): Promise<
     .set({ status: "active", banReason: null, bannedAt: null })
     .where(eq(usersTable.id, id))
     .returning();
+
+  await logAudit(buildAuditFromReq(req, {
+    actionType: "UNBAN",
+    targetTable: "users",
+    targetId: id,
+    description: `${actor.username} unbanned ${target.username}`,
+    oldSnapshot: toProfile(target),
+    newSnapshot: toProfile(user!),
+  }));
+
   res.json(toProfile(user!));
 });
 
 // DELETE /api/admin/users/:id — admin only
 router.delete("/admin/users/:id", ...adminGuard, async (req, res): Promise<void> => {
   const adminId = (req.session as any).userId as number;
+  const actor   = (req as any).user as typeof usersTable.$inferSelect;
   const id      = parseInt(req.params.id, 10);
   if (id === adminId) { res.status(400).json({ error: "Cannot delete your own account" }); return; }
+
+  const [before] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+  if (!before) { res.status(404).json({ error: "User not found" }); return; }
+
   const [deleted] = await db.delete(usersTable).where(eq(usersTable.id, id)).returning();
   if (!deleted) { res.status(404).json({ error: "User not found" }); return; }
+
+  await logAudit(buildAuditFromReq(req, {
+    actionType: "DELETE",
+    targetTable: "users",
+    targetId: id,
+    description: `${actor.username} deleted account ${before.username} (${before.email})`,
+    oldSnapshot: toProfile(before),
+  }));
+
   res.json({ success: true });
 });
 
 // ─── MilSim Groups ────────────────────────────────────────────────────────────
 
-// GET /api/admin/milsim-groups — mods and admins
 router.get("/admin/milsim-groups", ...staffGuard, async (req, res): Promise<void> => {
   const rows = await db.execute(sql`
     SELECT
@@ -160,20 +211,44 @@ router.get("/admin/milsim-groups", ...staffGuard, async (req, res): Promise<void
   res.json(rows.rows);
 });
 
-// PATCH /api/admin/milsim-groups/:id/status — mods and admins
 router.patch("/admin/milsim-groups/:id/status", ...staffGuard, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
   const { status } = req.body as { status: string };
   const validStatuses = ["pending", "approved", "featured", "rejected"];
   if (!validStatuses.includes(status)) { res.status(400).json({ error: "Invalid status" }); return; }
+
+  const [before] = await db.execute(sql`SELECT * FROM milsim_groups WHERE id = ${id}`) as any;
   await db.execute(sql`UPDATE milsim_groups SET status = ${status} WHERE id = ${id}`);
+  const actor = (req as any).user;
+
+  await logAudit(buildAuditFromReq(req, {
+    actionType: "UPDATE",
+    targetTable: "milsim_groups",
+    targetId: id,
+    description: `${actor.username} changed MilSim group ${id} status to ${status}`,
+    oldSnapshot: before ?? null,
+  }));
+
   res.json({ success: true });
 });
 
-// DELETE /api/admin/milsim-groups/:id — admin only
 router.delete("/admin/milsim-groups/:id", ...adminGuard, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id    = parseInt(req.params.id, 10);
+  const actor = (req as any).user as typeof usersTable.$inferSelect;
+
+  const beforeResult = await db.execute(sql`SELECT * FROM milsim_groups WHERE id = ${id}`);
+  const before = beforeResult.rows[0] ?? null;
+
   await db.execute(sql`DELETE FROM milsim_groups WHERE id = ${id}`);
+
+  await logAudit(buildAuditFromReq(req, {
+    actionType: "DELETE",
+    targetTable: "milsim_groups",
+    targetId: id,
+    description: `${actor.username} deleted MilSim group id=${id}`,
+    oldSnapshot: before,
+  }));
+
   res.json({ success: true });
 });
 
