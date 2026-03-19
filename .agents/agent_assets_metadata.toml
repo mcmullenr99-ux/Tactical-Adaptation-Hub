@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "3qpt8HkXw_VhIr97l6_9P"
+uri = "file://TAG_Build_Log.pdf"
+type = "pdf"
+title = "TAG — Full Build Log & Creative Process"
