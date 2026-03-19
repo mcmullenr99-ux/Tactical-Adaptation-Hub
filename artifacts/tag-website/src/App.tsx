@@ -28,6 +28,7 @@ import Apply from "@/pages/portal/Apply";
 import ModPanel from "@/pages/portal/ModPanel";
 import AdminPanel from "@/pages/portal/AdminPanel";
 import CommandCenter from "@/pages/portal/CommandCenter";
+import Friends from "@/pages/portal/Friends";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/portal/mod" component={ModPanel} />
       <Route path="/portal/admin" component={AdminPanel} />
       <Route path="/portal/command" component={CommandCenter} />
+      <Route path="/portal/friends" component={Friends} />
       
       <Route component={NotFound} />
     </Switch>

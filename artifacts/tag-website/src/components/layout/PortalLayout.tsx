@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { MainLayout } from "./MainLayout";
 import { useLocation, Link } from "wouter";
-import { Mail, PenTool, LayoutDashboard, ShieldCheck, Settings, LogOut, Loader2, User, Shield, Terminal } from "lucide-react";
+import { Mail, PenTool, LayoutDashboard, ShieldCheck, Settings, LogOut, Loader2, User, Shield, Terminal, Users } from "lucide-react";
 import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -103,6 +103,9 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
                   <Link href="/portal/milsim" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
                     <Shield className="w-4 h-4 text-primary" /> MilSim Group
                   </Link>
+                  <Link href="/portal/friends" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
+                    <Users className="w-4 h-4 text-primary" /> Connections
+                  </Link>
                   
                   {user.role === 'member' && (
                     <Link href="/portal/apply" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
@@ -116,18 +119,16 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
                       <Link href="/portal/mod" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
                         <ShieldCheck className="w-4 h-4 text-accent" /> Mod Panel
                       </Link>
-                    </>
-                  )}
-                  
-                  {user.role === 'admin' && (
-                    <>
-                      <Link href="/portal/admin" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
-                        <Settings className="w-4 h-4 text-destructive" /> Admin Panel
-                      </Link>
                       <Link href="/portal/command" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
                         <Terminal className="w-4 h-4 text-destructive" /> Command Center
                       </Link>
                     </>
+                  )}
+                  
+                  {user.role === 'admin' && (
+                    <Link href="/portal/admin" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
+                      <Settings className="w-4 h-4 text-destructive" /> Admin Panel
+                    </Link>
                   )}
                 </nav>
 

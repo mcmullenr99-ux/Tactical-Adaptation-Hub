@@ -2,11 +2,36 @@ import { useState } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { useGetInbox, useGetSent, useMarkMessageRead, useDeleteMessage } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Mail, MailOpen, Trash2, Send, Plus } from "lucide-react";
+import { Mail, MailOpen, Trash2, Send, Plus, UserPlus, UserCheck, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/apiFetch";
+
+interface FriendStatus { status: "none"|"pending"|"accepted"; iAmRequester?: boolean; friendshipId?: number; }
+
+function AddFriendButton({ userId, username }: { userId: number; username: string }) {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const { data: status, isLoading } = useQuery<FriendStatus>({
+    queryKey: ["friend-status", userId],
+    queryFn: () => apiFetch(`/api/friends/status/${userId}`),
+  });
+  const send = useMutation({
+    mutationFn: () => apiFetch(`/api/friends/request/${userId}`, { method: "POST" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["friend-status", userId] }); toast({ title: "Request Sent", description: `Friend request sent to ${username}.` }); },
+    onError: () => toast({ title: "Failed", description: "Could not send request.", variant: "destructive" }),
+  });
+  if (isLoading) return <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />;
+  if (status?.status === "accepted") return <span className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-green-400"><UserCheck className="w-3.5 h-3.5" /> Connected</span>;
+  if (status?.status === "pending") return <span className="text-xs font-display font-bold uppercase tracking-wider text-amber-400">{status.iAmRequester ? "Request Sent" : "Wants to Connect"}</span>;
+  return (
+    <button onClick={() => send.mutate()} disabled={send.isPending} className="flex items-center gap-1.5 text-sm font-display font-bold uppercase tracking-wider text-primary hover:text-accent transition-colors disabled:opacity-50">
+      <UserPlus className="w-4 h-4" /> Add Friend
+    </button>
+  );
+}
 
 export default function Inbox() {
   const [tab, setTab] = useState<'inbox' | 'sent'>('inbox');
@@ -144,7 +169,8 @@ export default function Inbox() {
                         </p>
                         
                         {tab === 'inbox' && (
-                          <div className="mt-6 pt-4 border-t border-border flex justify-end">
+                          <div className="mt-6 pt-4 border-t border-border flex items-center justify-between gap-4">
+                            <AddFriendButton userId={msg.senderId} username={msg.senderUsername} />
                             <Link href={`/portal/compose?replyTo=${msg.senderId}&subject=Re: ${msg.subject}`} className="text-sm font-display font-bold uppercase tracking-wider text-primary hover:text-accent transition-colors">
                               Reply to sender
                             </Link>

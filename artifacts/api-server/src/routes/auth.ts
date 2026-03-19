@@ -4,6 +4,7 @@ import { db, usersTable } from "@workspace/db";
 import { eq, or } from "drizzle-orm";
 import { RegisterBody, LoginBody } from "@workspace/api-zod";
 import { requireAuth } from "../lib/auth";
+import { getLockdown } from "./admin";
 
 const router: IRouter = Router();
 
@@ -24,6 +25,13 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+
+  // Anti-raid: block new registrations during lockdown
+  const locked = await getLockdown();
+  if (locked) {
+    res.status(503).json({ error: "Registrations are temporarily closed. Please try again later." });
     return;
   }
 
@@ -73,6 +81,12 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 
   if (user.status === "suspended") {
     res.status(403).json({ error: "Account suspended" });
+    return;
+  }
+
+  if (user.status === "banned") {
+    const reason = user.banReason ? ` Reason: ${user.banReason}` : "";
+    res.status(403).json({ error: `Account permanently banned.${reason}` });
     return;
   }
 
