@@ -47,6 +47,9 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
     const err = await res.text();
     throw new Error(`Brevo API error ${res.status}: ${err}`);
   }
+
+  const result = await res.json() as any;
+  console.log(`[email] Sent OK → to=${to} from=${sender.email} messageId=${result?.messageId}`);
 }
 
 export function passwordResetEmail(username: string, token: string): string {
