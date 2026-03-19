@@ -9,6 +9,10 @@ import { globalLimiter, authLimiter, registerLimiter } from "./middleware/rateLi
 const app: Express = express();
 app.set("trust proxy", 1);
 
+const isProd =
+  process.env.NODE_ENV === "production" ||
+  (process.env.REPLIT_DOMAINS ?? "").includes(".replit.app");
+
 const PgSession = connectPgSimple(session);
 
 app.use(cors({ origin: true, credentials: true }));
@@ -31,8 +35,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     },
   })
