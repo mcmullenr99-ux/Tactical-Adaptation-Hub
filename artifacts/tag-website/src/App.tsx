@@ -12,6 +12,10 @@ import Training from "@/pages/Training";
 import Join from "@/pages/Join";
 import Donate from "@/pages/Donate";
 import Veterans from "@/pages/Veterans";
+import MilsimRegistry from "@/pages/MilsimRegistry";
+import MilsimGroup from "@/pages/MilsimGroup";
+import MilsimRegister from "@/pages/MilsimRegister";
+import MilsimManage from "@/pages/portal/MilsimManage";
 import NotFound from "@/pages/not-found";
 
 // Portal Pages
@@ -36,6 +40,10 @@ function Router() {
       <Route path="/join" component={Join} />
       <Route path="/donate" component={Donate} />
       <Route path="/veterans" component={Veterans} />
+      <Route path="/milsim" component={MilsimRegistry} />
+      <Route path="/milsim/register" component={MilsimRegister} />
+      <Route path="/milsim/:slug" component={MilsimGroup} />
+      <Route path="/portal/milsim" component={MilsimManage} />
       
       {/* Portal Routes */}
       <Route path="/portal/login" component={Login} />

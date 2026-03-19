@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { MainLayout } from "./MainLayout";
 import { useLocation, Link } from "wouter";
-import { Mail, PenTool, LayoutDashboard, ShieldCheck, Settings, LogOut, Loader2, User } from "lucide-react";
+import { Mail, PenTool, LayoutDashboard, ShieldCheck, Settings, LogOut, Loader2, User, Shield } from "lucide-react";
 import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -99,6 +99,9 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
                   </Link>
                   <Link href="/portal/inbox" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
                     <Mail className="w-4 h-4 text-primary" /> Comms
+                  </Link>
+                  <Link href="/portal/milsim" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
+                    <Shield className="w-4 h-4 text-primary" /> MilSim Group
                   </Link>
                   
                   {user.role === 'member' && (

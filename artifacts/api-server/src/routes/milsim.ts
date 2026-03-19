@@ -1,0 +1,256 @@
+import { Router, type IRouter } from "express";
+import { z } from "zod/v4";
+import { db, milsimGroupsTable, milsimRolesTable, milsimRanksTable, milsimRosterTable, milsimAppQuestionsTable } from "@workspace/db";
+import { eq, and, or, asc } from "drizzle-orm";
+import { requireAuth, requireRole } from "../lib/auth";
+
+const router: IRouter = Router();
+
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+async function groupFullDetail(groupId: number) {
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, groupId));
+  if (!group) return null;
+  const roles = await db.select().from(milsimRolesTable).where(eq(milsimRolesTable.groupId, groupId)).orderBy(asc(milsimRolesTable.sortOrder));
+  const ranks = await db.select().from(milsimRanksTable).where(eq(milsimRanksTable.groupId, groupId)).orderBy(asc(milsimRanksTable.tier));
+  const roster = await db.select().from(milsimRosterTable).where(eq(milsimRosterTable.groupId, groupId)).orderBy(asc(milsimRosterTable.joinedAt));
+  const questions = await db.select().from(milsimAppQuestionsTable).where(eq(milsimAppQuestionsTable.groupId, groupId)).orderBy(asc(milsimAppQuestionsTable.sortOrder));
+  return { ...group, roles, ranks, roster, questions };
+}
+
+const CreateGroupBody = z.object({
+  name: z.string().min(2).max(100),
+  tagLine: z.string().max(200).optional(),
+  description: z.string().max(5000).optional(),
+  discordUrl: z.string().url().optional().or(z.literal("")),
+  websiteUrl: z.string().url().optional().or(z.literal("")),
+  logoUrl: z.string().url().optional().or(z.literal("")),
+  sops: z.string().max(10000).optional(),
+  orbat: z.string().max(10000).optional(),
+});
+
+const RoleBody = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+  sortOrder: z.number().int().default(0),
+});
+
+const RankBody = z.object({
+  name: z.string().min(1).max(100),
+  abbreviation: z.string().max(20).optional(),
+  tier: z.number().int().default(0),
+});
+
+const RosterBody = z.object({
+  callsign: z.string().min(1).max(100),
+  rankId: z.number().int().nullable().optional(),
+  roleId: z.number().int().nullable().optional(),
+  notes: z.string().max(500).optional(),
+});
+
+const QuestionBody = z.object({
+  question: z.string().min(1).max(500),
+  sortOrder: z.number().int().default(0),
+  required: z.boolean().default(true),
+});
+
+// ── Public routes ──────────────────────────────────────────────────────────────
+
+router.get("/milsim-groups", async (req, res): Promise<void> => {
+  const groups = await db.select().from(milsimGroupsTable)
+    .where(or(eq(milsimGroupsTable.status, "approved"), eq(milsimGroupsTable.status, "featured")))
+    .orderBy(asc(milsimGroupsTable.createdAt));
+  res.json(groups);
+});
+
+router.get("/milsim-groups/:slug", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.slug, raw));
+  if (!group) { res.status(404).json({ error: "Group not found" }); return; }
+  if (group.status === "pending" && (req as any).user?.id !== group.ownerId && (req as any).user?.role !== "admin") {
+    res.status(404).json({ error: "Group not found" }); return;
+  }
+  const detail = await groupFullDetail(group.id);
+  res.json(detail);
+});
+
+// ── Auth routes ────────────────────────────────────────────────────────────────
+
+router.get("/milsim-groups/mine/own", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const groups = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.ownerId, userId));
+  if (groups.length === 0) { res.json(null); return; }
+  const detail = await groupFullDetail(groups[0].id);
+  res.json(detail);
+});
+
+router.post("/milsim-groups", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const parsed = CreateGroupBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
+
+  const existing = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.ownerId, userId));
+  if (existing.length > 0) { res.status(409).json({ error: "You already have a registered group" }); return; }
+
+  const baseSlug = slugify(parsed.data.name);
+  let slug = baseSlug;
+  let attempt = 0;
+  while (true) {
+    const [clash] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.slug, slug));
+    if (!clash) break;
+    attempt++;
+    slug = `${baseSlug}-${attempt}`;
+  }
+
+  const [group] = await db.insert(milsimGroupsTable).values({
+    ...parsed.data,
+    slug,
+    ownerId: userId,
+    discordUrl: parsed.data.discordUrl || null,
+    websiteUrl: parsed.data.websiteUrl || null,
+    logoUrl: parsed.data.logoUrl || null,
+  }).returning();
+
+  res.status(201).json(await groupFullDetail(group.id));
+});
+
+router.patch("/milsim-groups/:id/info", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group) { res.status(404).json({ error: "Group not found" }); return; }
+  if (group.ownerId !== userId && (req as any).user.role !== "admin") { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const parsed = CreateGroupBody.partial().safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
+
+  await db.update(milsimGroupsTable).set({
+    ...parsed.data,
+    discordUrl: parsed.data.discordUrl ?? undefined,
+    websiteUrl: parsed.data.websiteUrl ?? undefined,
+    logoUrl: parsed.data.logoUrl ?? undefined,
+  }).where(eq(milsimGroupsTable.id, id));
+
+  res.json(await groupFullDetail(id));
+});
+
+router.patch("/milsim-groups/:id/status", requireAuth, requireRole("moderator", "admin"), async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const parsed = z.object({ status: z.enum(["pending", "approved", "featured"]) }).safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid status" }); return; }
+  const [group] = await db.update(milsimGroupsTable).set({ status: parsed.data.status }).where(eq(milsimGroupsTable.id, id)).returning();
+  if (!group) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(group);
+});
+
+router.delete("/milsim-groups/:id", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group) { res.status(404).json({ error: "Not found" }); return; }
+  if (group.ownerId !== userId && (req as any).user.role !== "admin") { res.status(403).json({ error: "Forbidden" }); return; }
+  await db.delete(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  res.sendStatus(204);
+});
+
+// ── Roles ──────────────────────────────────────────────────────────────────────
+
+router.post("/milsim-groups/:id/roles", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  const parsed = RoleBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
+  const [role] = await db.insert(milsimRolesTable).values({ groupId: id, ...parsed.data }).returning();
+  res.status(201).json(role);
+});
+
+router.delete("/milsim-groups/:id/roles/:roleId", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const roleId = parseInt(Array.isArray(req.params.roleId) ? req.params.roleId[0] : req.params.roleId, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  await db.delete(milsimRolesTable).where(and(eq(milsimRolesTable.id, roleId), eq(milsimRolesTable.groupId, id)));
+  res.sendStatus(204);
+});
+
+// ── Ranks ──────────────────────────────────────────────────────────────────────
+
+router.post("/milsim-groups/:id/ranks", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  const parsed = RankBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
+  const [rank] = await db.insert(milsimRanksTable).values({ groupId: id, ...parsed.data }).returning();
+  res.status(201).json(rank);
+});
+
+router.delete("/milsim-groups/:id/ranks/:rankId", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const rankId = parseInt(Array.isArray(req.params.rankId) ? req.params.rankId[0] : req.params.rankId, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  await db.delete(milsimRanksTable).where(and(eq(milsimRanksTable.id, rankId), eq(milsimRanksTable.groupId, id)));
+  res.sendStatus(204);
+});
+
+// ── Roster ─────────────────────────────────────────────────────────────────────
+
+router.post("/milsim-groups/:id/roster", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  const parsed = RosterBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
+  const [entry] = await db.insert(milsimRosterTable).values({
+    groupId: id,
+    callsign: parsed.data.callsign,
+    rankId: parsed.data.rankId ?? null,
+    roleId: parsed.data.roleId ?? null,
+    notes: parsed.data.notes ?? null,
+  }).returning();
+  res.status(201).json(entry);
+});
+
+router.delete("/milsim-groups/:id/roster/:entryId", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const entryId = parseInt(Array.isArray(req.params.entryId) ? req.params.entryId[0] : req.params.entryId, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  await db.delete(milsimRosterTable).where(and(eq(milsimRosterTable.id, entryId), eq(milsimRosterTable.groupId, id)));
+  res.sendStatus(204);
+});
+
+// ── Application Questions ──────────────────────────────────────────────────────
+
+router.post("/milsim-groups/:id/questions", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  const parsed = QuestionBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
+  const [q] = await db.insert(milsimAppQuestionsTable).values({ groupId: id, ...parsed.data }).returning();
+  res.status(201).json(q);
+});
+
+router.delete("/milsim-groups/:id/questions/:qId", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const qId = parseInt(Array.isArray(req.params.qId) ? req.params.qId[0] : req.params.qId, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  await db.delete(milsimAppQuestionsTable).where(and(eq(milsimAppQuestionsTable.id, qId), eq(milsimAppQuestionsTable.groupId, id)));
+  res.sendStatus(204);
+});
+
+export default router;

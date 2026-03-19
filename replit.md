@@ -7,12 +7,17 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 ## Artifacts
 
 ### TAG - Tactical Adaptation Group Website (`artifacts/tag-website`)
-- React + Vite frontend-only website for the TAG gaming community
-- Pages: Home, About, Games, Training, Join
+- React + Vite full-stack website for the TAG tactical gaming community
+- Public Pages: Home, About, Games, Training, Join, Donate, Veterans, MilSim Registry
+- Portal Pages: Login, Register, Dashboard, Inbox, Compose, Staff Apply, Mod Panel, Admin Panel, MilSim Manage
+- MilSim Registry (`/milsim`): public listing of tactical groups with roles, ranks, roster, SOPs, ORBAT, application questions
 - Dark military tactical theme (dark background, olive green + amber accents)
-- All 11 supported games listed: Arma 3, Arma Reforger, Squad, Bellum, Ground Branch, Ready Or Not, EFT, DayZ, Exfil, Grey Zone Warfare, Body Cam
-- Uses framer-motion for animations
-- No backend required — all content is static
+- All 11 supported games listed
+- Uses framer-motion for animations, react-hook-form for forms
+- Donate page: Ko-fi integration (`https://ko-fi.com/tagtacticaladaptationgroup`)
+- Veterans page: direct outreach with real support resources (VCL, Headstrong, Give an Hour, Team RWB, Mission22)
+- Auth: bcryptjs + express-session + connect-pg-simple
+- Role hierarchy: member < staff < moderator < admin
 
 ## Stack
 
