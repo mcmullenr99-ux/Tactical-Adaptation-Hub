@@ -13,22 +13,9 @@ function resolveBrevoKey(raw: string | undefined): string | undefined {
 const BREVO_API_KEY = resolveBrevoKey(process.env["BREVO_API_KEY"]);
 const APP_URL       = process.env["APP_URL"] ?? "https://tag-website.replit.app";
 
-// Yahoo/Hotmail/AOL domains have strict DMARC p=reject — third-party senders
-// like Brevo cannot send from them without being silently dropped by Gmail etc.
-// Fall back to the Gmail address which works fine through Brevo.
-const BLOCKED_DOMAINS = ["yahoo.com", "yahoo.co.uk", "hotmail.com", "outlook.com", "live.com", "aol.com"];
-
-function resolveFromEmail(): string {
-  const raw = (process.env["FROM_EMAIL"] ?? "").trim().replace(/[\r\n]/g, "");
-  const domainMatch = raw.match(/@([\w.]+)/);
-  const domain = domainMatch ? domainMatch[1].toLowerCase() : "";
-  if (!raw || BLOCKED_DOMAINS.includes(domain)) {
-    return "TAG <mcmullenr99@gmail.com>";
-  }
-  return raw;
-}
-
-const FROM_EMAIL = resolveFromEmail();
+// Use Brevo's own verified sending subdomain — avoids exposing any personal
+// email address and bypasses Yahoo/Gmail DMARC restrictions entirely.
+const FROM_EMAIL = "TAG Notifications <noreply@10844033.brevosend.com>";
 
 function parseEmailParts(from: string): { name: string; email: string } {
   const match = from.match(/^(.+?)\s*<(.+?)>\s*$/);
