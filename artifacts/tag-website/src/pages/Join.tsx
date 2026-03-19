@@ -4,8 +4,7 @@ import { Disc, CheckCircle2, ChevronRight, AlertTriangle } from "lucide-react";
 
 export default function Join() {
   const handleJoinClick = () => {
-    // In a real app, this would be an actual discord invite link
-    window.open("https://discord.com", "_blank");
+    window.open("https://discord.gg/matmFhU4yg", "_blank");
   };
 
   return (

@@ -42,7 +42,7 @@ export function Footer() {
           <div>
             <h4 className="font-display font-bold text-foreground tracking-wider mb-6">Comms</h4>
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all clip-angled-sm">
+              <a href="https://discord.gg/matmFhU4yg" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded bg-secondary flex items-center justify-center text-muted-foreground hover:bg-[#5865F2] hover:text-white transition-all clip-angled-sm" title="Join our Discord">
                 <Disc className="w-5 h-5" />
               </a>
               <a href="#" className="w-10 h-10 rounded bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all clip-angled-sm">

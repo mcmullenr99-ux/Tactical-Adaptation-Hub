@@ -1,0 +1,114 @@
+{
+  "colorScheme": "light",
+  "fonts": [
+    {
+      "family": "gg sans",
+      "count": 3
+    },
+    {
+      "family": "Noto Sans",
+      "count": 3
+    },
+    {
+      "family": "Helvetica Neue",
+      "count": 3
+    },
+    {
+      "family": "Helvetica",
+      "count": 3
+    },
+    {
+      "family": "Arial",
+      "count": 3
+    },
+    {
+      "family": "sans-serif",
+      "count": 3
+    }
+  ],
+  "colors": {
+    "primary": "#0075FF",
+    "accent": "#00112C",
+    "background": "#FFFFFF",
+    "textPrimary": "#00112C",
+    "link": "#00112C"
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "gg sans",
+      "heading": "gg sans"
+    },
+    "fontStacks": {
+      "body": [
+        "gg sans",
+        "Noto Sans",
+        "Helvetica Neue",
+        "Helvetica",
+        "Arial",
+        "sans-serif"
+      ],
+      "heading": [
+        "gg sans",
+        "Noto Sans",
+        "Helvetica Neue",
+        "Helvetica",
+        "Arial",
+        "sans-serif"
+      ],
+      "paragraph": [
+        "gg sans",
+        "Noto Sans",
+        "Helvetica Neue",
+        "Helvetica",
+        "Arial",
+        "sans-serif"
+      ]
+    },
+    "fontSizes": {
+      "h1": "16px",
+      "h2": "16px",
+      "body": "16px"
+    }
+  },
+  "spacing": {
+    "baseUnit": 4,
+    "borderRadius": "8px"
+  },
+  "components": {},
+  "images": {
+    "logo": null,
+    "favicon": "https://discord.com/assets/favicon.ico",
+    "ogImage": "File saved at: attached_assets/ogImage.jpg"
+  },
+  "personality": {
+    "tone": "professional",
+    "energy": "medium",
+    "targetAudience": "unknown"
+  },
+  "designSystem": {
+    "framework": "unknown",
+    "componentLibrary": ""
+  },
+  "confidence": {
+    "buttons": 0,
+    "colors": 0,
+    "overall": 0
+  },
+  "__llm_metadata": {
+    "logoSelection": {
+      "llmCalled": false,
+      "llmSucceeded": false,
+      "finalSource": "none",
+      "rawLogoSelection": {
+        "selectedLogoIndex": -1,
+        "selectedLogoReasoning": "LLM failed",
+        "confidence": 0
+      }
+    },
+    "buttonClassification": {
+      "llmCalled": false,
+      "llmSucceeded": false,
+      "error": "LLM call failed or returned fallback values"
+    }
+  }
+}
