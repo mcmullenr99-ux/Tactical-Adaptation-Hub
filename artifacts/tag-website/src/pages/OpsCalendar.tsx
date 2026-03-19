@@ -34,8 +34,9 @@ const EVENT_TYPES = [
 const TYPE_STYLE: Record<string, string> = Object.fromEntries(EVENT_TYPES.map(t => [t.value, t.color]));
 
 const GAMES = [
-  "Arma Reforger", "Arma 3", "Squad", "Insurgency: Sandstorm",
-  "Ground Branch", "Ready or Not", "Zero Hour", "Other"
+  "Arma 3", "Arma Reforger", "Squad", "Ready Or Not",
+  "Escape From Tarkov", "Ground Branch", "DayZ", "Grey Zone Warfare",
+  "Body Cam", "Bellum", "Exfil", "Other"
 ];
 
 const STAFF_ROLES = ["staff", "moderator", "admin"];
