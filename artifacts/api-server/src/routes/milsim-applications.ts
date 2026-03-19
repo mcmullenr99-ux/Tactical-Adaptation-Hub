@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { requireAuth } from "../lib/auth";
+import { moderateText } from "../lib/moderation";
 
 const router: IRouter = Router();
 
@@ -23,6 +24,15 @@ router.post("/milsim-groups/:groupId/apply", requireAuth, async (req, res): Prom
   if (existing.rows[0]) {
     res.status(409).json({ error: "You have already applied to this group" });
     return;
+  }
+
+  if (answers && Object.keys(answers).length > 0) {
+    const combinedAnswers = Object.values(answers).filter(Boolean).join("\n\n");
+    const answerCheck = await moderateText(combinedAnswers);
+    if (answerCheck.flagged) {
+      res.status(422).json({ error: `Application rejected by content moderation: ${answerCheck.reason}`, moderation: true });
+      return;
+    }
   }
 
   const result = await db.execute(sql`

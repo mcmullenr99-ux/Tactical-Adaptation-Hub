@@ -3,6 +3,7 @@ import { db, staffApplicationsTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { SubmitStaffApplicationBody, ReviewStaffApplicationBody } from "@workspace/api-zod";
 import { requireAuth, requireRole } from "../lib/auth";
+import { moderateText } from "../lib/moderation";
 
 const router: IRouter = Router();
 
@@ -28,6 +29,14 @@ router.post("/staff-applications", requireAuth, async (req, res): Promise<void> 
   const parsed = SubmitStaffApplicationBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+
+  const { gamertag, experience, motivation } = parsed.data;
+  const appText = [gamertag, experience, motivation].filter(Boolean).join("\n\n");
+  const appCheck = await moderateText(appText);
+  if (appCheck.flagged) {
+    res.status(422).json({ error: `Application rejected by content moderation: ${appCheck.reason}`, moderation: true });
     return;
   }
 

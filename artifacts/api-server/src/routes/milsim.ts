@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { db, milsimGroupsTable, milsimRolesTable, milsimRanksTable, milsimRosterTable, milsimAppQuestionsTable } from "@workspace/db";
 import { eq, and, or, asc, sql as rawSql } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth";
+import { moderateText } from "../lib/moderation";
 
 const router: IRouter = Router();
 
@@ -106,6 +107,13 @@ router.post("/milsim-groups", requireAuth, async (req, res): Promise<void> => {
   const existing = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.ownerId, userId));
   if (existing.length > 0) { res.status(409).json({ error: "You already have a registered group" }); return; }
 
+  const groupTextFields = [parsed.data.name, parsed.data.tagLine, parsed.data.description, parsed.data.sops, parsed.data.orbat].filter(Boolean).join("\n\n");
+  const groupCheck = await moderateText(groupTextFields);
+  if (groupCheck.flagged) {
+    res.status(422).json({ error: `Group details rejected by content moderation: ${groupCheck.reason}`, moderation: true });
+    return;
+  }
+
   const baseSlug = slugify(parsed.data.name);
   let slug = baseSlug;
   let attempt = 0;
@@ -137,6 +145,15 @@ router.patch("/milsim-groups/:id/info", requireAuth, async (req, res): Promise<v
 
   const parsed = CreateGroupBody.partial().safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
+
+  const updateTextFields = [parsed.data.name, parsed.data.tagLine, parsed.data.description, parsed.data.sops, parsed.data.orbat].filter(Boolean).join("\n\n");
+  if (updateTextFields.trim()) {
+    const updateCheck = await moderateText(updateTextFields);
+    if (updateCheck.flagged) {
+      res.status(422).json({ error: `Update rejected by content moderation: ${updateCheck.reason}`, moderation: true });
+      return;
+    }
+  }
 
   await db.update(milsimGroupsTable).set({
     ...parsed.data,
@@ -176,6 +193,11 @@ router.post("/milsim-groups/:id/roles", requireAuth, async (req, res): Promise<v
   if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
   const parsed = RoleBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
+  const roleCheck = await moderateText([parsed.data.name, parsed.data.description].filter(Boolean).join(" "));
+  if (roleCheck.flagged) {
+    res.status(422).json({ error: `Role name/description rejected: ${roleCheck.reason}`, moderation: true });
+    return;
+  }
   const [role] = await db.insert(milsimRolesTable).values({ groupId: id, ...parsed.data }).returning();
   res.status(201).json(role);
 });
@@ -199,6 +221,11 @@ router.post("/milsim-groups/:id/ranks", requireAuth, async (req, res): Promise<v
   if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
   const parsed = RankBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
+  const rankCheck = await moderateText([parsed.data.name, parsed.data.abbreviation].filter(Boolean).join(" "));
+  if (rankCheck.flagged) {
+    res.status(422).json({ error: `Rank name rejected: ${rankCheck.reason}`, moderation: true });
+    return;
+  }
   const [rank] = await db.insert(milsimRanksTable).values({ groupId: id, ...parsed.data }).returning();
   res.status(201).json(rank);
 });
@@ -222,6 +249,11 @@ router.post("/milsim-groups/:id/roster", requireAuth, async (req, res): Promise<
   if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
   const parsed = RosterBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
+  const rosterCheck = await moderateText([parsed.data.callsign, parsed.data.notes].filter(Boolean).join(" "));
+  if (rosterCheck.flagged) {
+    res.status(422).json({ error: `Roster entry rejected: ${rosterCheck.reason}`, moderation: true });
+    return;
+  }
   const [entry] = await db.insert(milsimRosterTable).values({
     groupId: id,
     callsign: parsed.data.callsign,
@@ -277,6 +309,11 @@ router.post("/milsim-groups/:id/awards", requireAuth, async (req, res): Promise<
   if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
   const { rosterEntryId, title, description, icon } = req.body as any;
   if (!rosterEntryId || !title) { res.status(400).json({ error: "rosterEntryId and title required" }); return; }
+  const awardCheck = await moderateText([title, description].filter(Boolean).join(" "));
+  if (awardCheck.flagged) {
+    res.status(422).json({ error: `Award details rejected: ${awardCheck.reason}`, moderation: true });
+    return;
+  }
   const result = await db.execute(rawSql`
     INSERT INTO milsim_awards (group_id, roster_entry_id, title, description, icon, awarded_by)
     VALUES (${id}, ${rosterEntryId}, ${title}, ${description ?? null}, ${icon ?? "medal"}, ${(req as any).user.username})

@@ -6,6 +6,7 @@ import { RegisterBody, LoginBody } from "@workspace/api-zod";
 import { requireAuth } from "../lib/auth";
 import { getLockdown } from "./admin";
 import { logAudit, getClientIp } from "../lib/audit";
+import { moderateText } from "../lib/moderation";
 
 const router: IRouter = Router();
 
@@ -37,6 +38,12 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   }
 
   const { username, email, password } = parsed.data;
+
+  const usernameCheck = await moderateText(username);
+  if (usernameCheck.flagged) {
+    res.status(422).json({ error: "That username is not permitted. Please choose a different one." });
+    return;
+  }
 
   const [existing] = await db
     .select()
@@ -137,6 +144,15 @@ router.get("/auth/me", requireAuth, (req, res): void => {
 router.patch("/auth/profile", requireAuth, async (req, res): Promise<void> => {
   const userId = (req as any).user.id;
   const { bio, discordTag } = req.body as { bio?: string; discordTag?: string };
+
+  if (bio?.trim()) {
+    const bioCheck = await moderateText(bio);
+    if (bioCheck.flagged) {
+      res.status(422).json({ error: `Profile bio was rejected: ${bioCheck.reason}`, moderation: true });
+      return;
+    }
+  }
+
   const [updated] = await db
     .update(usersTable)
     .set({

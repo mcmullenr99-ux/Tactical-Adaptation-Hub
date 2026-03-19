@@ -4,6 +4,7 @@ import { eq, and, or } from "drizzle-orm";
 import { SendMessageBody } from "@workspace/api-zod";
 import { requireAuth } from "../lib/auth";
 import { alias } from "drizzle-orm/pg-core";
+import { moderateText } from "../lib/moderation";
 
 const router: IRouter = Router();
 
@@ -96,6 +97,12 @@ router.post("/messages", requireAuth, async (req, res): Promise<void> => {
   const { recipientId, subject, body } = parsed.data;
   if (body.length > 5000) { res.status(400).json({ error: "Message body too long (max 5000 characters)" }); return; }
   if (subject.length > 200) { res.status(400).json({ error: "Subject too long (max 200 characters)" }); return; }
+
+  const msgCheck = await moderateText(`${subject}\n\n${body}`);
+  if (msgCheck.flagged) {
+    res.status(422).json({ error: `Message blocked by content moderation: ${msgCheck.reason}`, moderation: true });
+    return;
+  }
 
   const [recipient] = await db.select().from(usersTable).where(eq(usersTable.id, recipientId));
   if (!recipient) {
