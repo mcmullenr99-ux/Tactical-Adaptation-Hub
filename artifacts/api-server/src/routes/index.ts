@@ -5,6 +5,7 @@ import usersRouter from "./users";
 import messagesRouter from "./messages";
 import staffApplicationsRouter from "./staff-applications";
 import milsimRouter from "./milsim";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(usersRouter);
 router.use(messagesRouter);
 router.use(staffApplicationsRouter);
 router.use(milsimRouter);
+router.use(adminRouter);
 
 export default router;

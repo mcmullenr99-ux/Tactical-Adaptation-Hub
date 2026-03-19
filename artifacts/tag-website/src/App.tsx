@@ -27,6 +27,7 @@ import Compose from "@/pages/portal/Compose";
 import Apply from "@/pages/portal/Apply";
 import ModPanel from "@/pages/portal/ModPanel";
 import AdminPanel from "@/pages/portal/AdminPanel";
+import CommandCenter from "@/pages/portal/CommandCenter";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ function Router() {
       <Route path="/portal/apply" component={Apply} />
       <Route path="/portal/mod" component={ModPanel} />
       <Route path="/portal/admin" component={AdminPanel} />
+      <Route path="/portal/command" component={CommandCenter} />
       
       <Route component={NotFound} />
     </Switch>

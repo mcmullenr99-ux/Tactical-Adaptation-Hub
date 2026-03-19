@@ -8,7 +8,9 @@ export const usersTable = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   role: text("role").notNull().default("member"), // member | staff | moderator | admin
-  status: text("status").notNull().default("active"), // active | suspended
+  status: text("status").notNull().default("active"), // active | suspended | banned
+  banReason: text("ban_reason"),
+  bannedAt: timestamp("banned_at", { withTimezone: true }),
   bio: text("bio"),
   discordTag: text("discord_tag"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
