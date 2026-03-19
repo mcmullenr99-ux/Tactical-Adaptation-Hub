@@ -6,6 +6,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { User, Shield, MessageSquare, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
+import { countryFlag, countryName } from "@/lib/countries";
 
 interface PublicProfile {
   id: number;
@@ -13,6 +14,7 @@ interface PublicProfile {
   role: string;
   bio: string | null;
   discordTag: string | null;
+  nationality: string | null;
   createdAt: string;
 }
 
@@ -66,11 +68,21 @@ export default function UserPublicProfile() {
                     <User className="w-10 h-10 text-primary" />
                   </div>
                   <div className="relative z-10">
-                    <h1 className="font-display font-bold text-3xl uppercase tracking-widest">{profile.username}</h1>
-                    <div className="flex items-center gap-3 mt-2">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <h1 className="font-display font-bold text-3xl uppercase tracking-widest">{profile.username}</h1>
+                      {profile.nationality && (
+                        <span title={countryName(profile.nationality)} className="text-2xl leading-none" aria-label={countryName(profile.nationality)}>
+                          {countryFlag(profile.nationality)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-2 flex-wrap">
                       <span className={`text-xs font-display font-bold uppercase tracking-widest px-2 py-1 border rounded ${ROLE_COLORS[profile.role] ?? ROLE_COLORS.member}`}>
                         {profile.role}
                       </span>
+                      {profile.nationality && (
+                        <span className="text-xs text-muted-foreground">{countryName(profile.nationality)}</span>
+                      )}
                       <span className="text-xs text-muted-foreground">
                         Enlisted {format(new Date(profile.createdAt), "MMMM yyyy")}
                       </span>

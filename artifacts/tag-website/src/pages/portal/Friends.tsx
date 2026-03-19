@@ -10,6 +10,7 @@ import {
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthContext";
+import { countryFlag } from "@/lib/countries";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,6 +24,7 @@ interface FriendUser {
   role: string;
   bio: string | null;
   discord_tag: string | null;
+  nationality: string | null;
 }
 
 interface SearchUser {
@@ -68,6 +70,9 @@ function FriendCard({ friend, onRemove }: { friend: FriendUser; onRemove: () => 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
           <p className="font-display font-bold text-foreground uppercase tracking-wider text-sm">{friend.username}</p>
+          {friend.nationality && (
+            <span className="text-base leading-none" title={friend.nationality}>{countryFlag(friend.nationality)}</span>
+          )}
           <RoleBadge role={friend.role} />
         </div>
         {friend.bio && <p className="text-xs font-sans text-muted-foreground truncate mb-1">{friend.bio}</p>}

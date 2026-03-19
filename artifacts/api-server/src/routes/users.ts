@@ -43,6 +43,7 @@ router.get("/users/profile/:username", async (req, res): Promise<void> => {
     role: user.role,
     bio: user.bio ?? null,
     discordTag: user.discordTag ?? null,
+    nationality: user.nationality ?? null,
     createdAt: user.createdAt.toISOString(),
   });
 });

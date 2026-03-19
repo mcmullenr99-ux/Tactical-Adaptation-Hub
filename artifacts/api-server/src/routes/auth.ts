@@ -19,6 +19,7 @@ function toAuthUser(user: typeof usersTable.$inferSelect) {
     status: user.status,
     bio: user.bio,
     discordTag: user.discordTag,
+    nationality: user.nationality ?? null,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -140,10 +141,10 @@ router.get("/auth/me", requireAuth, (req, res): void => {
   res.json(toAuthUser(user));
 });
 
-// PATCH /auth/profile — update bio + discordTag
+// PATCH /auth/profile — update bio, discordTag, nationality
 router.patch("/auth/profile", requireAuth, async (req, res): Promise<void> => {
   const userId = (req as any).user.id;
-  const { bio, discordTag } = req.body as { bio?: string; discordTag?: string };
+  const { bio, discordTag, nationality } = req.body as { bio?: string; discordTag?: string; nationality?: string | null };
 
   if (bio?.trim()) {
     const bioCheck = await moderateText(bio);
@@ -158,6 +159,7 @@ router.patch("/auth/profile", requireAuth, async (req, res): Promise<void> => {
     .set({
       bio: bio !== undefined ? bio.slice(0, 500) : undefined,
       discordTag: discordTag !== undefined ? discordTag.slice(0, 50) : undefined,
+      nationality: nationality !== undefined ? (nationality ? nationality.slice(0, 2).toUpperCase() : null) : undefined,
     })
     .where(eq(usersTable.id, userId))
     .returning();

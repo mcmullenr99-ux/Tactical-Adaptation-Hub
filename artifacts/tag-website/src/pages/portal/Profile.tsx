@@ -5,8 +5,9 @@ import { apiFetch } from "@/lib/apiFetch";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { User, Lock, Trash2, Loader2, Save, AlertTriangle } from "lucide-react";
+import { User, Lock, Trash2, Loader2, Save, AlertTriangle, Globe } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
+import { COUNTRIES, countryFlag } from "@/lib/countries";
 
 export default function Profile() {
   useSEO({ title: "My Profile" });
@@ -16,6 +17,7 @@ export default function Profile() {
 
   const [bio, setBio] = useState(user?.bio ?? "");
   const [discordTag, setDiscordTag] = useState(user?.discordTag ?? "");
+  const [nationality, setNationality] = useState((user as any)?.nationality ?? "");
   const [savingProfile, setSavingProfile] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -35,7 +37,7 @@ export default function Profile() {
       const res = await apiFetch("/api/auth/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bio, discordTag }),
+        body: JSON.stringify({ bio, discordTag, nationality: nationality || null }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
       qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
@@ -131,6 +133,28 @@ export default function Profile() {
               className="mf-input w-full"
               placeholder="YourName#1234 or @yourname"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">
+              <Globe className="inline w-3 h-3 mr-1" />Nationality
+            </label>
+            <div className="relative">
+              <select
+                value={nationality}
+                onChange={e => setNationality(e.target.value)}
+                className="mf-input w-full appearance-none pr-8"
+              >
+                <option value="">— Not set —</option>
+                {COUNTRIES.map(c => (
+                  <option key={c.code} value={c.code}>
+                    {countryFlag(c.code)} {c.name}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">▾</div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Displayed as a flag next to your name on your profile and posts.</p>
           </div>
 
           <div className="flex justify-end pt-2">

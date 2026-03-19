@@ -26,7 +26,7 @@ router.get("/friends", requireAuth, async (req, res): Promise<void> => {
     SELECT
       f.id AS friendship_id,
       f.created_at AS friends_since,
-      u.id, u.username, u.email, u.role, u.status, u.bio, u.discord_tag, u.created_at
+      u.id, u.username, u.email, u.role, u.status, u.bio, u.discord_tag, u.nationality, u.created_at
     FROM friendships f
     JOIN users u ON (
       CASE WHEN f.requester_id = ${me} THEN f.addressee_id ELSE f.requester_id END = u.id
@@ -45,7 +45,7 @@ router.get("/friends/requests", requireAuth, async (req, res): Promise<void> => 
     SELECT
       f.id AS friendship_id,
       f.created_at,
-      u.id, u.username, u.email, u.role, u.bio, u.discord_tag
+      u.id, u.username, u.email, u.role, u.bio, u.discord_tag, u.nationality
     FROM friendships f
     JOIN users u ON f.requester_id = u.id
     WHERE f.addressee_id = ${me} AND f.status = 'pending'

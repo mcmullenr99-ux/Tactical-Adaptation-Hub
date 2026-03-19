@@ -9,6 +9,7 @@ import {
   Loader2, Trash2, Shield, Pencil, Send, Filter, StickyNote,
   Megaphone, Gamepad2, Users, ImagePlus, FileVideo
 } from "lucide-react";
+import { countryFlag } from "@/lib/countries";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
@@ -19,6 +20,7 @@ interface Post {
   id: number;
   user_id: number;
   username: string;
+  user_nationality: string | null;
   milsim_group_id: number | null;
   milsim_group_name: string | null;
   category: string;
@@ -38,6 +40,7 @@ interface Comment {
   post_id: number;
   user_id: number;
   username: string;
+  user_nationality: string | null;
   content: string;
   created_at: string;
 }
@@ -468,6 +471,9 @@ function PostCard({
               {post.username}
             </span>
           </Link>
+          {post.user_nationality && (
+            <span className="text-sm leading-none" title={post.user_nationality}>{countryFlag(post.user_nationality)}</span>
+          )}
           <span className="text-muted-foreground/50 text-xs">·</span>
           <span className="text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
@@ -535,6 +541,9 @@ function PostCard({
                           <Link href={`/u/${c.username}`}>
                             <span className="text-xs font-display font-bold text-foreground hover:text-primary transition-colors cursor-pointer">{c.username}</span>
                           </Link>
+                          {c.user_nationality && (
+                            <span className="text-xs leading-none" title={c.user_nationality}>{countryFlag(c.user_nationality)}</span>
+                          )}
                           <span className="text-[10px] text-muted-foreground/60">{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
                         </div>
                         {(currentUserId === c.user_id || canModerate) && (

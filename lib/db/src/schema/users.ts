@@ -13,6 +13,7 @@ export const usersTable = pgTable("users", {
   bannedAt: timestamp("banned_at", { withTimezone: true }),
   bio: text("bio"),
   discordTag: text("discord_tag"),
+  nationality: text("nationality"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

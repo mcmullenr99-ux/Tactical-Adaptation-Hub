@@ -28,9 +28,11 @@ router.get("/posts", async (req, res): Promise<void> => {
   const viewerIdx = pIdx++;
   const postsSQL = `
     SELECT p.*,
-      CASE WHEN pr.user_id IS NOT NULL THEN true ELSE false END AS viewer_reacted
+      CASE WHEN pr.user_id IS NOT NULL THEN true ELSE false END AS viewer_reacted,
+      u.nationality AS user_nationality
     FROM posts p
     LEFT JOIN post_reactions pr ON pr.post_id = p.id AND pr.user_id = $${viewerIdx}
+    LEFT JOIN users u ON u.id = p.user_id
     ${whereSQL}
     ORDER BY p.pinned DESC, p.created_at DESC
     LIMIT $${pIdx} OFFSET $${pIdx + 1}
@@ -60,16 +62,21 @@ router.get("/posts/:id", async (req, res): Promise<void> => {
 
   const postResult = await pool.query(`
     SELECT p.*,
-      CASE WHEN pr.user_id IS NOT NULL THEN true ELSE false END AS viewer_reacted
+      CASE WHEN pr.user_id IS NOT NULL THEN true ELSE false END AS viewer_reacted,
+      u.nationality AS user_nationality
     FROM posts p
     LEFT JOIN post_reactions pr ON pr.post_id = p.id AND pr.user_id = $1
+    LEFT JOIN users u ON u.id = p.user_id
     WHERE p.id = $2
   `, [viewerId, id]);
   if (!postResult.rows[0]) { res.status(404).json({ error: "Post not found." }); return; }
 
-  const commentsResult = await db.execute(sql`
-    SELECT * FROM post_comments WHERE post_id = ${id} ORDER BY created_at ASC
-  `);
+  const commentsResult = await pool.query(`
+    SELECT pc.*, u.nationality AS user_nationality
+    FROM post_comments pc
+    LEFT JOIN users u ON u.id = pc.user_id
+    WHERE pc.post_id = $1 ORDER BY pc.created_at ASC
+  `, [id]);
 
   res.json({ post: postResult.rows[0], comments: commentsResult.rows });
 });
