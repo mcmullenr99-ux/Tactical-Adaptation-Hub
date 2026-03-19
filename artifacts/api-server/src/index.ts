@@ -1,6 +1,30 @@
 import { runMigrations } from "stripe-replit-sync";
 import { getStripeSync } from "./lib/stripeClient";
 import app from "./app";
+import { db, usersTable, pool } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
+
+async function seedAdmin() {
+  try {
+    const [existing] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, "mcmullenr99@gmail.com"));
+    if (existing) return;
+
+    const hash = await bcrypt.hash("TempAccess2026!", 12);
+    await db.insert(usersTable).values({
+      username: "SunrayActual",
+      email: "mcmullenr99@gmail.com",
+      passwordHash: hash,
+      role: "admin",
+    });
+    console.log("[startup] Admin account seeded in this environment");
+  } catch (err: any) {
+    console.error("[startup] Admin seed error (non-fatal):", err.message);
+  }
+}
 
 async function initStripe() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -34,6 +58,7 @@ async function initStripe() {
   const port = Number(rawPort);
   if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT value: "${rawPort}"`);
 
+  await seedAdmin();
   await initStripe();
 
   app.listen(port, () => {
