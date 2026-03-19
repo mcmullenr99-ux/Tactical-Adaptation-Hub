@@ -1,26 +1,38 @@
-const RESEND_API_KEY = process.env["RESEND_API_KEY"];
-const FROM_EMAIL = "TAG <noreply@tagtacticaladaptationgroup.com>";
-const APP_URL = process.env["APP_URL"] ?? "https://tag-website.replit.app";
+const BREVO_API_KEY = process.env["BREVO_API_KEY"];
+const FROM_EMAIL    = process.env["FROM_EMAIL"] ?? "TAG <noreply@tagtacticaladaptationgroup.com>";
+const APP_URL       = process.env["APP_URL"] ?? "https://tag-website.replit.app";
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  if (!RESEND_API_KEY) {
-    console.warn("[email] RESEND_API_KEY not set — email not sent to", to);
+  if (!BREVO_API_KEY) {
+    console.warn("[email] BREVO_API_KEY not set — email not sent to", to);
     console.info("[email] Subject:", subject);
     return;
   }
 
-  const res = await fetch("https://api.resend.com/emails", {
+  // Parse "Display Name <address@domain.com>" or plain address
+  const match = FROM_EMAIL.match(/^(.+?)\s*<(.+?)>$/);
+  const sender = match
+    ? { name: match[1].trim(), email: match[2].trim() }
+    : { name: "TAG", email: FROM_EMAIL.trim() };
+
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${RESEND_API_KEY}`,
+      "api-key": BREVO_API_KEY,
       "Content-Type": "application/json",
+      "Accept": "application/json",
     },
-    body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
+    body: JSON.stringify({
+      sender,
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
   });
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Resend API error ${res.status}: ${err}`);
+    throw new Error(`Brevo API error ${res.status}: ${err}`);
   }
 }
 
@@ -69,12 +81,12 @@ export function passwordResetEmail(username: string, token: string): string {
       </p>
       <div class="token-box">${link}</div>
       <div class="warning">
-        <p>⚠ If you did not request this reset, ignore this email. Your password has not been changed.</p>
+        <p>&#9888; If you did not request this reset, ignore this email. Your password has not been changed.</p>
       </div>
     </div>
     <hr class="divider">
     <div class="footer">
-      <p>Tactical Adaptation Group &nbsp;·&nbsp; Automated System Message</p>
+      <p>Tactical Adaptation Group &nbsp;&middot;&nbsp; Automated System Message</p>
       <p>Do not reply to this email.</p>
     </div>
   </div>
@@ -111,14 +123,14 @@ export function twoFactorEnabledEmail(username: string): string {
       <p class="body-text">
         Operator <strong style="color:#4ade80">${username}</strong>, two-factor authentication has been successfully enabled on your TAG account.
       </p>
-      <div class="success-box"><p>✓ Your account is now protected with 2FA</p></div>
+      <div class="success-box"><p>&#10003; Your account is now protected with 2FA</p></div>
       <p class="body-text" style="font-size:13px; color:#9ca3af;">
         You will now be required to enter a verification code from your authenticator app each time you log in.
         If you did not enable this yourself, contact a TAG administrator immediately.
       </p>
     </div>
     <div class="footer">
-      <p>Tactical Adaptation Group &nbsp;·&nbsp; Automated System Message</p>
+      <p>Tactical Adaptation Group &nbsp;&middot;&nbsp; Automated System Message</p>
     </div>
   </div>
 </body>
