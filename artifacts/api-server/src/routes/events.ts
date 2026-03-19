@@ -18,9 +18,10 @@ router.get("/events", async (_req, res): Promise<void> => {
 // POST /api/events — staff+
 router.post("/events", ...staffGuard, async (req, res): Promise<void> => {
   const actor = (req as any).user;
-  const { title, game, description, eventDate, endDate, maxSlots } = req.body as {
+  const { title, game, description, eventDate, endDate, maxSlots, eventType, location } = req.body as {
     title: string; game?: string; description?: string;
     eventDate: string; endDate?: string; maxSlots?: number;
+    eventType?: string; location?: string;
   };
 
   if (!title || !eventDate) {
@@ -29,9 +30,10 @@ router.post("/events", ...staffGuard, async (req, res): Promise<void> => {
   }
 
   const result = await db.execute(sql`
-    INSERT INTO ops_events (title, game, description, event_date, end_date, organizer_id, organizer_username, max_slots)
+    INSERT INTO ops_events (title, game, description, event_date, end_date, organizer_id, organizer_username, max_slots, event_type, location)
     VALUES (${title}, ${game ?? null}, ${description ?? null}, ${new Date(eventDate)},
-            ${endDate ? new Date(endDate) : null}, ${actor.id}, ${actor.username}, ${maxSlots ?? null})
+            ${endDate ? new Date(endDate) : null}, ${actor.id}, ${actor.username}, ${maxSlots ?? null},
+            ${eventType ?? "ops"}, ${location ?? null})
     RETURNING *
   `);
 
@@ -50,7 +52,7 @@ router.post("/events", ...staffGuard, async (req, res): Promise<void> => {
 router.patch("/events/:id", ...staffGuard, async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
   const actor = (req as any).user;
-  const { title, game, description, eventDate, endDate, maxSlots, status } = req.body as any;
+  const { title, game, description, eventDate, endDate, maxSlots, status, eventType, location } = req.body as any;
 
   const before = await db.execute(sql`SELECT * FROM ops_events WHERE id = ${id}`);
   if (!before.rows[0]) { res.status(404).json({ error: "Event not found" }); return; }
@@ -63,7 +65,9 @@ router.patch("/events/:id", ...staffGuard, async (req, res): Promise<void> => {
       event_date = COALESCE(${eventDate ? new Date(eventDate) : null}, event_date),
       end_date = COALESCE(${endDate ? new Date(endDate) : null}, end_date),
       max_slots = COALESCE(${maxSlots ?? null}, max_slots),
-      status = COALESCE(${status ?? null}, status)
+      status = COALESCE(${status ?? null}, status),
+      event_type = COALESCE(${eventType ?? null}, event_type),
+      location = COALESCE(${location ?? null}, location)
     WHERE id = ${id}
   `);
 

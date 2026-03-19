@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { db, milsimGroupsTable, milsimRolesTable, milsimRanksTable, milsimRosterTable, milsimAppQuestionsTable } from "@workspace/db";
-import { eq, and, or, asc } from "drizzle-orm";
+import { eq, and, or, asc, sql as rawSql } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -220,6 +220,22 @@ router.post("/milsim-groups/:id/roster", requireAuth, async (req, res): Promise<
   res.status(201).json(entry);
 });
 
+router.patch("/milsim-groups/:id/roster/:entryId", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const entryId = parseInt(Array.isArray(req.params.entryId) ? req.params.entryId[0] : req.params.entryId, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  const parsed = RosterBody.partial().safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid input" }); return; }
+  const [entry] = await db.update(milsimRosterTable)
+    .set({ ...parsed.data, rankId: parsed.data.rankId ?? null, roleId: parsed.data.roleId ?? null })
+    .where(and(eq(milsimRosterTable.id, entryId), eq(milsimRosterTable.groupId, id)))
+    .returning();
+  if (!entry) { res.status(404).json({ error: "Roster entry not found" }); return; }
+  res.json(entry);
+});
+
 router.delete("/milsim-groups/:id/roster/:entryId", requireAuth, async (req, res): Promise<void> => {
   const userId = (req as any).user.id;
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
@@ -228,6 +244,65 @@ router.delete("/milsim-groups/:id/roster/:entryId", requireAuth, async (req, res
   if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
   await db.delete(milsimRosterTable).where(and(eq(milsimRosterTable.id, entryId), eq(milsimRosterTable.groupId, id)));
   res.sendStatus(204);
+});
+
+// ── Awards ─────────────────────────────────────────────────────────────────────
+
+router.get("/milsim-groups/:id/awards", requireAuth, async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const result = await db.execute(rawSql`
+    SELECT a.*, r.callsign FROM milsim_awards a
+    LEFT JOIN milsim_roster r ON r.id = a.roster_entry_id
+    WHERE a.group_id = ${id} ORDER BY a.awarded_at DESC
+  `);
+  res.json(result.rows);
+});
+
+router.post("/milsim-groups/:id/awards", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  const { rosterEntryId, title, description, icon } = req.body as any;
+  if (!rosterEntryId || !title) { res.status(400).json({ error: "rosterEntryId and title required" }); return; }
+  const result = await db.execute(rawSql`
+    INSERT INTO milsim_awards (group_id, roster_entry_id, title, description, icon, awarded_by)
+    VALUES (${id}, ${rosterEntryId}, ${title}, ${description ?? null}, ${icon ?? "medal"}, ${(req as any).user.username})
+    RETURNING *
+  `);
+  res.status(201).json(result.rows[0]);
+});
+
+router.delete("/milsim-groups/:id/awards/:awardId", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const awardId = parseInt(Array.isArray(req.params.awardId) ? req.params.awardId[0] : req.params.awardId, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  await db.execute(rawSql`DELETE FROM milsim_awards WHERE id = ${awardId} AND group_id = ${id}`);
+  res.sendStatus(204);
+});
+
+// ── Stream ─────────────────────────────────────────────────────────────────────
+
+router.patch("/milsim-groups/:id/stream", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  const { streamUrl, isLive } = req.body as { streamUrl?: string; isLive?: boolean };
+  const updates: Record<string, any> = {};
+  if (streamUrl !== undefined) updates.streamUrl = streamUrl || null;
+  if (isLive !== undefined) updates.isLive = isLive;
+  if (Object.keys(updates).length === 0) { res.status(400).json({ error: "Nothing to update" }); return; }
+  await db.execute(rawSql`
+    UPDATE milsim_groups SET
+      stream_url = ${updates.streamUrl !== undefined ? updates.streamUrl : rawSql`stream_url`},
+      is_live = ${updates.isLive !== undefined ? updates.isLive : rawSql`is_live`}
+    WHERE id = ${id}
+  `);
+  const result = await db.execute(rawSql`SELECT * FROM milsim_groups WHERE id = ${id}`);
+  res.json(result.rows[0]);
 });
 
 // ── Application Questions ──────────────────────────────────────────────────────
