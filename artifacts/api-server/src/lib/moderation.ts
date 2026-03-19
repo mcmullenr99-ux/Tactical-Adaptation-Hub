@@ -60,11 +60,13 @@ ${text.slice(0, 4000)}
       };
     }
     console.error("Text moderation error:", err);
-    // On unexpected API failure, block the post to be safe.
+    // On unexpected API failure (e.g. integration unavailable in production),
+    // allow through — blocking all content on API outage is worse than letting
+    // a rare bad username slip past manual review.
     return {
-      flagged: true,
-      reason: "Content could not be verified. Please try again.",
-      categories: ["moderation_unavailable"],
+      flagged: false,
+      reason: null,
+      categories: [],
     };
   }
 }

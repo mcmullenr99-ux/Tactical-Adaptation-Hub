@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable } from "@workspace/db";
+import { db, pool, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { requireAuth, requireRole } from "../lib/auth";
 import { logAudit, buildAuditFromReq } from "../lib/audit";
@@ -26,8 +26,12 @@ function checkBanRateLimit(userId: number): boolean {
 // ─── Lockdown helpers ────────────────────────────────────────────────────────
 
 async function getLockdown(): Promise<boolean> {
-  const [row] = await db.execute(sql`SELECT value FROM site_settings WHERE key = 'lockdown_mode'`) as any;
-  return row?.value === "true";
+  try {
+    const { rows } = await pool.query("SELECT value FROM site_settings WHERE key = 'lockdown_mode'");
+    return rows[0]?.value === "true";
+  } catch {
+    return false;
+  }
 }
 
 // GET /api/admin/lockdown
