@@ -34,12 +34,11 @@ export default function Profile() {
   const saveProfile = async () => {
     setSavingProfile(true);
     try {
-      const res = await apiFetch("/api/auth/profile", {
+      await apiFetch("/api/auth/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bio, discordTag, nationality: nationality || null }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
       qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
       toast({ title: "Profile Updated", description: "Your profile has been saved." });
     } catch (e: any) {
