@@ -28,7 +28,12 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - Notification polling (30s): unread message dot + pending friend request dot in portal sidebar
 - Forgot password: POST /api/auth/forgot-password returns reset token; staff delivers link via Discord DM
 - DB tables: `password_reset_tokens`, `ops_events`, `milsim_group_applications`, `site_settings`
-- API routes: notifications/counts, events CRUD, milsim-applications, users/search, users/profile/:username, auth/forgot-password, auth/reset-password, auth/account (DELETE), admin/broadcast, admin/reset-tokens, messages/mark-all-read
+- API routes: notifications/counts, events CRUD, milsim-applications, users/search, users/profile/:username, auth/forgot-password, auth/reset-password, auth/account (DELETE), admin/broadcast, admin/reset-tokens, messages/mark-all-read, storage uploads/request-url, storage/objects/*
+- Community Board (`/forum`): 4 categories (Gaming, Unit News, Recruitment, General), reactions, comments, MilSim group tagging, pagination, pinning
+- Forum media upload: Images (JPEG/PNG/WebP/GIF up to 8 MB) and videos (MP4/WebM/MOV up to 100 MB) via presigned GCS uploads
+- AI content moderation (`lib/moderation.ts`): text moderation via OpenAI omni-moderation-latest API; image moderation via GPT-5.2 vision; applied to all post/comment creation and edits; flagged content is auto-rejected with reason
+- Object storage: GCS bucket `replit-objstore-afff20f0-e86f-4513-801a-51684819bad7`; server: `objectStorage.ts`, `objectAcl.ts`, `storage.ts`; client: `@workspace/object-storage-web` with `useUpload` hook; media served at `/api/storage/objects/*`
+- Storage Zod schemas added manually to `lib/api-zod/src/storage.ts` (not in OpenAPI spec)
 
 ## Stack
 

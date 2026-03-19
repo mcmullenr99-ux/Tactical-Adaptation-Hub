@@ -7,10 +7,11 @@ import { Link } from "wouter";
 import {
   MessageSquare, ThumbsUp, Pin, Plus, X, ChevronDown, ChevronUp,
   Loader2, Trash2, Shield, Pencil, Send, Filter, StickyNote,
-  Megaphone, Gamepad2, Users
+  Megaphone, Gamepad2, Users, ImagePlus, FileVideo
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useUpload } from "@workspace/object-storage-web";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -66,6 +67,11 @@ const CATEGORY_BADGE: Record<string, string> = {
 
 // ── Create Post Modal ─────────────────────────────────────────────────────────
 
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;   // 8 MB
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100 MB
+
 function CreatePostModal({
   onClose,
   onCreated,
@@ -81,10 +87,68 @@ function CreatePostModal({
   const [milsimGroupId, setMilsimGroupId] = useState<number | "">("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Media upload state
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaPath, setMediaPath] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { uploadFile, isUploading, progress } = useUpload({
+    onError: (err) => setError(`Upload failed: ${err.message}`),
+  });
+
   const { toast } = useToast();
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
+    const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
+
+    if (!isImage && !isVideo) {
+      setError("Unsupported file type. Please upload an image (JPEG, PNG, WebP, GIF) or video (MP4, WebM, MOV).");
+      return;
+    }
+    if (isImage && file.size > MAX_IMAGE_BYTES) {
+      setError("Image must be under 8 MB.");
+      return;
+    }
+    if (isVideo && file.size > MAX_VIDEO_BYTES) {
+      setError("Video must be under 100 MB.");
+      return;
+    }
+
+    setError(null);
+    setMediaFile(file);
+    setMediaPath(null);
+
+    // Generate local preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setMediaPreview(previewUrl);
+
+    // Upload immediately so we have the path ready when the form is submitted
+    const response = await uploadFile(file);
+    if (response) {
+      setMediaPath(response.objectPath);
+    }
+
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeMedia = () => {
+    setMediaFile(null);
+    setMediaPath(null);
+    if (mediaPreview) URL.revokeObjectURL(mediaPreview);
+    setMediaPreview(null);
+  };
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) { setError("Title and content are required."); return; }
+    if (mediaFile && !mediaPath) { setError("Please wait for the media to finish uploading."); return; }
+
     setSubmitting(true);
     setError(null);
     try {
@@ -95,33 +159,39 @@ function CreatePostModal({
           content: content.trim(),
           category,
           milsim_group_id: milsimGroupId || undefined,
+          mediaPath: mediaPath ?? undefined,
         }),
       });
       toast({ title: "Post published!" });
       onCreated(post);
       onClose();
     } catch (e: any) {
-      setError(e.message ?? "Failed to post.");
+      const msg: string = e.message ?? "Failed to post.";
+      setError(msg);
     } finally {
       setSubmitting(false);
     }
   };
 
+  const isVideo = mediaFile ? ALLOWED_VIDEO_TYPES.includes(mediaFile.type) : false;
+
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        className="bg-background border border-border rounded-xl w-full max-w-2xl shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-border">
+        className="bg-background border border-border rounded-xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
           <h2 className="font-display font-black text-xl uppercase tracking-wider">New Post</h2>
           <button onClick={onClose} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-5 space-y-4">
+
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
           {error && (
             <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded p-3">{error}</div>
           )}
 
+          {/* Category */}
           <div>
             <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Category</label>
             <div className="flex flex-wrap gap-2">
@@ -137,6 +207,7 @@ function CreatePostModal({
             </div>
           </div>
 
+          {/* MilSim group */}
           {userGroups.length > 0 && (
             <div>
               <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Post on behalf of (optional)</label>
@@ -148,25 +219,91 @@ function CreatePostModal({
             </div>
           )}
 
+          {/* Title */}
           <div>
             <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Title *</label>
             <input value={title} onChange={e => setTitle(e.target.value)} maxLength={200}
               className="mf-input w-full" placeholder="What's happening?" />
           </div>
 
+          {/* Content */}
           <div>
             <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Content *</label>
-            <textarea value={content} onChange={e => setContent(e.target.value)} rows={5} maxLength={5000}
+            <textarea value={content} onChange={e => setContent(e.target.value)} rows={4} maxLength={5000}
               className="mf-input w-full resize-none"
               placeholder="Share your update, news, recruitment post, or whatever's on your mind..." />
             <p className="text-xs text-muted-foreground mt-1 text-right">{content.length}/5000</p>
           </div>
+
+          {/* Media upload */}
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
+              Attach Media (optional)
+            </label>
+
+            {!mediaFile ? (
+              <label className="flex items-center justify-center gap-3 border border-dashed border-border rounded-lg p-5 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all group">
+                <input ref={fileInputRef} type="file" accept={[...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES].join(",")}
+                  className="hidden" onChange={handleFileSelect} />
+                <ImagePlus className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="text-sm font-display font-bold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors">
+                  Add Image or Video
+                </span>
+                <span className="text-xs text-muted-foreground/60">JPEG, PNG, WebP, GIF · MP4, WebM, MOV</span>
+              </label>
+            ) : (
+              <div className="relative rounded-lg overflow-hidden border border-border bg-secondary/20">
+                {isVideo ? (
+                  <video src={mediaPreview ?? undefined} controls className="w-full max-h-64 object-contain" />
+                ) : (
+                  <img src={mediaPreview ?? undefined} alt="Preview" className="w-full max-h-64 object-contain" />
+                )}
+
+                {/* Upload progress overlay */}
+                {isUploading && (
+                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <div className="w-40 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+                    </div>
+                    <span className="text-xs font-display font-bold uppercase tracking-widest text-white">
+                      Uploading {progress}%
+                    </span>
+                  </div>
+                )}
+
+                {/* Ready badge */}
+                {!isUploading && mediaPath && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1 bg-green-600/80 text-white text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded">
+                    {isVideo ? <FileVideo className="w-3 h-3" /> : <ImagePlus className="w-3 h-3" />}
+                    Ready
+                  </div>
+                )}
+
+                {/* Remove button */}
+                <button onClick={removeMedia} disabled={isUploading}
+                  className="absolute top-2 right-2 p-1 bg-black/70 hover:bg-black/90 text-white rounded-full disabled:opacity-50 transition-all">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+
+                {/* File name */}
+                <div className="px-3 py-2 text-xs text-muted-foreground font-display truncate border-t border-border">
+                  {mediaFile.name} · {(mediaFile.size / 1024 / 1024).toFixed(1)} MB
+                </div>
+              </div>
+            )}
+
+            <p className="text-[11px] text-muted-foreground/60 mt-1.5">
+              All media is scanned by AI moderation. Inappropriate content will be automatically rejected.
+            </p>
+          </div>
         </div>
-        <div className="flex items-center justify-end gap-3 px-5 pb-5">
+
+        <div className="flex items-center justify-end gap-3 px-5 pb-5 pt-3 border-t border-border shrink-0">
           <button onClick={onClose} className="px-5 py-2 font-display font-bold uppercase tracking-wider text-sm text-muted-foreground hover:text-foreground transition-colors">
             Cancel
           </button>
-          <button onClick={handleSubmit} disabled={submitting || !title.trim() || !content.trim()}
+          <button onClick={handleSubmit} disabled={submitting || isUploading || !title.trim() || !content.trim()}
             className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm rounded clip-angled-sm transition-all disabled:opacity-50">
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             Publish
@@ -341,6 +478,17 @@ function PostCard({
         <p className="font-sans text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap mb-4">
           {post.content}
         </p>
+
+        {/* Attached media */}
+        {post.image_url && (
+          <div className="mb-4 rounded-lg overflow-hidden border border-border bg-secondary/20">
+            {post.image_url.match(/\.(mp4|webm|mov)$/i) ? (
+              <video src={post.image_url} controls className="w-full max-h-96 object-contain" />
+            ) : (
+              <img src={post.image_url} alt="Post attachment" className="w-full max-h-96 object-contain" />
+            )}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-4 pt-3 border-t border-border/50">
