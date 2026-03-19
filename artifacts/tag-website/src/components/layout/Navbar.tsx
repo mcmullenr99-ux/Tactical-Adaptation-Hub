@@ -97,35 +97,57 @@ export function Navbar() {
             </Link>
 
             <div className="flex items-center gap-3 ml-4 pl-4 border-l border-border">
-              <Link
-                href={portalHref}
-                className="font-display font-bold uppercase tracking-wider text-sm border border-primary text-primary hover:bg-primary/10 px-5 py-2 rounded clip-angled-sm transition-all active:scale-95"
-              >
-                {isAuthenticated ? "HQ Portal" : "Member Login"}
-              </Link>
-              <Link
-                href="/join"
-                className="font-display font-bold uppercase tracking-wider text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2 rounded clip-angled-sm shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_hsla(var(--primary),0.4)] transition-all active:scale-95"
-              >
-                Enlist Now
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  href="/portal/dashboard"
+                  className="font-display font-bold uppercase tracking-wider text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2 rounded clip-angled-sm shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all active:scale-95"
+                >
+                  HQ Portal
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/portal/login"
+                    className="font-display font-bold uppercase tracking-wider text-sm border border-primary text-primary hover:bg-primary/10 px-5 py-2 rounded clip-angled-sm transition-all active:scale-95"
+                  >
+                    Member Login
+                  </Link>
+                  <Link
+                    href="/portal/register"
+                    className="font-display font-bold uppercase tracking-wider text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2 rounded clip-angled-sm shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_hsla(var(--primary),0.4)] transition-all active:scale-95"
+                  >
+                    Enlist Now
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
 
           {/* Mobile: Login button always visible + hamburger */}
           <div className="lg:hidden flex items-center gap-2">
-            <Link
-              href={portalHref}
-              className="font-display font-bold uppercase tracking-wider text-xs border border-primary text-primary hover:bg-primary/10 px-3 py-2 rounded transition-all active:scale-95"
-            >
-              {portalLabel}
-            </Link>
-            <Link
-              href="/join"
-              className="font-display font-bold uppercase tracking-wider text-xs bg-primary text-primary-foreground px-3 py-2 rounded transition-all active:scale-95"
-            >
-              Join
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                href="/portal/dashboard"
+                className="font-display font-bold uppercase tracking-wider text-xs bg-primary text-primary-foreground px-3 py-2 rounded transition-all active:scale-95"
+              >
+                HQ Portal
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/portal/login"
+                  className="font-display font-bold uppercase tracking-wider text-xs border border-primary text-primary hover:bg-primary/10 px-3 py-2 rounded transition-all active:scale-95"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/portal/register"
+                  className="font-display font-bold uppercase tracking-wider text-xs bg-primary text-primary-foreground px-3 py-2 rounded transition-all active:scale-95"
+                >
+                  Register
+                </Link>
+              </>
+            )}
             <button
               className="p-2 text-muted-foreground hover:text-foreground ml-1"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

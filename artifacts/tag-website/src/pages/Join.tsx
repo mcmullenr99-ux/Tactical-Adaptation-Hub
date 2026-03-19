@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
+import { Link } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Disc, CheckCircle2, ChevronRight, Info } from "lucide-react";
+import { Disc, CheckCircle2, ChevronRight, Info, UserPlus } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 
 export default function Join() {
@@ -60,10 +61,38 @@ export default function Join() {
 
             <motion.div 
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+              className="bg-card border border-primary/30 p-8 rounded-lg relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+              <h2 className="text-2xl font-display font-bold uppercase tracking-wider mb-6 flex items-center gap-3">
+                <span className="flex items-center justify-center w-8 h-8 rounded bg-primary/20 text-primary text-sm">02</span>
+                Create Your Account
+              </h2>
+              <p className="font-sans text-muted-foreground mb-8">
+                Register for the TAG member portal — your home base for the forum, MilSim groups, direct messaging, ops calendar, and more. Takes less than a minute.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  href="/portal/register"
+                  className="flex items-center justify-center gap-3 font-display font-bold uppercase tracking-widest text-lg bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded clip-angled shadow-[0_0_20px_rgba(0,0,0,0.4)] hover:shadow-[0_0_25px_hsla(var(--primary),0.4)] transition-all active:scale-95"
+                >
+                  <UserPlus className="w-5 h-5" /> Create Account
+                </Link>
+                <Link
+                  href="/portal/login"
+                  className="flex items-center justify-center gap-3 font-display font-bold uppercase tracking-widest text-base border border-primary text-primary hover:bg-primary/10 px-8 py-4 rounded clip-angled transition-all active:scale-95"
+                >
+                  Already have an account? Log in
+                </Link>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
               className="bg-card border border-border p-8 rounded-lg"
             >
               <h2 className="text-2xl font-display font-bold uppercase tracking-wider mb-6 flex items-center gap-3">
-                <span className="flex items-center justify-center w-8 h-8 rounded bg-primary/20 text-primary text-sm">02</span>
+                <span className="flex items-center justify-center w-8 h-8 rounded bg-primary/20 text-primary text-sm">03</span>
                 Jump in on Discord
               </h2>
               <p className="font-sans text-muted-foreground mb-8">
@@ -79,11 +108,11 @@ export default function Join() {
             </motion.div>
 
             <motion.div 
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
               className="bg-card border border-border p-8 rounded-lg"
             >
               <h2 className="text-2xl font-display font-bold uppercase tracking-wider mb-6 flex items-center gap-3">
-                <span className="flex items-center justify-center w-8 h-8 rounded bg-primary/20 text-primary text-sm">03</span>
+                <span className="flex items-center justify-center w-8 h-8 rounded bg-primary/20 text-primary text-sm">04</span>
                 Pick Your Game & Get Stuck In
               </h2>
               <p className="font-sans text-muted-foreground mb-4">
