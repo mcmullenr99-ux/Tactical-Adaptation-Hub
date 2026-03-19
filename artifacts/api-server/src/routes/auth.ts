@@ -7,6 +7,7 @@ import { requireAuth } from "../lib/auth";
 import { getLockdown } from "./admin";
 import { logAudit, getClientIp } from "../lib/audit";
 import { moderateText } from "../lib/moderation";
+import { sendEmail, passwordResetEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -205,7 +206,17 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
     INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (${user.id}, ${token}, ${expires})
   `);
 
-  res.json({ success: true, token, username: user.username });
+  try {
+    await sendEmail(
+      user.email,
+      "Password Reset Request — TAG",
+      passwordResetEmail(user.username, token)
+    );
+  } catch (e) {
+    console.error("[forgot-password] Failed to send email:", e);
+  }
+
+  res.json({ success: true });
 });
 
 // POST /auth/reset-password — use token to set new password

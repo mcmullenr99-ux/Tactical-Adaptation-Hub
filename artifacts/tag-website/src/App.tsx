@@ -37,6 +37,8 @@ import CommandCenter from "@/pages/portal/CommandCenter";
 import Friends from "@/pages/portal/Friends";
 import SecurityProtocol from "@/pages/portal/SecurityProtocol";
 import Profile from "@/pages/portal/Profile";
+import ResetPassword from "@/pages/portal/ResetPassword";
+import TwoFactorAuth from "@/pages/portal/TwoFactorAuth";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +75,8 @@ function Router() {
       <Route path="/portal/command" component={CommandCenter} />
       <Route path="/portal/friends" component={Friends} />
       <Route path="/portal/security" component={SecurityProtocol} />
+      <Route path="/portal/reset-password" component={ResetPassword} />
+      <Route path="/portal/2fa" component={TwoFactorAuth} />
       
       <Route component={NotFound} />
     </Switch>
