@@ -1,18 +1,23 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { MainLayout } from "./MainLayout";
 import { useLocation, Link } from "wouter";
-import { Mail, PenTool, LayoutDashboard, ShieldCheck, Settings, LogOut, Loader2, User, Shield, Terminal, Users } from "lucide-react";
+import {
+  Mail, PenTool, LayoutDashboard, ShieldCheck, Settings,
+  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight,
+} from "lucide-react";
 import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function PortalLayout({ children, requireRole }: { children: React.ReactNode, requireRole?: string[] }) {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const logoutMutation = useLogout();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -25,6 +30,11 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     }
   }, [isLoading, isAuthenticated, user, requireRole, setLocation]);
 
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location]);
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -35,13 +45,8 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     );
   }
 
-  if (!isAuthenticated || !user) {
-    return null;
-  }
-
-  if (requireRole && !requireRole.includes(user.role)) {
-    return null;
-  }
+  if (!isAuthenticated || !user) return null;
+  if (requireRole && !requireRole.includes(user.role)) return null;
 
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
@@ -53,7 +58,7 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
       },
       onError: () => {
         toast({ title: "Error", description: "Failed to logout.", variant: "destructive" });
-      }
+      },
     });
   };
 
@@ -64,95 +69,161 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     admin: "text-destructive",
   };
 
+  const navLinks = [
+    { href: "/portal/dashboard", icon: <LayoutDashboard className="w-4 h-4 text-primary" />, label: "Dashboard" },
+    { href: "/portal/inbox", icon: <Mail className="w-4 h-4 text-primary" />, label: "Comms" },
+    { href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "MilSim Group" },
+    { href: "/portal/friends", icon: <Users className="w-4 h-4 text-primary" />, label: "Connections" },
+    ...(user.role === "member"
+      ? [{ href: "/portal/apply", icon: <PenTool className="w-4 h-4 text-primary" />, label: "Staff App" }]
+      : []),
+    ...(user.role === "moderator" || user.role === "admin"
+      ? [
+          { href: "/portal/mod", icon: <ShieldCheck className="w-4 h-4 text-accent" />, label: "Mod Panel", divider: true },
+          { href: "/portal/command", icon: <Terminal className="w-4 h-4 text-destructive" />, label: "Command Center" },
+        ]
+      : []),
+    ...(user.role === "admin"
+      ? [{ href: "/portal/admin", icon: <Settings className="w-4 h-4 text-destructive" />, label: "Admin Panel" }]
+      : []),
+  ];
+
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      {/* User Info Header */}
+      <div className="p-5 border-b border-border bg-secondary/50 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-[30px]" />
+        <div className="relative z-10">
+          <h2 className="font-display font-bold text-lg uppercase tracking-widest mb-2 flex items-center gap-2">
+            <User className="w-4 h-4 text-primary" /> HQ Uplink
+          </h2>
+          <p className="text-sm font-sans text-foreground font-medium truncate">{user.username}</p>
+          <p className="text-xs font-sans text-muted-foreground truncate mb-2">{user.email}</p>
+          <div className="inline-block px-2 py-1 bg-background border border-border rounded text-xs font-display font-bold uppercase tracking-widest mt-1">
+            <span className={roleColors[user.role] || "text-primary"}>{user.role}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="p-3 flex flex-col gap-1 flex-1 overflow-y-auto">
+        {navLinks.map((link) => (
+          <React.Fragment key={link.href}>
+            {link.divider && <div className="my-2 border-t border-border" />}
+            <Link
+              href={link.href}
+              className={`flex items-center gap-3 px-4 py-3 rounded transition-colors font-display font-semibold uppercase tracking-wider text-sm ${
+                location === link.href
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+            >
+              {link.icon}
+              {link.label}
+              {location === link.href && <ChevronRight className="w-3 h-3 ml-auto text-primary" />}
+            </Link>
+          </React.Fragment>
+        ))}
+      </nav>
+
+      {/* Logout */}
+      <div className="p-4 border-t border-border bg-secondary/20">
+        <button
+          onClick={handleLogout}
+          disabled={logoutMutation.isPending}
+          className="flex items-center justify-center gap-3 px-4 py-3 w-full rounded hover:bg-destructive hover:text-destructive-foreground transition-colors text-muted-foreground font-display font-bold uppercase tracking-wider text-sm disabled:opacity-50"
+        >
+          <LogOut className="w-4 h-4" />
+          {logoutMutation.isPending ? "Disconnecting..." : "Disconnect"}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <MainLayout>
-      <div className="pt-24 pb-20 min-h-screen">
+      <div className="pt-20 pb-16 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="flex flex-col md:flex-row gap-8">
-            
-            {/* Sidebar */}
-            <aside className="w-full md:w-64 shrink-0">
-              <div className="bg-card border border-border rounded-lg clip-angled overflow-hidden sticky top-28">
-                
-                {/* User Info Header */}
-                <div className="p-6 border-b border-border bg-secondary/50 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-[30px]" />
-                  <div className="relative z-10">
-                    <h2 className="font-display font-bold text-lg uppercase tracking-widest mb-2 flex items-center gap-2">
-                      <User className="w-4 h-4 text-primary" /> HQ Uplink
-                    </h2>
-                    <p className="text-sm font-sans text-foreground font-medium truncate">{user.username}</p>
-                    <p className="text-xs font-sans text-muted-foreground truncate mb-2">{user.email}</p>
-                    <div className="inline-block px-2 py-1 bg-background border border-border rounded text-xs font-display font-bold uppercase tracking-widest mt-1">
-                      <span className={roleColors[user.role] || "text-primary"}>
-                        {user.role}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Navigation */}
-                <nav className="p-4 flex flex-col gap-1">
-                  <Link href="/portal/dashboard" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
-                    <LayoutDashboard className="w-4 h-4 text-primary" /> Dashboard
-                  </Link>
-                  <Link href="/portal/inbox" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
-                    <Mail className="w-4 h-4 text-primary" /> Comms
-                  </Link>
-                  <Link href="/portal/milsim" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
-                    <Shield className="w-4 h-4 text-primary" /> MilSim Group
-                  </Link>
-                  <Link href="/portal/friends" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
-                    <Users className="w-4 h-4 text-primary" /> Connections
-                  </Link>
-                  
-                  {user.role === 'member' && (
-                    <Link href="/portal/apply" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
-                      <PenTool className="w-4 h-4 text-primary" /> Staff App
-                    </Link>
-                  )}
-                  
-                  {(user.role === 'moderator' || user.role === 'admin') && (
-                    <>
-                      <div className="my-2 border-t border-border" />
-                      <Link href="/portal/mod" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
-                        <ShieldCheck className="w-4 h-4 text-accent" /> Mod Panel
-                      </Link>
-                      <Link href="/portal/command" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
-                        <Terminal className="w-4 h-4 text-destructive" /> Command Center
-                      </Link>
-                    </>
-                  )}
-                  
-                  {user.role === 'admin' && (
-                    <Link href="/portal/admin" className="flex items-center gap-3 px-4 py-3 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground font-display font-semibold uppercase tracking-wider text-sm">
-                      <Settings className="w-4 h-4 text-destructive" /> Admin Panel
-                    </Link>
-                  )}
-                </nav>
 
-                <div className="p-4 border-t border-border bg-secondary/20">
-                  <button 
-                    onClick={handleLogout}
-                    disabled={logoutMutation.isPending}
-                    className="flex items-center justify-center gap-3 px-4 py-3 w-full rounded hover:bg-destructive hover:text-destructive-foreground transition-colors text-muted-foreground font-display font-bold uppercase tracking-wider text-sm disabled:opacity-50"
-                  >
-                    <LogOut className="w-4 h-4" /> 
-                    {logoutMutation.isPending ? "Disconnecting..." : "Disconnect"}
-                  </button>
-                </div>
+          {/* Mobile Portal Top Bar */}
+          <div className="md:hidden flex items-center justify-between py-4 mb-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-primary/20 border border-primary/50 rounded flex items-center justify-center">
+                <User className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-display font-bold uppercase tracking-widest">{user.username}</p>
+                <p className={`text-xs font-display uppercase tracking-widest ${roleColors[user.role] || "text-primary"}`}>{user.role}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-secondary border border-border rounded text-sm font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Menu className="w-4 h-4" /> Menu
+            </button>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-8">
+
+            {/* Desktop Sidebar */}
+            <aside className="hidden md:block w-64 shrink-0">
+              <div className="bg-card border border-border rounded-lg clip-angled overflow-hidden sticky top-28">
+                <SidebarContent />
               </div>
             </aside>
 
-            {/* Main Content Area */}
-            <main className="flex-1">
+            {/* Main Content */}
+            <main className="flex-1 min-w-0">
               {children}
             </main>
 
           </div>
         </div>
       </div>
+
+      {/* Mobile Sidebar Drawer */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+
+            {/* Drawer */}
+            <motion.div
+              key="drawer"
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed top-0 left-0 h-full w-72 z-50 bg-card border-r border-border shadow-2xl md:hidden flex flex-col"
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-background">
+                <span className="font-display font-bold uppercase tracking-widest text-sm text-primary">HQ Portal</span>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-1 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                <SidebarContent />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </MainLayout>
   );
 }
