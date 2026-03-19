@@ -11,7 +11,19 @@ function resolveBrevoKey(raw: string | undefined): string | undefined {
 }
 
 const BREVO_API_KEY = resolveBrevoKey(process.env["BREVO_API_KEY"]);
-const APP_URL       = process.env["APP_URL"] ?? "https://tag-website.replit.app";
+
+// Use the real deployment domain — REPLIT_DOMAINS is set automatically in production.
+// Falls back to APP_URL if manually set, then to the generic replit.app domain.
+function resolveAppUrl(): string {
+  const domains = process.env["REPLIT_DOMAINS"];
+  if (domains) {
+    const first = domains.split(",")[0].trim();
+    return `https://${first}`;
+  }
+  return process.env["APP_URL"] ?? "https://tag-website.replit.app";
+}
+
+const APP_URL = resolveAppUrl();
 
 // Use Brevo's own verified sending subdomain — avoids exposing any personal
 // email address and bypasses Yahoo/Gmail DMARC restrictions entirely.
