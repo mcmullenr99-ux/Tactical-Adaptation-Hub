@@ -158,17 +158,17 @@ export default function Home() {
               {
                 name: "Arma 3",
                 type: "Mil-Sim Sandbox",
-                img: "https://images.unsplash.com/photo-1579975096649-e773152b04cb?q=80&w=800&auto=format&fit=crop" /* stock military vehicle/landscape */
+                img: "https://img.youtube.com/vi/M1YBZUxMX8g/hqdefault.jpg"
               },
               {
                 name: "Squad",
                 type: "Large-Scale Tactical",
-                img: "https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=800&auto=format&fit=crop" /* stock soldiers team */
+                img: "https://img.youtube.com/vi/iDDiDALh9Do/hqdefault.jpg"
               },
               {
                 name: "Escape From Tarkov",
                 type: "Hardcore Extraction",
-                img: "https://images.unsplash.com/photo-1605646194276-80410ff9c00b?q=80&w=800&auto=format&fit=crop" /* stock tactical gear/gun */
+                img: "https://img.youtube.com/vi/Dd3MSNfRZ68/hqdefault.jpg"
               }
             ].map((game, i) => (
               <Link key={i} href="/games">
