@@ -1,54 +1,40 @@
-// Support both the raw xkeysib-... key and the base64-JSON wrapper Brevo
-// sometimes shows in the UI ({"api_key":"xkeysib-..."}).
-function resolveBrevoKey(raw: string | undefined): string | undefined {
-  if (!raw) return undefined;
-  if (raw.startsWith("xkeysib-")) return raw;
-  try {
-    const decoded = JSON.parse(Buffer.from(raw, "base64").toString("utf8"));
-    return decoded.api_key ?? raw;
-  } catch {
-    return raw;
-  }
+import nodemailer from "nodemailer";
+
+const FROM_EMAIL = process.env["FROM_EMAIL"] ?? "";
+const SMTP_PASS  = process.env["SMTP_PASS"];
+const APP_URL    = process.env["APP_URL"] ?? "https://tag-website.replit.app";
+
+// Extract bare email address from "Display Name <email@domain.com>" or plain address
+function parseEmail(from: string): string {
+  const match = from.match(/<(.+?)>/);
+  return match ? match[1].trim() : from.trim();
 }
 
-const BREVO_API_KEY = resolveBrevoKey(process.env["BREVO_API_KEY"]);
-const FROM_EMAIL    = process.env["FROM_EMAIL"] ?? "TAG <noreply@tagtacticaladaptationgroup.com>";
-const APP_URL       = process.env["APP_URL"] ?? "https://tag-website.replit.app";
+function makeTransport() {
+  const user = parseEmail(FROM_EMAIL);
+  return nodemailer.createTransport({
+    host: "smtp.mail.yahoo.com",
+    port: 465,
+    secure: true,
+    auth: { user, pass: SMTP_PASS },
+  });
+}
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  if (!BREVO_API_KEY) {
-    console.warn("[email] BREVO_API_KEY not set — email not sent to", to);
-    console.info("[email] Subject:", subject);
+  if (!SMTP_PASS || !FROM_EMAIL) {
+    console.warn("[email] SMTP_PASS or FROM_EMAIL not set — email not sent to", to);
     return;
   }
 
-  // Parse "Display Name <address@domain.com>" or plain address
-  // Strip any stray whitespace / newline characters that might come from secrets
-  const fromClean = FROM_EMAIL.trim().replace(/[\r\n]/g, "");
-  const match = fromClean.match(/^(.+?)\s*<(.+?)>$/);
-  const sender = match
-    ? { name: match[1].trim(), email: match[2].trim() }
-    : { name: "TAG", email: fromClean };
+  const fromAddress = parseEmail(FROM_EMAIL);
+  const fromLabel   = FROM_EMAIL.includes("<") ? FROM_EMAIL : `TAG <${FROM_EMAIL}>`;
 
-  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "api-key": BREVO_API_KEY,
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-    },
-    body: JSON.stringify({
-      sender,
-      to: [{ email: to }],
-      subject,
-      htmlContent: html,
-    }),
+  await makeTransport().sendMail({
+    from: fromLabel,
+    to,
+    subject,
+    html,
   });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Brevo API error ${res.status}: ${err}`);
-  }
 }
 
 export function passwordResetEmail(username: string, token: string): string {
