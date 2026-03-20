@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, Shield } from "lucide-react";
+import { Menu, X, Shield, Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/components/auth/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -22,6 +23,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAuthenticated } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -96,7 +98,15 @@ export function Navbar() {
               <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-accent transition-all duration-300 group-hover:w-full opacity-0 group-hover:opacity-100" />
             </Link>
 
-            <div className="flex items-center gap-3 ml-4 pl-4 border-l border-border">
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded"
+            >
+              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+
+            <div className="flex items-center gap-3 ml-1 pl-4 border-l border-border">
               {isAuthenticated ? (
                 <Link
                   href="/portal/dashboard"
@@ -125,6 +135,13 @@ export function Navbar() {
 
           {/* Mobile: Login button always visible + hamburger */}
           <div className="lg:hidden flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
             {isAuthenticated ? (
               <Link
                 href="/portal/dashboard"
