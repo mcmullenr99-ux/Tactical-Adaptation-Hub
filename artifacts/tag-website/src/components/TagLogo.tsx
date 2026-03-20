@@ -4,21 +4,50 @@ interface TagLogoProps {
 }
 
 /**
- * TAG circular badge logo — GBRS / military patch style.
+ * TAG circular badge — Circle-Text / military coin style.
  *
- * Three bold letters "T  A  G" wrap a 300° arc. textLength forces them to
- * fill the full arc so the huge gaps between the letters look exactly like
- * the GBRS GROUP ring — the glyph bodies ARE the circular border.
+ * The three letters T, A, G each physically form 1/3 of the circle ring.
+ * Each letter sits on its own 120° arc segment so the letter body IS the
+ * curved ring wall, not text floating near a circle.
  *
- * Geometry (centre 100,100, baseline radius r=70):
- *   cap-height at font-size 36 ≈ 26 px  →  caps reach r=96 (outer edge)
- *   ring inner edge = baseline r=70
- *   300° arc:  junction points at 150° CW (135,161) and 210° CW (65,161)
- *     main  M 65,161 A 70,70 0 1,1 135,161  (300°, large-arc sweep=1)
- *     bottom M 65,161 A 70,70 0 0,1 135,161  (60°, small-arc sweep=1)
- *   arc lengths:  300° → 366 px   60° → 73 px
+ * Layout (viewBox 200×200, centre 100,100, baseline r = 60):
+ *   cap-height at font-size 46 ≈ 32 px → caps reach r = 92 (near outer edge)
+ *
+ *   Three 120° clockwise arcs meeting at the equilateral-triangle vertices:
+ *     Top vertex       (100, 40)   →  0°
+ *     Lower-right      (152, 130)  →  120°
+ *     Lower-left       (48,  130)  →  240°
+ *
+ *   A  arc  :  (48,130)  → CW →  (152,130)  over the top   — A is at 12 o'clock
+ *   G  arc  :  (152,130) → CW →  (100,40)   lower-right
+ *   T  arc  :  (100,40)  → CW →  (48,130)   lower-left
+ *
+ *   Each arc length: r × 120° × π/180 = 60 × 2.094 = 125.7 px ≈ 126 px
+ *   textLength="126" + lengthAdjust="spacing" stretches the SPACING so the
+ *   single glyph body sits naturally in its 120° segment.
+ *
+ * Display the logo at ≥ 100 px to appreciate the curved-letter effect.
  */
 export function TagLogo({ size = 200, className = "" }: TagLogoProps) {
+  const cx = 100, cy = 100, r = 60;
+
+  // Equilateral-triangle vertices on the circle (CW from top, 0°/120°/240°)
+  const pt = (deg: number) => {
+    const rad = (deg * Math.PI) / 180;
+    return { x: cx + r * Math.sin(rad), y: cy - r * Math.cos(rad) };
+  };
+  const top  = pt(0);    // (100, 40)
+  const br   = pt(120);  // lower-right
+  const bl   = pt(240);  // lower-left
+
+  const arc = (from: {x:number;y:number}, to: {x:number;y:number}) =>
+    `M ${from.x.toFixed(1)},${from.y.toFixed(1)} A ${r},${r} 0 0,1 ${to.x.toFixed(1)},${to.y.toFixed(1)}`;
+
+  // Arc paths — each is exactly 120° CW
+  const arcA = arc(bl,  br);   // lower-left → over top → lower-right  (A at 12 o'clock)
+  const arcG = arc(br,  top);  // lower-right → lower-left sector       (G at 4 o'clock)
+  const arcT = arc(top, bl);   // top → lower-left sector               (T at 8 o'clock)
+
   return (
     <svg
       width={size}
@@ -29,113 +58,74 @@ export function TagLogo({ size = 200, className = "" }: TagLogoProps) {
       aria-label="TAG — Tactical Adaptation Group"
     >
       <defs>
-        {/* 300° clockwise arc over the top */}
-        <path id="tl-ring" d="M 65,161 A 70,70 0 1,1 135,161" />
-        {/* 60° clockwise arc through the bottom */}
-        <path id="tl-bot"  d="M 65,161 A 70,70 0 0,1 135,161" />
+        <path id="tag-a" d={arcA} />
+        <path id="tag-g" d={arcG} />
+        <path id="tag-t" d={arcT} />
       </defs>
 
-      {/* ── Outer guide hairline ─────────────────────────────────── */}
-      <circle cx="100" cy="100" r="96"
-        fill="none" stroke="currentColor" strokeWidth="0.7" opacity="0.25" />
+      {/* ── Outer hairline guide ring ─────────────────────────────── */}
+      <circle cx={cx} cy={cy} r="94"
+        fill="none" stroke="currentColor" strokeWidth="0.6" opacity="0.25" />
 
       {/*
-       * ── LETTER-RING ───────────────────────────────────────────────
-       * "TAG" textLength=366 fills the full 300° arc (366 px).
-       * lengthAdjust="spacing" leaves glyphs at natural width; all
-       * extra space becomes inter-glyph gaps (~147 px each):
-       *   T — near lower-left  (7–8 o'clock)
-       *   A — at top centre    (12 o'clock)   ← centre of text = arc mid
-       *   G — near lower-right (4–5 o'clock)
-       * Font 36 → cap-height ≈26 px; baseline r=70 → caps reach r=96.
+       * ── THREE LETTER ARCS ────────────────────────────────────────
+       * Each letter is centred in its 120° segment via startOffset/textAnchor.
+       * textLength="126" = arc length so the letter body spans the full segment.
+       * lengthAdjust="spacing" keeps the glyph at natural width; all extra
+       * space becomes padding before/after the character (no glyph distortion).
+       * font-size 46 → cap-height ≈ 32 px → letter body fills the ring wall.
        */}
-      <text
-        fill="currentColor"
-        fontFamily="Rajdhani, sans-serif"
-        fontWeight="700"
-        fontSize="36"
-      >
-        <textPath
-          href="#tl-ring"
-          startOffset="50%"
-          textAnchor="middle"
-          textLength="366"
-          lengthAdjust="spacing"
-        >
-          TAG
-        </textPath>
+      <text fill="currentColor"
+        fontFamily="Rajdhani, sans-serif" fontWeight="700" fontSize="46">
+        <textPath href="#tag-a" startOffset="50%" textAnchor="middle"
+          textLength="126" lengthAdjust="spacing">A</textPath>
       </text>
 
-      {/* Short tick marks at the two junction points, closing the ring */}
-      {/* Lower-left junction (65,161): tick from outer to inner edge */}
-      <line
-        x1="65" y1="161"
-        x2="79" y2="148"
-        stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.6"
-      />
-      {/* Lower-right junction (135,161) */}
-      <line
-        x1="135" y1="161"
-        x2="121" y2="148"
-        stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.6"
-      />
+      <text fill="currentColor"
+        fontFamily="Rajdhani, sans-serif" fontWeight="700" fontSize="46">
+        <textPath href="#tag-g" startOffset="50%" textAnchor="middle"
+          textLength="126" lengthAdjust="spacing">G</textPath>
+      </text>
+
+      <text fill="currentColor"
+        fontFamily="Rajdhani, sans-serif" fontWeight="700" fontSize="46">
+        <textPath href="#tag-t" startOffset="50%" textAnchor="middle"
+          textLength="126" lengthAdjust="spacing">T</textPath>
+      </text>
+
+      {/* Small junction dots where the three arcs meet */}
+      <circle cx={top.x} cy={top.y} r="2.5"
+        fill="currentColor" opacity="0.5" />
+      <circle cx={br.x}  cy={br.y}  r="2.5"
+        fill="currentColor" opacity="0.5" />
+      <circle cx={bl.x}  cy={bl.y}  r="2.5"
+        fill="currentColor" opacity="0.5" />
 
       {/* ── Inner separator rings ────────────────────────────────── */}
-      <circle cx="100" cy="100" r="57"
-        fill="none" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="100" cy="100" r="52"
+      <circle cx={cx} cy={cy} r="45"
+        fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx={cx} cy={cy} r="41"
         fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.4" />
 
-      {/*
-       * ── Crosshair ticks ───────────────────────────────────────────
-       * N/S/E/W: from r=24 (outside centre circle) to r=50 (inside sep)
-       *   N: y 50→76   S: y 124→150   E: x 124→150   W: x 50→76
-       */}
-      <line x1="100" y1="50"  x2="100" y2="76"
-        stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <line x1="100" y1="124" x2="100" y2="150"
-        stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <line x1="50"  y1="100" x2="76"  y2="100"
-        stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <line x1="124" y1="100" x2="150" y2="100"
-        stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      {/* ── Crosshair ticks (r 17 → 38) ─────────────────────────── */}
+      <line x1="100" y1="62"  x2="100" y2="83"
+        stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="100" y1="117" x2="100" y2="138"
+        stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="62"  y1="100" x2="83"  y2="100"
+        stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <line x1="117" y1="100" x2="138" y2="100"
+        stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
 
       {/* ── Centre target ring ───────────────────────────────────── */}
-      <circle cx="100" cy="100" r="20"
-        fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx={cx} cy={cy} r="15"
+        fill="none" stroke="currentColor" strokeWidth="1.5" />
 
-      {/* ── Centre "T" lettermark ────────────────────────────────── */}
-      <text
-        x="100" y="112"
+      {/* ── EST. 2025 centred inside the lower portion ───────────── */}
+      <text x="100" y="118"
         textAnchor="middle"
-        fontFamily="Rajdhani, sans-serif"
-        fontWeight="700"
-        fontSize="28"
-        fill="currentColor"
-      >T</text>
-
-      {/*
-       * ── EST. 2025 — bottom 60° arc ───────────────────────────────
-       * Same clockwise sweep through the bottom; text extends inward
-       * (toward centre) and reads left-to-right. textLength="60" keeps
-       * it tight in the narrow 73 px sector.
-       */}
-      <text
-        fill="currentColor"
-        fontFamily="Rajdhani, sans-serif"
-        fontWeight="700"
-        fontSize="10"
-      >
-        <textPath
-          href="#tl-bot"
-          startOffset="50%"
-          textAnchor="middle"
-          textLength="60"
-          lengthAdjust="spacing"
-        >
-          EST. 2025
-        </textPath>
-      </text>
+        fontFamily="Rajdhani, sans-serif" fontWeight="600" fontSize="9"
+        fill="currentColor" letterSpacing="1.5">EST. 2025</text>
     </svg>
   );
 }
