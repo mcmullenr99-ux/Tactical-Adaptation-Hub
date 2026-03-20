@@ -637,46 +637,46 @@ export default function Forum() {
     <MainLayout>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
 
-        {/* Page Header — UAV Overwatch HUD */}
-        <div className="relative rounded-lg overflow-hidden border border-[#4ade80]/25 bg-[#030805] mb-8 min-h-[220px] select-none">
+        {/* Page Header — UAV Overwatch HUD // WHITE-HOT THERMAL */}
+        <div className="relative rounded-lg overflow-hidden border border-white/15 bg-[#000000] mb-8 min-h-[220px] select-none">
 
-          {/* Phosphor scanlines texture */}
+          {/* Thermal scanlines texture */}
           <div className="absolute inset-0 pointer-events-none"
-            style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(74,222,128,0.018) 3px, rgba(74,222,128,0.018) 4px)" }} />
+            style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.012) 3px, rgba(255,255,255,0.012) 4px)" }} />
 
           {/* Noise grain */}
-          <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none"
             style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "128px" }} />
 
-          {/* Moving scan beam */}
+          {/* Moving scan beam — white */}
           <div className="uav-scan-beam absolute left-0 right-0 h-[3px] pointer-events-none"
-            style={{ background: "linear-gradient(to bottom, transparent, rgba(74,222,128,0.35), transparent)" }} />
+            style={{ background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.25), transparent)" }} />
 
-          {/* Corner brackets */}
-          <div className="absolute top-4 left-4 w-5 h-5 border-t-2 border-l-2 border-[#4ade80]/70" />
-          <div className="absolute top-4 right-4 w-5 h-5 border-t-2 border-r-2 border-[#4ade80]/70" />
-          <div className="absolute bottom-4 left-4 w-5 h-5 border-b-2 border-l-2 border-[#4ade80]/70" />
-          <div className="absolute bottom-4 right-4 w-5 h-5 border-b-2 border-r-2 border-[#4ade80]/70" />
+          {/* Corner brackets — white */}
+          <div className="absolute top-4 left-4 w-5 h-5 border-t-2 border-l-2 border-white/60" />
+          <div className="absolute top-4 right-4 w-5 h-5 border-t-2 border-r-2 border-white/60" />
+          <div className="absolute bottom-4 left-4 w-5 h-5 border-b-2 border-l-2 border-white/60" />
+          <div className="absolute bottom-4 right-4 w-5 h-5 border-b-2 border-r-2 border-white/60" />
 
           {/* Crosshair center overlay */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="relative w-48 h-48 opacity-[0.06]">
-              <div className="absolute top-1/2 left-0 right-0 h-px bg-[#4ade80]" />
-              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-[#4ade80]" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 border border-[#4ade80] rounded-full" />
+            <div className="relative w-48 h-48 opacity-[0.07]">
+              <div className="absolute top-1/2 left-0 right-0 h-px bg-white" />
+              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 border border-white rounded-full" />
             </div>
           </div>
 
           {/* ── Top bar: feed ID / timestamp / rec ── */}
           <div className="relative z-10 flex items-center justify-between px-8 pt-5 pb-0">
             <div className="flex items-center gap-4">
-              <span className="text-[9px] font-mono text-[#4ade80] uppercase tracking-[0.3em]">UAV-7 // OVERWATCH</span>
-              <span className="text-[9px] font-mono text-[#4ade80]/40 uppercase tracking-wider">AREA: SECTOR-7</span>
+              <span className="text-[9px] font-mono text-white uppercase tracking-[0.3em]">UAV-7 // OVERWATCH</span>
+              <span className="text-[9px] font-mono text-white/35 uppercase tracking-wider">AREA: SECTOR-7</span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-[9px] font-mono text-[#4ade80]/50 uppercase tracking-wider">{militaryDate} // {militaryTime}</span>
-              <span className="flex items-center gap-1.5 text-[9px] font-mono text-[#4ade80] uppercase tracking-widest">
-                <span className="uav-blink w-1.5 h-1.5 rounded-full bg-[#4ade80]" />
+              <span className="text-[9px] font-mono text-white/45 uppercase tracking-wider">{militaryDate} // {militaryTime}</span>
+              <span className="flex items-center gap-1.5 text-[9px] font-mono text-white uppercase tracking-widest">
+                <span className="uav-blink w-1.5 h-1.5 rounded-full bg-white" />
                 REC
               </span>
             </div>
@@ -685,15 +685,15 @@ export default function Forum() {
           {/* ── Centre: target designation + telemetry ── */}
           <div className="relative z-10 flex items-center justify-between px-8 py-5 gap-4">
             <div>
-              <p className="text-[9px] font-mono text-[#4ade80]/50 uppercase tracking-[0.3em] mb-1.5">
+              <p className="text-[9px] font-mono text-white/45 uppercase tracking-[0.3em] mb-1.5">
                 TGT DESIGNATION: UNIT.COMMS.PRI
               </p>
               <h1 className="font-display font-black text-3xl sm:text-4xl uppercase tracking-wider leading-none">
-                <span className="text-white" style={{ textShadow: "-1px 0 0 rgba(255,0,60,0.3), 1px 0 0 rgba(0,255,255,0.2)" }}>COMMUNITY</span>
+                <span className="text-white/80">COMMUNITY</span>
                 {" "}
-                <span className="text-[#4ade80]" style={{ textShadow: "-1px 0 0 rgba(255,0,60,0.25), 1px 0 0 rgba(0,255,255,0.18)" }}>BOARD</span>
+                <span className="text-white" style={{ textShadow: "0 0 18px rgba(255,255,255,0.7), 0 0 40px rgba(255,255,255,0.25)" }}>BOARD</span>
               </h1>
-              <p className="text-[9px] font-mono text-[#4ade80]/40 mt-2 uppercase tracking-[0.25em]">
+              <p className="text-[9px] font-mono text-white/30 mt-2 uppercase tracking-[0.25em]">
                 SIGNAL OPEN &nbsp;·&nbsp; GAMING &nbsp;·&nbsp; UNIT NEWS &nbsp;·&nbsp; RECRUITMENT &nbsp;·&nbsp; GENERAL
               </p>
             </div>
@@ -707,8 +707,8 @@ export default function Forum() {
                 ["SPD",  "143 KTS"],
               ].map(([label, val]) => (
                 <div key={label} className="flex items-baseline gap-2">
-                  <span className="text-[9px] font-mono text-[#4ade80]/35 uppercase tracking-widest">{label}</span>
-                  <span className="text-[10px] font-mono text-[#4ade80]/70 uppercase tracking-wider">{val}</span>
+                  <span className="text-[9px] font-mono text-white/30 uppercase tracking-widest">{label}</span>
+                  <span className="text-[10px] font-mono text-white/65 uppercase tracking-wider">{val}</span>
                 </div>
               ))}
             </div>
@@ -716,21 +716,21 @@ export default function Forum() {
 
           {/* ── Bottom bar: GPS + broadcast btn ── */}
           <div className="relative z-10 flex items-center justify-between px-8 pb-5 pt-0">
-            <span className="text-[9px] font-mono text-[#4ade80]/40 uppercase tracking-[0.25em]">
+            <span className="text-[9px] font-mono text-white/30 uppercase tracking-[0.25em]">
               GPS: 54.2341° N &nbsp; 003.8821° W
             </span>
             {isAuthenticated && (
               <button onClick={() => setShowCreate(true)}
-                className="flex items-center gap-2 border border-[#4ade80]/60 text-[#4ade80] font-mono font-bold uppercase tracking-[0.2em] px-4 py-2 text-[10px] hover:bg-[#4ade80] hover:text-black transition-all shrink-0 group">
-                <span className="uav-blink w-1.5 h-1.5 rounded-full bg-[#4ade80] group-hover:bg-black" />
+                className="flex items-center gap-2 border border-white/40 text-white/80 font-mono font-bold uppercase tracking-[0.2em] px-4 py-2 text-[10px] hover:bg-white hover:text-black transition-all shrink-0 group">
+                <span className="uav-blink w-1.5 h-1.5 rounded-full bg-white/80 group-hover:bg-black" />
                 BROADCAST
               </button>
             )}
           </div>
 
-          {/* Edge glow */}
-          <div className="absolute inset-0 rounded-lg pointer-events-none"
-            style={{ boxShadow: "inset 0 0 40px rgba(74,222,128,0.04)" }} />
+          {/* Subtle white centre bloom — hottest signature */}
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ background: "radial-gradient(ellipse 60% 80% at 35% 55%, rgba(255,255,255,0.04) 0%, transparent 70%)" }} />
         </div>
 
         {/* Category Tabs */}
