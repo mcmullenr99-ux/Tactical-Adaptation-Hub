@@ -75,13 +75,13 @@ export default function ServiceCard() {
         </div>
 
         {/* The Card */}
-        <div ref={cardRef} className="relative overflow-hidden bg-[#0a0e0d] border-2 border-primary/60 rounded-xl" style={{ fontFamily: "'Rajdhani', monospace" }}>
+        <div ref={cardRef} className="relative overflow-hidden bg-[#0a0e0d] border-2 border-[#4ade80]/60 rounded-xl" style={{ fontFamily: "'Rajdhani', monospace" }}>
           {/* Top accent bar */}
-          <div className="h-1.5 bg-gradient-to-r from-primary via-accent to-primary w-full" />
+          <div className="h-1.5 bg-gradient-to-r from-[#4ade80] via-[#22d3ee] to-[#4ade80] w-full" />
 
           {/* Corner decorations */}
-          <div className="absolute top-3 right-3 w-12 h-12 border-t-2 border-r-2 border-primary/40 rounded-tr-lg" />
-          <div className="absolute bottom-3 left-3 w-12 h-12 border-b-2 border-l-2 border-primary/40 rounded-bl-lg" />
+          <div className="absolute top-3 right-3 w-12 h-12 border-t-2 border-r-2 border-[#4ade80]/40 rounded-tr-lg" />
+          <div className="absolute bottom-3 left-3 w-12 h-12 border-b-2 border-l-2 border-[#4ade80]/40 rounded-bl-lg" />
 
           {/* Background texture */}
           <div className="absolute inset-0 opacity-5" style={{ backgroundImage: "repeating-linear-gradient(45deg, #00ff41 0, #00ff41 1px, transparent 0, transparent 50%)", backgroundSize: "12px 12px" }} />
@@ -90,48 +90,48 @@ export default function ServiceCard() {
             {/* Header Row */}
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary/70 mb-1">TACTICAL ADAPTATION GROUP</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#4ade80]/70 mb-1">TACTICAL ADAPTATION GROUP</p>
                 <h2 className="text-3xl font-black uppercase tracking-widest text-white leading-none">{user.username}</h2>
-                <p className="text-sm text-primary/80 uppercase tracking-widest mt-1 font-bold">{user.role}</p>
+                <p className="text-sm text-[#4ade80]/80 uppercase tracking-widest mt-1 font-bold">{user.role}</p>
               </div>
               <div className="flex flex-col items-end gap-1">
-                <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary/50 flex items-center justify-center">
-                  <Shield className="w-7 h-7 text-primary" />
+                <div className="w-14 h-14 rounded-full bg-[#4ade80]/20 border-2 border-[#4ade80]/50 flex items-center justify-center">
+                  <Shield className="w-7 h-7 text-[#4ade80]" />
                 </div>
-                <p className="text-[10px] text-primary/60 uppercase tracking-widest">TAG OPERATOR</p>
+                <p className="text-[10px] text-[#4ade80]/60 uppercase tracking-widest">TAG OPERATOR</p>
               </div>
             </div>
 
             {/* Divider */}
-            <div className="h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+            <div className="h-px bg-gradient-to-r from-transparent via-[#4ade80]/40 to-transparent" />
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="space-y-1">
-                <p className="text-[9px] uppercase tracking-[0.25em] text-primary/60 font-bold">Enlisted</p>
+                <p className="text-[9px] uppercase tracking-[0.25em] text-[#4ade80]/60 font-bold">Enlisted</p>
                 <p className="text-sm font-bold text-white">{format(new Date(user.createdAt), "dd MMM yyyy").toUpperCase()}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-[9px] uppercase tracking-[0.25em] text-primary/60 font-bold">Days Active</p>
+                <p className="text-[9px] uppercase tracking-[0.25em] text-[#4ade80]/60 font-bold">Days Active</p>
                 <p className="text-sm font-bold text-white">{daysIn}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-[9px] uppercase tracking-[0.25em] text-primary/60 font-bold">Service Tier</p>
-                <p className="text-sm font-bold text-primary">{badge.tier}</p>
+                <p className="text-[9px] uppercase tracking-[0.25em] text-[#4ade80]/60 font-bold">Service Tier</p>
+                <p className="text-sm font-bold text-[#4ade80]">{badge.tier}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-[9px] uppercase tracking-[0.25em] text-primary/60 font-bold">Duty Status</p>
+                <p className="text-[9px] uppercase tracking-[0.25em] text-[#4ade80]/60 font-bold">Duty Status</p>
                 <p className="text-sm font-bold" style={{ color: dutyColor }}>{DUTY_LABELS[dutyStatus]}</p>
               </div>
             </div>
 
             {/* Badge Row */}
             <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/30 rounded text-xs font-bold text-primary uppercase tracking-widest">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-[#4ade80]/10 border border-[#4ade80]/30 rounded text-xs font-bold text-[#4ade80] uppercase tracking-widest">
                 <span className="text-base">{badge.icon}</span> {badge.label}
               </div>
               {(user as any).nationality && (
-                <div className="px-3 py-1.5 bg-secondary/40 border border-white/10 rounded text-xs font-bold text-white/70 uppercase tracking-widest">
+                <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded text-xs font-bold text-white/70 uppercase tracking-widest">
                   {(user as any).nationality}
                 </div>
               )}
@@ -140,7 +140,7 @@ export default function ServiceCard() {
             {/* Bio */}
             {user.bio && (
               <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-primary/60 font-bold mb-1">Operator Bio</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[#4ade80]/60 font-bold mb-1">Operator Bio</p>
                 <p className="text-xs text-white/80 font-sans leading-relaxed">{user.bio}</p>
               </div>
             )}
@@ -153,7 +153,7 @@ export default function ServiceCard() {
           </div>
 
           {/* Bottom accent */}
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-[#4ade80]/30 to-transparent" />
         </div>
 
         {/* Actions */}

@@ -643,12 +643,12 @@ export default function Forum() {
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
             style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "128px" }} />
           {/* Top accent bar */}
-          <div className="h-0.5 w-full bg-gradient-to-r from-primary via-primary/60 to-transparent" />
+          <div className="h-0.5 w-full bg-gradient-to-r from-[#4ade80] via-[#4ade80]/60 to-transparent" />
 
           <div className="px-6 pt-5 pb-6 relative z-10">
-            <p className="text-[10px] font-mono text-primary uppercase tracking-[0.25em] mb-3">
+            <p className="text-[10px] font-mono text-[#4ade80] uppercase tracking-[0.25em] mb-3">
               {militaryDate} // {militaryTime} &nbsp;·&nbsp; FREQ: UNIT.COMMS &nbsp;·&nbsp; STATUS: OPEN
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary ml-2 align-middle animate-pulse" />
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#4ade80] ml-2 align-middle animate-pulse" />
             </p>
 
             <div className="flex items-end justify-between gap-4 flex-wrap">
@@ -659,20 +659,20 @@ export default function Forum() {
                     COMMUNITY
                   </span>
                   {" "}
-                  <span className="text-primary inline-block"
+                  <span className="text-[#4ade80] inline-block"
                     style={{ textShadow: "-2px 0 0 rgba(255,0,60,0.35), 2px 0 0 rgba(0,255,255,0.25)" }}>
                     BOARD
                   </span>
                 </h1>
-                <p className="text-xs font-mono text-muted-foreground mt-2 uppercase tracking-widest">
+                <p className="text-xs font-mono text-white/40 mt-2 uppercase tracking-widest">
                   Gaming · Unit News · Recruitment · General
                 </p>
               </div>
 
               {isAuthenticated && (
                 <button onClick={() => setShowCreate(true)}
-                  className="flex items-center gap-2 bg-transparent border border-primary text-primary font-display font-bold uppercase tracking-widest px-5 py-2.5 rounded text-sm hover:bg-primary hover:text-primary-foreground transition-all shrink-0 group">
-                  <span className="w-2 h-2 rounded-full bg-primary group-hover:bg-primary-foreground animate-pulse" />
+                  className="flex items-center gap-2 bg-transparent border border-[#4ade80] text-[#4ade80] font-display font-bold uppercase tracking-widest px-5 py-2.5 rounded text-sm hover:bg-[#4ade80] hover:text-black transition-all shrink-0 group">
+                  <span className="w-2 h-2 rounded-full bg-[#4ade80] group-hover:bg-black animate-pulse" />
                   <span>Broadcast</span>
                 </button>
               )}
@@ -680,7 +680,7 @@ export default function Forum() {
           </div>
 
           {/* Bottom scan line */}
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-[#4ade80]/30 to-transparent" />
         </div>
 
         {/* Category Tabs */}

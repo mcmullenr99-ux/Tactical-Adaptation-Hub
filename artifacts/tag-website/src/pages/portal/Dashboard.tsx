@@ -141,12 +141,12 @@ export default function Dashboard() {
           {/* Left panel */}
           <div className="flex-1 min-w-0 p-8 flex flex-col justify-between relative z-10">
             <div>
-              <p className="text-[10px] font-mono text-primary uppercase tracking-[0.25em] mb-3">
+              <p className="text-[10px] font-mono text-[#4ade80] uppercase tracking-[0.25em] mb-3">
                 TAG — HQ PORTAL // {format(new Date(), "ddMMMyyyy").toUpperCase()} — AUTHENTICATED
               </p>
               <h1 className="font-display font-black uppercase leading-none mb-4 text-white">
                 <span className="block text-4xl md:text-5xl tracking-tight">{user.username}</span>
-                <span className="block text-base md:text-lg tracking-[0.3em] text-primary mt-1 opacity-80">{user.role}</span>
+                <span className="block text-base md:text-lg tracking-[0.3em] text-[#4ade80] mt-1 opacity-80">{user.role}</span>
               </h1>
               <div className={`inline-flex items-center gap-1.5 text-[10px] font-display font-bold uppercase tracking-widest px-2.5 py-1 rounded border ${badge.color}`}>
                 <span>{badge.icon}</span> {badge.label}
@@ -187,7 +187,7 @@ export default function Dashboard() {
           </div>
 
           {/* Diagonal separator */}
-          <div className="hidden sm:block absolute inset-y-0 right-[38%] w-px bg-gradient-to-b from-transparent via-primary/40 to-transparent z-10"
+          <div className="hidden sm:block absolute inset-y-0 right-[38%] w-px bg-gradient-to-b from-transparent via-[#4ade80]/40 to-transparent z-10"
             style={{ transform: "skewX(-6deg)" }} />
 
           {/* Right panel — helmet image */}
@@ -198,14 +198,14 @@ export default function Dashboard() {
               className="absolute inset-0 w-full h-full object-contain object-center opacity-[0.12] [mix-blend-mode:screen] pointer-events-none scale-110"
             />
             <div className="relative z-10 text-center px-6">
-              <p className="text-[9px] font-mono text-primary/60 uppercase tracking-[0.3em]">CLEARANCE</p>
+              <p className="text-[9px] font-mono text-[#4ade80]/60 uppercase tracking-[0.3em]">CLEARANCE</p>
               <p className="font-display font-black text-2xl uppercase text-white/80 tracking-widest">{user.status}</p>
             </div>
           </div>
 
           {/* Corner accent */}
-          <div className="absolute top-0 left-0 w-20 h-1 bg-primary" />
-          <div className="absolute bottom-0 right-0 w-20 h-1 bg-primary/40" />
+          <div className="absolute top-0 left-0 w-20 h-1 bg-[#4ade80]" />
+          <div className="absolute bottom-0 right-0 w-20 h-1 bg-[#4ade80]/40" />
         </motion.div>
 
         {/* Stats Grid */}
