@@ -10,6 +10,7 @@ import {
   Megaphone, Gamepad2, Users, ImagePlus, FileVideo
 } from "lucide-react";
 import { countryFlag } from "@/lib/countries";
+import { UavHudScene } from "./UavHudScene";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
@@ -638,7 +639,10 @@ export default function Forum() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
 
         {/* Page Header — UAV Overwatch HUD // WHITE-HOT THERMAL */}
-        <div className="relative rounded-lg overflow-hidden border border-white/15 bg-[#000000] mb-8 min-h-[220px] select-none">
+        <div className="relative rounded-lg overflow-hidden border border-white/15 bg-[#000000] mb-8 min-h-[260px] select-none">
+
+          {/* AC-130 aerial scene — orbiting compound with infantry */}
+          <UavHudScene />
 
           {/* Thermal scanlines texture */}
           <div className="absolute inset-0 pointer-events-none"
