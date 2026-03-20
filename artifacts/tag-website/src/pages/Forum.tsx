@@ -637,50 +637,100 @@ export default function Forum() {
     <MainLayout>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
 
-        {/* Page Header — Signal Broadcast */}
-        <div className="relative rounded-lg overflow-hidden border border-border bg-[#0d0d0d] mb-8">
-          {/* Grain */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+        {/* Page Header — UAV Overwatch HUD */}
+        <div className="relative rounded-lg overflow-hidden border border-[#4ade80]/25 bg-[#030805] mb-8 min-h-[220px] select-none">
+
+          {/* Phosphor scanlines texture */}
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(74,222,128,0.018) 3px, rgba(74,222,128,0.018) 4px)" }} />
+
+          {/* Noise grain */}
+          <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
             style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "128px" }} />
-          {/* Top accent bar */}
-          <div className="h-0.5 w-full bg-gradient-to-r from-[#4ade80] via-[#4ade80]/60 to-transparent" />
 
-          <div className="px-6 pt-5 pb-6 relative z-10">
-            <p className="text-[10px] font-mono text-[#4ade80] uppercase tracking-[0.25em] mb-3">
-              {militaryDate} // {militaryTime} &nbsp;·&nbsp; FREQ: UNIT.COMMS &nbsp;·&nbsp; STATUS: OPEN
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#4ade80] ml-2 align-middle animate-pulse" />
-            </p>
+          {/* Moving scan beam */}
+          <div className="uav-scan-beam absolute left-0 right-0 h-[3px] pointer-events-none"
+            style={{ background: "linear-gradient(to bottom, transparent, rgba(74,222,128,0.35), transparent)" }} />
 
-            <div className="flex items-end justify-between gap-4 flex-wrap">
-              <div>
-                <h1 className="font-display font-black text-3xl sm:text-4xl uppercase tracking-wider text-white leading-none">
-                  <span className="inline-block"
-                    style={{ textShadow: "-1px 0 0 rgba(255,0,60,0.4), 1px 0 0 rgba(0,255,255,0.3)" }}>
-                    COMMUNITY
-                  </span>
-                  {" "}
-                  <span className="text-[#4ade80] inline-block"
-                    style={{ textShadow: "-2px 0 0 rgba(255,0,60,0.35), 2px 0 0 rgba(0,255,255,0.25)" }}>
-                    BOARD
-                  </span>
-                </h1>
-                <p className="text-xs font-mono text-white/40 mt-2 uppercase tracking-widest">
-                  Gaming · Unit News · Recruitment · General
-                </p>
-              </div>
+          {/* Corner brackets */}
+          <div className="absolute top-4 left-4 w-5 h-5 border-t-2 border-l-2 border-[#4ade80]/70" />
+          <div className="absolute top-4 right-4 w-5 h-5 border-t-2 border-r-2 border-[#4ade80]/70" />
+          <div className="absolute bottom-4 left-4 w-5 h-5 border-b-2 border-l-2 border-[#4ade80]/70" />
+          <div className="absolute bottom-4 right-4 w-5 h-5 border-b-2 border-r-2 border-[#4ade80]/70" />
 
-              {isAuthenticated && (
-                <button onClick={() => setShowCreate(true)}
-                  className="flex items-center gap-2 bg-transparent border border-[#4ade80] text-[#4ade80] font-display font-bold uppercase tracking-widest px-5 py-2.5 rounded text-sm hover:bg-[#4ade80] hover:text-black transition-all shrink-0 group">
-                  <span className="w-2 h-2 rounded-full bg-[#4ade80] group-hover:bg-black animate-pulse" />
-                  <span>Broadcast</span>
-                </button>
-              )}
+          {/* Crosshair center overlay */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="relative w-48 h-48 opacity-[0.06]">
+              <div className="absolute top-1/2 left-0 right-0 h-px bg-[#4ade80]" />
+              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-[#4ade80]" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 border border-[#4ade80] rounded-full" />
             </div>
           </div>
 
-          {/* Bottom scan line */}
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-[#4ade80]/30 to-transparent" />
+          {/* ── Top bar: feed ID / timestamp / rec ── */}
+          <div className="relative z-10 flex items-center justify-between px-8 pt-5 pb-0">
+            <div className="flex items-center gap-4">
+              <span className="text-[9px] font-mono text-[#4ade80] uppercase tracking-[0.3em]">UAV-7 // OVERWATCH</span>
+              <span className="text-[9px] font-mono text-[#4ade80]/40 uppercase tracking-wider">AREA: SECTOR-7</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-[9px] font-mono text-[#4ade80]/50 uppercase tracking-wider">{militaryDate} // {militaryTime}</span>
+              <span className="flex items-center gap-1.5 text-[9px] font-mono text-[#4ade80] uppercase tracking-widest">
+                <span className="uav-blink w-1.5 h-1.5 rounded-full bg-[#4ade80]" />
+                REC
+              </span>
+            </div>
+          </div>
+
+          {/* ── Centre: target designation + telemetry ── */}
+          <div className="relative z-10 flex items-center justify-between px-8 py-5 gap-4">
+            <div>
+              <p className="text-[9px] font-mono text-[#4ade80]/50 uppercase tracking-[0.3em] mb-1.5">
+                TGT DESIGNATION: UNIT.COMMS.PRI
+              </p>
+              <h1 className="font-display font-black text-3xl sm:text-4xl uppercase tracking-wider leading-none">
+                <span className="text-white" style={{ textShadow: "-1px 0 0 rgba(255,0,60,0.3), 1px 0 0 rgba(0,255,255,0.2)" }}>COMMUNITY</span>
+                {" "}
+                <span className="text-[#4ade80]" style={{ textShadow: "-1px 0 0 rgba(255,0,60,0.25), 1px 0 0 rgba(0,255,255,0.18)" }}>BOARD</span>
+              </h1>
+              <p className="text-[9px] font-mono text-[#4ade80]/40 mt-2 uppercase tracking-[0.25em]">
+                SIGNAL OPEN &nbsp;·&nbsp; GAMING &nbsp;·&nbsp; UNIT NEWS &nbsp;·&nbsp; RECRUITMENT &nbsp;·&nbsp; GENERAL
+              </p>
+            </div>
+
+            {/* Right side telemetry block */}
+            <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
+              {[
+                ["ALT",  "2,400 M"],
+                ["HDG",  "187° S"],
+                ["ZOOM", "4.0×"],
+                ["SPD",  "143 KTS"],
+              ].map(([label, val]) => (
+                <div key={label} className="flex items-baseline gap-2">
+                  <span className="text-[9px] font-mono text-[#4ade80]/35 uppercase tracking-widest">{label}</span>
+                  <span className="text-[10px] font-mono text-[#4ade80]/70 uppercase tracking-wider">{val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Bottom bar: GPS + broadcast btn ── */}
+          <div className="relative z-10 flex items-center justify-between px-8 pb-5 pt-0">
+            <span className="text-[9px] font-mono text-[#4ade80]/40 uppercase tracking-[0.25em]">
+              GPS: 54.2341° N &nbsp; 003.8821° W
+            </span>
+            {isAuthenticated && (
+              <button onClick={() => setShowCreate(true)}
+                className="flex items-center gap-2 border border-[#4ade80]/60 text-[#4ade80] font-mono font-bold uppercase tracking-[0.2em] px-4 py-2 text-[10px] hover:bg-[#4ade80] hover:text-black transition-all shrink-0 group">
+                <span className="uav-blink w-1.5 h-1.5 rounded-full bg-[#4ade80] group-hover:bg-black" />
+                BROADCAST
+              </button>
+            )}
+          </div>
+
+          {/* Edge glow */}
+          <div className="absolute inset-0 rounded-lg pointer-events-none"
+            style={{ boxShadow: "inset 0 0 40px rgba(74,222,128,0.04)" }} />
         </div>
 
         {/* Category Tabs */}
