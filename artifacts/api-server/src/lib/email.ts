@@ -11,23 +11,22 @@ function resolveBrevoKey(raw: string | undefined): string | undefined {
 }
 
 const BREVO_API_KEY = resolveBrevoKey(process.env["BREVO_API_KEY"]);
+// Always send FROM Brevo's own domain — using yahoo.com/gmail.com as FROM violates
+// their DMARC p=reject policy and Gmail silently drops the message.
+const BREVO_SENDER = "TAG Notifications <noreply@10844033.brevosend.com>";
+// If an admin reply-to address is configured, replies go there instead.
+const REPLY_TO = process.env["FROM_EMAIL"];
 
-// Use the real deployment domain — REPLIT_DOMAINS is set automatically in production.
-// Falls back to APP_URL if manually set, then to the generic replit.app domain.
 function resolveAppUrl(): string {
   const domains = process.env["REPLIT_DOMAINS"];
   if (domains) {
     const first = domains.split(",")[0].trim();
     return `https://${first}`;
   }
-  return process.env["APP_URL"] ?? "https://tag-website.replit.app";
+  return process.env["APP_URL"] ?? "https://tactical-adaptation-hub.replit.app";
 }
 
 const APP_URL = resolveAppUrl();
-
-// Use Brevo's own verified sending subdomain — avoids exposing any personal
-// email address and bypasses Yahoo/Gmail DMARC restrictions entirely.
-const FROM_EMAIL = "TAG Notifications <noreply@10844033.brevosend.com>";
 
 function parseEmailParts(from: string): { name: string; email: string } {
   const match = from.match(/^(.+?)\s*<(.+?)>\s*$/);
@@ -41,7 +40,20 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
     return;
   }
 
-  const sender = parseEmailParts(FROM_EMAIL);
+  const sender = parseEmailParts(BREVO_SENDER);
+  const body: Record<string, unknown> = {
+    sender,
+    to: [{ email: to }],
+    subject,
+    htmlContent: html,
+    textContent: html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+  };
+
+  // Add reply-to if a contact address is configured
+  if (REPLY_TO) {
+    const rt = parseEmailParts(REPLY_TO);
+    body.replyTo = rt;
+  }
 
   const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
@@ -50,12 +62,7 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
       "Content-Type": "application/json",
       "Accept": "application/json",
     },
-    body: JSON.stringify({
-      sender,
-      to: [{ email: to }],
-      subject,
-      htmlContent: html,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -64,7 +71,7 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   }
 
   const result = await res.json() as any;
-  console.log(`[email] Sent OK → to=${to} from=${sender.email} messageId=${result?.messageId}`);
+  console.log(`[email] Sent OK → to=${to} messageId=${result?.messageId}`);
 }
 
 export function passwordResetEmail(username: string, token: string): string {
