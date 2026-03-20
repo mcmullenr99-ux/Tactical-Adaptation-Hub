@@ -3,89 +3,110 @@ import { Link } from "wouter";
 import { Crosshair, Shield, Users, Target, ArrowRight } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useSEO } from "@/hooks/useSEO";
-import { TagLogo } from "@/components/TagLogo";
 
 export default function Home() {
   useSEO({ title: "Home", description: "Tactical Adaptation Group — a premier tactical gaming community dedicated to mastering warfighting fundamentals and building brotherhood." });
   return (
     <MainLayout>
-      {/* Hero Section */}
-      <section className="relative h-[90vh] min-h-[600px] flex items-center justify-center overflow-hidden">
-        {/* Background Image with Overlay */}
-        <div className="absolute inset-0 z-0">
-          <img 
-            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
-            alt="Tactical map background" 
-            className="w-full h-full object-cover opacity-60"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-transparent to-background/90" />
+      {/* Hero Section — Signal Broadcast */}
+      <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden bg-[#0d0d0d]">
+        {/* Noise grain overlay */}
+        <div
+          className="pointer-events-none absolute inset-0 z-[2] opacity-[0.05]"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")` }}
+        />
+
+        {/* Ghost logo watermark */}
+        <img
+          src={`${import.meta.env.BASE_URL}images/tag-logo.png`}
+          width={560}
+          alt=""
+          className="absolute z-0 pointer-events-none select-none hidden sm:block"
+          style={{ right: '-80px', top: '50%', transform: 'translateY(-50%)', filter: 'invert(1)', opacity: 0.05, mixBlendMode: 'screen' }}
+          draggable={false}
+        />
+
+        {/* Vertical TRANSMISSION label */}
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 -translate-x-1/2 -rotate-90 text-[10px] tracking-[0.5em] text-neutral-600 font-mono uppercase origin-center whitespace-nowrap z-10 hidden sm:block">
+          Transmission
         </div>
 
-        {/* Logo watermark */}
-        <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
-          <TagLogo size={520} className="opacity-[0.06]" />
+        {/* Military timestamp */}
+        <div className="absolute top-24 left-8 sm:left-16 text-[#4ade80] opacity-60 font-mono text-xs sm:text-sm tracking-wider z-10">
+          20MAR2026 // 0342Z
         </div>
 
-        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto mt-16">
-          <motion.div
+        {/* Main content */}
+        <div className="relative z-10 ml-8 sm:ml-24 px-4 sm:px-0 max-w-2xl flex flex-col gap-4 sm:gap-6 mt-16">
+          {/* Glitch headline */}
+          <motion.h1
+            className="flex flex-col font-display font-black uppercase leading-[0.85] text-[clamp(3rem,8vw,6rem)]"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.7 }}
           >
-            <h2 className="text-primary font-display font-bold tracking-[0.3em] uppercase mb-4 text-sm sm:text-base">
-              Tactical Adaptation Group
-            </h2>
-          </motion.div>
-          
-          <motion.h1 
-            className="text-5xl sm:text-7xl md:text-8xl font-display font-bold tracking-tight uppercase mb-6 text-foreground text-glow"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            Train. <span className="text-primary">Adapt.</span> Dominate.
+            <span className="text-white">Train.</span>
+            <span className="relative inline-block w-fit">
+              <span className="absolute top-0 left-0 text-white opacity-80" style={{ transform: 'translateX(2px)', textShadow: '2px 0 #ef4444' }}>Adapt.</span>
+              <span className="absolute top-0 left-0 text-white opacity-80" style={{ transform: 'translateX(-2px)', textShadow: '-2px 0 #22d3ee' }}>Adapt.</span>
+              <span className="relative text-white">Adapt.</span>
+            </span>
+            <span className="text-white">Dominate.</span>
           </motion.h1>
-          
-          <motion.p 
-            className="text-lg sm:text-xl text-muted-foreground font-sans max-w-2xl mx-auto mb-10 leading-relaxed"
+
+          {/* Frequency bar */}
+          <motion.div
+            className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs font-mono text-neutral-400 tracking-widest border-l-2 border-neutral-700 pl-4 py-1"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
           >
-            Bringing together tactical gamers to master warfighting fundamentals, build brotherhood, and dominate the battlefield.
+            <span>FREQ: 156.800 MHz</span>
+            <span className="hidden sm:inline">//</span>
+            <span className="hidden sm:inline">UNIT: TAG</span>
+            <span className="hidden sm:inline">//</span>
+            <span className="flex items-center gap-2">
+              STATUS: TRANSMITTING <span className="text-[#4ade80] animate-pulse text-[8px]">●</span>
+            </span>
+          </motion.div>
+
+          {/* Body copy */}
+          <motion.p
+            className="text-neutral-300 text-base sm:text-lg leading-relaxed max-w-xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.45, duration: 0.8 }}
+          >
+            Bringing together tactical gamers to master warfighting fundamentals, build brotherhood, and dominate the battlefield.<span className="inline-block animate-pulse ml-1 text-white">▌</span>
           </motion.p>
-          
-          <motion.div 
-            className="flex flex-col sm:flex-row items-center justify-center gap-6"
+
+          {/* CTAs */}
+          <motion.div
+            className="flex flex-col sm:flex-row items-start gap-4 font-mono text-sm mt-2"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
+            transition={{ delay: 0.6, duration: 0.8 }}
           >
-            <Link 
-              href="/join" 
-              className="w-full sm:w-auto font-display font-bold uppercase tracking-widest text-lg bg-accent text-accent-foreground px-8 py-4 rounded clip-angled shadow-[0_0_20px_hsla(var(--accent),0.3)] hover:shadow-[0_0_30px_hsla(var(--accent),0.6)] hover:bg-yellow-400 transition-all active:scale-95"
+            <Link
+              href="/join"
+              className="flex items-center gap-3 bg-white text-black px-8 py-4 uppercase tracking-widest font-bold hover:bg-neutral-200 transition-colors active:scale-95"
             >
+              <span className="w-2 h-2 rounded-full bg-[#4ade80] animate-pulse flex-shrink-0" />
               Join The Unit
             </Link>
-            <Link 
-              href="/about" 
-              className="w-full sm:w-auto font-display font-bold uppercase tracking-widest text-lg bg-secondary text-foreground border border-border px-8 py-4 rounded clip-angled hover:border-primary hover:text-primary transition-all active:scale-95"
+            <Link
+              href="/about"
+              className="px-8 py-4 uppercase tracking-widest font-bold text-white border-2 border-dashed border-neutral-600 hover:border-neutral-400 transition-colors active:scale-95"
             >
               Read Doctrine
             </Link>
           </motion.div>
         </div>
-        
-        {/* Scroll Indicator */}
-        <motion.div 
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-50"
-          animate={{ y: [0, 10, 0] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-        >
-          <span className="font-display uppercase text-xs tracking-widest text-primary">Scroll</span>
-          <div className="w-[1px] h-8 bg-primary" />
-        </motion.div>
+
+        {/* Sync bar */}
+        <div className="absolute bottom-0 left-0 w-full h-[3px] bg-neutral-800/50 z-10 overflow-hidden">
+          <div className="h-full w-1/3 bg-neutral-600/30 animate-pulse relative left-1/3" />
+        </div>
       </section>
 
       {/* Value Props */}
