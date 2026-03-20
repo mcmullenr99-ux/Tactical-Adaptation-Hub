@@ -47,7 +47,13 @@ export default function About() {
               viewport={{ once: true }}
               className="relative flex items-center justify-center rounded-lg border border-border bg-card overflow-hidden aspect-square max-w-md mx-auto"
             >
-              <div className="relative z-10 p-8">
+              {/* Grid pattern covers the whole card */}
+              <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 23px,currentColor 23px,currentColor 24px),repeating-linear-gradient(90deg,transparent,transparent 23px,currentColor 23px,currentColor 24px)" }} />
+              {/* Solid blocker directly behind the logo so mix-blend-mode:multiply has a clean surface */}
+              <div className="absolute w-[320px] h-[320px] bg-card" style={{ zIndex: 5 }} />
+              {/* Logo on top of the blocker */}
+              <div className="relative p-8" style={{ zIndex: 10 }}>
                 <TagLogo size={320} />
               </div>
             </motion.div>
