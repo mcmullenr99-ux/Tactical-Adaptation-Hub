@@ -29,26 +29,175 @@ interface RosterEntry { id: number; callsign: string; rankId: number | null; }
 interface GroupInfo { id: number; name: string; roster: RosterEntry[]; }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Icon asset paths — served from public/icons/
+// ─────────────────────────────────────────────────────────────────────────────
+const BASE = import.meta.env.BASE_URL;
+const ICON_URLS: Record<string, string> = {
+  star:      `${BASE}icons/star.svg`,
+  oakleaf:   `${BASE}icons/oak_leaf.svg`,
+  maple:     `${BASE}icons/maple_leaf.svg`,
+  laurel:    `${BASE}icons/laurel.svg`,
+  v_device:  `${BASE}icons/v_device.svg`,
+  e_device:  `${BASE}icons/e_device.svg`,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SVG colour-matrix filters — converts any SVG image to gold / silver / bronze
+// ─────────────────────────────────────────────────────────────────────────────
+function MetalFilters({ uid }: { uid: string }) {
+  return (
+    <defs>
+      {/* Gold — warm saturated highlights */}
+      <filter id={`gold-${uid}`} colorInterpolationFilters="sRGB">
+        <feColorMatrix type="saturate" values="0" result="grey" />
+        <feComponentTransfer in="grey">
+          <feFuncR type="table" tableValues="0.12 0.45 0.72 0.90 1.00" />
+          <feFuncG type="table" tableValues="0.06 0.28 0.52 0.72 0.85" />
+          <feFuncB type="table" tableValues="0.00 0.02 0.04 0.10 0.18" />
+        </feComponentTransfer>
+      </filter>
+      {/* Silver — cool neutral with white peaks */}
+      <filter id={`silver-${uid}`} colorInterpolationFilters="sRGB">
+        <feColorMatrix type="saturate" values="0" result="grey" />
+        <feComponentTransfer in="grey">
+          <feFuncR type="table" tableValues="0.10 0.40 0.68 0.88 1.00" />
+          <feFuncG type="table" tableValues="0.10 0.40 0.68 0.88 1.00" />
+          <feFuncB type="table" tableValues="0.12 0.44 0.72 0.92 1.00" />
+        </feComponentTransfer>
+      </filter>
+      {/* Bronze — deep warm brown */}
+      <filter id={`bronze-${uid}`} colorInterpolationFilters="sRGB">
+        <feColorMatrix type="saturate" values="0" result="grey" />
+        <feComponentTransfer in="grey">
+          <feFuncR type="table" tableValues="0.10 0.38 0.58 0.74 0.85" />
+          <feFuncG type="table" tableValues="0.05 0.20 0.38 0.52 0.60" />
+          <feFuncB type="table" tableValues="0.00 0.02 0.05 0.09 0.13" />
+        </feComponentTransfer>
+      </filter>
+    </defs>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Single accessory rendered inside the ribbon SVG coordinate system
+// The icon is centred at (0,0) and fits in a ±iconHalf space
+// ─────────────────────────────────────────────────────────────────────────────
+function AccessoryIcon({ acc, uid, size }: { acc: Accessory; uid: string; size: number }) {
+  const filterId = `${acc.metal}-${uid}`;
+  const half = size / 2;
+
+  // Inline paths for geometric devices (don't need external images)
+  if (acc.type === "star") {
+    // Precise golden-ratio 5-pointed star polygon
+    const pts = svgStarPts(0, 0, half * 0.92, half * 0.37);
+    return (
+      <>
+        <MetalFilters uid={uid} />
+        <polygon
+          points={pts}
+          filter={`url(#${filterId})`}
+          fill="white"
+        />
+      </>
+    );
+  }
+
+  if (acc.type === "v_device") {
+    const s = half * 0.9;
+    return (
+      <>
+        <MetalFilters uid={uid} />
+        <g filter={`url(#${filterId})`} fill="white">
+          <path d={`M${-s},${-s} L${-s},${-s*0.68} L0,${s*0.78} L${s},${-s*0.68} L${s},${-s} L${s*0.72},${-s} L0,${s*0.42} L${-s*0.72},${-s} Z`} />
+          <rect x={-s*1.22} y={-s*1.08} width={s*0.54} height={s*0.22} rx={s*0.06} />
+          <rect x={s*0.68} y={-s*1.08} width={s*0.54} height={s*0.22} rx={s*0.06} />
+        </g>
+      </>
+    );
+  }
+
+  if (acc.type === "e_device") {
+    const s = half * 0.82;
+    return (
+      <>
+        <MetalFilters uid={uid} />
+        <path
+          filter={`url(#${filterId})`}
+          fill="white"
+          d={`M${-s},${-s} L${s},${-s} L${s},${-s*0.62} L${-s*0.42},${-s*0.62} L${-s*0.42},${-s*0.1} L${s*0.78},${-s*0.1} L${s*0.78},${s*0.1} L${-s*0.42},${s*0.1} L${-s*0.42},${s*0.62} L${s},${s*0.62} L${s},${s} L${-s},${s} Z`}
+        />
+      </>
+    );
+  }
+
+  if (acc.type === "numeral") {
+    return (
+      <>
+        <MetalFilters uid={uid} />
+        <text
+          x="0" y={half * 0.35}
+          textAnchor="middle"
+          fontSize={size * 0.75}
+          fontWeight="900"
+          fontFamily="Georgia, serif"
+          filter={`url(#${filterId})`}
+          fill="white"
+        >{acc.count}</text>
+      </>
+    );
+  }
+
+  // Complex organic shapes — use real Wikimedia SVG files rendered via <image>
+  // Aspect ratios for each source SVG:
+  const viewBoxes: Record<string, { w: number; h: number }> = {
+    oakleaf: { w: 623.44, h: 465.79 },
+    maple:   { w: 305,    h: 343    },
+    laurel:  { w: 1199,   h: 330    },
+  };
+  const vb = viewBoxes[acc.type] ?? { w: 100, h: 100 };
+  const aspect = vb.w / vb.h;
+  const imgH = size * (acc.type === "laurel" ? 0.6 : 0.9);
+  const imgW = imgH * aspect;
+  const clampedW = Math.min(imgW, size * (acc.type === "laurel" ? 2.2 : 1.1));
+  const clampedH = clampedW / aspect;
+
+  return (
+    <>
+      <MetalFilters uid={uid} />
+      <image
+        href={ICON_URLS[acc.type]}
+        x={-clampedW / 2}
+        y={-clampedH / 2}
+        width={clampedW}
+        height={clampedH}
+        preserveAspectRatio="xMidYMid meet"
+        filter={`url(#${filterId})`}
+      />
+    </>
+  );
+}
+
+function svgStarPts(cx: number, cy: number, R: number, r: number): string {
+  return Array.from({ length: 10 }, (_, i) => {
+    const a = (-90 + i * 36) * Math.PI / 180;
+    const d = i % 2 === 0 ? R : r;
+    return `${(cx + d * Math.cos(a)).toFixed(3)},${(cy + d * Math.sin(a)).toFixed(3)}`;
+  }).join(" ");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Color palette
 // ─────────────────────────────────────────────────────────────────────────────
 const COLOR_PALETTE = [
-  // Reds / Crimsons
   "#8B0000","#A50021","#C8102E","#DC143C","#B22222","#FF4444",
-  // Orange / Bronze tones
   "#8B4513","#A0522D","#CD7F32","#D2691E","#FF8C00","#DAA520",
-  // Golds / Yellows
   "#8B6914","#B8860B","#FFD700","#FFDF00","#F5DEB3","#FFFFF0",
-  // Greens
   "#004225","#006400","#1B4D3E","#228B22","#4B5320","#6B8E23",
-  // Blues
   "#000080","#00008B","#003087","#0033A0","#1A3A7D","#1C2A6B",
   "#4169E1","#5B92E5","#87CEEB","#00BFFF",
-  // Purples / Magentas
   "#4B0082","#6A0DAD","#7B2D8B","#8A2BE2","#9400D3","#C71585",
-  // Neutrals / Greys / Black / White
   "#000000","#1C1C1C","#333333","#555555","#808080",
   "#A9A9A9","#C0C0C0","#D3D3D3","#E8E8E8","#FFFFFF",
-  // Military / Earthy
   "#3D2B1F","#4A2C2A","#5C4033","#6B4226","#78866B",
   "#B5A27F","#C8A951","#D4B896","#E8D5B7",
 ];
@@ -89,351 +238,10 @@ function ColorPicker({ value, onChange }: { value: string; onChange: (c: string)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Metal gradient definitions
-// ─────────────────────────────────────────────────────────────────────────────
-function MetalGradientDef({ id, metal, angle = 0 }: { id: string; metal: MetalType; angle?: number }) {
-  // angle=0 → top-to-bottom; angle=90 → left-to-right
-  const x2 = Math.sin((angle * Math.PI) / 180).toFixed(3);
-  const y2 = Math.cos((angle * Math.PI) / 180).toFixed(3);
-  const stops: Record<MetalType, Array<{ o: string; c: string }>> = {
-    gold: [
-      { o: "0%",   c: "#7A5200" },
-      { o: "18%",  c: "#C8941A" },
-      { o: "38%",  c: "#FFE066" },
-      { o: "55%",  c: "#FFD700" },
-      { o: "72%",  c: "#C8941A" },
-      { o: "85%",  c: "#FFE066" },
-      { o: "100%", c: "#7A5200" },
-    ],
-    silver: [
-      { o: "0%",   c: "#484848" },
-      { o: "20%",  c: "#A0A0A0" },
-      { o: "42%",  c: "#F0F0F0" },
-      { o: "58%",  c: "#D8D8D8" },
-      { o: "75%",  c: "#909090" },
-      { o: "88%",  c: "#E0E0E0" },
-      { o: "100%", c: "#484848" },
-    ],
-    bronze: [
-      { o: "0%",   c: "#4A2208" },
-      { o: "20%",  c: "#9A5A1A" },
-      { o: "42%",  c: "#E0982A" },
-      { o: "58%",  c: "#CD7F32" },
-      { o: "75%",  c: "#9A5A1A" },
-      { o: "88%",  c: "#D4902A" },
-      { o: "100%", c: "#4A2208" },
-    ],
-  };
-  return (
-    <linearGradient id={id} x1="0" y1="0" x2={x2} y2={y2} gradientUnits="objectBoundingBox">
-      {stops[metal].map((s, i) => (
-        <stop key={i} offset={s.o} stopColor={s.c} />
-      ))}
-    </linearGradient>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// High-fidelity accessory SVG artwork
-// Each icon is drawn in a [-13,13] x [-13,13] coordinate space, centered at 0,0
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Five-pointed star with faceted shading */
-function StarIcon({ fill, stroke, highlightFill }: { fill: string; stroke: string; highlightFill: string }) {
-  // R=11.5, r=4.6 (phi ratio ≈ 2.5)
-  const pts = svgStarPoints(0, 0, 11.5, 4.6);
-  const hlPts = svgStarPoints(0, 0, 11.5, 4.6).split(" ").filter((_, i) => i < 5).join(" ");
-  return (
-    <g>
-      <polygon points={pts} fill={fill} stroke={stroke} strokeWidth="0.7" strokeLinejoin="round" />
-      {/* Top-face highlight */}
-      <polygon
-        points={hlPts}
-        fill={highlightFill}
-        opacity="0.35"
-        clipPath="url(#star-top-half)"
-      />
-      {/* Facet lines from each outer tip to adjacent inner points */}
-      <FacetLines R={11.5} r={4.6} stroke={stroke} />
-    </g>
-  );
-}
-
-function svgStarPoints(cx: number, cy: number, R: number, r: number): string {
-  const pts: string[] = [];
-  for (let i = 0; i < 10; i++) {
-    const angleDeg = -90 + i * 36;
-    const a = (angleDeg * Math.PI) / 180;
-    const dist = i % 2 === 0 ? R : r;
-    pts.push(`${(cx + dist * Math.cos(a)).toFixed(3)},${(cy + dist * Math.sin(a)).toFixed(3)}`);
-  }
-  return pts.join(" ");
-}
-
-function FacetLines({ R, r, stroke }: { R: number; r: number; stroke: string }) {
-  const outerPts: [number, number][] = [];
-  const innerPts: [number, number][] = [];
-  for (let i = 0; i < 5; i++) {
-    const a = ((-90 + i * 72) * Math.PI) / 180;
-    const ai = ((-90 + 36 + i * 72) * Math.PI) / 180;
-    outerPts.push([R * Math.cos(a), R * Math.sin(a)]);
-    innerPts.push([r * Math.cos(ai), r * Math.sin(ai)]);
-  }
-  return (
-    <g opacity="0.25" stroke={stroke} strokeWidth="0.4" fill="none">
-      {outerPts.map(([ox, oy], i) => {
-        const [ix1, iy1] = innerPts[i];
-        const [ix2, iy2] = innerPts[(i + 4) % 5];
-        return (
-          <g key={i}>
-            <line x1={ox} y1={oy} x2={ix1} y2={iy1} />
-            <line x1={ox} y1={oy} x2={ix2} y2={iy2} />
-          </g>
-        );
-      })}
-    </g>
-  );
-}
-
-/** Single oak leaf with lobes — used for OLC */
-function OakLeafIcon({ fill, stroke }: { fill: string; stroke: string }) {
-  return (
-    <g>
-      {/* Main leaf body — alternating lobes via cubic bezier */}
-      <path
-        d={`
-          M 0,-12
-          C 0.4,-11 1.5,-10 1.8,-9
-          C 3.8,-9.5 5.5,-8 4.5,-6.5
-          C 6.5,-6.5 7.5,-4.5 6,-3.5
-          C 8,-3 8.5,-1 7,0.5
-          C 8.5,1.5 8,3.5 6,4.5
-          C 5.5,6 4,7.5 2,7.5
-          L 1.2,10.5
-          L 0.6,12.5
-          L 0,12
-          L -0.6,12.5
-          L -1.2,10.5
-          L -2,7.5
-          C -4,7.5 -5.5,6 -6,4.5
-          C -8,3.5 -8.5,1.5 -7,0.5
-          C -8.5,-1 -8,-3 -6,-3.5
-          C -7.5,-4.5 -6.5,-6.5 -4.5,-6.5
-          C -5.5,-8 -3.8,-9.5 -1.8,-9
-          C -1.5,-10 -0.4,-11 0,-12
-          Z
-        `}
-        fill={fill}
-        stroke={stroke}
-        strokeWidth="0.6"
-        strokeLinejoin="round"
-      />
-      {/* Central vein */}
-      <path d="M 0,-11 Q 0.4,0 0,11" fill="none" stroke={stroke} strokeWidth="0.5" opacity="0.6" />
-      {/* Side veins */}
-      {[[-2,-7,[-5,-5]], [0.5,-3.5,[5.5,-2.5]], [-0.5,2,[5.5,3]], [0,6,[4,6.5]]].map(([x1,y1,to], i) => (
-        <line key={i} x1={x1 as number} y1={y1 as number} x2={(to as number[])[0]} y2={(to as number[])[1]}
-          stroke={stroke} strokeWidth="0.4" opacity="0.5" />
-      ))}
-    </g>
-  );
-}
-
-/** Proper 11-point maple leaf */
-function MapleLeafIcon({ fill, stroke }: { fill: string; stroke: string }) {
-  return (
-    <g>
-      <path
-        d={`
-          M 0,-13
-          L 1,-10.5 L 3.5,-11.5 L 2.5,-9
-          L 6,-9.5 L 4.5,-7 L 7.5,-7.5
-          L 5.5,-5 L 9,-5.5 L 7,-3.5
-          L 10,-2 L 7,0
-          L 9.5,1 L 6.5,2.5 L 4,0
-          L 2.5,4.5 L 0.8,4 L 0.8,11.5 L 0,13
-          L -0.8,11.5 L -0.8,4 L -2.5,4.5
-          L -4,0 L -6.5,2.5 L -9.5,1
-          L -7,0 L -10,-2 L -7,-3.5
-          L -9,-5.5 L -5.5,-5 L -7.5,-7.5
-          L -4.5,-7 L -6,-9.5 L -2.5,-9
-          L -3.5,-11.5 L -1,-10.5
-          Z
-        `}
-        fill={fill}
-        stroke={stroke}
-        strokeWidth="0.6"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-      {/* Vein lines */}
-      <line x1="0" y1="-11" x2="0" y2="11" stroke={stroke} strokeWidth="0.5" opacity="0.5" />
-      <line x1="0" y1="0" x2="6" y2="-4" stroke={stroke} strokeWidth="0.35" opacity="0.4" />
-      <line x1="0" y1="0" x2="-6" y2="-4" stroke={stroke} strokeWidth="0.35" opacity="0.4" />
-    </g>
-  );
-}
-
-/** Laurel wreath sprig — two mirrored branches */
-function LaurelIcon({ fill, stroke }: { fill: string; stroke: string }) {
-  // Each branch has 5 leaves arranged along a curved stem
-  function Branch({ side }: { side: 1 | -1 }) {
-    const leafPositions: Array<[number, number, number]> = [
-      // [stemX, stemY, rotDeg]
-      [side * 2,   8,  side * -30],
-      [side * 4.5, 4,  side * -50],
-      [side * 7,   0,  side * -65],
-      [side * 9,  -4,  side * -75],
-      [side * 9.5,-8.5,side * -82],
-    ];
-    return (
-      <g>
-        {/* Curved stem */}
-        <path
-          d={`M 0,11 Q ${side * 5},4 ${side * 10},-9`}
-          fill="none"
-          stroke={stroke}
-          strokeWidth="0.8"
-          opacity="0.7"
-        />
-        {/* Leaves */}
-        {leafPositions.map(([lx, ly, rot], i) => (
-          <ellipse
-            key={i}
-            cx={lx}
-            cy={ly}
-            rx={4.2 - i * 0.25}
-            ry={2}
-            transform={`rotate(${rot} ${lx} ${ly})`}
-            fill={fill}
-            stroke={stroke}
-            strokeWidth="0.5"
-          />
-        ))}
-        {/* Small berries at top */}
-        <circle cx={side * 9.8} cy={-9.5} r={1.4} fill={fill} stroke={stroke} strokeWidth="0.4" />
-      </g>
-    );
-  }
-  return (
-    <g>
-      <Branch side={-1} />
-      <Branch side={1} />
-      {/* Bottom tie */}
-      <path d="M -1.5,11.5 Q 0,13 1.5,11.5" fill="none" stroke={stroke} strokeWidth="1" />
-    </g>
-  );
-}
-
-/** Italic serif "V" */
-function VDeviceIcon({ fill, stroke }: { fill: string; stroke: string }) {
-  return (
-    <g>
-      <path
-        d={`
-          M -10,-10
-          L -10,-7.5
-          L -1.5,9.5
-          C -0.8,11 0.8,11 1.5,9.5
-          L 10,-7.5
-          L 10,-10
-          L 7.5,-10
-          L 0,7
-          L -7.5,-10
-          Z
-        `}
-        fill={fill}
-        stroke={stroke}
-        strokeWidth="0.6"
-        strokeLinejoin="round"
-      />
-      {/* Serifs */}
-      <rect x="-12" y="-11" width="5" height="2" rx="0.5" fill={fill} stroke={stroke} strokeWidth="0.5" />
-      <rect x="7"   y="-11" width="5" height="2" rx="0.5" fill={fill} stroke={stroke} strokeWidth="0.5" />
-      {/* Highlight line down left arm */}
-      <line x1="-8.5" y1="-9" x2="-1" y2="5" stroke="rgba(255,255,255,0.3)" strokeWidth="0.7" />
-    </g>
-  );
-}
-
-/** Serif "E" */
-function EDeviceIcon({ fill, stroke }: { fill: string; stroke: string }) {
-  return (
-    <g>
-      <path
-        d={`
-          M -8,-11
-          L 9,-11 L 9,-8.5 L -5.5,-8.5
-          L -5.5,-1.5 L 7,-1.5 L 7,1
-          L -5.5,1 L -5.5,8
-          L 9,8 L 9,11 L -8,11
-          Z
-        `}
-        fill={fill}
-        stroke={stroke}
-        strokeWidth="0.6"
-        strokeLinejoin="round"
-      />
-      {/* Inner highlight on top bar */}
-      <line x1="-6" y1="-10" x2="7" y2="-10" stroke="rgba(255,255,255,0.3)" strokeWidth="0.6" />
-    </g>
-  );
-}
-
-/** Renders a single accessory element, centered at (0,0) in icon space */
-function AccessoryIcon({ acc, uid }: { acc: Accessory; uid: string }) {
-  const gradId = `grad-${uid}`;
-  const hlId = `hl-${uid}`;
-  const strokeColor = acc.metal === "gold" ? "#7A5200" : acc.metal === "silver" ? "#484848" : "#4A2208";
-  const fill = `url(#${gradId})`;
-  const hlFill = `url(#${hlId})`;
-
-  return (
-    <g>
-      <defs>
-        <MetalGradientDef id={gradId} metal={acc.metal} angle={160} />
-        {/* Highlight gradient — lighter, from top */}
-        <linearGradient id={hlId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="white" stopOpacity="0.6" />
-          <stop offset="100%" stopColor="white" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-
-      {(() => {
-        switch (acc.type) {
-          case "star":   return <StarIcon fill={fill} stroke={strokeColor} highlightFill={hlFill} />;
-          case "oakleaf": return <OakLeafIcon fill={fill} stroke={strokeColor} />;
-          case "maple":  return <MapleLeafIcon fill={fill} stroke={strokeColor} />;
-          case "laurel": return <LaurelIcon fill={fill} stroke={strokeColor} />;
-          case "v_device": return <VDeviceIcon fill={fill} stroke={strokeColor} />;
-          case "e_device": return <EDeviceIcon fill={fill} stroke={strokeColor} />;
-          case "numeral":
-            return (
-              <text
-                x="0" y="5.5"
-                textAnchor="middle"
-                fontSize="16"
-                fontWeight="900"
-                fontFamily="Georgia, serif"
-                fill={fill}
-                stroke={strokeColor}
-                strokeWidth="0.6"
-              >{acc.count}</text>
-            );
-          default: return null;
-        }
-      })()}
-    </g>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Ribbon SVG Renderer
 // ─────────────────────────────────────────────────────────────────────────────
 const RW = 280;
 const RH = 80;
-// Icon size on ribbon (in ribbon coords):
-const ICON_SCALE = 0.32; // 13 icon units * 0.32 ≈ 4.2 ribbon units → fits in 80px height ribbon
 
 export function RibbonSVG({
   design,
@@ -450,27 +258,25 @@ export function RibbonSVG({
   const orientation = design.orientation ?? "vertical";
   const { stripes, accessories } = design;
   const totalWeight = stripes.reduce((s, x) => s + x.weight, 0) || 1;
-
   let cursor = 0;
+
   const stripeEls = stripes.map((s, i) => {
     const frac = s.weight / totalWeight;
-    let el: JSX.Element;
     if (orientation === "vertical") {
       const sw = frac * width;
-      el = <rect key={s.id ?? i} x={cursor} y={0} width={sw} height={height} fill={s.color} />;
+      const el = <rect key={s.id ?? i} x={cursor} y={0} width={sw} height={height} fill={s.color} />;
       cursor += sw;
+      return el;
     } else {
       const sh = frac * height;
-      el = <rect key={s.id ?? i} x={0} y={cursor} width={width} height={sh} fill={s.color} />;
+      const el = <rect key={s.id ?? i} x={0} y={cursor} width={width} height={sh} fill={s.color} />;
       cursor += sh;
+      return el;
     }
-    return el;
   });
 
-  // Scale factor from icon coords ([-13,13]) to ribbon pixel space
-  // We want accessories to fill about 75% of ribbon height
-  const iconHalfSize = 13;
-  const scaleFactor = (height * 0.72) / (iconHalfSize * 2);
+  // Icon size in SVG units — fill ~78% of ribbon height
+  const iconSize = height * 0.78;
 
   return (
     <svg
@@ -480,7 +286,7 @@ export function RibbonSVG({
       style={{
         borderRadius: 2,
         boxShadow: shadow
-          ? `2px 3px 10px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.07)`
+          ? "2px 3px 10px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.07)"
           : undefined,
         display: "block",
       }}
@@ -490,48 +296,32 @@ export function RibbonSVG({
           <rect x="0" y="0" width={width} height={height} rx="2" />
         </clipPath>
       </defs>
-
       <g clipPath={`url(#clip-${uid})`}>
-        {/* Background fallback */}
-        {stripes.length === 0 && (
-          <rect x="0" y="0" width={width} height={height} fill="#222" />
-        )}
+        {stripes.length === 0 && <rect x="0" y="0" width={width} height={height} fill="#222" />}
         {stripeEls}
-
-        {/* Gloss */}
-        <rect
-          x="0" y="0" width={width} height={height * 0.38}
-          fill="rgba(255,255,255,0.055)"
-        />
+        {/* Subtle gloss */}
+        <rect x="0" y="0" width={width} height={height * 0.38} fill="rgba(255,255,255,0.055)" />
 
         {/* Accessories */}
         {accessories.map((acc, idx) => {
           const cx = (acc.xPercent / 100) * width;
           const cy = height / 2;
-          const total = acc.type === "numeral" || acc.type === "v_device" || acc.type === "e_device"
-            ? 1
-            : acc.count;
-          const spacing = iconHalfSize * 2 * scaleFactor * 1.05;
-          const totalWidth = (total - 1) * spacing;
+          const total = (acc.type === "numeral" || acc.type === "v_device" || acc.type === "e_device") ? 1 : acc.count;
+          const spacing = iconSize * 1.08;
+          const totalW = (total - 1) * spacing;
 
           return Array.from({ length: total }).map((_, j) => {
-            const tx = cx - totalWidth / 2 + j * spacing;
+            const tx = cx - totalW / 2 + j * spacing;
             return (
-              <g
-                key={`${idx}-${j}`}
-                transform={`translate(${tx},${cy}) scale(${scaleFactor})`}
-              >
-                <AccessoryIcon acc={acc} uid={`${uid}-${idx}-${j}`} />
+              <g key={`${idx}-${j}`} transform={`translate(${tx},${cy})`}>
+                <AccessoryIcon acc={acc} uid={`${uid}-${idx}-${j}`} size={iconSize} />
               </g>
             );
           });
         })}
 
         {/* Edge border */}
-        <rect
-          x="0.5" y="0.5" width={width - 1} height={height - 1}
-          fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="1" rx="1.5"
-        />
+        <rect x="0.5" y="0.5" width={width - 1} height={height - 1} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="1" rx="1.5" />
       </g>
     </svg>
   );
@@ -552,6 +342,19 @@ function defaultDesign(): RibbonDesign {
     ],
     accessories: [],
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Gallery preview — small standalone SVG per accessory type
+// ─────────────────────────────────────────────────────────────────────────────
+function AccessoryGalleryPreview({ type }: { type: AccessoryType }) {
+  const previewAcc: Accessory = { id: "preview", type, metal: "gold", count: 1, xPercent: 50 };
+  const previewSize = 36;
+  return (
+    <svg viewBox={`${-previewSize / 2} ${-previewSize / 2} ${previewSize} ${previewSize}`} width={44} height={44}>
+      <AccessoryIcon acc={previewAcc} uid={`gal-${type}`} size={previewSize} />
+    </svg>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -642,7 +445,6 @@ export default function RibbonBuilder() {
     await loadRibbons();
   }
 
-  // Stripe helpers
   const addStripe = () =>
     setDesign((d) => ({ ...d, stripes: [...d.stripes, { id: uid(), color: "#4ADE80", weight: 1 }] }));
   const removeStripe = (id: string) =>
@@ -659,7 +461,6 @@ export default function RibbonBuilder() {
   const updateStripe = (id: string, patch: Partial<Stripe>) =>
     setDesign((d) => ({ ...d, stripes: d.stripes.map((s) => (s.id === id ? { ...s, ...patch } : s)) }));
 
-  // Accessory helpers
   const addAccessory = (type: AccessoryType) => {
     setDesign((d) => ({
       ...d,
@@ -713,7 +514,6 @@ export default function RibbonBuilder() {
     <PortalLayout>
       <div className="max-w-7xl mx-auto space-y-6 pb-12">
 
-        {/* Header */}
         <div className="flex items-center gap-4 border-b border-border pb-4">
           <button onClick={() => setLocation("/portal/milsim")} className="text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
@@ -745,7 +545,7 @@ export default function RibbonBuilder() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
 
-          {/* ── Library sidebar ── */}
+          {/* Library */}
           <div className="space-y-3">
             <h2 className="font-display text-xs uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
               Ribbon Library
@@ -757,8 +557,7 @@ export default function RibbonBuilder() {
               {ribbons.map((r) => (
                 <motion.div
                   key={r.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
                   className={`border cursor-pointer p-3 space-y-2 hover:border-primary/40 transition-colors ${selected?.id === r.id ? "border-primary bg-primary/5" : "border-border"}`}
                   onClick={() => editRibbon(r)}
                 >
@@ -777,10 +576,9 @@ export default function RibbonBuilder() {
             </div>
           </div>
 
-          {/* ── Builder main ── */}
+          {/* Builder */}
           <div className="space-y-5">
 
-            {/* Preview + title */}
             <div className="border border-border p-5 bg-card space-y-4">
               <div className="flex items-center gap-3 justify-between">
                 <input
@@ -795,15 +593,15 @@ export default function RibbonBuilder() {
                 </button>
               </div>
 
-              {/* LIVE PREVIEW — large, high quality */}
+              {/* Preview */}
               <div className="flex flex-col items-center gap-3 py-6 bg-[#0a0f0a] rounded-sm">
                 <RibbonSVG design={design} width={320} height={91} />
                 <p className="text-muted-foreground text-[10px] uppercase tracking-widest">{ribbonName}</p>
               </div>
 
-              {/* Orientation toggle */}
+              {/* Orientation */}
               <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground font-display uppercase tracking-wider">Stripe Direction:</span>
+                <span className="text-xs text-muted-foreground font-display uppercase tracking-wider">Stripes:</span>
                 {(["vertical", "horizontal"] as const).map((o) => (
                   <button
                     key={o}
@@ -846,28 +644,22 @@ export default function RibbonBuilder() {
               </div>
 
               <div className="p-5">
-                {/* ── STRIPES TAB ── */}
+
+                {/* STRIPES */}
                 {activeTab === "stripes" && (
                   <div className="space-y-3">
                     <p className="text-muted-foreground text-xs">
-                      Click a stripe to expand its colour picker. Drag the width slider to resize it.
+                      Click a stripe to expand the colour picker. Use the slider to adjust its width.
                     </p>
                     <div className="space-y-2">
                       {design.stripes.map((stripe, idx) => (
                         <div key={stripe.id} className="border border-border">
-                          {/* Stripe row */}
                           <div
                             className="flex items-center gap-3 p-3 cursor-pointer hover:bg-card/60"
                             onClick={() => setExpandedStripe(expandedStripe === stripe.id ? null : stripe.id)}
                           >
-                            {/* Color swatch */}
-                            <div
-                              className="w-10 h-10 rounded-sm border border-border flex-shrink-0"
-                              style={{ background: stripe.color }}
-                            />
+                            <div className="w-10 h-10 rounded-sm border border-border flex-shrink-0" style={{ background: stripe.color }} />
                             <span className="font-mono text-xs text-muted-foreground">{stripe.color.toUpperCase()}</span>
-
-                            {/* Width */}
                             <div className="flex-1">
                               <input
                                 type="range" min="0.2" max="6" step="0.1"
@@ -878,8 +670,6 @@ export default function RibbonBuilder() {
                               />
                             </div>
                             <span className="text-xs text-muted-foreground w-8 text-right">{stripe.weight.toFixed(1)}×</span>
-
-                            {/* Up/Down */}
                             <div className="flex flex-col gap-0.5">
                               <button onClick={(e) => { e.stopPropagation(); moveStripe(stripe.id, -1); }} disabled={idx === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
                                 <ChevronUp className="w-3.5 h-3.5" />
@@ -888,13 +678,10 @@ export default function RibbonBuilder() {
                                 <ChevronDown className="w-3.5 h-3.5" />
                               </button>
                             </div>
-
                             <button onClick={(e) => { e.stopPropagation(); removeStripe(stripe.id); }} className="text-muted-foreground hover:text-red-400">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
-
-                          {/* Expanded colour picker */}
                           <AnimatePresence>
                             {expandedStripe === stripe.id && (
                               <motion.div
@@ -904,10 +691,7 @@ export default function RibbonBuilder() {
                                 className="overflow-hidden border-t border-border"
                               >
                                 <div className="p-4">
-                                  <ColorPicker
-                                    value={stripe.color}
-                                    onChange={(c) => updateStripe(stripe.id, { color: c })}
-                                  />
+                                  <ColorPicker value={stripe.color} onChange={(c) => updateStripe(stripe.id, { color: c })} />
                                 </div>
                               </motion.div>
                             )}
@@ -924,10 +708,9 @@ export default function RibbonBuilder() {
                   </div>
                 )}
 
-                {/* ── ACCESSORIES TAB ── */}
+                {/* ACCESSORIES */}
                 {activeTab === "accessories" && (
                   <div className="space-y-5">
-                    {/* Accessory preview gallery */}
                     <div>
                       <p className="text-muted-foreground text-xs mb-3">Click an accessory to add it to the ribbon.</p>
                       <div className="grid grid-cols-4 gap-3">
@@ -937,13 +720,7 @@ export default function RibbonBuilder() {
                             onClick={() => addAccessory(at.type)}
                             className="border border-border hover:border-primary/50 bg-card p-3 flex flex-col items-center gap-2 transition-colors group"
                           >
-                            {/* Mini preview of the accessory */}
-                            <svg viewBox="-14 -14 28 28" width="44" height="44">
-                              <AccessoryIcon
-                                acc={{ id: "preview", type: at.type, metal: "gold", count: 1, xPercent: 50 }}
-                                uid={`preview-${at.type}`}
-                              />
-                            </svg>
+                            <AccessoryGalleryPreview type={at.type} />
                             <span className="text-[10px] font-display uppercase tracking-wider text-muted-foreground group-hover:text-primary text-center leading-tight">
                               {at.label}
                             </span>
@@ -952,7 +729,6 @@ export default function RibbonBuilder() {
                       </div>
                     </div>
 
-                    {/* Added accessories */}
                     {design.accessories.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground text-xs border border-dashed border-border">
                         No accessories added — click one above to add it
@@ -964,13 +740,8 @@ export default function RibbonBuilder() {
                           return (
                             <div key={acc.id} className="border border-border p-4 space-y-3">
                               <div className="flex items-center gap-3">
-                                {/* Icon preview */}
-                                <svg viewBox="-14 -14 28 28" width="36" height="36" className="flex-shrink-0">
-                                  <AccessoryIcon acc={acc} uid={`edit-${acc.id}`} />
-                                </svg>
-                                <span className="font-display text-xs uppercase tracking-widest text-primary flex-1">
-                                  {meta.label}
-                                </span>
+                                <AccessoryGalleryPreview type={acc.type} />
+                                <span className="font-display text-xs uppercase tracking-widest text-primary flex-1">{meta.label}</span>
                                 <button onClick={() => removeAccessory(acc.id)} className="text-muted-foreground hover:text-red-400">
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -985,9 +756,7 @@ export default function RibbonBuilder() {
                                       key={m.val}
                                       onClick={() => updateAccessory(acc.id, { metal: m.val })}
                                       className={`flex items-center gap-1.5 px-3 py-1 text-xs border transition-colors ${
-                                        acc.metal === m.val
-                                          ? "border-primary bg-primary/10 text-primary"
-                                          : "border-border text-muted-foreground hover:border-primary/30"
+                                        acc.metal === m.val ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"
                                       }`}
                                     >
                                       <span style={{ color: m.hex }}>●</span> {m.label}
@@ -1005,18 +774,14 @@ export default function RibbonBuilder() {
                                       <button
                                         key={n}
                                         onClick={() => updateAccessory(acc.id, { count: n })}
-                                        className={`w-7 h-7 text-xs border transition-colors ${
-                                          acc.count === n ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"
-                                        }`}
-                                      >
-                                        {n}
-                                      </button>
+                                        className={`w-7 h-7 text-xs border transition-colors ${acc.count === n ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}
+                                      >{n}</button>
                                     ))}
                                   </div>
                                 </div>
                               )}
 
-                              {/* Numeral value */}
+                              {/* Numeral */}
                               {acc.type === "numeral" && (
                                 <div className="flex items-center gap-3">
                                   <span className="text-muted-foreground text-xs w-14">Numeral</span>
@@ -1025,12 +790,8 @@ export default function RibbonBuilder() {
                                       <button
                                         key={n}
                                         onClick={() => updateAccessory(acc.id, { count: n })}
-                                        className={`w-7 h-7 text-xs border transition-colors ${
-                                          acc.count === n ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"
-                                        }`}
-                                      >
-                                        {n}
-                                      </button>
+                                        className={`w-7 h-7 text-xs border transition-colors ${acc.count === n ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}
+                                      >{n}</button>
                                     ))}
                                   </div>
                                 </div>
@@ -1057,7 +818,7 @@ export default function RibbonBuilder() {
                   </div>
                 )}
 
-                {/* ── GRANT TAB ── */}
+                {/* GRANT */}
                 {activeTab === "grant" && (
                   <GrantTab
                     ribbon={selected}
@@ -1070,7 +831,7 @@ export default function RibbonBuilder() {
               </div>
             </div>
 
-            {/* Ribbon rack preview */}
+            {/* Rack preview */}
             {ribbons.length > 1 && (
               <div className="border border-border p-5 space-y-4">
                 <h3 className="font-display text-xs uppercase tracking-widest text-muted-foreground">Full Ribbon Rack</h3>
@@ -1091,65 +852,54 @@ function RibbonRack({ ribbons }: { ribbons: RibbonTemplate[] }) {
   const perRow = 3;
   const rw = 90, rh = 26, gap = 3;
   const rows = Math.ceil(ribbons.length / perRow);
-  const W2 = perRow * rw + (perRow - 1) * gap;
-  const H2 = rows * rh + (rows - 1) * gap;
+  const W = perRow * rw + (perRow - 1) * gap;
+  const H = rows * rh + (rows - 1) * gap;
 
   return (
-    <svg viewBox={`0 0 ${W2} ${H2}`} width={W2 * 2} height={H2 * 2}>
+    <svg viewBox={`0 0 ${W} ${H}`} width={W * 2} height={H * 2}>
       {ribbons.map((r, idx) => {
         const col = idx % perRow;
         const row = Math.floor(idx / perRow);
+        const ox = col * (rw + gap);
+        const oy = row * (rh + gap);
+        const orientation = r.design.orientation ?? "vertical";
+        const total = r.design.stripes.reduce((s, x) => s + x.weight, 0) || 1;
+        let cursor = 0;
+        const uid = `rack-${r.id}`;
+        const iconSz = rh * 0.78;
         return (
-          <g key={r.id} transform={`translate(${col * (rw + gap)},${row * (rh + gap)})`}>
-            <RibbonSVGRack design={r.design} w={rw} h={rh} />
+          <g key={r.id} transform={`translate(${ox},${oy})`}>
+            <clipPath id={`rc-${uid}`}><rect x="0" y="0" width={rw} height={rh} rx="1" /></clipPath>
+            <g clipPath={`url(#rc-${uid})`}>
+              {r.design.stripes.map((s, si) => {
+                const frac = s.weight / total;
+                if (orientation === "vertical") {
+                  const sw = frac * rw;
+                  const el = <rect key={si} x={cursor} y={0} width={sw} height={rh} fill={s.color} />;
+                  cursor += sw; return el;
+                } else {
+                  const sh = frac * rh;
+                  const el = <rect key={si} x={0} y={cursor} width={rw} height={sh} fill={s.color} />;
+                  cursor += sh; return el;
+                }
+              })}
+              {r.design.accessories.map((acc, ai) => {
+                const cx = (acc.xPercent / 100) * rw;
+                const cy = rh / 2;
+                const total2 = (acc.type === "numeral" || acc.type === "v_device" || acc.type === "e_device") ? 1 : acc.count;
+                const sp = iconSz * 1.08;
+                return Array.from({ length: total2 }).map((_, j) => (
+                  <g key={`${ai}-${j}`} transform={`translate(${cx - ((total2 - 1) * sp) / 2 + j * sp},${cy})`}>
+                    <AccessoryIcon acc={acc} uid={`${uid}-${ai}-${j}`} size={iconSz} />
+                  </g>
+                ));
+              })}
+              <rect x="0.5" y="0.5" width={rw - 1} height={rh - 1} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="0.5" rx="0.5" />
+            </g>
           </g>
         );
       })}
     </svg>
-  );
-}
-
-function RibbonSVGRack({ design, w, h }: { design: RibbonDesign; w: number; h: number }) {
-  const id = Math.random().toString(36).slice(2, 7);
-  const orientation = design.orientation ?? "vertical";
-  const total = design.stripes.reduce((s, x) => s + x.weight, 0) || 1;
-  let cursor = 0;
-  const stripeEls = design.stripes.map((s, i) => {
-    const frac = s.weight / total;
-    if (orientation === "vertical") {
-      const sw = frac * w;
-      const el = <rect key={i} x={cursor} y={0} width={sw} height={h} fill={s.color} />;
-      cursor += sw;
-      return el;
-    } else {
-      const sh = frac * h;
-      const el = <rect key={i} x={0} y={cursor} width={w} height={sh} fill={s.color} />;
-      cursor += sh;
-      return el;
-    }
-  });
-
-  const scaleFactor = (h * 0.72) / 26;
-
-  return (
-    <>
-      <clipPath id={`rc-${id}`}><rect x="0" y="0" width={w} height={h} rx="1" /></clipPath>
-      <g clipPath={`url(#rc-${id})`}>
-        {stripeEls}
-        {design.accessories.map((acc, ai) => {
-          const cx = (acc.xPercent / 100) * w;
-          const cy = h / 2;
-          const total2 = acc.type === "numeral" || acc.type === "v_device" || acc.type === "e_device" ? 1 : acc.count;
-          const sp = 26 * scaleFactor * 1.05;
-          return Array.from({ length: total2 }).map((_, j) => (
-            <g key={`${ai}-${j}`} transform={`translate(${cx - ((total2 - 1) * sp) / 2 + j * sp},${cy}) scale(${scaleFactor})`}>
-              <AccessoryIcon acc={acc} uid={`rack-${id}-${ai}-${j}`} />
-            </g>
-          ));
-        })}
-        <rect x="0.5" y="0.5" width={w - 1} height={h - 1} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="0.5" rx="0.5" />
-      </g>
-    </>
   );
 }
 
@@ -1164,11 +914,7 @@ function GrantTab({ ribbon, groupId, roster, onUpdate, showMsg }: {
   const [selectedRosterId, setSelectedRosterId] = useState<number | "">("");
 
   if (!ribbon) {
-    return (
-      <div className="text-center py-8 text-muted-foreground text-xs">
-        Save the ribbon first before awarding it to operators.
-      </div>
-    );
+    return <div className="text-center py-8 text-muted-foreground text-xs">Save the ribbon first before awarding it to operators.</div>;
   }
 
   async function grant() {
@@ -1176,8 +922,7 @@ function GrantTab({ ribbon, groupId, roster, onUpdate, showMsg }: {
     setGranting(true);
     try {
       await apiFetch(`/api/milsim-groups/${groupId}/ribbons/${ribbon!.id}/grant`, {
-        method: "POST",
-        body: JSON.stringify({ rosterEntryId: selectedRosterId }),
+        method: "POST", body: JSON.stringify({ rosterEntryId: selectedRosterId }),
       });
       showMsg(true, "Ribbon awarded!");
       await onUpdate();
@@ -1196,9 +941,7 @@ function GrantTab({ ribbon, groupId, roster, onUpdate, showMsg }: {
 
   return (
     <div className="space-y-5">
-      <p className="text-muted-foreground text-xs">
-        Award <span className="text-primary">{ribbon.name}</span> to operators on your roster.
-      </p>
+      <p className="text-muted-foreground text-xs">Award <span className="text-primary">{ribbon.name}</span> to operators on your roster.</p>
       <div className="flex gap-2">
         <select value={selectedRosterId} onChange={(e) => setSelectedRosterId(Number(e.target.value) || "")} className="mf-input text-sm flex-1">
           <option value="">Select operator...</option>
