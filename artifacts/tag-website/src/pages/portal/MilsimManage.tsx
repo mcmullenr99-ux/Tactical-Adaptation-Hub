@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef, type ElementType } from "react";
+import { useUpload } from "@workspace/object-storage-web";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -452,108 +453,392 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
   );
 }
 
-function AwardsTab({ group, showMsg }: any) {
-  const [, goTo] = useLocation();
-  const [awards, setAwards] = useState<MilsimAward[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [rosterEntryId, setRosterEntryId] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [icon, setIcon] = useState("medal");
-  const [adding, setAdding] = useState(false);
+const TYPE_DEFS = [
+  { id: "medal", label: "Medal", Icon: Medal, desc: "Worn on uniform" },
+  { id: "ribbon", label: "Ribbon", Icon: Star, desc: "Service ribbon bar" },
+  { id: "qualification-patch", label: "Qual. Patch", Icon: GraduationCap, desc: "Skill or unit patch" },
+] as const;
 
-  const loadAwards = useCallback(async () => {
+function AwardImage({ path, fallbackIcon: FIcon }: { path: string | null | undefined; fallbackIcon: ElementType }) {
+  const cleanPath = path ? path.replace(/^\/objects\//, "") : null;
+  return (
+    <div className="w-14 h-14 rounded-lg bg-secondary border border-border shrink-0 overflow-hidden flex items-center justify-center">
+      {cleanPath ? (
+        <img src={`/api/storage/objects/${cleanPath}`} alt="" className="w-full h-full object-contain" />
+      ) : (
+        <FIcon className="w-7 h-7 text-primary opacity-40" />
+      )}
+    </div>
+  );
+}
+
+function AwardsTab({ group, showMsg }: any) {
+  const [subView, setSubView] = useState<"library" | "issued">("library");
+  const [defs, setDefs] = useState<any[]>([]);
+  const [issued, setIssued] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [issuingDefId, setIssuingDefId] = useState<number | null>(null);
+
+  const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
+  const [awardType, setAwardType] = useState<"medal" | "ribbon" | "qualification-patch">("medal");
+  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [qualifiers, setQualifiers] = useState<string[]>([]);
+  const [qualInput, setQualInput] = useState("");
+  const [creating, setCreating] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [issueRosterId, setIssueRosterId] = useState("");
+  const [issueCitation, setIssueCitation] = useState("");
+  const [issuing, setIssuing] = useState(false);
+
+  const { uploadFile, isUploading } = useUpload({
+    onError: (e) => showMsg(false, `Upload failed: ${e.message}`),
+  });
+
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const data = await apiFetch<MilsimAward[]>(`/api/milsim-groups/${group.id}/awards`);
-      setAwards(data);
+      const [d, a] = await Promise.all([
+        apiFetch<any[]>(`/api/milsim-groups/${group.id}/award-defs`),
+        apiFetch<any[]>(`/api/milsim-groups/${group.id}/awards`),
+      ]);
+      setDefs(d);
+      setIssued(a);
     } catch { showMsg(false, "Failed to load awards."); }
     finally { setLoading(false); }
   }, [group.id]);
 
-  useEffect(() => { loadAwards(); }, [loadAwards]);
+  useEffect(() => { load(); }, [load]);
 
-  const add = async () => {
-    if (!rosterEntryId || !title.trim()) return;
-    setAdding(true);
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      showMsg(false, "PNG, JPEG, or WebP only."); return;
+    }
+    if (file.size > 5 * 1024 * 1024) { showMsg(false, "Max 5 MB."); return; }
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(URL.createObjectURL(file));
+    setImagePath(null);
+    const res = await uploadFile(file);
+    if (res) setImagePath(res.objectPath);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const addQualifier = () => {
+    const q = qualInput.trim();
+    if (!q || qualifiers.includes(q)) return;
+    setQualifiers(qs => [...qs, q]);
+    setQualInput("");
+  };
+
+  const resetCreateForm = () => {
+    setName(""); setDesc(""); setAwardType("medal");
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePath(null); setImagePreview(null); setQualifiers([]); setQualInput("");
+    setShowCreate(false);
+  };
+
+  const createDef = async () => {
+    if (!name.trim()) return;
+    setCreating(true);
+    try {
+      await apiFetch(`/api/milsim-groups/${group.id}/award-defs`, {
+        method: "POST",
+        body: JSON.stringify({ name: name.trim(), description: desc || undefined, type: awardType, image_path: imagePath || undefined, qualifiers }),
+      });
+      resetCreateForm();
+      showMsg(true, "Award created.");
+      load();
+    } catch (e: any) { showMsg(false, e.message); }
+    finally { setCreating(false); }
+  };
+
+  const deleteDef = async (defId: number) => {
+    try {
+      await apiFetch(`/api/milsim-groups/${group.id}/award-defs/${defId}`, { method: "DELETE" });
+      showMsg(true, "Award deleted.");
+      load();
+    } catch (e: any) { showMsg(false, e.message); }
+  };
+
+  const issueAward = async (defId: number) => {
+    if (!issueRosterId) return;
+    setIssuing(true);
     try {
       await apiFetch(`/api/milsim-groups/${group.id}/awards`, {
         method: "POST",
-        body: JSON.stringify({ rosterEntryId: parseInt(rosterEntryId), title, description: description || undefined, icon }),
+        body: JSON.stringify({ rosterEntryId: parseInt(issueRosterId), awardDefId: defId, citation: issueCitation || undefined }),
       });
-      setRosterEntryId(""); setTitle(""); setDescription(""); setIcon("medal");
-      showMsg(true, "Award bestowed.");
-      await loadAwards();
+      showMsg(true, "Award issued.");
+      setIssuingDefId(null); setIssueRosterId(""); setIssueCitation("");
+      load();
     } catch (e: any) { showMsg(false, e.message); }
-    finally { setAdding(false); }
+    finally { setIssuing(false); }
   };
 
-  const remove = async (awardId: number) => {
+  const revokeAward = async (id: number) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/awards/${awardId}`, { method: "DELETE" });
-      setAwards(a => a.filter(x => x.id !== awardId));
-      showMsg(true, "Award revoked.");
+      await apiFetch(`/api/milsim-groups/${group.id}/awards/${id}`, { method: "DELETE" });
+      showMsg(true, "Award revoked."); load();
     } catch (e: any) { showMsg(false, e.message); }
   };
 
-  const ICONS: Record<string, typeof Medal> = { medal: Medal, star: Star, award: Award, shield: Shield };
+  const parseQuals = (raw: any): string[] => {
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === "string") { try { return JSON.parse(raw); } catch { return []; } }
+    return [];
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="max-w-3xl space-y-6">
-      {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-      ) : awards.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-border rounded-lg text-muted-foreground">
-          <Medal className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p className="font-display text-sm uppercase tracking-widest">No awards issued yet</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {awards.map((a) => {
-            const IconComp = ICONS[a.icon] ?? Medal;
-            return (
-              <div key={a.id} className="flex items-center justify-between gap-4 bg-card border border-border rounded-lg px-5 py-3">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shrink-0">
-                    <IconComp className="w-5 h-5" />
+    <div className="max-w-3xl space-y-5">
+      <div className="flex gap-1 border-b border-border">
+        {([
+          { id: "library", label: "Award Library" },
+          { id: "issued", label: `Issued (${issued.length})` },
+        ] as const).map(v => (
+          <button key={v.id} onClick={() => setSubView(v.id)}
+            className={`px-4 py-2.5 font-display font-bold uppercase tracking-wider text-xs border-b-2 transition-colors ${subView === v.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+            {v.label}
+          </button>
+        ))}
+      </div>
+
+      {subView === "library" && (
+        <div className="space-y-4">
+          {defs.length === 0 && !showCreate ? (
+            <div className="text-center py-14 border border-dashed border-border rounded-lg text-muted-foreground">
+              <Medal className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="font-display text-sm uppercase tracking-widest mb-4">No awards defined yet</p>
+              <button onClick={() => setShowCreate(true)}
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all">
+                <Plus className="w-3.5 h-3.5" /> Create First Award
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {defs.map((d: any) => {
+                const typeDef = TYPE_DEFS.find(t => t.id === d.type) ?? TYPE_DEFS[0];
+                const { Icon: TypeIcon } = typeDef;
+                const isIssuing = issuingDefId === d.id;
+                const quals = parseQuals(d.qualifiers);
+                return (
+                  <div key={d.id} className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="flex items-center gap-4 p-4">
+                      <AwardImage path={d.image_path} fallbackIcon={TypeIcon} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{d.name}</p>
+                          <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                            {typeDef.label}
+                          </span>
+                        </div>
+                        {d.description && <p className="text-xs text-muted-foreground font-sans mt-0.5">{d.description}</p>}
+                        {quals.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {quals.map((q: string) => (
+                              <span key={q} className="text-[10px] px-1.5 py-0.5 bg-secondary border border-border rounded text-muted-foreground font-display uppercase tracking-wider">{q}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => { setIssuingDefId(isIssuing ? null : d.id); setIssueRosterId(""); setIssueCitation(""); }}
+                          className="text-xs font-display font-bold uppercase tracking-widest px-3 py-1.5 bg-accent/10 text-accent border border-accent/30 rounded hover:bg-accent/20 transition-colors">
+                          Issue
+                        </button>
+                        <button onClick={() => deleteDef(d.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    {isIssuing && (
+                      <div className="border-t border-border bg-secondary/20 px-4 py-3 space-y-3">
+                        <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">Issue to Member</p>
+                        <select value={issueRosterId} onChange={e => setIssueRosterId(e.target.value)} className="mf-input">
+                          <option value="">Select recipient...</option>
+                          {group.roster.map((r: RosterEntry) => <option key={r.id} value={r.id}>{r.callsign}</option>)}
+                        </select>
+                        <input value={issueCitation} onChange={e => setIssueCitation(e.target.value)} className="mf-input" placeholder="Citation / reason (optional)" />
+                        <div className="flex gap-2">
+                          <button onClick={() => issueAward(d.id)} disabled={issuing || !issueRosterId}
+                            className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-background font-display font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-all disabled:opacity-50">
+                            {issuing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Award className="w-3.5 h-3.5" />} Issue Award
+                          </button>
+                          <button onClick={() => setIssuingDefId(null)} className="px-3 py-2 text-xs font-display uppercase text-muted-foreground hover:text-foreground border border-border rounded transition-colors">Cancel</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{a.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {a.callsign ?? `Entry #${a.roster_entry_id}`}
-                      {a.awarded_by && <> · Issued by <strong className="text-foreground">{a.awarded_by}</strong></>}
-                    </p>
-                    {a.description && <p className="text-xs text-muted-foreground mt-0.5 italic">{a.description}</p>}
-                  </div>
-                </div>
-                <button onClick={() => remove(a.id)} className="text-muted-foreground hover:text-destructive transition-colors p-1 shrink-0"><Trash2 className="w-4 h-4" /></button>
+                );
+              })}
+            </div>
+          )}
+
+          {defs.length > 0 && !showCreate && (
+            <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 text-xs font-display font-bold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors">
+              <Plus className="w-3.5 h-3.5" /> Create New Award
+            </button>
+          )}
+
+          {showCreate && (
+            <div className="bg-card border border-primary/30 rounded-lg p-6 space-y-5">
+              <h3 className="font-display font-bold uppercase tracking-widest text-sm">Create Award</h3>
+
+              <div>
+                <label className="mf-label">Award Name *</label>
+                <input value={name} onChange={e => setName(e.target.value)} className="mf-input" placeholder="e.g. Combat Action Badge, Leadership Medal..." />
               </div>
-            );
-          })}
+
+              <div>
+                <label className="mf-label">Award Type *</label>
+                <div className="grid grid-cols-3 gap-3 mt-1">
+                  {TYPE_DEFS.map(t => {
+                    const { Icon: TIcon } = t;
+                    const selected = awardType === t.id;
+                    return (
+                      <button key={t.id} onClick={() => setAwardType(t.id as any)}
+                        className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${selected ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary/20 text-muted-foreground hover:border-primary/40"}`}>
+                        <TIcon className="w-6 h-6" />
+                        <div className="text-center">
+                          <p className="font-display font-bold uppercase tracking-wider text-xs">{t.label}</p>
+                          <p className="text-[10px] opacity-70 font-sans">{t.desc}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="mf-label">Description</label>
+                <textarea rows={2} value={desc} onChange={e => setDesc(e.target.value)} className="mf-input resize-none" placeholder="Criteria or description for this award..." />
+              </div>
+
+              <div>
+                <label className="mf-label">Award Image <span className="font-normal normal-case text-muted-foreground">(PNG/JPG/WebP · max 600×600px · 5 MB)</span></label>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`relative mt-1 flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-lg cursor-pointer transition-colors h-36 ${isUploading ? "border-primary/60 bg-primary/5" : "border-border hover:border-primary/40 bg-secondary/20"}`}>
+                  <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleImageSelect} />
+                  {imagePreview ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img src={imagePreview} alt="Preview" className="h-20 w-20 object-contain rounded" />
+                      {isUploading && <p className="text-xs text-primary font-display uppercase tracking-wider animate-pulse">Uploading...</p>}
+                      {imagePath && <p className="text-xs text-green-400 font-display uppercase tracking-wider">✓ Uploaded</p>}
+                    </div>
+                  ) : (
+                    <div className="text-center px-4">
+                      <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground">Drop image here or click to browse</p>
+                      <p className="text-[10px] text-muted-foreground font-sans mt-1">Displayed on award card and issued awards log</p>
+                    </div>
+                  )}
+                </div>
+                {imagePreview && (
+                  <button onClick={() => { if (imagePreview) URL.revokeObjectURL(imagePreview); setImagePreview(null); setImagePath(null); }}
+                    className="text-xs text-muted-foreground hover:text-destructive mt-1 transition-colors">Remove image</button>
+                )}
+              </div>
+
+              <div>
+                <label className="mf-label">
+                  Qualifiers / Upgrades <span className="font-normal normal-case text-muted-foreground">— optional device attachments (e.g. "V Device", "Gold Star", "Oak Leaf")</span>
+                </label>
+                <div className="flex gap-2 mt-1">
+                  <input
+                    value={qualInput}
+                    onChange={e => setQualInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addQualifier(); } }}
+                    className="mf-input"
+                    placeholder="Type qualifier and press Enter..."
+                  />
+                  <button onClick={addQualifier} disabled={!qualInput.trim()}
+                    className="px-3 py-2 bg-secondary border border-border rounded text-xs font-display font-bold uppercase tracking-wider hover:border-primary/40 transition-colors disabled:opacity-40">
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {qualifiers.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {qualifiers.map(q => (
+                      <span key={q} className="flex items-center gap-1 text-xs px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded font-display font-bold uppercase tracking-wider">
+                        {q}
+                        <button onClick={() => setQualifiers(qs => qs.filter(x => x !== q))} className="hover:text-destructive transition-colors ml-0.5">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button onClick={createDef} disabled={creating || !name.trim() || isUploading}
+                  className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">
+                  {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Create Award
+                </button>
+                <button onClick={resetCreateForm}
+                  className="px-4 py-2.5 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      <div className="bg-card border border-border rounded-lg p-5 space-y-3">
-        <h3 className="font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">Issue Award</h3>
-        <select value={rosterEntryId} onChange={e => setRosterEntryId(e.target.value)} className="mf-input">
-          <option value="">Select member...</option>
-          {group.roster.map((e: RosterEntry) => <option key={e.id} value={e.id}>{e.callsign}</option>)}
-        </select>
-        <div className="grid grid-cols-2 gap-3">
-          <input value={title} onChange={e => setTitle(e.target.value)} className="mf-input" placeholder="Award title (e.g. Marksman Medal)" />
-          <select value={icon} onChange={e => setIcon(e.target.value)} className="mf-input">
-            <option value="medal">Medal</option>
-            <option value="star">Star</option>
-            <option value="award">Award</option>
-            <option value="shield">Shield</option>
-          </select>
+      {subView === "issued" && (
+        <div className="space-y-3">
+          {issued.length === 0 ? (
+            <div className="text-center py-14 border border-dashed border-border rounded-lg text-muted-foreground">
+              <Award className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="font-display text-sm uppercase tracking-widest">No awards issued yet</p>
+              <p className="text-xs mt-2 font-sans">Go to Award Library to issue awards to roster members</p>
+            </div>
+          ) : (
+            issued.map((a: any) => {
+              const typeDef = TYPE_DEFS.find(t => t.id === (a.def_type ?? a.icon)) ?? TYPE_DEFS[0];
+              const quals = parseQuals(a.def_qualifiers);
+              return (
+                <div key={a.id} className="flex items-center gap-4 bg-card border border-border rounded-lg px-5 py-3">
+                  <AwardImage path={a.def_image} fallbackIcon={typeDef.Icon} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{a.def_name ?? a.title}</p>
+                      {a.def_type && (
+                        <span className="text-[10px] font-display font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                          {typeDef.label}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-accent font-display font-bold mt-0.5">→ {a.callsign ?? "Unknown"}</p>
+                    {a.citation && <p className="text-xs text-muted-foreground font-sans mt-0.5 italic">"{a.citation}"</p>}
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
+                      {quals.length > 0 && (
+                        <div className="flex gap-1 flex-wrap">
+                          {quals.map((q: string) => (
+                            <span key={q} className="text-[9px] px-1.5 py-0.5 bg-secondary border border-border rounded text-muted-foreground font-display uppercase">{q}</span>
+                          ))}
+                        </div>
+                      )}
+                      {a.awarded_by && <p className="text-[10px] text-muted-foreground">by {a.awarded_by}</p>}
+                      {a.awarded_at && <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(a.awarded_at), { addSuffix: true })}</p>}
+                    </div>
+                  </div>
+                  <button onClick={() => revokeAward(a.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors shrink-0">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            })
+          )}
         </div>
-        <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="mf-input resize-none" placeholder="Citation / reason (optional)" />
-        <button onClick={add} disabled={adding || !rosterEntryId || !title.trim()}
-          className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-background font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded clip-angled-sm transition-all disabled:opacity-50">
-          {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Award className="w-3.5 h-3.5" />} Issue Award
-        </button>
-      </div>
+      )}
     </div>
   );
 }

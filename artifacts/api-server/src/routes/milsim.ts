@@ -290,13 +290,89 @@ router.delete("/milsim-groups/:id/roster/:entryId", requireAuth, async (req, res
   res.sendStatus(204);
 });
 
-// ── Awards ─────────────────────────────────────────────────────────────────────
+// ── Award Definitions ──────────────────────────────────────────────────────────
+
+export async function ensureAwardDefsTable() {
+  await db.execute(rawSql`
+    CREATE TABLE IF NOT EXISTS milsim_award_defs (
+      id SERIAL PRIMARY KEY,
+      group_id INT NOT NULL,
+      name VARCHAR(200) NOT NULL,
+      description TEXT,
+      type VARCHAR(50) NOT NULL DEFAULT 'medal',
+      image_path TEXT,
+      qualifiers JSONB NOT NULL DEFAULT '[]',
+      created_by VARCHAR(100),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await db.execute(rawSql`ALTER TABLE milsim_awards ADD COLUMN IF NOT EXISTS award_def_id INT`);
+  await db.execute(rawSql`ALTER TABLE milsim_awards ADD COLUMN IF NOT EXISTS citation TEXT`);
+}
+
+router.get("/milsim-groups/:id/award-defs", requireAuth, async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const result = await db.execute(rawSql`
+    SELECT * FROM milsim_award_defs WHERE group_id = ${id} ORDER BY created_at DESC
+  `);
+  res.json(result.rows);
+});
+
+router.post("/milsim-groups/:id/award-defs", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  const { name, description, type = "medal", image_path, qualifiers = [] } = req.body as any;
+  if (!name?.trim()) { res.status(400).json({ error: "name required" }); return; }
+  const check = await moderateText([name, description].filter(Boolean).join(" "));
+  if (check.flagged) { res.status(422).json({ error: `Rejected: ${check.reason}`, moderation: true }); return; }
+  const result = await db.execute(rawSql`
+    INSERT INTO milsim_award_defs (group_id, name, description, type, image_path, qualifiers, created_by)
+    VALUES (${id}, ${name.trim()}, ${description ?? null}, ${type}, ${image_path ?? null}, ${JSON.stringify(qualifiers)}, ${(req as any).user.username})
+    RETURNING *
+  `);
+  res.status(201).json(result.rows[0]);
+});
+
+router.patch("/milsim-groups/:id/award-defs/:defId", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const defId = parseInt(Array.isArray(req.params.defId) ? req.params.defId[0] : req.params.defId, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  const { name, description, type, image_path, qualifiers } = req.body as any;
+  await db.execute(rawSql`
+    UPDATE milsim_award_defs SET
+      name = COALESCE(${name ?? null}, name),
+      description = COALESCE(${description ?? null}, description),
+      type = COALESCE(${type ?? null}, type),
+      image_path = COALESCE(${image_path ?? null}, image_path),
+      qualifiers = COALESCE(${qualifiers ? JSON.stringify(qualifiers) : null}, qualifiers)
+    WHERE id = ${defId} AND group_id = ${id}
+  `);
+  res.sendStatus(204);
+});
+
+router.delete("/milsim-groups/:id/award-defs/:defId", requireAuth, async (req, res): Promise<void> => {
+  const userId = (req as any).user.id;
+  const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+  const defId = parseInt(Array.isArray(req.params.defId) ? req.params.defId[0] : req.params.defId, 10);
+  const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
+  if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  await db.execute(rawSql`DELETE FROM milsim_award_defs WHERE id = ${defId} AND group_id = ${id}`);
+  res.sendStatus(204);
+});
+
+// ── Awards (issued instances) ───────────────────────────────────────────────────
 
 router.get("/milsim-groups/:id/awards", requireAuth, async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   const result = await db.execute(rawSql`
-    SELECT a.*, r.callsign FROM milsim_awards a
+    SELECT a.*, r.callsign, d.name as def_name, d.type as def_type, d.image_path as def_image, d.qualifiers as def_qualifiers
+    FROM milsim_awards a
     LEFT JOIN milsim_roster r ON r.id = a.roster_entry_id
+    LEFT JOIN milsim_award_defs d ON d.id = a.award_def_id
     WHERE a.group_id = ${id} ORDER BY a.awarded_at DESC
   `);
   res.json(result.rows);
@@ -307,16 +383,17 @@ router.post("/milsim-groups/:id/awards", requireAuth, async (req, res): Promise<
   const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
   const [group] = await db.select().from(milsimGroupsTable).where(eq(milsimGroupsTable.id, id));
   if (!group || group.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
-  const { rosterEntryId, title, description, icon } = req.body as any;
-  if (!rosterEntryId || !title) { res.status(400).json({ error: "rosterEntryId and title required" }); return; }
-  const awardCheck = await moderateText([title, description].filter(Boolean).join(" "));
-  if (awardCheck.flagged) {
-    res.status(422).json({ error: `Award details rejected: ${awardCheck.reason}`, moderation: true });
-    return;
+  const { rosterEntryId, awardDefId, citation, title, description, icon } = req.body as any;
+  if (!rosterEntryId) { res.status(400).json({ error: "rosterEntryId required" }); return; }
+  // Support both new (awardDefId) and legacy (title) flows
+  const effectiveTitle = title ?? "Award";
+  if (citation) {
+    const check = await moderateText(citation);
+    if (check.flagged) { res.status(422).json({ error: `Citation rejected: ${check.reason}`, moderation: true }); return; }
   }
   const result = await db.execute(rawSql`
-    INSERT INTO milsim_awards (group_id, roster_entry_id, title, description, icon, awarded_by)
-    VALUES (${id}, ${rosterEntryId}, ${title}, ${description ?? null}, ${icon ?? "medal"}, ${(req as any).user.username})
+    INSERT INTO milsim_awards (group_id, roster_entry_id, award_def_id, title, description, icon, citation, awarded_by)
+    VALUES (${id}, ${rosterEntryId}, ${awardDefId ?? null}, ${effectiveTitle}, ${description ?? null}, ${icon ?? "medal"}, ${citation ?? null}, ${(req as any).user.username})
     RETURNING *
   `);
   res.status(201).json(result.rows[0]);

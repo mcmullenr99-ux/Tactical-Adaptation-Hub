@@ -5,6 +5,7 @@ import { db, usersTable, pool } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { ensureMotdColumns } from "./routes/motd";
+import { ensureAwardDefsTable } from "./routes/milsim";
 
 async function seedAdmin() {
   try {
@@ -61,6 +62,7 @@ async function initStripe() {
 
   await seedAdmin();
   await ensureMotdColumns().catch((e: any) => console.error("[startup] motd column migration:", e.message));
+  await ensureAwardDefsTable().catch((e: any) => console.error("[startup] award-defs migration:", e.message));
   await initStripe();
 
   app.listen(port, () => {
