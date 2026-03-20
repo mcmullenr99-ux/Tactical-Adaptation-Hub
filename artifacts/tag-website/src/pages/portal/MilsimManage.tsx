@@ -437,6 +437,7 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
 }
 
 function AwardsTab({ group, showMsg }: any) {
+  const [, goTo] = useLocation();
   const [awards, setAwards] = useState<MilsimAward[]>([]);
   const [loading, setLoading] = useState(true);
   const [rosterEntryId, setRosterEntryId] = useState("");
@@ -483,6 +484,20 @@ function AwardsTab({ group, showMsg }: any) {
 
   return (
     <div className="max-w-3xl space-y-6">
+      {/* Ribbon Builder CTA */}
+      <div className="flex items-center justify-between border border-primary/30 bg-primary/5 px-4 py-3">
+        <div>
+          <p className="font-display text-sm font-bold uppercase tracking-widest text-primary">Ribbon & Commendation Builder</p>
+          <p className="text-muted-foreground text-xs mt-0.5">Design custom ribbon bars with stripes, devices & accessories — award to your operators</p>
+        </div>
+        <button
+          onClick={() => goTo("/portal/ribbons")}
+          className="mf-btn-primary text-xs px-4 py-2 whitespace-nowrap flex items-center gap-2"
+        >
+          <Medal className="w-3.5 h-3.5" /> Open Builder
+        </button>
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
       ) : awards.length === 0 ? (

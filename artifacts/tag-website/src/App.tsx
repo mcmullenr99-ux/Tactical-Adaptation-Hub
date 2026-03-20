@@ -39,6 +39,7 @@ import SecurityProtocol from "@/pages/portal/SecurityProtocol";
 import Profile from "@/pages/portal/Profile";
 import ResetPassword from "@/pages/portal/ResetPassword";
 import TwoFactorAuth from "@/pages/portal/TwoFactorAuth";
+import RibbonBuilder from "@/pages/portal/RibbonBuilder";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +78,7 @@ function Router() {
       <Route path="/portal/security" component={SecurityProtocol} />
       <Route path="/portal/reset-password" component={ResetPassword} />
       <Route path="/portal/2fa" component={TwoFactorAuth} />
+      <Route path="/portal/ribbons" component={RibbonBuilder} />
       
       <Route component={NotFound} />
     </Switch>
