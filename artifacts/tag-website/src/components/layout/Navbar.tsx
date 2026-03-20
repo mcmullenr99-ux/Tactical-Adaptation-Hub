@@ -53,17 +53,12 @@ export function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group shrink-0">
-            <div className="relative flex items-center justify-center w-12 h-12 shrink-0 text-foreground group-hover:text-primary transition-colors duration-300">
-              <TagLogo size={48} />
+            <div className="relative flex items-center justify-center w-14 h-14 shrink-0 text-foreground group-hover:text-primary transition-colors duration-300">
+              <TagLogo size={56} />
             </div>
-            <div className="flex flex-col leading-none">
-              <span className="font-display font-bold text-2xl tracking-widest text-foreground group-hover:text-primary transition-colors">
-                TAG
-              </span>
-              <span className="font-display text-[10px] tracking-[0.2em] text-muted-foreground uppercase hidden sm:block">
-                Tactical Adaptation Group
-              </span>
-            </div>
+            <span className="font-display text-[10px] tracking-[0.2em] text-muted-foreground uppercase hidden sm:block group-hover:text-primary transition-colors">
+              Tactical Adaptation Group
+            </span>
           </Link>
 
           {/* Desktop Nav */}

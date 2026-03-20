@@ -4,20 +4,19 @@ interface TagLogoProps {
 }
 
 /**
- * TAG circular badge logo.
+ * TAG circular badge logo — GBRS / military patch style.
  *
- * Design intent: the letter bodies of "TACTICAL ADAPTATION GROUP" ARE the outer
- * ring — exactly like GBRS, military patches, and the RH-style circular logos
- * the client referenced. textLength forces the 25 chars to span a 270° arc so
- * the glyphs (font-size 20, cap-height ≈ 14 px) fill from the inner separator
- * ring outward to the edge of the circle, with generous inter-glyph gaps.
+ * Three bold letters "T  A  G" wrap a 300° arc. textLength forces them to
+ * fill the full arc so the huge gaps between the letters look exactly like
+ * the GBRS GROUP ring — the glyph bodies ARE the circular border.
  *
- * Geometry (centre 100,100):
- *   text baseline    r = 80   (caps reach outward to ≈ r 94)
- *   junction points  (43, 157) and (157, 157)  — 135° each side of the bottom
- *   main arc         270° CW over top → M 43,157 A 80,80 0 1,1 157,157
- *   bottom arc        90° CW through bottom → M 43,157 A 80,80 0 0,1 157,157
- *   arc lengths      270°=377 px   90°=126 px
+ * Geometry (centre 100,100, baseline radius r=70):
+ *   cap-height at font-size 36 ≈ 26 px  →  caps reach r=96 (outer edge)
+ *   ring inner edge = baseline r=70
+ *   300° arc:  junction points at 150° CW (135,161) and 210° CW (65,161)
+ *     main  M 65,161 A 70,70 0 1,1 135,161  (300°, large-arc sweep=1)
+ *     bottom M 65,161 A 70,70 0 0,1 135,161  (60°, small-arc sweep=1)
+ *   arc lengths:  300° → 366 px   60° → 73 px
  */
 export function TagLogo({ size = 200, className = "" }: TagLogoProps) {
   return (
@@ -30,97 +29,108 @@ export function TagLogo({ size = 200, className = "" }: TagLogoProps) {
       aria-label="TAG — Tactical Adaptation Group"
     >
       <defs>
-        {/* 270° arc — lower-left → clockwise over top → lower-right */}
-        <path id="tag-main" d="M 43,157 A 80,80 0 1,1 157,157" />
-        {/* 90° arc  — lower-left → clockwise through bottom → lower-right */}
-        <path id="tag-bot"  d="M 43,157 A 80,80 0 0,1 157,157" />
+        {/* 300° clockwise arc over the top */}
+        <path id="tl-ring" d="M 65,161 A 70,70 0 1,1 135,161" />
+        {/* 60° clockwise arc through the bottom */}
+        <path id="tl-bot"  d="M 65,161 A 70,70 0 0,1 135,161" />
       </defs>
 
-      {/* ── Outer guide hairline ─────────────────────────────────────── */}
-      <circle cx="100" cy="100" r="95"
-        fill="none" stroke="currentColor" strokeWidth="0.6" opacity="0.2" />
+      {/* ── Outer guide hairline ─────────────────────────────────── */}
+      <circle cx="100" cy="100" r="96"
+        fill="none" stroke="currentColor" strokeWidth="0.7" opacity="0.25" />
 
       {/*
-       * ── LETTER-BODY RING ──────────────────────────────────────────────
-       * font-size 20  →  cap height ≈ 14 px
-       * baseline at r=80; caps reach outward to r≈94 (fills the ring)
-       * textLength="370" across 377 px arc = 14.8 px per character
-       * lengthAdjust="spacing" keeps glyphs natural, only opens the gaps
-       * → letters are the ring; white space between is the "background"
+       * ── LETTER-RING ───────────────────────────────────────────────
+       * "TAG" textLength=366 fills the full 300° arc (366 px).
+       * lengthAdjust="spacing" leaves glyphs at natural width; all
+       * extra space becomes inter-glyph gaps (~147 px each):
+       *   T — near lower-left  (7–8 o'clock)
+       *   A — at top centre    (12 o'clock)   ← centre of text = arc mid
+       *   G — near lower-right (4–5 o'clock)
+       * Font 36 → cap-height ≈26 px; baseline r=70 → caps reach r=96.
        */}
       <text
         fill="currentColor"
         fontFamily="Rajdhani, sans-serif"
         fontWeight="700"
-        fontSize="20"
+        fontSize="36"
       >
         <textPath
-          href="#tag-main"
+          href="#tl-ring"
           startOffset="50%"
           textAnchor="middle"
-          textLength="370"
+          textLength="366"
           lengthAdjust="spacing"
         >
-          TACTICAL ADAPTATION GROUP
+          TAG
         </textPath>
       </text>
 
-      {/* ── Inner separator rings ─────────────────────────────────────── */}
-      <circle cx="100" cy="100" r="64"
+      {/* Short tick marks at the two junction points, closing the ring */}
+      {/* Lower-left junction (65,161): tick from outer to inner edge */}
+      <line
+        x1="65" y1="161"
+        x2="79" y2="148"
+        stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.6"
+      />
+      {/* Lower-right junction (135,161) */}
+      <line
+        x1="135" y1="161"
+        x2="121" y2="148"
+        stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.6"
+      />
+
+      {/* ── Inner separator rings ────────────────────────────────── */}
+      <circle cx="100" cy="100" r="57"
         fill="none" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="100" cy="100" r="59"
+      <circle cx="100" cy="100" r="52"
         fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.4" />
 
       {/*
-       * ── Crosshair ticks ──────────────────────────────────────────────
-       * From r=27 (outside centre circle) to r=57 (inside separator ring)
-       *   N: y = 100-57=43  to  100-27=73
-       *   S: y = 100+27=127 to  100+57=157
-       *   W: x = 100-57=43  to  100-27=73
-       *   E: x = 100+27=127 to  100+57=157
+       * ── Crosshair ticks ───────────────────────────────────────────
+       * N/S/E/W: from r=24 (outside centre circle) to r=50 (inside sep)
+       *   N: y 50→76   S: y 124→150   E: x 124→150   W: x 50→76
        */}
-      <line x1="100" y1="43"  x2="100" y2="73"
-        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="100" y1="127" x2="100" y2="157"
-        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="43"  y1="100" x2="73"  y2="100"
-        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="127" y1="100" x2="157" y2="100"
-        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="100" y1="50"  x2="100" y2="76"
+        stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="100" y1="124" x2="100" y2="150"
+        stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="50"  y1="100" x2="76"  y2="100"
+        stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="124" y1="100" x2="150" y2="100"
+        stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
 
-      {/* ── Centre target ring ────────────────────────────────────────── */}
-      <circle cx="100" cy="100" r="22"
+      {/* ── Centre target ring ───────────────────────────────────── */}
+      <circle cx="100" cy="100" r="20"
         fill="none" stroke="currentColor" strokeWidth="1.6" />
 
-      {/* ── Centre "T" lettermark ─────────────────────────────────────── */}
+      {/* ── Centre "T" lettermark ────────────────────────────────── */}
       <text
-        x="100" y="114"
+        x="100" y="112"
         textAnchor="middle"
         fontFamily="Rajdhani, sans-serif"
         fontWeight="700"
-        fontSize="34"
+        fontSize="28"
         fill="currentColor"
       >T</text>
 
       {/*
-       * ── EST. 2025 — bottom 90° arc ────────────────────────────────────
-       * Clockwise path at the bottom: travel direction is left→right at the
-       * lowest point, so text extends inward (toward centre) — it reads
-       * correctly and sits between the separator ring and the outer letter ring
-       * in the lower sector.
-       * textLength="108" across 126 px arc  (9-char "EST. 2025")
+       * ── EST. 2025 — bottom 60° arc ───────────────────────────────
+       * Same clockwise sweep through the bottom; text extends inward
+       * (toward centre) and reads left-to-right. textLength="60" keeps
+       * it tight in the narrow 73 px sector.
        */}
       <text
         fill="currentColor"
         fontFamily="Rajdhani, sans-serif"
         fontWeight="700"
-        fontSize="11"
+        fontSize="10"
       >
         <textPath
-          href="#tag-bot"
+          href="#tl-bot"
           startOffset="50%"
           textAnchor="middle"
-          textLength="108"
+          textLength="60"
           lengthAdjust="spacing"
         >
           EST. 2025
