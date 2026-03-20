@@ -133,29 +133,28 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* Header */}
+        {/* Header — Split Command */}
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-card border border-border p-8 rounded-lg clip-angled relative overflow-hidden"
+          className="relative rounded-lg overflow-hidden border border-border bg-[#0d0d0d] min-h-[200px] flex"
         >
-          <div className="absolute right-0 top-0 w-64 h-64 bg-primary/5 rounded-full blur-[60px] pointer-events-none" />
-          <div className="flex flex-wrap items-start justify-between gap-4 relative z-10">
+          {/* Left panel */}
+          <div className="flex-1 min-w-0 p-8 flex flex-col justify-between relative z-10">
             <div>
-              <h1 className="text-3xl md:text-4xl font-display font-bold uppercase tracking-wider mb-2">
-                Welcome, <span className="text-primary">{user.username}</span>
-              </h1>
-              <p className="text-muted-foreground font-sans">
-                Tactical Adaptation Group Command Center. Status:{" "}
-                <span className="text-accent uppercase tracking-widest text-xs font-bold ml-1">{user.status}</span>
+              <p className="text-[10px] font-mono text-primary uppercase tracking-[0.25em] mb-3">
+                TAG — HQ PORTAL // {format(new Date(), "ddMMMyyyy").toUpperCase()} — AUTHENTICATED
               </p>
-              {/* Service Badge */}
-              <div className={`inline-flex items-center gap-1.5 mt-3 text-xs font-display font-bold uppercase tracking-widest px-2.5 py-1 rounded border ${badge.color}`}>
+              <h1 className="font-display font-black uppercase leading-none mb-4 text-white">
+                <span className="block text-4xl md:text-5xl tracking-tight">{user.username}</span>
+                <span className="block text-base md:text-lg tracking-[0.3em] text-primary mt-1 opacity-80">{user.role}</span>
+              </h1>
+              <div className={`inline-flex items-center gap-1.5 text-[10px] font-display font-bold uppercase tracking-widest px-2.5 py-1 rounded border ${badge.color}`}>
                 <span>{badge.icon}</span> {badge.label}
-                <span className="font-sans font-normal text-muted-foreground ml-1">· Day {daysIn}</span>
+                <span className="font-mono font-normal text-muted-foreground ml-1">DAY {daysIn}</span>
               </div>
             </div>
-            {/* On Duty Status Toggle */}
-            <div className="relative">
+            {/* Duty Status */}
+            <div className="relative mt-6">
               <button
                 onClick={() => setShowDutyMenu(v => !v)}
                 className={`flex items-center gap-2 text-xs font-display font-bold uppercase tracking-widest px-3 py-2 rounded border transition-all ${dutyOption.color}`}
@@ -168,7 +167,7 @@ export default function Dashboard() {
                 {showDutyMenu && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl overflow-hidden min-w-[140px]"
+                    className="absolute left-0 bottom-full mb-1 z-50 bg-card border border-border rounded-lg shadow-xl overflow-hidden min-w-[140px]"
                   >
                     {DUTY_OPTIONS.map(opt => (
                       <button
@@ -186,6 +185,27 @@ export default function Dashboard() {
               </AnimatePresence>
             </div>
           </div>
+
+          {/* Diagonal separator */}
+          <div className="hidden sm:block absolute inset-y-0 right-[38%] w-px bg-gradient-to-b from-transparent via-primary/40 to-transparent z-10"
+            style={{ transform: "skewX(-6deg)" }} />
+
+          {/* Right panel — helmet image */}
+          <div className="hidden sm:flex w-[38%] items-center justify-center relative overflow-hidden">
+            <img
+              src={`${import.meta.env.BASE_URL}images/tag-skull.png`}
+              alt=""
+              className="absolute inset-0 w-full h-full object-contain object-center opacity-[0.12] [mix-blend-mode:screen] pointer-events-none scale-110"
+            />
+            <div className="relative z-10 text-center px-6">
+              <p className="text-[9px] font-mono text-primary/60 uppercase tracking-[0.3em]">CLEARANCE</p>
+              <p className="font-display font-black text-2xl uppercase text-white/80 tracking-widest">{user.status}</p>
+            </div>
+          </div>
+
+          {/* Corner accent */}
+          <div className="absolute top-0 left-0 w-20 h-1 bg-primary" />
+          <div className="absolute bottom-0 right-0 w-20 h-1 bg-primary/40" />
         </motion.div>
 
         {/* Stats Grid */}

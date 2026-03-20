@@ -628,27 +628,59 @@ export default function Forum() {
     setTotal(t => Math.max(0, t - 1));
   };
 
+  const now = new Date();
+  const militaryDate = now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    .replace(/ /g, "").toUpperCase();
+  const militaryTime = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(":", "") + "Z";
+
   return (
     <MainLayout>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
 
-        {/* Page Header */}
-        <div className="flex items-start justify-between gap-4 mb-8">
-          <div>
-            <h1 className="font-display font-black text-3xl sm:text-4xl uppercase tracking-wider text-foreground mb-2">
-              Community Board
-            </h1>
-            <p className="text-muted-foreground font-sans leading-relaxed">
-              Gaming updates, unit news, recruitment calls, and everything in between.
+        {/* Page Header — Signal Broadcast */}
+        <div className="relative rounded-lg overflow-hidden border border-border bg-[#0d0d0d] mb-8">
+          {/* Grain */}
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "128px" }} />
+          {/* Top accent bar */}
+          <div className="h-0.5 w-full bg-gradient-to-r from-primary via-primary/60 to-transparent" />
+
+          <div className="px-6 pt-5 pb-6 relative z-10">
+            <p className="text-[10px] font-mono text-primary uppercase tracking-[0.25em] mb-3">
+              {militaryDate} // {militaryTime} &nbsp;·&nbsp; FREQ: UNIT.COMMS &nbsp;·&nbsp; STATUS: OPEN
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary ml-2 align-middle animate-pulse" />
             </p>
+
+            <div className="flex items-end justify-between gap-4 flex-wrap">
+              <div>
+                <h1 className="font-display font-black text-3xl sm:text-4xl uppercase tracking-wider text-white leading-none">
+                  <span className="inline-block"
+                    style={{ textShadow: "-1px 0 0 rgba(255,0,60,0.4), 1px 0 0 rgba(0,255,255,0.3)" }}>
+                    COMMUNITY
+                  </span>
+                  {" "}
+                  <span className="text-primary inline-block"
+                    style={{ textShadow: "-2px 0 0 rgba(255,0,60,0.35), 2px 0 0 rgba(0,255,255,0.25)" }}>
+                    BOARD
+                  </span>
+                </h1>
+                <p className="text-xs font-mono text-muted-foreground mt-2 uppercase tracking-widest">
+                  Gaming · Unit News · Recruitment · General
+                </p>
+              </div>
+
+              {isAuthenticated && (
+                <button onClick={() => setShowCreate(true)}
+                  className="flex items-center gap-2 bg-transparent border border-primary text-primary font-display font-bold uppercase tracking-widest px-5 py-2.5 rounded text-sm hover:bg-primary hover:text-primary-foreground transition-all shrink-0 group">
+                  <span className="w-2 h-2 rounded-full bg-primary group-hover:bg-primary-foreground animate-pulse" />
+                  <span>Broadcast</span>
+                </button>
+              )}
+            </div>
           </div>
-          {isAuthenticated && (
-            <button onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider px-5 py-2.5 rounded clip-angled-sm shadow-[0_0_20px_hsla(var(--primary),0.2)] hover:shadow-[0_0_24px_hsla(var(--primary),0.4)] transition-all shrink-0">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">New Post</span>
-            </button>
-          )}
+
+          {/* Bottom scan line */}
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
         </div>
 
         {/* Category Tabs */}
