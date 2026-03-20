@@ -4,7 +4,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { Shield, AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { TagLogo } from "@/components/TagLogo";
 import { useRegister, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -67,9 +68,7 @@ export default function Register() {
         >
           <div className="bg-card border border-border p-8 sm:p-10 rounded-lg clip-angled shadow-xl">
             <div className="flex flex-col items-center mb-8">
-              <div className="w-16 h-16 bg-secondary flex items-center justify-center rounded clip-angled-sm mb-6 border border-border">
-                <Shield className="w-8 h-8 text-primary" />
-              </div>
+              <TagLogo size={110} className="mb-4" />
               <h1 className="text-3xl font-display font-bold uppercase tracking-widest text-foreground">Registration</h1>
               <p className="text-muted-foreground font-sans mt-2 text-center">Establish your TAG identity</p>
             </div>

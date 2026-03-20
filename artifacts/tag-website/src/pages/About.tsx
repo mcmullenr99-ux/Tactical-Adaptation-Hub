@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Shield, Target, Award, Users } from "lucide-react";
+import { TagLogo } from "@/components/TagLogo";
 import { useSEO } from "@/hooks/useSEO";
 
 export default function About() {
@@ -40,19 +41,19 @@ export default function About() {
               </div>
             </motion.div>
             
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }} 
-              whileInView={{ opacity: 1, scale: 1 }} 
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              className="relative rounded-lg overflow-hidden border border-border p-2 bg-card"
+              className="relative flex items-center justify-center rounded-lg border border-border bg-card overflow-hidden aspect-square max-w-md mx-auto"
             >
-              <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent pointer-events-none" />
-              {/* stock tactical strategy/map image */}
-              <img 
-                src="https://images.unsplash.com/photo-1584281722883-9b8e8f85f3ba?q=80&w=1000&auto=format&fit=crop" 
-                alt="Tactical planning" 
-                className="w-full h-auto rounded clip-angled-sm object-cover aspect-[4/3] opacity-80"
-              />
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-primary/5 pointer-events-none" />
+              <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 23px,currentColor 23px,currentColor 24px),repeating-linear-gradient(90deg,transparent,transparent 23px,currentColor 23px,currentColor 24px)" }} />
+              <div className="relative z-10 p-8">
+                <TagLogo size={320} />
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-card to-transparent pointer-events-none" />
             </motion.div>
           </div>
         </div>

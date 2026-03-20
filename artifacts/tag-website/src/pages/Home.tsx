@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { Crosshair, Shield, Users, Target, ArrowRight } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useSEO } from "@/hooks/useSEO";
+import { TagLogo } from "@/components/TagLogo";
 
 export default function Home() {
   useSEO({ title: "Home", description: "Tactical Adaptation Group — a premier tactical gaming community dedicated to mastering warfighting fundamentals and building brotherhood." });
@@ -19,6 +20,11 @@ export default function Home() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-transparent to-background/90" />
+        </div>
+
+        {/* Logo watermark */}
+        <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
+          <TagLogo size={520} className="opacity-[0.06]" />
         </div>
 
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto mt-16">
