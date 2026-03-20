@@ -2,7 +2,6 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
 import { Home } from "lucide-react";
-import { TagLogo } from "@/components/TagLogo";
 import { motion } from "framer-motion";
 
 export default function NotFound() {
@@ -24,7 +23,14 @@ export default function NotFound() {
             transition={{ duration: 0.7, ease: "easeOut" }}
           >
             <div className="relative">
-              <TagLogo size={220} className="opacity-60 mx-auto" />
+              <img
+                src="/images/tag-skull.png"
+                alt="TAG Skull — Signal Lost"
+                width={240}
+                height={240}
+                className="opacity-70 mx-auto select-none pointer-events-none object-contain [mix-blend-mode:multiply] dark:invert dark:[mix-blend-mode:screen]"
+                draggable={false}
+              />
               <motion.span
                 className="absolute top-4 right-0 text-[10px] font-display font-bold text-destructive uppercase tracking-[0.3em] animate-pulse bg-background/80 px-1"
                 initial={{ opacity: 0 }}
