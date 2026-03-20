@@ -30,11 +30,11 @@ function parseEmailParts(from: string): { name: string; email: string } {
 }
 
 // ── Gmail SMTP (most reliable for Gmail recipients) ─────────────────────────
-async function trySendGmail(to: string, subject: string, html: string): Promise<boolean> {
-  if (!SMTP_PASS || !FROM_EMAIL) return false;
+const GMAIL_ADDRESS = "mcmullenr99@gmail.com";
 
-  const { email: fromAddr } = parseEmailParts(FROM_EMAIL);
-  if (!fromAddr.endsWith("@gmail.com")) return false;
+async function trySendGmail(to: string, subject: string, html: string): Promise<boolean> {
+  if (!SMTP_PASS) return false;
+  const fromAddr = GMAIL_ADDRESS;
 
   try {
     const transporter = nodemailer.createTransport({
