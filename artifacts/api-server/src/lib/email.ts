@@ -1,3 +1,5 @@
+import nodemailer from "nodemailer";
+
 // Support both the raw xkeysib-... key and the base64-JSON wrapper
 function resolveBrevoKey(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
@@ -11,21 +13,14 @@ function resolveBrevoKey(raw: string | undefined): string | undefined {
 }
 
 const BREVO_API_KEY = resolveBrevoKey(process.env["BREVO_API_KEY"]);
-// Always send FROM Brevo's own domain — using yahoo.com/gmail.com as FROM violates
-// their DMARC p=reject policy and Gmail silently drops the message.
-const BREVO_SENDER = "TAG Notifications <noreply@10844033.brevosend.com>";
-// If an admin reply-to address is configured, replies go there instead.
-const REPLY_TO = process.env["FROM_EMAIL"];
+const SMTP_PASS    = process.env["SMTP_PASS"];
+const FROM_EMAIL   = process.env["FROM_EMAIL"] ?? "";
 
 function resolveAppUrl(): string {
   const domains = process.env["REPLIT_DOMAINS"];
-  if (domains) {
-    const first = domains.split(",")[0].trim();
-    return `https://${first}`;
-  }
-  return process.env["APP_URL"] ?? "https://tactical-adaptation-hub.replit.app";
+  if (domains) return `https://${domains.split(",")[0].trim()}`;
+  return "https://tactical-adaptation-hub.replit.app";
 }
-
 const APP_URL = resolveAppUrl();
 
 function parseEmailParts(from: string): { name: string; email: string } {
@@ -34,13 +29,45 @@ function parseEmailParts(from: string): { name: string; email: string } {
   return { name: "TAG", email: from.trim() };
 }
 
-export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+// ── Gmail SMTP (most reliable for Gmail recipients) ─────────────────────────
+async function trySendGmail(to: string, subject: string, html: string): Promise<boolean> {
+  if (!SMTP_PASS || !FROM_EMAIL) return false;
+
+  const { email: fromAddr } = parseEmailParts(FROM_EMAIL);
+  if (!fromAddr.endsWith("@gmail.com")) return false;
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: fromAddr, pass: SMTP_PASS },
+    });
+
+    const info = await transporter.sendMail({
+      from: `TAG Notifications <${fromAddr}>`,
+      to,
+      subject,
+      html,
+      text: html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+    });
+
+    console.log(`[email] Gmail SMTP sent → to=${to} messageId=${info.messageId}`);
+    return true;
+  } catch (err: any) {
+    console.error("[email] Gmail SMTP failed:", err.message);
+    return false;
+  }
+}
+
+// ── Brevo API fallback ───────────────────────────────────────────────────────
+async function sendViaBrevo(to: string, subject: string, html: string): Promise<void> {
   if (!BREVO_API_KEY) {
-    console.warn("[email] BREVO_API_KEY not set — email not sent to", to);
+    console.warn("[email] No delivery method available — email not sent to", to);
     return;
   }
 
-  const sender = parseEmailParts(BREVO_SENDER);
+  // Always send from Brevo's own verified domain to pass DMARC.
+  // Yahoo/Gmail as FROM breaks DMARC and causes silent rejection.
+  const sender = { name: "TAG Notifications", email: "noreply@10844033.brevosend.com" };
   const body: Record<string, unknown> = {
     sender,
     to: [{ email: to }],
@@ -49,29 +76,29 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
     textContent: html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
   };
 
-  // Add reply-to if a contact address is configured
-  if (REPLY_TO) {
-    const rt = parseEmailParts(REPLY_TO);
-    body.replyTo = rt;
+  // If FROM_EMAIL is not a Gmail/Yahoo (shared-sending-banned) domain, use as reply-to
+  if (FROM_EMAIL) {
+    const { email: replyAddr } = parseEmailParts(FROM_EMAIL);
+    const bannedDomains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"];
+    if (!bannedDomains.some(d => replyAddr.endsWith(`@${d}`))) {
+      body.replyTo = parseEmailParts(FROM_EMAIL);
+    }
   }
 
   const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
-    headers: {
-      "api-key": BREVO_API_KEY,
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-    },
+    headers: { "api-key": BREVO_API_KEY, "Content-Type": "application/json", "Accept": "application/json" },
     body: JSON.stringify(body),
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Brevo API error ${res.status}: ${err}`);
-  }
-
+  if (!res.ok) throw new Error(`Brevo API error ${res.status}: ${await res.text()}`);
   const result = await res.json() as any;
-  console.log(`[email] Sent OK → to=${to} messageId=${result?.messageId}`);
+  console.log(`[email] Brevo sent → to=${to} messageId=${result?.messageId}`);
+}
+
+export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+  const sentViaGmail = await trySendGmail(to, subject, html);
+  if (!sentViaGmail) await sendViaBrevo(to, subject, html);
 }
 
 export function passwordResetEmail(username: string, token: string): string {
@@ -129,8 +156,7 @@ export function passwordResetEmail(username: string, token: string): string {
     </div>
   </div>
 </body>
-</html>
-  `.trim();
+</html>`.trim();
 }
 
 export function twoFactorEnabledEmail(username: string): string {
@@ -172,6 +198,5 @@ export function twoFactorEnabledEmail(username: string): string {
     </div>
   </div>
 </body>
-</html>
-  `.trim();
+</html>`.trim();
 }
