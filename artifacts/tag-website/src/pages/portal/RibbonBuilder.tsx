@@ -33,13 +33,16 @@ interface GroupInfo { id: number; name: string; roster: RosterEntry[]; }
 // ─────────────────────────────────────────────────────────────────────────────
 const BASE = import.meta.env.BASE_URL;
 const ICON_URLS: Record<string, string> = {
+  // High-quality PNG artwork (white bg removed by filter)
+  oakleaf:   `${BASE}icons/oak_leaf.png`,
+  maple:     `${BASE}icons/maple_leaf.png`,
+  laurel:    `${BASE}icons/laurel.png`,
+  // Geometric SVG shapes
   star:      `${BASE}icons/star.svg`,
-  oakleaf:   `${BASE}icons/oak_leaf.svg`,
-  maple:     `${BASE}icons/maple_leaf.svg`,
-  laurel:    `${BASE}icons/laurel.svg`,
   v_device:  `${BASE}icons/v_device.svg`,
   e_device:  `${BASE}icons/e_device.svg`,
 };
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SVG colour-matrix filters — converts any SVG image to gold / silver / bronze
@@ -147,31 +150,33 @@ function AccessoryIcon({ acc, uid, size }: { acc: Accessory; uid: string; size: 
     );
   }
 
-  // Complex organic shapes — use real Wikimedia SVG files rendered via <image>
-  // Aspect ratios for each source SVG:
-  const viewBoxes: Record<string, { w: number; h: number }> = {
-    oakleaf: { w: 623.44, h: 465.79 },
-    maple:   { w: 305,    h: 343    },
-    laurel:  { w: 1199,   h: 330    },
-  };
-  const vb = viewBoxes[acc.type] ?? { w: 100, h: 100 };
-  const aspect = vb.w / vb.h;
-  const imgH = size * (acc.type === "laurel" ? 0.6 : 0.9);
-  const imgW = imgH * aspect;
-  const clampedW = Math.min(imgW, size * (acc.type === "laurel" ? 2.2 : 1.1));
-  const clampedH = clampedW / aspect;
+  // PNG leaf artwork — all are square-ish so fill the icon size
+  // White background removed via feColorMatrix: alpha = clamp(3 - R - G - B, 0, 1)
+  const bgFilterId = `wbg-${uid}`;
+  const h = size * (acc.type === "laurel" ? 0.75 : 0.92);
+  const w = acc.type === "laurel" ? h * 1.1 : h; // laurel sprig is slightly wider
 
   return (
     <>
-      <MetalFilters uid={uid} />
+      <defs>
+        <filter id={bgFilterId} colorInterpolationFilters="sRGB" x="-5%" y="-5%" width="110%" height="110%">
+          <feColorMatrix
+            type="matrix"
+            values="1  0  0  0  0
+                    0  1  0  0  0
+                    0  0  1  0  0
+                   -1 -1 -1  0  3"
+          />
+        </filter>
+      </defs>
       <image
         href={ICON_URLS[acc.type]}
-        x={-clampedW / 2}
-        y={-clampedH / 2}
-        width={clampedW}
-        height={clampedH}
+        x={-w / 2}
+        y={-h / 2}
+        width={w}
+        height={h}
         preserveAspectRatio="xMidYMid meet"
-        filter={`url(#${filterId})`}
+        filter={`url(#${bgFilterId})`}
       />
     </>
   );
