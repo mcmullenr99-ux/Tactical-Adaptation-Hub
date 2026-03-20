@@ -7,8 +7,10 @@ import { apiFetch } from "@/lib/apiFetch";
 import {
   Shield, Crosshair, Award, Users, FileText, BookOpen,
   Plus, Trash2, Loader2, Save, CheckCircle2, AlertCircle, ExternalLink,
-  Pencil, Check, X, Radio, Star, Medal, Wifi, WifiOff
+  Pencil, Check, X, Radio, Star, Medal, Wifi, WifiOff,
+  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp
 } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
 interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
@@ -24,7 +26,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions";
+type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -72,6 +74,13 @@ export default function MilsimManage() {
     { id: "ranks", label: "Ranks", icon: Award },
     { id: "roster", label: "Roster", icon: Users },
     { id: "awards", label: "Awards", icon: Medal },
+    { id: "commendations", label: "Commendations", icon: Megaphone },
+    { id: "quals", label: "Qualifications", icon: GraduationCap },
+    { id: "ops", label: "Live Ops", icon: Siren },
+    { id: "aars", label: "AARs", icon: ClipboardList },
+    { id: "briefings", label: "Briefings", icon: MapPin },
+    { id: "orgchart", label: "Org Chart", icon: GitBranch },
+    { id: "readiness", label: "Readiness", icon: Activity },
     { id: "stream", label: "Stream", icon: Radio },
     { id: "sops", label: "SOPs / ORBAT", icon: BookOpen },
     { id: "questions", label: "App Questions", icon: FileText },
@@ -127,6 +136,13 @@ export default function MilsimManage() {
           {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
           {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
           {tab === "awards" && <AwardsTab group={group} showMsg={showMsg} />}
+          {tab === "commendations" && <CommendationsTab group={group} />}
+          {tab === "quals" && <QualsTab group={group} showMsg={showMsg} />}
+          {tab === "ops" && <OpsTab group={group} showMsg={showMsg} />}
+          {tab === "aars" && <AARsTab group={group} showMsg={showMsg} />}
+          {tab === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
+          {tab === "orgchart" && <OrgChartTab group={group} />}
+          {tab === "readiness" && <ReadinessTab group={group} />}
           {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
           {tab === "sops" && <SopsTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
           {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
@@ -689,3 +705,418 @@ function QuestionsTab({ group, onUpdated, showMsg }: any) {
     </div>
   );
 }
+
+// ─── Commendation Wall ────────────────────────────────────────────────────────
+function CommendationsTab({ group }: any) {
+  const [awards, setAwards] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const ICONS: Record<string, typeof Medal> = { medal: Medal, star: Star, award: Award, shield: Shield };
+  useEffect(() => {
+    apiFetch<any[]>(`/api/milsim-groups/${group.id}/awards`)
+      .then(setAwards).catch(() => {}).finally(() => setLoading(false));
+  }, [group.id]);
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  return (
+    <div className="max-w-3xl space-y-4">
+      <p className="text-xs text-muted-foreground font-sans">A public record of all commendations bestowed within this unit.</p>
+      {awards.length === 0 ? (
+        <div className="text-center py-16 border border-dashed border-border rounded-lg text-muted-foreground">
+          <Megaphone className="w-10 h-10 mx-auto mb-3 opacity-30" /><p className="font-display text-sm uppercase tracking-widest">No commendations on record</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {awards.map((a: any) => {
+            const IconComp = ICONS[a.icon] ?? Medal;
+            return (
+              <div key={a.id} className="flex items-center gap-4 bg-card border border-border rounded-lg px-5 py-4">
+                <div className="w-11 h-11 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shrink-0"><IconComp className="w-5 h-5" /></div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{a.title}</p>
+                    <span className="text-xs text-muted-foreground">{a.awarded_at ? formatDistanceToNow(new Date(a.awarded_at), { addSuffix: true }) : ""}</span>
+                  </div>
+                  {a.callsign && <p className="text-xs text-primary font-display font-bold mt-0.5">Awarded to {a.callsign}</p>}
+                  {a.description && <p className="text-xs text-muted-foreground font-sans mt-1">{a.description}</p>}
+                  {a.awarded_by && <p className="text-xs text-muted-foreground">By {a.awarded_by}</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Qualifications ───────────────────────────────────────────────────────────
+function QualsTab({ group, showMsg }: any) {
+  const [quals, setQuals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState(""); const [desc, setDesc] = useState(""); const [adding, setAdding] = useState(false);
+  const [grantModal, setGrantModal] = useState<any | null>(null); const [grantRosterId, setGrantRosterId] = useState("");
+  const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/qualifications`).then(setQuals).catch(() => {}).finally(() => setLoading(false)); };
+  useEffect(() => { load(); }, [group.id]);
+  const add = async () => {
+    if (!name.trim()) return; setAdding(true);
+    try { await apiFetch(`/api/milsim-groups/${group.id}/qualifications`, { method: "POST", body: JSON.stringify({ name, description: desc || undefined }) }); setName(""); setDesc(""); showMsg(true, "Qualification added."); load(); }
+    catch (e: any) { showMsg(false, e.message); } finally { setAdding(false); }
+  };
+  const remove = async (qid: number) => {
+    try { await apiFetch(`/api/milsim-groups/${group.id}/qualifications/${qid}`, { method: "DELETE" }); showMsg(true, "Removed."); load(); }
+    catch (e: any) { showMsg(false, e.message); }
+  };
+  const grant = async (qid: number) => {
+    if (!grantRosterId) return;
+    try { await apiFetch(`/api/milsim-groups/${group.id}/qualifications/${qid}/grant`, { method: "POST", body: JSON.stringify({ rosterEntryId: parseInt(grantRosterId) }) }); showMsg(true, "Granted."); setGrantModal(null); setGrantRosterId(""); load(); }
+    catch (e: any) { showMsg(false, e.message); }
+  };
+  const revokeGrant = async (qid: number, grantId: number) => {
+    try { await apiFetch(`/api/milsim-groups/${group.id}/qualifications/${qid}/grant/${grantId}`, { method: "DELETE" }); showMsg(true, "Revoked."); load(); }
+    catch (e: any) { showMsg(false, e.message); }
+  };
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  return (
+    <div className="max-w-3xl space-y-6">
+      {quals.length === 0 ? (
+        <div className="text-center py-10 border border-dashed border-border rounded-lg text-muted-foreground">
+          <GraduationCap className="w-10 h-10 mx-auto mb-3 opacity-30" /><p className="font-display text-sm uppercase tracking-widest">No qualifications defined</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {quals.map((q: any) => (
+            <div key={q.id} className="bg-card border border-border rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between gap-3 px-5 py-3">
+                <div className="flex items-center gap-3"><GraduationCap className="w-4 h-4 text-primary shrink-0" /><div><p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{q.name}</p>{q.description && <p className="text-xs text-muted-foreground">{q.description}</p>}<p className="text-xs text-muted-foreground">{q.grants?.length ?? 0} qualified</p></div></div>
+                <div className="flex gap-2 shrink-0"><button onClick={() => setGrantModal(q)} className="text-xs font-display font-bold uppercase tracking-widest px-3 py-1.5 bg-primary/10 text-primary border border-primary/30 rounded hover:bg-primary/20 transition-colors">Grant</button><button onClick={() => remove(q.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-4 h-4" /></button></div>
+              </div>
+              {q.grants?.length > 0 && (
+                <div className="border-t border-border px-5 py-3 bg-secondary/20">
+                  <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Qualified Personnel</p>
+                  <div className="flex flex-wrap gap-2">
+                    {q.grants.map((g: any) => (<div key={g.id} className="flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-display font-bold uppercase tracking-widest px-2.5 py-1 rounded border border-primary/20">{g.callsign}<button onClick={() => revokeGrant(q.id, g.id)} className="ml-1 hover:text-destructive transition-colors"><X className="w-3 h-3" /></button></div>))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {grantModal && (
+        <div className="bg-card border border-primary/30 rounded-lg p-5 space-y-3">
+          <h3 className="font-display font-bold uppercase tracking-wider text-sm">Grant: {grantModal.name}</h3>
+          <select value={grantRosterId} onChange={e => setGrantRosterId(e.target.value)} className="mf-input"><option value="">Select member...</option>{group.roster.map((r: RosterEntry) => <option key={r.id} value={r.id}>{r.callsign}</option>)}</select>
+          <div className="flex gap-2"><button onClick={() => grant(grantModal.id)} disabled={!grantRosterId} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2 rounded transition-all disabled:opacity-50"><Check className="w-3.5 h-3.5" /> Grant</button><button onClick={() => { setGrantModal(null); setGrantRosterId(""); }} className="px-4 py-2 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground">Cancel</button></div>
+        </div>
+      )}
+      <div className="bg-card border border-border rounded-lg p-5 space-y-3">
+        <h3 className="font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">Add Qualification Type</h3>
+        <input value={name} onChange={e => setName(e.target.value)} className="mf-input" placeholder="CQB Certified, Medic Qualified, JTAC..." />
+        <input value={desc} onChange={e => setDesc(e.target.value)} className="mf-input" placeholder="Description (optional)" />
+        <button onClick={add} disabled={adding || !name.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded clip-angled-sm transition-all disabled:opacity-50">{adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Live Ops / Check-In ──────────────────────────────────────────────────────
+function OpsTab({ group, showMsg }: any) {
+  const [activeOp, setActiveOp] = useState<any | null>(undefined);
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [opName, setOpName] = useState(""); const [opDesc, setOpDesc] = useState(""); const [starting, setStarting] = useState(false);
+  const [expandedOp, setExpandedOp] = useState<number | null>(null);
+  const load = () => {
+    setLoading(true);
+    Promise.all([apiFetch<any>(`/api/milsim-groups/${group.id}/ops/active`), apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`)])
+      .then(([active, all]) => { setActiveOp(active ?? null); setHistory(all.filter((o: any) => o.status !== "active")); }).catch(() => {}).finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, [group.id]);
+  const startOp = async () => {
+    if (!opName.trim()) return; setStarting(true);
+    try { await apiFetch(`/api/milsim-groups/${group.id}/ops`, { method: "POST", body: JSON.stringify({ name: opName, description: opDesc || undefined }) }); setOpName(""); setOpDesc(""); showMsg(true, "Op started."); load(); }
+    catch (e: any) { showMsg(false, e.message); } finally { setStarting(false); }
+  };
+  const endOp = async (opId: number) => {
+    try { await apiFetch(`/api/milsim-groups/${group.id}/ops/${opId}/end`, { method: "PATCH" }); showMsg(true, "Op ended."); load(); }
+    catch (e: any) { showMsg(false, e.message); }
+  };
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  return (
+    <div className="max-w-3xl space-y-6">
+      {activeOp ? (
+        <div className="bg-red-500/5 border border-red-500/30 rounded-lg p-5 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3"><span className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-widest text-red-400 px-2 py-1 bg-red-500/20 border border-red-500/30 rounded animate-pulse"><span className="w-1.5 h-1.5 bg-red-400 rounded-full" /> ACTIVE</span><h3 className="font-display font-bold text-foreground">{activeOp.name}</h3></div>
+            <button onClick={() => endOp(activeOp.id)} className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-white font-display font-bold uppercase tracking-widest text-xs rounded transition-all">End Op</button>
+          </div>
+          {activeOp.description && <p className="text-sm text-muted-foreground">{activeOp.description}</p>}
+          <div>
+            <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Checked In ({activeOp.checkins?.length ?? 0})</p>
+            {activeOp.checkins?.length === 0 ? <p className="text-sm text-muted-foreground">No check-ins yet.</p> : (
+              <div className="flex flex-wrap gap-2">{activeOp.checkins?.map((c: any) => (<span key={c.id} className="text-xs font-display font-bold uppercase tracking-widest px-2.5 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded">{c.callsign}</span>))}</div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-card border border-border rounded-lg p-5 space-y-3">
+          <h3 className="font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">Start New Op</h3>
+          <input value={opName} onChange={e => setOpName(e.target.value)} className="mf-input" placeholder="Op name (e.g. Operation Iron Fist)" />
+          <input value={opDesc} onChange={e => setOpDesc(e.target.value)} className="mf-input" placeholder="Brief description (optional)" />
+          <button onClick={startOp} disabled={starting || !opName.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded clip-angled-sm transition-all disabled:opacity-50">{starting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Siren className="w-3.5 h-3.5" />} Start Op</button>
+        </div>
+      )}
+      {history.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="font-display font-bold uppercase tracking-widest text-xs text-muted-foreground">Op History</h3>
+          {history.map((op: any) => (
+            <div key={op.id} className="bg-card border border-border rounded-lg overflow-hidden">
+              <button onClick={() => setExpandedOp(expandedOp === op.id ? null : op.id)} className="w-full flex items-center justify-between px-5 py-3 hover:bg-secondary/20 transition-colors">
+                <div className="flex items-center gap-3"><span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground px-2 py-0.5 bg-secondary border border-border rounded">Ended</span><span className="font-display font-bold text-sm text-foreground">{op.name}</span></div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground"><span>{op.checkin_count} checked in</span>{expandedOp === op.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</div>
+              </button>
+              {expandedOp === op.id && <div className="border-t border-border px-5 py-3 bg-secondary/10 text-xs text-muted-foreground">Started: {format(new Date(op.started_at), "PPpp")}{op.ended_at && <> · Ended: {format(new Date(op.ended_at), "PPpp")}</>}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── AARs ─────────────────────────────────────────────────────────────────────
+function AARField({ label, value }: { label: string; value: string }) {
+  return <div><p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">{label}</p><p className="text-sm text-foreground font-sans whitespace-pre-wrap">{value}</p></div>;
+}
+
+function AARsTab({ group, showMsg }: any) {
+  const [aars, setAars] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const emptyForm = { op_name: "", op_date: "", summary: "", objectives_hit: "", objectives_missed: "", casualties: "", commendations: "", recommendations: "", classification: "unclassified" };
+  const [form, setForm] = useState<any>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).then(setAars).catch(() => {}).finally(() => setLoading(false)); };
+  useEffect(() => { load(); }, [group.id]);
+  const submit = async () => {
+    if (!form.op_name.trim()) return; setSaving(true);
+    try {
+      if (editId) { await apiFetch(`/api/milsim-groups/${group.id}/aars/${editId}`, { method: "PATCH", body: JSON.stringify(form) }); showMsg(true, "AAR updated."); }
+      else { await apiFetch(`/api/milsim-groups/${group.id}/aars`, { method: "POST", body: JSON.stringify(form) }); showMsg(true, "AAR filed."); }
+      setCreating(false); setEditId(null); setForm(emptyForm); load();
+    } catch (e: any) { showMsg(false, e.message); } finally { setSaving(false); }
+  };
+  const remove = async (id: number) => {
+    try { await apiFetch(`/api/milsim-groups/${group.id}/aars/${id}`, { method: "DELETE" }); showMsg(true, "AAR deleted."); load(); }
+    catch (e: any) { showMsg(false, e.message); }
+  };
+  const CL: Record<string, string> = { "unclassified": "text-green-400 bg-green-500/10 border-green-500/30", "confidential": "text-blue-400 bg-blue-500/10 border-blue-500/30", "classified": "text-yellow-400 bg-yellow-500/10 border-yellow-500/30", "top-secret": "text-red-400 bg-red-500/10 border-red-500/30" };
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  const setF = (k: string) => (e: any) => setForm((f: any) => ({...f, [k]: e.target.value}));
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground font-sans">After Action Reports — filed post-op.</p>
+        {!creating && !editId && <button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-all"><Plus className="w-3.5 h-3.5" /> File AAR</button>}
+      </div>
+      {(creating || editId !== null) && (
+        <div className="bg-card border border-primary/30 rounded-lg p-6 space-y-4">
+          <h3 className="font-display font-bold uppercase tracking-widest text-sm">{editId ? "Edit AAR" : "New AAR"}</h3>
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Op Name *</label><input value={form.op_name} onChange={setF("op_name")} className="mf-input" placeholder="Operation Iron Fist" /></div><div><label className="mf-label">Op Date</label><input type="date" value={form.op_date} onChange={setF("op_date")} className="mf-input" /></div></div>
+          <div><label className="mf-label">Classification</label><select value={form.classification} onChange={setF("classification")} className="mf-input">{["unclassified","confidential","classified","top-secret"].map(c => <option key={c} value={c}>{c.replace("-"," ").toUpperCase()}</option>)}</select></div>
+          <div><label className="mf-label">Summary</label><textarea rows={3} value={form.summary} onChange={setF("summary")} className="mf-input resize-none" placeholder="Overall mission summary..." /></div>
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Objectives Hit</label><textarea rows={3} value={form.objectives_hit} onChange={setF("objectives_hit")} className="mf-input resize-none" /></div><div><label className="mf-label">Objectives Missed</label><textarea rows={3} value={form.objectives_missed} onChange={setF("objectives_missed")} className="mf-input resize-none" /></div></div>
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Casualties</label><textarea rows={2} value={form.casualties} onChange={setF("casualties")} className="mf-input resize-none" /></div><div><label className="mf-label">Commendations</label><textarea rows={2} value={form.commendations} onChange={setF("commendations")} className="mf-input resize-none" /></div></div>
+          <div><label className="mf-label">Recommendations</label><textarea rows={3} value={form.recommendations} onChange={setF("recommendations")} className="mf-input resize-none" /></div>
+          <div className="flex gap-2">
+            <button onClick={submit} disabled={saving || !form.op_name.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editId ? "Update" : "File AAR"}</button>
+            <button onClick={() => { setCreating(false); setEditId(null); setForm(emptyForm); }} className="px-4 py-2 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground">Cancel</button>
+          </div>
+        </div>
+      )}
+      {aars.length === 0 && !creating ? (
+        <div className="text-center py-12 border border-dashed border-border rounded-lg text-muted-foreground"><ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30" /><p className="font-display text-sm uppercase tracking-widest">No AARs filed</p></div>
+      ) : (
+        <div className="space-y-3">
+          {aars.map((a: any) => (
+            <div key={a.id} className="bg-card border border-border rounded-lg overflow-hidden">
+              <button onClick={() => setExpandedId(expandedId === a.id ? null : a.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
+                <div className="flex items-center gap-3 flex-wrap"><span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${CL[a.classification] ?? ""}`}>{a.classification.replace("-"," ")}</span><span className="font-display font-bold text-sm text-foreground">{a.op_name}</span>{a.op_date && <span className="text-xs text-muted-foreground">{format(new Date(a.op_date + "T00:00:00"), "MMM dd, yyyy")}</span>}</div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ op_name: a.op_name, op_date: a.op_date?.split("T")[0] ?? "", summary: a.summary ?? "", objectives_hit: a.objectives_hit ?? "", objectives_missed: a.objectives_missed ?? "", casualties: a.casualties ?? "", commendations: a.commendations ?? "", recommendations: a.recommendations ?? "", classification: a.classification }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={e => { e.stopPropagation(); remove(a.id); }} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                  {expandedId === a.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                </div>
+              </button>
+              {expandedId === a.id && (
+                <div className="border-t border-border p-5 space-y-4 bg-secondary/10">
+                  {a.summary && <AARField label="Summary" value={a.summary} />}
+                  {a.objectives_hit && <AARField label="Objectives Hit" value={a.objectives_hit} />}
+                  {a.objectives_missed && <AARField label="Objectives Missed" value={a.objectives_missed} />}
+                  {a.casualties && <AARField label="Casualties" value={a.casualties} />}
+                  {a.commendations && <AARField label="Commendations" value={a.commendations} />}
+                  {a.recommendations && <AARField label="Recommendations" value={a.recommendations} />}
+                  <p className="text-xs text-muted-foreground">Filed by {a.created_by} · {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Briefings ────────────────────────────────────────────────────────────────
+function BriefingsTab({ group, showMsg }: any) {
+  const [briefings, setBriefings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const emptyForm = { title: "", op_date: "", ao: "", objectives: "", comms_plan: "", roe: "", additional_notes: "", status: "draft" };
+  const [form, setForm] = useState<any>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/briefings`).then(setBriefings).catch(() => {}).finally(() => setLoading(false)); };
+  useEffect(() => { load(); }, [group.id]);
+  const submit = async () => {
+    if (!form.title.trim()) return; setSaving(true);
+    try {
+      if (editId) { await apiFetch(`/api/milsim-groups/${group.id}/briefings/${editId}`, { method: "PATCH", body: JSON.stringify(form) }); showMsg(true, "Briefing updated."); }
+      else { await apiFetch(`/api/milsim-groups/${group.id}/briefings`, { method: "POST", body: JSON.stringify(form) }); showMsg(true, "Briefing created."); }
+      setCreating(false); setEditId(null); setForm(emptyForm); load();
+    } catch (e: any) { showMsg(false, e.message); } finally { setSaving(false); }
+  };
+  const remove = async (id: number) => {
+    try { await apiFetch(`/api/milsim-groups/${group.id}/briefings/${id}`, { method: "DELETE" }); showMsg(true, "Deleted."); load(); }
+    catch (e: any) { showMsg(false, e.message); }
+  };
+  const SC: Record<string, string> = { draft: "text-muted-foreground bg-secondary border-border", published: "text-primary bg-primary/10 border-primary/30", archived: "text-muted-foreground bg-secondary/40 border-border" };
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  const setF = (k: string) => (e: any) => setForm((f: any) => ({...f, [k]: e.target.value}));
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground font-sans">Op briefings — distributed to members before an operation.</p>
+        {!creating && !editId && <button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-all"><Plus className="w-3.5 h-3.5" /> New Briefing</button>}
+      </div>
+      {(creating || editId !== null) && (
+        <div className="bg-card border border-primary/30 rounded-lg p-6 space-y-4">
+          <h3 className="font-display font-bold uppercase tracking-widest text-sm">{editId ? "Edit Briefing" : "New Briefing"}</h3>
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Title *</label><input value={form.title} onChange={setF("title")} className="mf-input" placeholder="Operation Iron Fist — OPORD" /></div><div><label className="mf-label">Op Date / Time</label><input type="datetime-local" value={form.op_date} onChange={setF("op_date")} className="mf-input" /></div></div>
+          <div><label className="mf-label">Status</label><select value={form.status} onChange={setF("status")} className="mf-input"><option value="draft">Draft</option><option value="published">Published (visible to all members)</option><option value="archived">Archived</option></select></div>
+          <div><label className="mf-label">Area of Operations (AO)</label><input value={form.ao} onChange={setF("ao")} className="mf-input" placeholder="Grid reference, map name..." /></div>
+          <div><label className="mf-label">Objectives</label><textarea rows={4} value={form.objectives} onChange={setF("objectives")} className="mf-input resize-none" placeholder="1. Secure FOB Alpha&#10;2. Eliminate HVT Bravo..." /></div>
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Comms Plan</label><textarea rows={3} value={form.comms_plan} onChange={setF("comms_plan")} className="mf-input resize-none" placeholder="Primary: CH1&#10;Secondary: CH2..." /></div><div><label className="mf-label">ROE</label><textarea rows={3} value={form.roe} onChange={setF("roe")} className="mf-input resize-none" placeholder="Weapons free in AO..." /></div></div>
+          <div><label className="mf-label">Additional Notes</label><textarea rows={3} value={form.additional_notes} onChange={setF("additional_notes")} className="mf-input resize-none" /></div>
+          <div className="flex gap-2">
+            <button onClick={submit} disabled={saving || !form.title.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editId ? "Update" : "Create"}</button>
+            <button onClick={() => { setCreating(false); setEditId(null); setForm(emptyForm); }} className="px-4 py-2 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground">Cancel</button>
+          </div>
+        </div>
+      )}
+      {briefings.length === 0 && !creating ? (
+        <div className="text-center py-12 border border-dashed border-border rounded-lg text-muted-foreground"><MapPin className="w-10 h-10 mx-auto mb-3 opacity-30" /><p className="font-display text-sm uppercase tracking-widest">No briefings created</p></div>
+      ) : (
+        <div className="space-y-3">
+          {briefings.map((b: any) => (
+            <div key={b.id} className="bg-card border border-border rounded-lg overflow-hidden">
+              <button onClick={() => setExpandedId(expandedId === b.id ? null : b.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
+                <div className="flex items-center gap-3 flex-wrap"><span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${SC[b.status] ?? ""}`}>{b.status}</span><span className="font-display font-bold text-sm text-foreground">{b.title}</span>{b.op_date && <span className="text-xs text-muted-foreground">{format(new Date(b.op_date), "MMM dd, yyyy HH:mm")}</span>}</div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={e => { e.stopPropagation(); setEditId(b.id); setForm({ title: b.title, op_date: b.op_date ? b.op_date.slice(0,16) : "", ao: b.ao ?? "", objectives: b.objectives ?? "", comms_plan: b.comms_plan ?? "", roe: b.roe ?? "", additional_notes: b.additional_notes ?? "", status: b.status }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={e => { e.stopPropagation(); remove(b.id); }} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                  {expandedId === b.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                </div>
+              </button>
+              {expandedId === b.id && (
+                <div className="border-t border-border p-5 space-y-4 bg-secondary/10">
+                  {b.ao && <AARField label="Area of Operations" value={b.ao} />}
+                  {b.objectives && <AARField label="Objectives" value={b.objectives} />}
+                  {b.comms_plan && <AARField label="Comms Plan" value={b.comms_plan} />}
+                  {b.roe && <AARField label="ROE" value={b.roe} />}
+                  {b.additional_notes && <AARField label="Additional Notes" value={b.additional_notes} />}
+                  <p className="text-xs text-muted-foreground font-sans">By {b.created_by} · {formatDistanceToNow(new Date(b.created_at), { addSuffix: true })}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Org Chart ────────────────────────────────────────────────────────────────
+function OrgChartTab({ group }: any) {
+  const rankById = Object.fromEntries((group.ranks as Rank[]).map((r: Rank) => [r.id, r]));
+  const roleById = Object.fromEntries((group.roles as Role[]).map((r: Role) => [r.id, r]));
+  const sorted = [...(group.roster as RosterEntry[])].sort((a, b) => {
+    const ra = a.rankId ? (rankById[a.rankId]?.tier ?? 0) : 0;
+    const rb = b.rankId ? (rankById[b.rankId]?.tier ?? 0) : 0;
+    return rb - ra;
+  });
+  const byTier = sorted.reduce<Record<number, RosterEntry[]>>((acc, entry) => {
+    const tier = entry.rankId ? (rankById[entry.rankId]?.tier ?? -1) : -1;
+    if (!acc[tier]) acc[tier] = [];
+    acc[tier].push(entry);
+    return acc;
+  }, {});
+  const tiers = Object.keys(byTier).map(Number).sort((a, b) => b - a);
+  if (sorted.length === 0) return (
+    <div className="text-center py-16 border border-dashed border-border rounded-lg text-muted-foreground"><GitBranch className="w-10 h-10 mx-auto mb-3 opacity-30" /><p className="font-display text-sm uppercase tracking-widest">Roster is empty</p></div>
+  );
+  return (
+    <div className="max-w-4xl space-y-6">
+      <p className="text-xs text-muted-foreground font-sans">Chain of command — organized by rank tier (highest first).</p>
+      <div className="space-y-6">
+        {tiers.map(tier => (
+          <div key={tier} className="space-y-2">
+            <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-1">{tier >= 0 ? `Tier ${tier} — ${rankById[byTier[tier][0]?.rankId ?? -1]?.name ?? ""}` : "No Rank"}</p>
+            <div className="flex flex-wrap gap-3">
+              {byTier[tier].map(entry => (
+                <div key={entry.id} className="bg-card border border-border rounded-lg px-4 py-3 min-w-[120px] text-center">
+                  <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center mx-auto mb-2"><span className="text-primary font-display font-black text-sm">{entry.callsign.charAt(0)}</span></div>
+                  <p className="font-display font-bold uppercase tracking-widest text-xs text-foreground">{entry.callsign}</p>
+                  {entry.rankId && <p className="text-xs text-primary mt-0.5">{rankById[entry.rankId]?.abbreviation ?? rankById[entry.rankId]?.name}</p>}
+                  {entry.roleId && <p className="text-xs text-muted-foreground">{roleById[entry.roleId]?.name}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Readiness ────────────────────────────────────────────────────────────────
+function ReadinessTab({ group }: any) {
+  const [readiness, setReadiness] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { apiFetch<any>(`/api/stats/readiness/${group.id}`).then(setReadiness).catch(() => {}).finally(() => setLoading(false)); }, [group.id]);
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  if (!readiness) return null;
+  const sc = readiness.status === "green" ? "text-green-400" : readiness.status === "amber" ? "text-yellow-400" : "text-red-400";
+  const bc = readiness.status === "green" ? "bg-green-500" : readiness.status === "amber" ? "bg-yellow-500" : "bg-red-500";
+  return (
+    <div className="max-w-xl space-y-6">
+      <div className="bg-card border border-border rounded-lg p-6 space-y-5">
+        <div className="flex items-center justify-between"><h3 className="font-display font-bold uppercase tracking-widest">Unit Readiness</h3><span className={`font-display font-black text-2xl uppercase ${sc}`}>{readiness.status.toUpperCase()}</span></div>
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs font-display font-bold uppercase tracking-widest text-muted-foreground"><span>Active (7d) / Total</span><span>{readiness.active_this_week} / {readiness.total}</span></div>
+          <div className="h-3 bg-secondary rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all ${bc}`} style={{ width: `${readiness.readiness_pct}%` }} /></div>
+          <p className={`text-right text-sm font-display font-bold ${sc}`}>{readiness.readiness_pct}% READY</p>
+        </div>
+        <div className="grid grid-cols-3 gap-4 pt-2 border-t border-border">
+          <div className="text-center"><p className="text-2xl font-display font-bold text-foreground">{readiness.total}</p><p className="text-xs text-muted-foreground font-display uppercase tracking-widest">Total</p></div>
+          <div className="text-center"><p className="text-2xl font-display font-bold text-green-400">{readiness.active_this_week}</p><p className="text-xs text-muted-foreground font-display uppercase tracking-widest">Active 7d</p></div>
+          <div className="text-center"><p className="text-2xl font-display font-bold text-blue-400">{readiness.active_this_month}</p><p className="text-xs text-muted-foreground font-display uppercase tracking-widest">Active 30d</p></div>
+        </div>
+        <p className="text-xs text-muted-foreground font-sans">Readiness based on portal logins in the last 7 days. 70%+ = Green, 40–69% = Amber, &lt;40% = Red.</p>
+      </div>
+    </div>
+  );
+}
+

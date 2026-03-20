@@ -1,13 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { useAuth } from "@/components/auth/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { User, Lock, Trash2, Loader2, Save, AlertTriangle, Globe } from "lucide-react";
+import { User, Lock, Trash2, Loader2, Save, AlertTriangle, Globe, Activity, Share2, Copy, Check, Star } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import { COUNTRIES, countryFlag } from "@/lib/countries";
+import { differenceInDays, format } from "date-fns";
+
+const DUTY_OPTIONS = [
+  { value: "available", label: "Available", color: "bg-green-500/20 text-green-400 border-green-500/40" },
+  { value: "deployed", label: "Deployed", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/40" },
+  { value: "on-leave", label: "On Leave", color: "bg-blue-500/20 text-blue-400 border-blue-500/40" },
+  { value: "mia", label: "MIA", color: "bg-red-500/20 text-red-400 border-red-500/40" },
+];
+
+function getServiceBadge(createdAt: string) {
+  const days = differenceInDays(new Date(), new Date(createdAt));
+  if (days >= 730) return { label: "2-Year Elite", icon: "★★", color: "text-accent" };
+  if (days >= 365) return { label: "1-Year Veteran", icon: "★", color: "text-yellow-400" };
+  if (days >= 180) return { label: "6-Month Operator", icon: "◆", color: "text-blue-400" };
+  if (days >= 30) return { label: "30-Day Operator", icon: "▲", color: "text-primary" };
+  return { label: "Recruit", icon: "●", color: "text-muted-foreground" };
+}
 
 export default function Profile() {
   useSEO({ title: "My Profile" });
@@ -29,7 +46,25 @@ export default function Profile() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const [dutyStatus, setDutyStatus] = useState((user as any)?.on_duty_status ?? "available");
+  const [savingDuty, setSavingDuty] = useState(false);
+
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [recruits, setRecruits] = useState<any[]>([]);
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    apiFetch<{ referral_code: string | null }>("/api/referral-code/mine")
+      .then(r => setReferralCode(r.referral_code)).catch(() => {});
+    apiFetch<any[]>("/api/referral-code/recruits")
+      .then(setRecruits).catch(() => {});
+  }, []);
+
   if (!user) return null;
+
+  const badge = getServiceBadge(user.createdAt);
+  const daysIn = differenceInDays(new Date(), new Date(user.createdAt));
 
   const saveProfile = async () => {
     setSavingProfile(true);
@@ -69,6 +104,40 @@ export default function Profile() {
     }
   };
 
+  const saveDutyStatus = async () => {
+    setSavingDuty(true);
+    try {
+      await apiFetch("/api/duty-status", { method: "PATCH", body: JSON.stringify({ status: dutyStatus }) });
+      toast({ title: "Status Updated", description: `Duty status set to ${dutyStatus}.` });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setSavingDuty(false);
+    }
+  };
+
+  const generateReferralCode = async () => {
+    setGeneratingCode(true);
+    try {
+      const r = await apiFetch<{ referral_code: string }>("/api/referral-code/generate", { method: "PATCH" });
+      setReferralCode(r.referral_code);
+      toast({ title: "Code Generated", description: "Your referral code is ready to share." });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setGeneratingCode(false);
+    }
+  };
+
+  const copyCode = () => {
+    if (referralCode) {
+      navigator.clipboard.writeText(referralCode).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  };
+
   const deleteAccount = async () => {
     setDeleting(true);
     try {
@@ -93,6 +162,66 @@ export default function Profile() {
         <div>
           <h1 className="font-display font-bold text-2xl uppercase tracking-widest">My Profile</h1>
           <p className="text-muted-foreground text-sm mt-1">Manage your callsign details, password, and account.</p>
+        </div>
+
+        {/* Service Record */}
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Star className="w-5 h-5 text-primary" />
+            <h2 className="font-display font-bold uppercase tracking-widest">Service Record</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Callsign</p>
+              <p className="font-display font-bold text-foreground">{user.username}</p>
+            </div>
+            <div>
+              <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Clearance</p>
+              <p className="font-display font-bold text-foreground uppercase">{user.role}</p>
+            </div>
+            <div>
+              <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Enlisted</p>
+              <p className="font-display font-bold">{format(new Date(user.createdAt), "MMM dd, yyyy")}</p>
+            </div>
+            <div>
+              <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Service Badge</p>
+              <p className={`font-display font-bold ${badge.color}`}>{badge.icon} {badge.label}</p>
+              <p className="text-xs text-muted-foreground">{daysIn} days</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Duty Status */}
+        <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+            <Activity className="w-5 h-5 text-primary" />
+            <h2 className="font-display font-bold uppercase tracking-widest">Duty Status</h2>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans">Visible to unit commanders and on your profile.</p>
+          <div className="grid grid-cols-2 gap-2">
+            {DUTY_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setDutyStatus(opt.value)}
+                className={`flex items-center gap-2 px-4 py-3 rounded border font-display font-bold uppercase tracking-widest text-xs transition-all ${
+                  dutyStatus === opt.value ? opt.color : "border-border text-muted-foreground hover:border-border/80"
+                }`}
+              >
+                {dutyStatus === opt.value && <Check className="w-3.5 h-3.5" />}
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-end">
+            <button
+              onClick={saveDutyStatus}
+              disabled={savingDuty}
+              className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm rounded transition-all disabled:opacity-50"
+            >
+              {savingDuty ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save Status
+            </button>
+          </div>
         </div>
 
         {/* Account Info */}
@@ -151,7 +280,6 @@ export default function Profile() {
               </select>
               <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">▾</div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Displayed as a flag next to your name on your profile and posts.</p>
           </div>
 
           <div className="flex justify-end pt-2">
@@ -164,6 +292,51 @@ export default function Profile() {
               Save Profile
             </button>
           </div>
+        </div>
+
+        {/* Referral Code */}
+        <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+            <Share2 className="w-5 h-5 text-primary" />
+            <h2 className="font-display font-bold uppercase tracking-widest">Recruitment Code</h2>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans">Share this code with potential recruits. When they register, they'll be linked to you.</p>
+          {referralCode ? (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 bg-secondary border border-border rounded px-4 py-3 font-mono font-bold text-primary tracking-widest text-sm">
+                {referralCode}
+              </div>
+              <button
+                onClick={copyCode}
+                className="flex items-center gap-2 px-4 py-3 border border-border rounded font-display font-bold uppercase text-xs text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={generateReferralCode}
+              disabled={generatingCode}
+              className="flex items-center gap-2 px-5 py-2.5 bg-secondary border border-border hover:border-primary/50 text-foreground font-display font-bold uppercase tracking-wider text-sm rounded transition-all disabled:opacity-50"
+            >
+              {generatingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+              Generate My Code
+            </button>
+          )}
+          {recruits.length > 0 && (
+            <div>
+              <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Recruited by You ({recruits.length})</p>
+              <div className="space-y-1">
+                {recruits.map((r: any) => (
+                  <div key={r.id} className="flex items-center justify-between text-sm px-3 py-2 bg-secondary/40 rounded">
+                    <span className="font-display font-bold text-foreground">{r.username}</span>
+                    <span className="text-xs text-muted-foreground">{format(new Date(r.created_at), "MMM dd, yyyy")}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Change Password */}
@@ -206,7 +379,6 @@ export default function Profile() {
           </div>
           <p className="text-sm text-muted-foreground">
             Permanently deletes your account and all associated data. This cannot be undone.
-            Note: security audit logs may be retained per our Privacy Policy.
           </p>
 
           {!showDeleteConfirm ? (

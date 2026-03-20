@@ -132,6 +132,17 @@
     text-shadow: 0 0 10px hsla(var(--accent), 0.5);
   }
 
+  .mf-label {
+    display: block;
+    font-size: 10px;
+    font-family: var(--font-display, sans-serif);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 6px;
+  }
+
   .mf-input {
     width: 100%;
     background: hsl(var(--card));

@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { useListUsers, useUpdateUserRole } from "@workspace/api-client-react";
 import {
-  Settings, Shield, Radio, Send, Loader2, KeyRound, Link as LinkIcon,
+  Settings, Shield, Radio, Send, Loader2, KeyRound, Link as LinkIcon, MessageSquare, Save, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +18,7 @@ export default function AdminPanel() {
   const { data: users, refetch } = useListUsers();
   const updateRole = useUpdateUserRole();
   const { toast } = useToast();
-  const [tab, setTab] = useState<"roster" | "broadcast" | "resets">("roster");
+  const [tab, setTab] = useState<"roster" | "broadcast" | "resets" | "motd">("roster");
 
   const [bSubject, setBSubject] = useState("");
   const [bBody, setBBody] = useState("");
@@ -75,6 +75,7 @@ export default function AdminPanel() {
             { key: "roster",    label: "Personnel",       icon: <Shield className="w-4 h-4" /> },
             { key: "broadcast", label: "Broadcast",       icon: <Radio className="w-4 h-4" /> },
             { key: "resets",    label: "Password Resets", icon: <KeyRound className="w-4 h-4" /> },
+            { key: "motd",      label: "MOTD / SITRAP",   icon: <MessageSquare className="w-4 h-4" /> },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key as any)}
               className={`flex items-center gap-2 px-5 py-3 font-display font-bold uppercase tracking-widest text-sm transition-colors border-b-2 ${
@@ -206,7 +207,113 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {/* ── MOTD Tab ──────────────────────────────────────────── */}
+        {tab === "motd" && <MotdTab toast={toast} />}
+
       </div>
     </PortalLayout>
   );
 }
+
+function MotdTab({ toast }: { toast: any }) {
+  const [motds, setMotds] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ title: "", content: "", type: "info", expires_at: "" });
+  const [saving, setSaving] = useState(false);
+
+  const load = () => {
+    apiFetch<any[]>("/api/motd").then(setMotds).catch(() => {}).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const submit = async () => {
+    if (!form.title.trim() || !form.content.trim()) return;
+    setSaving(true);
+    try {
+      await apiFetch("/api/motd", { method: "POST", body: JSON.stringify({ ...form, expires_at: form.expires_at || null }) });
+      toast({ title: "MOTD Posted" });
+      setForm({ title: "", content: "", type: "info", expires_at: "" });
+      load();
+    } catch (e: any) { toast({ title: "Failed", description: e.message, variant: "destructive" }); }
+    finally { setSaving(false); }
+  };
+
+  const remove = async (id: number) => {
+    try {
+      await apiFetch(`/api/motd/${id}`, { method: "DELETE" });
+      toast({ title: "MOTD deleted" }); load();
+    } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+  };
+
+  const TYPE_COLORS: Record<string, string> = {
+    info: "text-blue-400 bg-blue-500/10 border-blue-500/30",
+    warning: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30",
+    success: "text-green-400 bg-green-500/10 border-green-500/30",
+    critical: "text-red-400 bg-red-500/10 border-red-500/30",
+  };
+
+  return (
+    <div className="space-y-8 max-w-3xl">
+      {/* Create New */}
+      <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+        <div className="flex items-center gap-3 mb-2">
+          <MessageSquare className="w-5 h-5 text-primary" />
+          <h2 className="font-display font-bold uppercase tracking-widest text-lg">Post MOTD / SITRAP</h2>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mf-label">Title *</label>
+            <input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} className="mf-input" placeholder="Weekly SITRAP" />
+          </div>
+          <div>
+            <label className="mf-label">Type</label>
+            <select value={form.type} onChange={e => setForm(f => ({...f, type: e.target.value}))} className="mf-input">
+              <option value="info">Info</option>
+              <option value="warning">Warning</option>
+              <option value="success">Success</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="mf-label">Content *</label>
+          <textarea rows={5} value={form.content} onChange={e => setForm(f => ({...f, content: e.target.value}))} className="mf-input resize-none" placeholder="This week's situation report..." />
+        </div>
+        <div>
+          <label className="mf-label">Expires At (optional)</label>
+          <input type="datetime-local" value={form.expires_at} onChange={e => setForm(f => ({...f, expires_at: e.target.value}))} className="mf-input" />
+        </div>
+        <button onClick={submit} disabled={saving || !form.title.trim() || !form.content.trim()}
+          className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm rounded disabled:opacity-50 transition-all">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Post MOTD
+        </button>
+      </div>
+
+      {/* Existing */}
+      <div className="space-y-3">
+        <h3 className="font-display font-bold uppercase tracking-widest text-xs text-muted-foreground">Active MOTDs</h3>
+        {loading ? <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div> :
+          motds.length === 0 ? (
+            <div className="text-center py-10 border border-dashed border-border rounded-lg text-muted-foreground">
+              <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <p className="font-display text-sm uppercase tracking-widest">No MOTDs posted</p>
+            </div>
+          ) : (
+            motds.map((m: any) => (
+              <div key={m.id} className={`flex items-start justify-between gap-4 p-4 border rounded-lg ${TYPE_COLORS[m.type] ?? "text-foreground bg-card border-border"}`}>
+                <div className="flex-1 min-w-0">
+                  <p className="font-display font-bold uppercase tracking-wider text-sm">{m.title}</p>
+                  <p className="text-xs mt-1 opacity-80 font-sans">{m.content.slice(0, 120)}{m.content.length > 120 ? "..." : ""}</p>
+                  <p className="text-xs opacity-60 mt-1 font-mono">{m.type.toUpperCase()} · {format(new Date(m.created_at), "MMM dd HH:mm")}{m.expires_at ? ` · Expires ${format(new Date(m.expires_at), "MMM dd HH:mm")}` : ""}</p>
+                </div>
+                <button onClick={() => remove(m.id)} className="p-1.5 opacity-60 hover:opacity-100 transition-opacity shrink-0"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            ))
+          )
+        }
+      </div>
+    </div>
+  );
+}
+

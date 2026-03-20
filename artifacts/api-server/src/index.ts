@@ -4,6 +4,7 @@ import app from "./app";
 import { db, usersTable, pool } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { ensureMotdColumns } from "./routes/motd";
 
 async function seedAdmin() {
   try {
@@ -59,6 +60,7 @@ async function initStripe() {
   if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT value: "${rawPort}"`);
 
   await seedAdmin();
+  await ensureMotdColumns().catch((e: any) => console.error("[startup] motd column migration:", e.message));
   await initStripe();
 
   app.listen(port, () => {

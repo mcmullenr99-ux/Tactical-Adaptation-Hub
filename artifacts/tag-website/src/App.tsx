@@ -24,6 +24,10 @@ import OpsCalendar from "@/pages/OpsCalendar";
 import Forum from "@/pages/Forum";
 import UserPublicProfile from "@/pages/UserPublicProfile";
 
+// New Pages
+import ServiceCard from "@/pages/portal/ServiceCard";
+import Stats from "@/pages/Stats";
+
 // Portal Pages
 import Login from "@/pages/portal/Login";
 import Register from "@/pages/portal/Register";
@@ -77,6 +81,8 @@ function Router() {
       <Route path="/portal/security" component={SecurityProtocol} />
       <Route path="/portal/reset-password" component={ResetPassword} />
       <Route path="/portal/2fa" component={TwoFactorAuth} />
+      <Route path="/portal/service-card" component={ServiceCard} />
+      <Route path="/stats" component={Stats} />
       <Route component={NotFound} />
     </Switch>
   );

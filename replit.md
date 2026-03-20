@@ -23,12 +23,20 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - useSEO hook applied to all pages (title + description meta tags)
 - Rate limiting: global, auth, register limiters + `app.set("trust proxy", 1)` for Replit proxy
 - Secure session cookies (production: secure=true, sameSite=strict)
-- Admin panel: Personnel tab, Broadcast tab (send to all members), Password Resets tab (copy token link)
+- Admin panel: Personnel tab, Broadcast tab (send to all members), Password Resets tab (copy token link), MOTD/SITRAP tab (post/manage message of the day with title/type/expiry)
+- MOTD system: table `motd` with `title`, `type` (info/warning/success/critical), `expires_at`, `is_active`; GET /api/motd/active (public), POST/GET/DELETE /api/motd (admin); displayed as banner on Dashboard
+- Service Card page (`/portal/service-card`): visual operator ID card showing enlistment date, days active, service tier, duty status, bio; shareable via Web Share API
+- Public Stats page (`/stats`): real-time unit statistics from DB (active members, MilSim groups, ops completed, awards, AARs, years active)
+- Duty status system: `on_duty_status` column on users (`available`/`deployed`/`on-leave`/`mia`); toggle on Dashboard and Profile; shown on Service Card
+- Referral codes: `referral_code` (nanoid), `referred_by_id` on users; generate/copy on Profile; recruits count shown
+- Service badges on Dashboard: Recruit / 30-Day / 6-Month / 1-Year / 2-Year Elite based on `createdAt`
+- `last_seen_at` column on users: updated by middleware on every authenticated API request; used for Readiness tab
+- `mf-label` CSS class added to index.css for form labels
 - Dashboard: activity feed with Recent Comms + Upcoming Ops panels
 - Notification polling (30s): unread message dot + pending friend request dot in portal sidebar
 - Forgot password: POST /api/auth/forgot-password returns reset token; staff delivers link via Discord DM
-- DB tables: `password_reset_tokens`, `ops_events`, `milsim_group_applications`, `site_settings`
-- API routes: notifications/counts, events CRUD, milsim-applications, users/search, users/profile/:username, auth/forgot-password, auth/reset-password, auth/account (DELETE), admin/broadcast, admin/reset-tokens, messages/mark-all-read, storage uploads/request-url, storage/objects/*, stripe/products, stripe/checkout, stripe/portal, stripe/subscription, stripe/webhook
+- DB tables: `password_reset_tokens`, `ops_events`, `milsim_group_applications`, `site_settings`, `motd`, `milsim_qualifications`, `milsim_member_quals`, `milsim_ops`, `milsim_op_checkins`, `milsim_aars`, `milsim_briefings`
+- API routes: notifications/counts, events CRUD, milsim-applications, users/search, users/profile/:username, auth/forgot-password, auth/reset-password, auth/account (DELETE), admin/broadcast, admin/reset-tokens, messages/mark-all-read, storage uploads/request-url, storage/objects/*, stripe/products, stripe/checkout, stripe/portal, stripe/subscription, stripe/webhook, motd/active (public), motd (admin CRUD), duty/status (GET/PATCH), milsim-groups/:id/qualifications (CRUD + grant), milsim-groups/:id/ops + /active + /end, milsim-groups/:id/aars (CRUD), milsim-groups/:id/briefings (CRUD), stats/public, stats/readiness/:groupId
 - Stripe: Replit-native integration (stripe-replit-sync); stripe schema in PostgreSQL; products: "TAG Supporter" (£4.99/mo, £49.99/yr) + "TAG Donation" (£5/£10/£25); webhook auto-syncs; users.stripe_customer_id + users.stripe_subscription_id; stripeClient.ts (lib/), stripeStorage.ts (lib/), webhookHandlers.ts (lib/), routes/stripe.ts; seed: `pnpm --filter @workspace/scripts run seed-products`
 - Community Board (`/forum`): 4 categories (Gaming, Unit News, Recruitment, General), reactions, comments, MilSim group tagging, pagination, pinning
 - Forum media upload: Images (JPEG/PNG/WebP/GIF up to 8 MB) and videos (MP4/WebM/MOV up to 100 MB) via presigned GCS uploads
