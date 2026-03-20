@@ -30,7 +30,7 @@ function parseEmailParts(from: string): { name: string; email: string } {
 }
 
 // ── Gmail SMTP (most reliable for Gmail recipients) ─────────────────────────
-const GMAIL_ADDRESS = "mcmullenr99@gmail.com";
+const GMAIL_ADDRESS = "noreply.tacticaladaptationgroup@gmail.com";
 
 async function trySendGmail(to: string, subject: string, html: string): Promise<boolean> {
   if (!SMTP_PASS) return false;
@@ -66,7 +66,7 @@ async function sendViaBrevo(to: string, subject: string, html: string): Promise<
   }
 
   // Use the verified sender on this Brevo account.
-  const sender = { name: "Tactical Adaptation Group", email: "mcmullenr99@gmail.com" };
+  const sender = { name: "Tactical Adaptation Group", email: "noreply.tacticaladaptationgroup@gmail.com" };
   const body: Record<string, unknown> = {
     sender,
     to: [{ email: to }],
