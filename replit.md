@@ -12,7 +12,8 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - Portal Pages: Login, Register, Dashboard, Inbox, Compose, Staff Apply, Mod Panel, Admin Panel, MilSim Manage, Profile, OpsCalendar
 - Public pages: PrivacyPolicy (`/privacy`), TermsOfService (`/terms`), OpsCalendar (`/ops-calendar`), UserPublicProfile (`/u/:username`)
 - MilSim Registry (`/milsim`): public listing of tactical groups with roles, ranks, roster, SOPs, ORBAT, application questions
-- Dark military tactical theme (dark background, olive green + amber accents)
+- Dark military tactical theme (dark background, monochrome palette)
+- Official TAG logo: `public/images/tag-logo.png` (T·A·G curved-letter circle badge, "ESTABLISHED 2026"); rendered via TagLogo component using `mix-blend-mode:multiply` (light) / `filter:invert + mix-blend-mode:screen` (dark) for theme-aware display
 - All 11 supported games listed
 - Uses framer-motion for animations, react-hook-form for forms
 - Donate page: Ko-fi + Stripe integration; Stripe products: "TAG Supporter" (£4.99/mo, £49.99/yr subscription) and "TAG Donation" (£5/£10/£25 one-time); checkout requires TAG account login
