@@ -65,9 +65,8 @@ async function sendViaBrevo(to: string, subject: string, html: string): Promise<
     return;
   }
 
-  // Always send from Brevo's own verified domain to pass DMARC.
-  // Yahoo/Gmail as FROM breaks DMARC and causes silent rejection.
-  const sender = { name: "TAG Notifications", email: "noreply@10844033.brevosend.com" };
+  // Use the verified sender on this Brevo account.
+  const sender = { name: "Tactical Adaptation Group", email: "mcmullenr99@gmail.com" };
   const body: Record<string, unknown> = {
     sender,
     to: [{ email: to }],
@@ -75,15 +74,6 @@ async function sendViaBrevo(to: string, subject: string, html: string): Promise<
     htmlContent: html,
     textContent: html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
   };
-
-  // If FROM_EMAIL is not a Gmail/Yahoo (shared-sending-banned) domain, use as reply-to
-  if (FROM_EMAIL) {
-    const { email: replyAddr } = parseEmailParts(FROM_EMAIL);
-    const bannedDomains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"];
-    if (!bannedDomains.some(d => replyAddr.endsWith(`@${d}`))) {
-      body.replyTo = parseEmailParts(FROM_EMAIL);
-    }
-  }
 
   const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
