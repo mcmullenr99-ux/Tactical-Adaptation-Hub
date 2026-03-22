@@ -1,11 +1,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { verify } from 'npm:jsonwebtoken@9.0.2';
 
-async function getCallerUser(base44: any) {
-  const user = await base44.auth.me();
-  if (!user) return null;
-  const users = await base44.asServiceRole.entities.User.filter({ email: user.email });
-  return users[0] ?? null;
+const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+
+async function getCallerUser(base44: any, req: Request) {
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return null;
+  try {
+    const payload = verify(token, JWT_SECRET) as { sub: string };
+    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+  } catch { return null; }
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
@@ -17,7 +24,7 @@ Deno.serve(async (req) => {
 
     // GET /milsimApplications/mine
     if (method === 'GET' && parts[0] === 'mine') {
-      const full = await getCallerUser(base44);
+      const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const apps = await base44.asServiceRole.entities.MilsimApplication.filter({ applicant_id: full.id });
       return Response.json(apps);
@@ -25,7 +32,7 @@ Deno.serve(async (req) => {
 
     // GET /milsimApplications/:groupId/applications
     if (method === 'GET' && parts.length === 2 && parts[1] === 'applications') {
-      const full = await getCallerUser(base44);
+      const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -35,7 +42,7 @@ Deno.serve(async (req) => {
 
     // POST /milsimApplications/:groupId/apply
     if (method === 'POST' && parts.length === 2 && parts[1] === 'apply') {
-      const full = await getCallerUser(base44);
+      const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
       const existing = await base44.asServiceRole.entities.MilsimApplication.filter({ group_id: parts[0], applicant_id: full.id });
@@ -55,7 +62,7 @@ Deno.serve(async (req) => {
 
     // PATCH /milsimApplications/:groupId/applications/:appId
     if (method === 'PATCH' && parts.length === 3 && parts[1] === 'applications') {
-      const full = await getCallerUser(base44);
+      const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });

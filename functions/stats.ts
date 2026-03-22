@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
       ]);
 
       const activeMembers = users.filter((u: any) => u.status === 'active').length;
-      const completedOps = ops.filter((o: any) => o.status === 'ended').length;
+      const completedOps = ops.filter((o: any) => o.status === 'completed').length;
       const oldest = users.sort((a: any, b: any) => new Date(a.created_date).getTime() - new Date(b.created_date).getTime())[0];
       const founded = oldest ? new Date(oldest.created_date).getFullYear() : new Date().getFullYear();
 
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
         base44.asServiceRole.entities.MilsimAAR.filter({ group_id: groupId }),
       ]);
 
-      const completedOps = ops.filter((o: any) => o.status === 'ended').length;
+      const completedOps = ops.filter((o: any) => o.status === 'completed').length;
       const totalOps = ops.length;
       const wins = aars.filter((a: any) => a.outcome === 'victory').length;
       const winRate = aars.length > 0 ? Math.round((wins / aars.length) * 100) : 0;

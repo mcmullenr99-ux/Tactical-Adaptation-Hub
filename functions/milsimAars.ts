@@ -1,11 +1,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { verify } from 'npm:jsonwebtoken@9.0.2';
 
-async function getCallerUser(base44: any) {
-  const user = await base44.auth.me();
-  if (!user) return null;
-  const users = await base44.asServiceRole.entities.User.filter({ email: user.email });
-  return users[0] ?? null;
+const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+
+async function getCallerUser(base44: any, req: Request) {
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return null;
+  try {
+    const payload = verify(token, JWT_SECRET) as { sub: string };
+    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+  } catch { return null; }
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
@@ -30,7 +37,7 @@ Deno.serve(async (req) => {
 
     // POST /milsimAars/:groupId/aars
     if (method === 'POST' && parts.length === 2 && parts[1] === 'aars') {
-      const full = await getCallerUser(base44);
+      const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
       const body = await req.json().catch(() => ({}));
@@ -53,7 +60,7 @@ Deno.serve(async (req) => {
 
     // PATCH /milsimAars/:groupId/aars/:aarId
     if (method === 'PATCH' && parts.length === 3 && parts[1] === 'aars') {
-      const full = await getCallerUser(base44);
+      const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const aar = await base44.asServiceRole.entities.MilsimAAR.get(parts[2]);
       if (!aar) return Response.json({ error: 'AAR not found' }, { status: 404 });
@@ -72,7 +79,7 @@ Deno.serve(async (req) => {
 
     // DELETE /milsimAars/:groupId/aars/:aarId
     if (method === 'DELETE' && parts.length === 3 && parts[1] === 'aars') {
-      const full = await getCallerUser(base44);
+      const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const aar = await base44.asServiceRole.entities.MilsimAAR.get(parts[2]);
       if (!aar) return Response.json({ error: 'AAR not found' }, { status: 404 });

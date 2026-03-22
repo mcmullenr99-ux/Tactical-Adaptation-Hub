@@ -1,15 +1,25 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { verify } from 'npm:jsonwebtoken@9.0.2';
+
+const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+
+async function getCallerUser(base44: any, req: Request) {
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return null;
+  try {
+    const payload = verify(token, JWT_SECRET) as { sub: string };
+    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+  } catch { return null; }
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const fullUsers = await base44.asServiceRole.entities.User.filter({ email: user.email });
-    const full = fullUsers[0];
-    if (!full) return Response.json({ error: 'User not found' }, { status: 404 });
+    const full = await getCallerUser(base44, req);
+    if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
     const { bio, discordTag, nationality, currentPassword, newPassword } = body;

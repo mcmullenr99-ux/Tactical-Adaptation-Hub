@@ -1,10 +1,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { verify } from 'npm:jsonwebtoken@9.0.2';
 
-async function getCallerUser(base44: any) {
-  const user = await base44.auth.me();
-  if (!user) return null;
-  const users = await base44.asServiceRole.entities.User.filter({ email: user.email });
-  return users[0] ?? null;
+const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+
+async function getCallerUser(base44: any, req: Request) {
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return null;
+  try {
+    const payload = verify(token, JWT_SECRET) as { sub: string };
+    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+  } catch { return null; }
 }
 
 Deno.serve(async (req) => {
@@ -17,7 +23,7 @@ Deno.serve(async (req) => {
 
     // GET /staffApplications — mod+
     if (method === 'GET' && parts.length === 0) {
-      const full = await getCallerUser(base44);
+      const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       if (!['moderator', 'admin'].includes(full.role)) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const apps = await base44.asServiceRole.entities.StaffApplication.list();
@@ -26,7 +32,7 @@ Deno.serve(async (req) => {
 
     // GET /staffApplications/mine
     if (method === 'GET' && parts[0] === 'mine') {
-      const full = await getCallerUser(base44);
+      const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const apps = await base44.asServiceRole.entities.StaffApplication.filter({ user_id: full.id });
       return Response.json(apps[0] ?? null);
@@ -34,12 +40,10 @@ Deno.serve(async (req) => {
 
     // POST /staffApplications
     if (method === 'POST' && parts.length === 0) {
-      const full = await getCallerUser(base44);
+      const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
       const existing = await base44.asServiceRole.entities.StaffApplication.filter({ user_id: full.id });
       if (existing.length > 0) return Response.json({ error: 'Application already submitted' }, { status: 409 });
-
       const body = await req.json().catch(() => ({}));
       const app = await base44.asServiceRole.entities.StaffApplication.create({
         user_id: full.id, username: full.username,
@@ -52,25 +56,19 @@ Deno.serve(async (req) => {
 
     // PATCH /staffApplications/:id — mod+
     if (method === 'PATCH' && parts.length === 1) {
-      const full = await getCallerUser(base44);
+      const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       if (!['moderator', 'admin'].includes(full.role)) return Response.json({ error: 'Forbidden' }, { status: 403 });
-
       const body = await req.json().catch(() => ({}));
       const updates: Record<string, any> = { reviewed_by: full.id };
       if (body.status) updates.status = body.status;
       if (body.reviewNote !== undefined) updates.review_note = body.reviewNote;
-
       const updated = await base44.asServiceRole.entities.StaffApplication.update(parts[0], updates);
-
       // Auto-promote to staff if approved
       if (body.status === 'approved') {
         const app = await base44.asServiceRole.entities.StaffApplication.get(parts[0]);
-        if (app) {
-          await base44.asServiceRole.entities.User.update(app.user_id, { role: 'staff' });
-        }
+        if (app) await base44.asServiceRole.entities.User.update(app.user_id, { role: 'staff' });
       }
-
       return Response.json(updated);
     }
 
