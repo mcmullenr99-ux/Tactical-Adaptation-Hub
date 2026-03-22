@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import {
   Settings, Shield, Radio, Send, Loader2, KeyRound, Link as LinkIcon, MessageSquare, Save, Trash2,
+  Users, CheckCircle2, XCircle, Globe, AlertTriangle, Ban,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +26,7 @@ export default function AdminPanel() {
   });
 
   const { toast } = useToast();
-  const [tab, setTab] = useState<"roster" | "broadcast" | "resets" | "motd">("roster");
+  const [tab, setTab] = useState<"roster" | "broadcast" | "resets" | "motd" | "groups">("roster");
   const [bSubject, setBSubject] = useState("");
   const [bBody, setBBody] = useState("");
 
@@ -76,6 +77,7 @@ export default function AdminPanel() {
             { key: "broadcast", label: "Broadcast",       icon: <Radio className="w-4 h-4" /> },
             { key: "resets",    label: "Password Resets", icon: <KeyRound className="w-4 h-4" /> },
             { key: "motd",      label: "MOTD / SITRAP",   icon: <MessageSquare className="w-4 h-4" /> },
+            { key: "groups",    label: "MilSim Groups",    icon: <Globe className="w-4 h-4" /> },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key as any)}
               className={`flex items-center gap-2 px-5 py-3 font-display font-bold uppercase tracking-widest text-sm transition-colors border-b-2 ${tab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
@@ -198,6 +200,7 @@ export default function AdminPanel() {
         )}
 
         {tab === "motd" && <MotdTab toast={toast} />}
+        {tab === "groups" && <GroupsTab toast={toast} />}
       </div>
     </PortalLayout>
   );
@@ -298,6 +301,137 @@ function MotdTab({ toast }: { toast: any }) {
             ))
           )
         }
+      </div>
+    </div>
+  );
+}
+
+function GroupsTab({ toast }: { toast: any }) {
+  const [groups, setGroups] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "pending" | "active" | "suspended">("pending");
+  const [working, setWorking] = useState<string | null>(null);
+
+  const STATUS_STYLES: Record<string, string> = {
+    pending:   "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
+    active:    "bg-green-500/10 text-green-400 border-green-500/30",
+    suspended: "bg-red-500/10 text-red-400 border-red-500/30",
+    rejected:  "bg-zinc-500/10 text-zinc-400 border-zinc-500/30",
+  };
+
+  const load = () => {
+    setLoading(true);
+    apiFetch<any[]>("/api/admin/milsim-groups")
+      .then(setGroups)
+      .catch(() => toast({ title: "Failed to load groups", variant: "destructive" }))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const setStatus = async (id: string, status: string) => {
+    setWorking(id);
+    try {
+      await apiFetch(`/api/admin/milsim-groups/${id}/status`, {
+        method: "PATCH", body: JSON.stringify({ status }),
+      });
+      setGroups(prev => prev.map(g => g.id === id ? { ...g, status } : g));
+      toast({ title: `Group ${status}` });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally { setWorking(null); }
+  };
+
+  const deleteGroup = async (id: string, name: string) => {
+    if (!window.confirm(`Permanently delete "${name}"? This cannot be undone.`)) return;
+    setWorking(id);
+    try {
+      await apiFetch(`/api/admin/milsim-groups/${id}`, { method: "DELETE" });
+      setGroups(prev => prev.filter(g => g.id !== id));
+      toast({ title: "Group deleted" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally { setWorking(null); }
+  };
+
+  const filtered = groups.filter(g => filter === "all" || g.status === filter);
+  const pendingCount = groups.filter(g => g.status === "pending").length;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-card border border-border rounded-lg overflow-hidden shadow-lg">
+        <div className="p-5 border-b border-border bg-secondary/30 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Globe className="w-5 h-5 text-primary" />
+            <div>
+              <h2 className="font-display font-bold uppercase tracking-wider text-lg">MilSim Groups</h2>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">{groups.length} total · {pendingCount} pending approval</p>
+            </div>
+          </div>
+          <div className="flex gap-1">
+            {(["pending","active","suspended","all"] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 text-xs font-display font-bold uppercase tracking-widest rounded transition-colors ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
+                {f}{f === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground">
+            <Globe className="w-10 h-10 mx-auto mb-3 opacity-20" />
+            <p className="font-display uppercase tracking-widest text-sm">No groups in this category</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {filtered.map(g => (
+              <div key={g.id} className="flex items-start gap-4 p-5 hover:bg-secondary/10 transition-colors">
+                {/* Logo */}
+                <div className="w-12 h-12 rounded bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
+                  {g.logo_url ? <img src={g.logo_url} alt="" className="w-full h-full object-cover" /> : <Shield className="w-6 h-6 text-muted-foreground" />}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <span className="font-display font-bold text-foreground">{g.name}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded border ${STATUS_STYLES[g.status] ?? "bg-card border-border text-muted-foreground"}`}>{g.status}</span>
+                    {g.slug && <span className="text-xs text-muted-foreground font-mono">/{g.slug}</span>}
+                  </div>
+                  {g.tag_line && <p className="text-sm text-muted-foreground truncate">{g.tag_line}</p>}
+                  <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                    <span>Owner: {g.owner_username ?? g.owner_id}</span>
+                    {g.discord_url && <a href={g.discord_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">Discord ↗</a>}
+                    {g.website_url && <a href={g.website_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">Website ↗</a>}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-1.5 shrink-0">
+                  {g.status !== "active" && (
+                    <button onClick={() => setStatus(g.id, "active")} disabled={working === g.id}
+                      title="Approve" className="flex items-center gap-1.5 px-3 py-1.5 bg-green-900/40 hover:bg-green-700/40 text-green-400 border border-green-700/40 rounded text-xs font-display font-bold uppercase tracking-wider transition-colors disabled:opacity-50">
+                      {working === g.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />} Approve
+                    </button>
+                  )}
+                  {g.status !== "suspended" && (
+                    <button onClick={() => setStatus(g.id, "suspended")} disabled={working === g.id}
+                      title="Suspend" className="flex items-center gap-1.5 px-3 py-1.5 bg-red-900/30 hover:bg-red-800/40 text-red-400 border border-red-700/40 rounded text-xs font-display font-bold uppercase tracking-wider transition-colors disabled:opacity-50">
+                      {working === g.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />} Suspend
+                    </button>
+                  )}
+                  <button onClick={() => deleteGroup(g.id, g.name)} disabled={working === g.id}
+                    title="Delete" className="p-1.5 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 rounded">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

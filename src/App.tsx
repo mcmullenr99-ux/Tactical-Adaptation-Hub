@@ -44,6 +44,8 @@ import SecurityProtocol from "@/pages/portal/SecurityProtocol";
 import Profile from "@/pages/portal/Profile";
 import ResetPassword from "@/pages/portal/ResetPassword";
 import TwoFactorAuth from "@/pages/portal/TwoFactorAuth";
+import Support from "@/pages/portal/Support";
+import SupportAdmin from "@/pages/portal/SupportAdmin";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +85,8 @@ function Router() {
       <Route path="/portal/reset-password" component={ResetPassword} />
       <Route path="/portal/2fa" component={TwoFactorAuth} />
       <Route path="/portal/service-card" component={ServiceCard} />
+      <Route path="/portal/support" component={Support} />
+      <Route path="/portal/support-admin" component={SupportAdmin} />
       <Route path="/stats" component={Stats} />
       <Route component={NotFound} />
     </Switch>
