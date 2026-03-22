@@ -7,16 +7,6 @@
     "password_hash": {
       "type": "string"
     },
-    "role": {
-      "type": "string",
-      "enum": [
-        "member",
-        "staff",
-        "moderator",
-        "admin"
-      ],
-      "default": "member"
-    },
     "status": {
       "type": "string",
       "enum": [
@@ -35,19 +25,6 @@
     "nationality": {
       "type": "string"
     },
-    "on_duty_status": {
-      "type": "string",
-      "enum": [
-        "available",
-        "deployed",
-        "on-leave",
-        "mia"
-      ],
-      "default": "available"
-    },
-    "ban_reason": {
-      "type": "string"
-    },
     "totp_enabled": {
       "type": "boolean",
       "default": false
@@ -55,13 +32,14 @@
     "totp_secret": {
       "type": "string"
     },
-    "totp_backup_codes": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
+    "on_duty_status": {
+      "type": "string",
+      "default": "available"
     },
-    "referral_code": {
+    "avatar_url": {
+      "type": "string"
+    },
+    "ban_reason": {
       "type": "string"
     }
   },
