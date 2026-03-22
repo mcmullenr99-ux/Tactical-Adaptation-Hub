@@ -357,10 +357,8 @@ export default function MilsimGroup() {
           )}
 
           {tab === "orbat" && (
-            <div className="max-w-3xl">
-              <pre className="bg-card border border-border rounded-lg p-6 font-sans text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                {group.orbat}
-              </pre>
+            <div className="w-full">
+              <OrbatBuilder value={group.orbat ?? undefined} readOnly />
             </div>
           )}
 
