@@ -4,6 +4,9 @@
     "username": {
       "type": "string"
     },
+    "password_hash": {
+      "type": "string"
+    },
     "role": {
       "type": "string",
       "enum": [
@@ -23,9 +26,6 @@
       ],
       "default": "active"
     },
-    "ban_reason": {
-      "type": "string"
-    },
     "bio": {
       "type": "string"
     },
@@ -35,19 +35,33 @@
     "nationality": {
       "type": "string"
     },
-    "password_hash": {
+    "on_duty_status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "deployed",
+        "on-leave",
+        "mia"
+      ],
+      "default": "available"
+    },
+    "ban_reason": {
       "type": "string"
+    },
+    "totp_enabled": {
+      "type": "boolean",
+      "default": false
     },
     "totp_secret": {
       "type": "string"
     },
-    "totp_enabled": {
-      "type": "boolean"
+    "totp_backup_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
-    "stripe_customer_id": {
-      "type": "string"
-    },
-    "stripe_subscription_id": {
+    "referral_code": {
       "type": "string"
     }
   },
