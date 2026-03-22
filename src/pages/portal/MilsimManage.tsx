@@ -12,6 +12,7 @@ import {
   GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+import OrbatBuilder from "@/components/OrbatBuilder";
 
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
 interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
@@ -193,7 +194,9 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
 }
 
 function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
-  const { register, handleSubmit } = useForm({ defaultValues: { sops: group.sops ?? "", orbat: group.orbat ?? "" } });
+  const { register, handleSubmit, setValue, watch } = useForm({ defaultValues: { sops: group.sops ?? "", orbat: group.orbat ?? "" } });
+  const orbatValue = watch("orbat");
+
   const onSubmit = async (data: any) => {
     setSaving(true);
     try {
@@ -204,15 +207,25 @@ function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
     finally { setSaving(false); }
   };
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-3xl">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <MField label="Standard Operating Procedures (SOPs)">
-        <textarea {...register("sops")} rows={12} className="mf-input resize-y font-mono text-sm"
+        <textarea {...register("sops")} rows={10} className="mf-input resize-y font-mono text-sm max-w-3xl"
           placeholder="1. Comms discipline — PTT only when necessary&#10;2. Movement protocols..." />
       </MField>
-      <MField label="Order of Battle (ORBAT)">
-        <textarea {...register("orbat")} rows={12} className="mf-input resize-y font-mono text-sm"
-          placeholder="HQ Element&#10;  CO: Commander&#10;  XO: Executive Officer&#10;&#10;Alpha Squad..." />
-      </MField>
+
+      <div>
+        <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
+          Order of Battle (ORBAT) — Visual Builder
+        </label>
+        <p className="text-xs text-muted-foreground font-sans mb-3">
+          Build your unit structure using NATO APP-6 standard symbology. Hover over a unit and click <strong>+</strong> to add subordinate units. Click the unit to edit its type, echelon, and slot count.
+        </p>
+        <OrbatBuilder
+          value={orbatValue}
+          onChange={(json) => setValue("orbat", json)}
+        />
+      </div>
+
       <button type="submit" disabled={saving}
         className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Doctrine
