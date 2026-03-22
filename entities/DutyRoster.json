@@ -1,0 +1,43 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "duty_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "assignments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "roster_id": {
+            "type": "string"
+          },
+          "callsign": {
+            "type": "string"
+          },
+          "duty_role": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "created_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_id",
+    "title"
+  ],
+  "name": "DutyRoster"
+}

@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "award_def_id": {
+      "type": "string"
+    },
+    "award_name": {
+      "type": "string"
+    },
+    "award_description": {
+      "type": "string"
+    },
+    "award_image_url": {
+      "type": "string"
+    },
+    "recipient_roster_id": {
+      "type": "string"
+    },
+    "recipient_callsign": {
+      "type": "string"
+    },
+    "awarded_by": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_id",
+    "award_name",
+    "recipient_callsign"
+  ],
+  "name": "MilsimAward"
+}

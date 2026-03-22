@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "badge_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_id",
+    "name"
+  ],
+  "name": "Qualification"
+}

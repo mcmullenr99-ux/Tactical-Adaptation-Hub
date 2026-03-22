@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "game": {
+      "type": "string"
+    },
+    "scheduled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "active",
+        "ended"
+      ],
+      "default": "planned"
+    },
+    "created_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_id",
+    "name"
+  ],
+  "name": "MilsimOp"
+}

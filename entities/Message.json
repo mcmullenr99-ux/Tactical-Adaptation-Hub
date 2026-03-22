@@ -1,0 +1,42 @@
+{
+  "type": "object",
+  "properties": {
+    "sender_id": {
+      "type": "string"
+    },
+    "sender_username": {
+      "type": "string"
+    },
+    "recipient_id": {
+      "type": "string"
+    },
+    "recipient_username": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "deleted_by_sender": {
+      "type": "boolean",
+      "default": false
+    },
+    "deleted_by_recipient": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "sender_id",
+    "recipient_id",
+    "subject",
+    "body"
+  ],
+  "name": "Message"
+}

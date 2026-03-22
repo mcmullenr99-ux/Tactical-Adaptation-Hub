@@ -1,0 +1,47 @@
+{
+  "type": "object",
+  "properties": {
+    "incident_type": {
+      "type": "string"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "low"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "ip": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "object"
+    },
+    "resolved": {
+      "type": "boolean",
+      "default": false
+    },
+    "resolved_by": {
+      "type": "string"
+    },
+    "resolution_note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "incident_type"
+  ],
+  "name": "SecurityIncident"
+}

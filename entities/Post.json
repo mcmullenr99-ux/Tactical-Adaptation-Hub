@@ -1,0 +1,49 @@
+{
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "user_role": {
+      "type": "string"
+    },
+    "user_nationality": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "milsim_group_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "pinned": {
+      "type": "boolean",
+      "default": false
+    },
+    "reactions": {
+      "type": "integer",
+      "default": 0
+    },
+    "comment_count": {
+      "type": "integer",
+      "default": 0
+    }
+  },
+  "required": [
+    "user_id",
+    "body"
+  ],
+  "name": "Post"
+}

@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "ip": {
+      "type": "string"
+    },
+    "user_agent": {
+      "type": "string"
+    },
+    "method": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "action_type": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "target_table": {
+      "type": "string"
+    },
+    "target_id": {
+      "type": "string"
+    },
+    "old_snapshot": {
+      "type": "object"
+    },
+    "new_snapshot": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "action_type"
+  ],
+  "name": "AuditLog"
+}

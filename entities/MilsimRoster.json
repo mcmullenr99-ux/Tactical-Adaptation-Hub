@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "callsign": {
+      "type": "string"
+    },
+    "rank_id": {
+      "type": "string"
+    },
+    "role_id": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_id",
+    "callsign"
+  ],
+  "name": "MilsimRoster"
+}

@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "tag_line": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "discord_url": {
+      "type": "string"
+    },
+    "website_url": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "sops": {
+      "type": "string"
+    },
+    "orbat": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "featured"
+      ],
+      "default": "pending"
+    },
+    "owner_id": {
+      "type": "string"
+    },
+    "owner_username": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "owner_id"
+  ],
+  "name": "MilsimGroup"
+}

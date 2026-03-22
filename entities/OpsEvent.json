@@ -1,0 +1,53 @@
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "game": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "event_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "organizer_id": {
+      "type": "string"
+    },
+    "organizer_username": {
+      "type": "string"
+    },
+    "max_slots": {
+      "type": "integer"
+    },
+    "event_type": {
+      "type": "string",
+      "default": "ops"
+    },
+    "location": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "ongoing",
+        "completed",
+        "cancelled"
+      ],
+      "default": "scheduled"
+    }
+  },
+  "required": [
+    "title",
+    "event_date"
+  ],
+  "name": "OpsEvent"
+}

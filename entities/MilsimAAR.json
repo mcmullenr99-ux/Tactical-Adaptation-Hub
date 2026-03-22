@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "op_id": {
+      "type": "string"
+    },
+    "op_name": {
+      "type": "string"
+    },
+    "author_id": {
+      "type": "string"
+    },
+    "author_username": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "victory",
+        "defeat",
+        "draw",
+        "training"
+      ]
+    },
+    "lessons_learned": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_id",
+    "author_id",
+    "title",
+    "content"
+  ],
+  "name": "MilsimAAR"
+}

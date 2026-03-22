@@ -1,0 +1,55 @@
+{
+  "type": "object",
+  "properties": {
+    "username": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "member",
+        "staff",
+        "moderator",
+        "admin"
+      ],
+      "default": "member"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "banned"
+      ],
+      "default": "active"
+    },
+    "ban_reason": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "discord_tag": {
+      "type": "string"
+    },
+    "nationality": {
+      "type": "string"
+    },
+    "password_hash": {
+      "type": "string"
+    },
+    "totp_secret": {
+      "type": "string"
+    },
+    "totp_enabled": {
+      "type": "boolean"
+    },
+    "stripe_customer_id": {
+      "type": "string"
+    },
+    "stripe_subscription_id": {
+      "type": "string"
+    }
+  },
+  "required": []
+}

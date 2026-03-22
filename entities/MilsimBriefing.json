@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "op_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "unclassified",
+        "confidential",
+        "secret"
+      ],
+      "default": "unclassified"
+    },
+    "created_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_id",
+    "title",
+    "content"
+  ],
+  "name": "MilsimBriefing"
+}
