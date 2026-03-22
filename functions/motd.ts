@@ -20,7 +20,10 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const url = new URL(req.url);
-    const parts = url.pathname.replace(/^\/functions\/motd/, '').split('/').filter(Boolean);
+    const pathOverride = url.searchParams.get('path');
+    const parts = pathOverride
+      ? pathOverride.split('/').filter(Boolean)
+      : url.pathname.replace(/^\/functions\/motd/, '').split('/').filter(Boolean);
     const method = req.method;
 
     if (method === 'GET' && parts.length === 0) {
