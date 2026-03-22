@@ -1,10 +1,19 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { verify } from 'npm:jsonwebtoken@9.0.2';
 
-async function getCallerUser(base44: any) {
-  const user = await base44.auth.me();
-  if (!user) return null;
-  const users = await base44.asServiceRole.entities.User.filter({ email: user.email });
-  return users[0] ?? null;
+const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+
+async function getCallerUser(base44: any, req: Request) {
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return null;
+  try {
+    const payload = verify(token, JWT_SECRET) as { sub: string };
+    const user = await base44.asServiceRole.entities.User.get(payload.sub);
+    return user ?? null;
+  } catch {
+    return null;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -15,7 +24,7 @@ Deno.serve(async (req) => {
     const parts = url.pathname.replace(/^\/functions\/admin/, '').split('/').filter(Boolean);
     const method = req.method;
 
-    const full = await getCallerUser(base44);
+    const full = await getCallerUser(base44, req);
     if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     const isMod = ['moderator', 'admin'].includes(full.role);
     const isAdmin = full.role === 'admin';
@@ -70,11 +79,78 @@ Deno.serve(async (req) => {
       return Response.json(updated);
     }
 
+    // PATCH /admin/users/:id/ban — mod+
+    if (method === 'PATCH' && parts[0] === 'users' && parts[2] === 'ban') {
+      if (!isMod) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const body = await req.json().catch(() => ({}));
+      const updated = await base44.asServiceRole.entities.User.update(parts[1], { status: 'banned', ban_reason: body.reason ?? null });
+      return Response.json(updated);
+    }
+
+    // PATCH /admin/users/:id/unban — mod+
+    if (method === 'PATCH' && parts[0] === 'users' && parts[2] === 'unban') {
+      if (!isMod) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const updated = await base44.asServiceRole.entities.User.update(parts[1], { status: 'active', ban_reason: null });
+      return Response.json(updated);
+    }
+
     // DELETE /admin/users/:id — admin
     if (method === 'DELETE' && parts[0] === 'users' && parts.length === 2) {
       if (!isAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
       await base44.asServiceRole.entities.User.delete(parts[1]);
       return new Response(null, { status: 204 });
+    }
+
+    // GET /admin/reset-tokens — mod+
+    if (method === 'GET' && parts[0] === 'reset-tokens') {
+      if (!isMod) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const tokens = await base44.asServiceRole.entities.PasswordResetToken.list();
+      const unused = tokens.filter((t: any) => !t.used && new Date(t.expires_at) > new Date());
+      // Enrich with user info
+      const enriched = await Promise.all(unused.map(async (t: any) => {
+        const user = await base44.asServiceRole.entities.User.get(t.user_id).catch(() => null);
+        return { ...t, username: user?.username ?? 'Unknown', email: user?.email ?? '' };
+      }));
+      return Response.json(enriched);
+    }
+
+    // POST /admin/reset-tokens — generate a reset token for a user (mod+)
+    if (method === 'POST' && parts[0] === 'reset-tokens') {
+      if (!isMod) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const body = await req.json().catch(() => ({}));
+      if (!body.userId) return Response.json({ error: 'userId required' }, { status: 400 });
+      // Expire any existing unused tokens for this user
+      const existing = await base44.asServiceRole.entities.PasswordResetToken.filter({ user_id: body.userId, used: false });
+      for (const t of existing) {
+        await base44.asServiceRole.entities.PasswordResetToken.update(t.id, { used: true });
+      }
+      const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const rec = await base44.asServiceRole.entities.PasswordResetToken.create({
+        user_id: body.userId, token, expires_at: expiresAt, used: false,
+      });
+      return Response.json({ token: rec.token, expiresAt: rec.expires_at });
+    }
+
+    // POST /admin/broadcast — admin only — creates a MOTD/site-wide notice
+    if (method === 'POST' && parts[0] === 'broadcast') {
+      if (!isAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const body = await req.json().catch(() => ({}));
+      if (!body.title || !body.content) return Response.json({ error: 'title and content required' }, { status: 400 });
+      const motd = await base44.asServiceRole.entities.Motd.create({
+        title: body.title,
+        content: body.content,
+        active: true,
+        priority: body.priority ?? 'info',
+        author_id: full.id,
+        author_username: full.username,
+        expires_at: body.expiresAt ?? null,
+      });
+      await base44.asServiceRole.entities.AuditLog.create({
+        user_id: full.id, username: full.username, action_type: 'BROADCAST',
+        description: `${full.username} broadcast: ${body.title}`,
+      });
+      return Response.json(motd, { status: 201 });
     }
 
     // GET /admin/lockdown
