@@ -18,27 +18,23 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Username must be 2-50 characters' }, { status: 400 });
     }
 
-    // Check lockdown
     const settings = await base44.asServiceRole.entities.SiteSetting.filter({ key: 'lockdown_mode' });
     if (settings[0]?.value === 'true') {
-      return Response.json({ error: 'Registrations are temporarily closed. Please try again later.' }, { status: 503 });
+      return Response.json({ error: 'Registrations are temporarily closed.' }, { status: 503 });
     }
 
-    // Check for existing user by username
-    const existingByUsername = await base44.asServiceRole.entities.User.filter({ username });
-    if (existingByUsername.length > 0) {
+    const existingUsername = await base44.asServiceRole.entities.User.filter({ username });
+    if (existingUsername.length > 0) {
       return Response.json({ error: 'Email or username already in use' }, { status: 409 });
     }
 
-    // Check by email
-    const existingByEmail = await base44.asServiceRole.entities.User.filter({ email });
-    if (existingByEmail.length > 0) {
+    const existingEmail = await base44.asServiceRole.entities.User.filter({ email });
+    if (existingEmail.length > 0) {
       return Response.json({ error: 'Email or username already in use' }, { status: 409 });
     }
 
     const password_hash = await bcrypt.hash(password, 10);
 
-    // Create user via service role
     const user = await base44.asServiceRole.entities.User.create({
       email,
       username,
@@ -48,7 +44,6 @@ Deno.serve(async (req) => {
       totp_enabled: false,
     });
 
-    // Audit log
     await base44.asServiceRole.entities.AuditLog.create({
       user_id: user.id,
       username: user.username,
@@ -64,10 +59,8 @@ Deno.serve(async (req) => {
       status: user.status,
       bio: user.bio ?? null,
       discordTag: user.discord_tag ?? null,
-      nationality: user.nationality ?? null,
       createdAt: user.created_date,
     }, { status: 201 });
-
   } catch (error) {
     console.error('[authRegister]', error);
     return Response.json({ error: error.message }, { status: 500 });
