@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import bcrypt from 'npm:bcryptjs@2.4.3';
 
+const ADMIN_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   try {
@@ -8,7 +10,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
 
     const { secret, user_id, username, password } = body;
-    if (secret !== Deno.env.get('JWT_SECRET')) {
+    if (secret !== ADMIN_SECRET) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (!user_id || !password) {
@@ -20,7 +22,7 @@ Deno.serve(async (req) => {
     if (username) updates.username = username;
 
     await base44.asServiceRole.entities.User.update(user_id, updates);
-    return Response.json({ ok: true, message: 'Password and username updated.' });
+    return Response.json({ ok: true, message: 'Password updated.' });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
