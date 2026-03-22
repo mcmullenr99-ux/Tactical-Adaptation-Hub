@@ -4,7 +4,7 @@ export const FUNCTIONS_BASE = "https://agent-tag-lead-developer-cff87ae4.base44.
 // Route map: /api/<prefix> → function name
 const ROUTE_MAP: Record<string, string> = {
   "/api/auth/login":            "authLogin",
-  "/api/auth/register":         "authRegister",
+  "/api/auth/register":        "authRegister",
   "/api/auth/me":               "authMe",
   "/api/auth/logout":           "authLogout",
   "/api/auth/profile":          "authUpdateProfile",
@@ -32,7 +32,7 @@ const ROUTE_MAP: Record<string, string> = {
   "/api/referral-code":         "users",
 };
 
-/** Resolve /api/... path to a full Base44 function URL */
+/** Resolve /api/... path to a full Base44 function URL, using ?path= for sub-paths */
 function resolveUrl(path: string): string {
   if (path.startsWith("http")) return path;
 
@@ -47,16 +47,19 @@ function resolveUrl(path: string): string {
   }
 
   if (bestFn) {
-    // Strip the /api/<resource> prefix and pass the rest as the sub-path
-    const subPath = path.slice(bestPrefix.length); // e.g. "" or "/inbox" or "/123/read"
-    return `${FUNCTIONS_BASE}/${bestFn}${subPath}`;
+    const subPath = path.slice(bestPrefix.length); // e.g. "" or "/mine/own" or "/123/info"
+    if (subPath) {
+      // Pass sub-path as query param since Base44 functions only route at root
+      return `${FUNCTIONS_BASE}/${bestFn}?path=${encodeURIComponent(subPath)}`;
+    }
+    return `${FUNCTIONS_BASE}/${bestFn}`;
   }
 
-  // Fallback: convert /api/foo/bar → /functions/foo/bar
+  // Fallback
   return `${FUNCTIONS_BASE}${path.replace(/^\/api/, "")}`;
 }
 
-/** Get the stored auth token (set by AuthContext after login) */
+/** Get the stored auth token */
 function getAuthToken(): string | null {
   try {
     return sessionStorage.getItem("tag_auth_token") ?? localStorage.getItem("tag_auth_token");
@@ -81,7 +84,6 @@ export async function apiFetch<T = unknown>(path: string, options?: RequestInit)
   const res = await fetch(url, {
     ...options,
     headers,
-    // No credentials:include needed — we use Bearer tokens
   });
 
   if (res.status === 204) return undefined as T;
