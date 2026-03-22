@@ -6,17 +6,15 @@ import {
   Mail, PenTool, LayoutDashboard, ShieldCheck, Settings,
   LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert, Calendar, KeyRound, IdCard,
 } from "lucide-react";
-import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "@/lib/apiFetch";
 
 export function PortalLayout({ children, requireRole }: { children: React.ReactNode, requireRole?: string[] }) {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [location, setLocation] = useLocation();
-  const logoutMutation = useLogout();
-  const queryClient = useQueryClient();
+  const [loggingOut, setLoggingOut] = useState(false);
   const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -38,7 +36,6 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     }
   }, [isLoading, isAuthenticated, user, requireRole, setLocation]);
 
-  // Close mobile sidebar on navigation
   useEffect(() => {
     setSidebarOpen(false);
   }, [location]);
@@ -56,18 +53,17 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
   if (!isAuthenticated || !user) return null;
   if (requireRole && !requireRole.includes(user.role)) return null;
 
-  const handleLogout = () => {
-    logoutMutation.mutate(undefined, {
-      onSuccess: () => {
-        queryClient.setQueryData(getGetMeQueryKey(), null);
-        queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-        toast({ title: "Disconnected", description: "Successfully logged out of the portal." });
-        setLocation("/");
-      },
-      onError: () => {
-        toast({ title: "Error", description: "Failed to logout.", variant: "destructive" });
-      },
-    });
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await logout();
+      toast({ title: "Disconnected", description: "Successfully logged out of the portal." });
+      setLocation("/");
+    } catch {
+      toast({ title: "Error", description: "Failed to logout.", variant: "destructive" });
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   const roleColors: Record<string, string> = {
@@ -77,8 +73,8 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     admin: "text-destructive",
   };
 
-  const unreadMsgs: number = notifCounts?.unreadMessages ?? 0;
-  const pendingFriends: number = notifCounts?.pendingFriendRequests ?? 0;
+  const unreadMsgs: number = (notifCounts as any)?.unreadMessages ?? 0;
+  const pendingFriends: number = (notifCounts as any)?.pendingFriendRequests ?? 0;
 
   const navLinks = [
     { href: "/portal/dashboard", icon: <LayoutDashboard className="w-4 h-4 text-primary" />, label: "Dashboard" },
@@ -108,7 +104,6 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* User Info Header */}
       <div className="p-5 border-b border-border bg-secondary/50 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-[30px]" />
         <div className="relative z-10">
@@ -123,7 +118,6 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="p-3 flex flex-col gap-1 flex-1 overflow-y-auto">
         {navLinks.map((link) => (
           <React.Fragment key={link.href}>
@@ -150,15 +144,14 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
         ))}
       </nav>
 
-      {/* Logout */}
       <div className="p-4 border-t border-border bg-secondary/20">
         <button
           onClick={handleLogout}
-          disabled={logoutMutation.isPending}
+          disabled={loggingOut}
           className="flex items-center justify-center gap-3 px-4 py-3 w-full rounded hover:bg-destructive hover:text-destructive-foreground transition-colors text-muted-foreground font-display font-bold uppercase tracking-wider text-sm disabled:opacity-50"
         >
           <LogOut className="w-4 h-4" />
-          {logoutMutation.isPending ? "Disconnecting..." : "Disconnect"}
+          {loggingOut ? "Disconnecting..." : "Disconnect"}
         </button>
       </div>
     </div>
@@ -169,7 +162,6 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
       <div className="pt-20 pb-16 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          {/* Mobile Portal Top Bar */}
           <div className="md:hidden flex items-center justify-between py-4 mb-4 border-b border-border">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-primary/20 border border-primary/50 rounded flex items-center justify-center">
@@ -189,28 +181,22 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
           </div>
 
           <div className="flex flex-col md:flex-row gap-8">
-
-            {/* Desktop Sidebar */}
             <aside className="hidden md:block w-64 shrink-0">
               <div className="bg-card border border-border rounded-lg clip-angled overflow-hidden sticky top-28">
                 <SidebarContent />
               </div>
             </aside>
 
-            {/* Main Content */}
             <main className="flex-1 min-w-0">
               {children}
             </main>
-
           </div>
         </div>
       </div>
 
-      {/* Mobile Sidebar Drawer */}
       <AnimatePresence>
         {sidebarOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               key="backdrop"
               initial={{ opacity: 0 }}
@@ -220,30 +206,21 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
               className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
               onClick={() => setSidebarOpen(false)}
             />
-
-            {/* Drawer */}
             <motion.div
               key="drawer"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed top-0 left-0 h-full w-72 z-50 bg-card border-r border-border shadow-2xl md:hidden flex flex-col"
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 z-50 w-72 bg-card border-r border-border md:hidden overflow-y-auto"
             >
-              {/* Drawer Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-background">
-                <span className="font-display font-bold uppercase tracking-widest text-sm text-primary">HQ Portal</span>
-                <button
-                  onClick={() => setSidebarOpen(false)}
-                  className="p-1 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-5 h-5" />
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <span className="font-display font-bold uppercase tracking-widest text-sm">Navigation</span>
+                <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-secondary rounded transition-colors">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-
-              <div className="flex-1 overflow-y-auto">
-                <SidebarContent />
-              </div>
+              <SidebarContent />
             </motion.div>
           </>
         )}

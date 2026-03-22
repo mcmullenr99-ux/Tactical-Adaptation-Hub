@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
-import { useListUsers, useUpdateUserRole } from "@workspace/api-client-react";
 import {
   Settings, Shield, Radio, Send, Loader2, KeyRound, Link as LinkIcon, MessageSquare, Save, Trash2,
 } from "lucide-react";
@@ -15,21 +14,24 @@ interface ResetToken {
 }
 
 export default function AdminPanel() {
-  const { data: users, refetch } = useListUsers();
-  const updateRole = useUpdateUserRole();
+  const { data: users, refetch } = useQuery<any[]>({
+    queryKey: ["all-users-admin"],
+    queryFn: () => apiFetch("/api/users"),
+  });
+
+  const updateRole = useMutation({
+    mutationFn: ({ id, role }: { id: number; role: string }) =>
+      apiFetch(`/api/users/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  });
+
   const { toast } = useToast();
   const [tab, setTab] = useState<"roster" | "broadcast" | "resets" | "motd">("roster");
-
   const [bSubject, setBSubject] = useState("");
   const [bBody, setBBody] = useState("");
 
   const broadcastMutation = useMutation({
     mutationFn: () =>
-      apiFetch("/api/admin/broadcast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: bSubject, body: bBody }),
-      }),
+      apiFetch("/api/admin/broadcast", { method: "POST", body: JSON.stringify({ subject: bSubject, body: bBody }) }),
     onSuccess: (data: any) => {
       toast({ title: "Broadcast Sent", description: `Message delivered to ${data.sent} member(s).` });
       setBSubject(""); setBBody("");
@@ -44,9 +46,9 @@ export default function AdminPanel() {
   });
 
   const handleRoleChange = (id: number, newRole: string) => {
-    updateRole.mutate({ id, data: { role: newRole } }, {
+    updateRole.mutate({ id, role: newRole }, {
       onSuccess: () => { toast({ title: "Role Updated" }); refetch(); },
-      onError: (err: any) => toast({ title: "Update Failed", description: err.data?.error || "Error.", variant: "destructive" }),
+      onError: (err: any) => toast({ title: "Update Failed", description: err.message || "Error.", variant: "destructive" }),
     });
   };
 
@@ -58,7 +60,6 @@ export default function AdminPanel() {
   return (
     <PortalLayout requireRole={["admin"]}>
       <div className="space-y-8">
-
         <div className="flex items-center gap-4 border-b border-border pb-6">
           <div className="w-12 h-12 bg-destructive/20 text-destructive rounded flex items-center justify-center clip-angled-sm">
             <Settings className="w-6 h-6" />
@@ -69,7 +70,6 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="flex flex-wrap gap-1 border-b border-border">
           {[
             { key: "roster",    label: "Personnel",       icon: <Shield className="w-4 h-4" /> },
@@ -78,15 +78,12 @@ export default function AdminPanel() {
             { key: "motd",      label: "MOTD / SITRAP",   icon: <MessageSquare className="w-4 h-4" /> },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key as any)}
-              className={`flex items-center gap-2 px-5 py-3 font-display font-bold uppercase tracking-widest text-sm transition-colors border-b-2 ${
-                tab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}>
+              className={`flex items-center gap-2 px-5 py-3 font-display font-bold uppercase tracking-widest text-sm transition-colors border-b-2 ${tab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
               {t.icon} {t.label}
             </button>
           ))}
         </div>
 
-        {/* ── Roster Tab ─────────────────────────────────────────────── */}
         {tab === "roster" && (
           <div className="bg-card border border-border rounded overflow-hidden shadow-lg">
             <div className="p-6 border-b border-border bg-secondary/30 flex items-center gap-3">
@@ -105,7 +102,7 @@ export default function AdminPanel() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {users?.map(u => (
+                  {users?.map((u: any) => (
                     <tr key={u.id} className="hover:bg-secondary/20 transition-colors">
                       <td className="px-6 py-4 text-muted-foreground">#{u.id}</td>
                       <td className="px-6 py-4 font-bold text-foreground">
@@ -113,16 +110,11 @@ export default function AdminPanel() {
                         {u.username}
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">{u.email}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{format(new Date(u.createdAt), "MMM dd, yyyy")}</td>
+                      <td className="px-6 py-4 text-muted-foreground">{u.createdAt ? format(new Date(u.createdAt), "MMM dd, yyyy") : "—"}</td>
                       <td className="px-6 py-4 text-right">
                         <select value={u.role} onChange={e => handleRoleChange(u.id, e.target.value)}
                           disabled={updateRole.isPending}
-                          className={`bg-background border rounded px-3 py-1.5 text-xs font-display font-bold uppercase tracking-widest outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 ${
-                            u.role === "admin" ? "border-destructive text-destructive" :
-                            u.role === "moderator" ? "border-accent text-accent" :
-                            u.role === "staff" ? "border-blue-400 text-blue-400" :
-                            "border-border text-muted-foreground"
-                          }`}>
+                          className={`bg-background border rounded px-3 py-1.5 text-xs font-display font-bold uppercase tracking-widest outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 ${u.role === "admin" ? "border-destructive text-destructive" : u.role === "moderator" ? "border-accent text-accent" : u.role === "staff" ? "border-blue-400 text-blue-400" : "border-border text-muted-foreground"}`}>
                           <option value="member">Member</option>
                           <option value="staff">Staff</option>
                           <option value="moderator">Moderator</option>
@@ -137,7 +129,6 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* ── Broadcast Tab ──────────────────────────────────────────── */}
         {tab === "broadcast" && (
           <div className="bg-card border border-border rounded-lg overflow-hidden shadow-lg">
             <div className="p-6 border-b border-border bg-secondary/30 flex items-center gap-3">
@@ -150,11 +141,11 @@ export default function AdminPanel() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-2">Subject</label>
-                <input value={bSubject} onChange={e => setBSubject(e.target.value)} maxLength={200} className="mf-input w-full" placeholder="System-wide announcement..." />
+                <input value={bSubject} onChange={e => setBSubject(e.target.value)} maxLength={200} className="w-full bg-background border-2 border-border rounded px-4 py-3 text-foreground font-sans focus:outline-none focus:border-primary transition-all" placeholder="System-wide announcement..." />
               </div>
               <div>
                 <label className="block text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-2">Body</label>
-                <textarea value={bBody} onChange={e => setBBody(e.target.value)} rows={6} maxLength={5000} className="mf-input w-full resize-none" placeholder="Compose your announcement here..." />
+                <textarea value={bBody} onChange={e => setBBody(e.target.value)} rows={6} maxLength={5000} className="w-full bg-background border-2 border-border rounded px-4 py-3 text-foreground font-sans focus:outline-none focus:border-primary transition-all resize-none" placeholder="Compose your announcement here..." />
                 <p className="text-xs text-muted-foreground mt-1 text-right">{bBody.length}/5000</p>
               </div>
               <div className="bg-destructive/10 border border-destructive/30 rounded p-3 text-sm text-muted-foreground">
@@ -171,7 +162,6 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* ── Password Resets Tab ────────────────────────────────────── */}
         {tab === "resets" && (
           <div className="bg-card border border-border rounded-lg overflow-hidden shadow-lg">
             <div className="p-6 border-b border-border bg-secondary/30 flex items-center gap-3">
@@ -189,7 +179,7 @@ export default function AdminPanel() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {resetTokens.map(token => (
+                  {resetTokens.map((token: ResetToken) => (
                     <div key={token.id} className="flex items-center justify-between gap-4 p-4 bg-secondary/40 border border-border rounded-lg">
                       <div>
                         <p className="font-display font-bold text-foreground">{token.username}</p>
@@ -207,9 +197,7 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* ── MOTD Tab ──────────────────────────────────────────── */}
         {tab === "motd" && <MotdTab toast={toast} />}
-
       </div>
     </PortalLayout>
   );
@@ -220,6 +208,13 @@ function MotdTab({ toast }: { toast: any }) {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ title: "", content: "", type: "info", expires_at: "" });
   const [saving, setSaving] = useState(false);
+
+  const TYPE_COLORS: Record<string, string> = {
+    info: "text-blue-400 bg-blue-500/10 border-blue-500/30",
+    warning: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30",
+    success: "text-green-400 bg-green-500/10 border-green-500/30",
+    critical: "text-red-400 bg-red-500/10 border-red-500/30",
+  };
 
   const load = () => {
     apiFetch<any[]>("/api/motd").then(setMotds).catch(() => {}).finally(() => setLoading(false));
@@ -246,16 +241,8 @@ function MotdTab({ toast }: { toast: any }) {
     } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
   };
 
-  const TYPE_COLORS: Record<string, string> = {
-    info: "text-blue-400 bg-blue-500/10 border-blue-500/30",
-    warning: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30",
-    success: "text-green-400 bg-green-500/10 border-green-500/30",
-    critical: "text-red-400 bg-red-500/10 border-red-500/30",
-  };
-
   return (
     <div className="space-y-8 max-w-3xl">
-      {/* Create New */}
       <div className="bg-card border border-border rounded-lg p-6 space-y-4">
         <div className="flex items-center gap-3 mb-2">
           <MessageSquare className="w-5 h-5 text-primary" />
@@ -263,12 +250,12 @@ function MotdTab({ toast }: { toast: any }) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mf-label">Title *</label>
-            <input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} className="mf-input" placeholder="Weekly SITRAP" />
+            <label className="block text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-2">Title *</label>
+            <input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} className="w-full bg-background border-2 border-border rounded px-4 py-3 text-foreground font-sans focus:outline-none focus:border-primary transition-all" placeholder="Weekly SITRAP" />
           </div>
           <div>
-            <label className="mf-label">Type</label>
-            <select value={form.type} onChange={e => setForm(f => ({...f, type: e.target.value}))} className="mf-input">
+            <label className="block text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-2">Type</label>
+            <select value={form.type} onChange={e => setForm(f => ({...f, type: e.target.value}))} className="w-full bg-background border-2 border-border rounded px-4 py-3 text-foreground font-sans focus:outline-none focus:border-primary transition-all">
               <option value="info">Info</option>
               <option value="warning">Warning</option>
               <option value="success">Success</option>
@@ -277,12 +264,12 @@ function MotdTab({ toast }: { toast: any }) {
           </div>
         </div>
         <div>
-          <label className="mf-label">Content *</label>
-          <textarea rows={5} value={form.content} onChange={e => setForm(f => ({...f, content: e.target.value}))} className="mf-input resize-none" placeholder="This week's situation report..." />
+          <label className="block text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-2">Content *</label>
+          <textarea rows={5} value={form.content} onChange={e => setForm(f => ({...f, content: e.target.value}))} className="w-full bg-background border-2 border-border rounded px-4 py-3 text-foreground font-sans focus:outline-none focus:border-primary transition-all resize-none" placeholder="This week's situation report..." />
         </div>
         <div>
-          <label className="mf-label">Expires At (optional)</label>
-          <input type="datetime-local" value={form.expires_at} onChange={e => setForm(f => ({...f, expires_at: e.target.value}))} className="mf-input" />
+          <label className="block text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-2">Expires At (optional)</label>
+          <input type="datetime-local" value={form.expires_at} onChange={e => setForm(f => ({...f, expires_at: e.target.value}))} className="w-full bg-background border-2 border-border rounded px-4 py-3 text-foreground font-sans focus:outline-none focus:border-primary transition-all" />
         </div>
         <button onClick={submit} disabled={saving || !form.title.trim() || !form.content.trim()}
           className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm rounded disabled:opacity-50 transition-all">
@@ -290,7 +277,6 @@ function MotdTab({ toast }: { toast: any }) {
         </button>
       </div>
 
-      {/* Existing */}
       <div className="space-y-3">
         <h3 className="font-display font-bold uppercase tracking-widest text-xs text-muted-foreground">Active MOTDs</h3>
         {loading ? <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div> :
@@ -316,4 +302,3 @@ function MotdTab({ toast }: { toast: any }) {
     </div>
   );
 }
-

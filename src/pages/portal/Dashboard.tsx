@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { useAuth } from "@/components/auth/AuthContext";
-import { useGetInbox } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail, Clock, ShieldCheck, PenTool, CalendarDays, User, ChevronRight,
@@ -53,337 +52,193 @@ function isAnniversary(createdAt: string) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { data: inbox } = useGetInbox();
+  const { data: inbox } = useQuery<Message[]>({
+    queryKey: ["inbox"],
+    queryFn: () => apiFetch("/api/messages/inbox"),
+  });
   const qc = useQueryClient();
   const [dutyStatus, setDutyStatus] = useState((user as any)?.on_duty_status ?? "available");
   const [showDutyMenu, setShowDutyMenu] = useState(false);
 
-  const { data: motd } = useQuery<Motd | null>({
-    queryKey: ["motd-active"],
-    queryFn: () => apiFetch("/api/motd/active"),
-    staleTime: 60_000,
+  const { data: upcomingOps } = useQuery<OpsEvent[]>({
+    queryKey: ["ops-upcoming"],
+    queryFn: () => apiFetch("/api/ops?status=upcoming&limit=3"),
   });
 
-  const { data: upcomingOps = [] } = useQuery<OpsEvent[]>({
-    queryKey: ["ops-upcoming"],
-    queryFn: () =>
-      apiFetch("/api/events").then((evs: OpsEvent[]) =>
-        evs.filter(e => new Date(e.event_date) >= new Date()).slice(0, 3)),
-    staleTime: 60_000,
+  const { data: motd } = useQuery<Motd>({
+    queryKey: ["motd-latest"],
+    queryFn: () => apiFetch("/api/motd/latest"),
   });
 
   const updateDuty = useMutation({
-    mutationFn: (status: string) =>
-      apiFetch("/api/duty-status", { method: "PATCH", body: JSON.stringify({ status }) }),
-    onSuccess: (_, status) => {
-      setDutyStatus(status);
-      setShowDutyMenu(false);
-    },
+    mutationFn: (status: string) => apiFetch("/api/users/me/duty", { method: "PATCH", body: JSON.stringify({ on_duty_status: status }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["me"] }),
   });
 
-  const unreadCount = inbox?.filter((m: Message) => !m.isRead).length || 0;
-  const recentMessages = (inbox as Message[] | undefined)?.slice(0, 3) || [];
-
-  if (!user) return null;
-
-  const badge = getServiceBadge(user.createdAt);
-  const anniversary = isAnniversary(user.createdAt);
-  const daysIn = differenceInDays(new Date(), new Date(user.createdAt));
-  const yearsIn = Math.floor(daysIn / 365);
-  const dutyOption = DUTY_OPTIONS.find(d => d.value === dutyStatus) ?? DUTY_OPTIONS[0];
+  const unread = inbox?.filter(m => !m.isRead).length ?? 0;
+  const badge = user?.created_at ? getServiceBadge(user.created_at) : null;
+  const anniversary = user?.created_at ? isAnniversary(user.created_at) : false;
+  const currentDuty = DUTY_OPTIONS.find(d => d.value === dutyStatus) ?? DUTY_OPTIONS[0];
 
   return (
     <PortalLayout>
-      <div className="space-y-6">
+      <div className="space-y-8">
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
+          <div>
+            <h1 className="text-3xl font-display font-bold uppercase tracking-wider text-foreground">
+              Operator Dashboard
+            </h1>
+            <p className="text-muted-foreground font-sans mt-1">
+              Welcome back, <span className="text-primary font-bold">{user?.username}</span>
+            </p>
+          </div>
+          {badge && (
+            <div className={`px-3 py-1.5 border rounded text-xs font-display font-bold uppercase tracking-widest ${badge.color}`}>
+              {badge.icon} {badge.label}
+            </div>
+          )}
+        </div>
 
         {/* Anniversary Banner */}
-        <AnimatePresence>
-          {anniversary && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="flex items-center gap-4 p-4 bg-accent/10 border border-accent/40 rounded-lg"
-            >
-              <Star className="w-6 h-6 text-accent shrink-0" />
-              <div>
-                <p className="font-display font-bold uppercase tracking-widest text-accent text-sm">
-                  {yearsIn > 0 ? `${yearsIn}-Year Anniversary` : "Enlistment Anniversary"}
-                </p>
-                <p className="text-xs text-muted-foreground font-sans">
-                  Today marks {yearsIn > 0 ? `${yearsIn} year${yearsIn > 1 ? "s" : ""}` : "another year"} since you joined TAG. Thank you for your service.
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* MOTD / SITRAP Banner */}
-        <AnimatePresence>
-          {motd && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="flex items-start gap-4 p-4 bg-primary/5 border border-primary/30 rounded-lg"
-            >
-              <Megaphone className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="font-display font-bold uppercase tracking-widest text-primary text-xs mb-1">SITRAP — {motd.author}</p>
-                <p className="text-sm text-foreground font-sans leading-relaxed whitespace-pre-wrap">{motd.content}</p>
-                <p className="text-xs text-muted-foreground mt-1">{formatDistanceToNow(new Date(motd.created_at), { addSuffix: true })}</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Header — Split Command */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="relative rounded-lg overflow-hidden border border-border bg-[#0d0d0d] min-h-[200px] flex"
-        >
-          {/* Left panel */}
-          <div className="flex-1 min-w-0 p-8 flex flex-col justify-between relative z-10">
-            <div>
-              <p className="text-[10px] font-mono text-[#4ade80] uppercase tracking-[0.25em] mb-3">
-                TAG — HQ PORTAL // {format(new Date(), "ddMMMyyyy").toUpperCase()} — AUTHENTICATED
-              </p>
-              <h1 className="font-display font-black uppercase leading-none mb-4 text-white">
-                <span className="block text-4xl md:text-5xl tracking-tight">{user.username}</span>
-                <span className="block text-base md:text-lg tracking-[0.3em] text-[#4ade80] mt-1 opacity-80">{user.role}</span>
-              </h1>
-              <div className={`inline-flex items-center gap-1.5 text-[10px] font-display font-bold uppercase tracking-widest px-2.5 py-1 rounded border ${badge.color}`}>
-                <span>{badge.icon}</span> {badge.label}
-                <span className="font-mono font-normal text-muted-foreground ml-1">DAY {daysIn}</span>
-              </div>
-            </div>
-            {/* Duty Status */}
-            <div className="relative mt-6">
-              <button
-                onClick={() => setShowDutyMenu(v => !v)}
-                className={`flex items-center gap-2 text-xs font-display font-bold uppercase tracking-widest px-3 py-2 rounded border transition-all ${dutyOption.color}`}
-              >
-                <Activity className="w-3.5 h-3.5" />
-                {dutyOption.label}
-                <ChevronRight className={`w-3 h-3 transition-transform ${showDutyMenu ? "rotate-90" : ""}`} />
-              </button>
-              <AnimatePresence>
-                {showDutyMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute left-0 bottom-full mb-1 z-50 bg-card border border-border rounded-lg shadow-xl overflow-hidden min-w-[140px]"
-                  >
-                    {DUTY_OPTIONS.map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => updateDuty.mutate(opt.value)}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-display font-bold uppercase tracking-widest hover:bg-secondary/60 transition-colors ${dutyStatus === opt.value ? "text-primary" : "text-muted-foreground"}`}
-                      >
-                        {dutyStatus === opt.value && <CheckCircle2 className="w-3 h-3 text-primary" />}
-                        {dutyStatus !== opt.value && <span className="w-3 h-3" />}
-                        {opt.label}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* Diagonal separator */}
-          <div className="hidden sm:block absolute inset-y-0 right-[38%] w-px bg-gradient-to-b from-transparent via-[#4ade80]/40 to-transparent z-10"
-            style={{ transform: "skewX(-6deg)" }} />
-
-          {/* Right panel — helmet image */}
-          <div className="hidden sm:flex w-[38%] items-center justify-center relative overflow-hidden">
-            <img
-              src={`${import.meta.env.BASE_URL}images/tag-skull.png`}
-              alt=""
-              className="absolute inset-0 w-full h-full object-contain object-center opacity-[0.12] [mix-blend-mode:screen] pointer-events-none scale-110"
-            />
-            <div className="relative z-10 text-center px-6">
-              <p className="text-[9px] font-mono text-[#4ade80]/60 uppercase tracking-[0.3em]">CLEARANCE</p>
-              <p className="font-display font-black text-2xl uppercase text-white/80 tracking-widest">{user.status}</p>
-            </div>
-          </div>
-
-          {/* Corner accent */}
-          <div className="absolute top-0 left-0 w-20 h-1 bg-[#4ade80]" />
-          <div className="absolute bottom-0 right-0 w-20 h-1 bg-[#4ade80]/40" />
-        </motion.div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="bg-secondary/40 border border-border p-6 rounded clip-angled-sm">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 bg-background rounded flex items-center justify-center text-primary border border-border">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <h3 className="font-display font-bold uppercase tracking-widest text-sm text-muted-foreground">Clearance</h3>
-            </div>
-            <p className="text-2xl font-display font-bold uppercase">{user.role}</p>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="bg-secondary/40 border border-border p-6 rounded clip-angled-sm">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 bg-background rounded flex items-center justify-center text-primary border border-border">
-                <Mail className="w-5 h-5" />
-              </div>
-              <h3 className="font-display font-bold uppercase tracking-widest text-sm text-muted-foreground">Comms</h3>
-            </div>
-            <p className="text-2xl font-display font-bold uppercase flex items-center gap-3">
-              {unreadCount} <span className="text-sm text-muted-foreground tracking-normal lowercase">unread</span>
+        {anniversary && (
+          <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 flex items-center gap-3">
+            <Star className="w-5 h-5 text-primary flex-shrink-0" />
+            <p className="font-display font-bold uppercase tracking-widest text-primary text-sm">
+              Happy Anniversary, {user?.username}! Another year of service.
             </p>
-          </motion.div>
+          </div>
+        )}
 
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }} className="bg-secondary/40 border border-border p-6 rounded clip-angled-sm">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 bg-background rounded flex items-center justify-center text-primary border border-border">
-                <Star className="w-5 h-5" />
-              </div>
-              <h3 className="font-display font-bold uppercase tracking-widest text-sm text-muted-foreground">Service Rank</h3>
+        {/* MOTD */}
+        {motd && (
+          <div className="bg-secondary/50 border border-border rounded-lg p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Megaphone className="w-4 h-4 text-primary" />
+              <span className="font-display font-bold uppercase tracking-widest text-xs text-muted-foreground">
+                SITREP / MOTD
+              </span>
             </div>
-            <p className="text-lg font-display font-bold uppercase">{badge.label}</p>
-            <p className="text-xs text-muted-foreground mt-1">{daysIn} days enlisted</p>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="bg-secondary/40 border border-border p-6 rounded clip-angled-sm">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-10 h-10 bg-background rounded flex items-center justify-center text-primary border border-border">
-                <Clock className="w-5 h-5" />
-              </div>
-              <h3 className="font-display font-bold uppercase tracking-widest text-sm text-muted-foreground">Enlistment</h3>
-            </div>
-            <p className="text-xl font-display font-bold uppercase">
-              {format(new Date(user.createdAt), "MMM dd, yyyy")}
+            <p className="font-sans text-foreground whitespace-pre-wrap text-sm leading-relaxed">{motd.content}</p>
+            <p className="text-xs text-muted-foreground mt-3 font-display uppercase tracking-widest">
+              — {motd.author} · {format(new Date(motd.created_at), "MMM dd, yyyy")}
             </p>
-          </motion.div>
+          </div>
+        )}
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Unread Comms", value: unread, icon: <Mail className="w-5 h-5" />, color: unread > 0 ? "text-primary" : "text-muted-foreground", href: "/portal/inbox" },
+            { label: "Role", value: user?.role ?? "—", icon: <ShieldCheck className="w-5 h-5" />, color: "text-accent", href: "/portal/profile" },
+            { label: "Upcoming Ops", value: upcomingOps?.length ?? 0, icon: <CalendarDays className="w-5 h-5" />, color: "text-blue-400", href: "/ops" },
+            { label: "Member Since", value: user?.created_at ? format(new Date(user.created_at), "MMM yyyy") : "—", icon: <Clock className="w-5 h-5" />, color: "text-muted-foreground", href: "/portal/profile" },
+          ].map(stat => (
+            <Link key={stat.label} href={stat.href}>
+              <div className="bg-card border border-border rounded clip-angled-sm p-4 hover:border-primary/40 transition-colors cursor-pointer">
+                <div className={`mb-2 ${stat.color}`}>{stat.icon}</div>
+                <p className="text-xl font-display font-bold text-foreground capitalize">{stat.value}</p>
+                <p className="text-xs font-display uppercase tracking-widest text-muted-foreground mt-1">{stat.label}</p>
+              </div>
+            </Link>
+          ))}
         </div>
 
-        {/* Activity Feed — two columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Messages */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="bg-card border border-border rounded overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-secondary/30">
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-primary" />
-                <h2 className="font-display font-bold uppercase tracking-widest text-sm">Recent Comms</h2>
-              </div>
-              <Link href="/portal/inbox" className="text-xs text-primary hover:underline flex items-center gap-1">
-                View All <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <div className="divide-y divide-border">
-              {recentMessages.length === 0 ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-sm">No messages yet.</div>
-              ) : (
-                recentMessages.map(msg => (
-                  <Link key={msg.id} href={`/portal/inbox/${msg.id}`} className="flex items-start gap-3 px-6 py-4 hover:bg-secondary/30 transition-colors">
-                    <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className={`font-display font-bold text-sm truncate ${!msg.isRead ? "text-foreground" : "text-muted-foreground"}`}>
-                          {!msg.isRead && <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block mr-1.5 mb-0.5" />}
-                          {msg.subject}
-                        </p>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">from {msg.senderUsername}</p>
-                    </div>
-                  </Link>
-                ))
+        {/* Duty Status */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display font-bold uppercase tracking-widest text-sm text-muted-foreground flex items-center gap-2">
+              <Activity className="w-4 h-4" /> Duty Status
+            </h2>
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => setShowDutyMenu(v => !v)}
+              className={`flex items-center gap-3 px-4 py-3 border rounded font-display font-bold uppercase tracking-widest text-sm transition-all ${currentDuty.color}`}
+            >
+              <span className="w-2 h-2 rounded-full bg-current" />
+              {currentDuty.label}
+              <ChevronRight className={`w-3 h-3 ml-1 transition-transform ${showDutyMenu ? "rotate-90" : ""}`} />
+            </button>
+            <AnimatePresence>
+              {showDutyMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="absolute top-full left-0 mt-2 bg-card border border-border rounded-lg shadow-2xl z-10 overflow-hidden min-w-[160px]"
+                >
+                  {DUTY_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => {
+                        setDutyStatus(opt.value);
+                        setShowDutyMenu(false);
+                        updateDuty.mutate(opt.value);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 font-display font-bold uppercase tracking-widest text-xs hover:bg-secondary transition-colors ${opt.color}`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-current" />
+                      {opt.label}
+                    </button>
+                  ))}
+                </motion.div>
               )}
-            </div>
-          </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
 
-          {/* Upcoming Ops */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-card border border-border rounded overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-secondary/30">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="w-4 h-4 text-primary" />
-                <h2 className="font-display font-bold uppercase tracking-widest text-sm">Upcoming Ops</h2>
-              </div>
-              <Link href="/ops" className="text-xs text-primary hover:underline flex items-center gap-1">
-                Full Calendar <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <div className="divide-y divide-border">
-              {upcomingOps.length === 0 ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-sm">No upcoming operations scheduled.</div>
-              ) : (
-                upcomingOps.map(op => (
-                  <div key={op.id} className="flex items-start gap-3 px-6 py-4">
-                    <div className="flex-shrink-0 text-center">
-                      <div className="bg-primary/20 text-primary rounded px-2 py-1 min-w-[48px]">
-                        <p className="text-xs font-bold font-display uppercase">{format(new Date(op.event_date), "MMM")}</p>
-                        <p className="text-xl font-display font-bold leading-tight">{format(new Date(op.event_date), "d")}</p>
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-display font-bold text-sm text-foreground truncate">{op.title}</p>
-                      <p className="text-xs text-muted-foreground">{op.game ?? "General"}</p>
-                      <p className="text-xs text-muted-foreground">{format(new Date(op.event_date), "HH:mm")} UTC</p>
-                    </div>
+        {/* Upcoming Ops */}
+        {upcomingOps && upcomingOps.length > 0 && (
+          <div className="bg-card border border-border rounded-lg p-5">
+            <h2 className="font-display font-bold uppercase tracking-widest text-sm text-muted-foreground flex items-center gap-2 mb-4">
+              <CalendarDays className="w-4 h-4" /> Upcoming Operations
+            </h2>
+            <div className="space-y-3">
+              {upcomingOps.map(op => (
+                <div key={op.id} className="flex items-center gap-4 p-3 bg-secondary/40 border border-border rounded hover:border-primary/30 transition-colors">
+                  <div className="text-center min-w-[48px]">
+                    <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">
+                      {format(new Date(op.event_date), "MMM")}
+                    </p>
+                    <p className="text-2xl font-display font-bold text-primary leading-none">
+                      {format(new Date(op.event_date), "dd")}
+                    </p>
                   </div>
-                ))
-              )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display font-bold uppercase tracking-wide text-sm text-foreground truncate">{op.title}</p>
+                    {op.game && <p className="text-xs text-muted-foreground font-sans truncate">{op.game}</p>}
+                  </div>
+                  <p className="text-xs text-muted-foreground font-sans flex-shrink-0">
+                    {formatDistanceToNow(new Date(op.event_date), { addSuffix: true })}
+                  </p>
+                </div>
+              ))}
             </div>
-          </motion.div>
-        </div>
+            <Link href="/ops" className="flex items-center gap-1 mt-4 text-xs font-display font-bold uppercase tracking-widest text-primary hover:text-accent transition-colors">
+              View All Operations <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+        )}
 
         {/* Quick Actions */}
-        <div>
-          <h2 className="text-xl font-display font-bold uppercase tracking-widest mb-6 border-b border-border pb-2">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link href="/portal/inbox" className="group bg-card border border-border p-5 rounded clip-angled-sm hover:border-primary/50 transition-colors flex items-center gap-4">
-              <div className="w-11 h-11 bg-secondary flex items-center justify-center rounded group-hover:bg-primary/20 group-hover:text-primary transition-colors shrink-0">
-                <Mail className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-display font-bold uppercase tracking-wider text-sm">Comms</h3>
-                <p className="text-xs font-sans text-muted-foreground">Messages</p>
-              </div>
-            </Link>
-
-            <Link href="/portal/profile" className="group bg-card border border-border p-5 rounded clip-angled-sm hover:border-primary/50 transition-colors flex items-center gap-4">
-              <div className="w-11 h-11 bg-secondary flex items-center justify-center rounded group-hover:bg-primary/20 group-hover:text-primary transition-colors shrink-0">
-                <User className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-display font-bold uppercase tracking-wider text-sm">Profile</h3>
-                <p className="text-xs font-sans text-muted-foreground">Edit your record</p>
-              </div>
-            </Link>
-
-            <Link href="/portal/service-card" className="group bg-card border border-border p-5 rounded clip-angled-sm hover:border-primary/50 transition-colors flex items-center gap-4">
-              <div className="w-11 h-11 bg-secondary flex items-center justify-center rounded group-hover:bg-primary/20 group-hover:text-primary transition-colors shrink-0">
-                <CreditCard className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-display font-bold uppercase tracking-wider text-sm">Service Card</h3>
-                <p className="text-xs font-sans text-muted-foreground">Shareable record</p>
-              </div>
-            </Link>
-
-            {user.role === "member" ? (
-              <Link href="/portal/apply" className="group bg-card border border-border p-5 rounded clip-angled-sm hover:border-primary/50 transition-colors flex items-center gap-4">
-                <div className="w-11 h-11 bg-secondary flex items-center justify-center rounded group-hover:bg-primary/20 group-hover:text-primary transition-colors shrink-0">
-                  <PenTool className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold uppercase tracking-wider text-sm">Apply</h3>
-                  <p className="text-xs font-sans text-muted-foreground">Staff application</p>
+        <div className="bg-card border border-border rounded-lg p-5">
+          <h2 className="font-display font-bold uppercase tracking-widest text-sm text-muted-foreground mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { href: "/portal/compose", icon: <PenTool className="w-5 h-5" />, label: "New Dispatch" },
+              { href: "/portal/profile", icon: <User className="w-5 h-5" />, label: "Edit Profile" },
+              { href: "/portal/service-card", icon: <CreditCard className="w-5 h-5" />, label: "Service Card" },
+              { href: "/portal/inbox", icon: <Mail className="w-5 h-5" />, label: "Secure Comms" },
+            ].map(action => (
+              <Link key={action.href} href={action.href}>
+                <div className="flex flex-col items-center gap-2 p-4 bg-secondary/40 border border-border rounded hover:border-primary/40 hover:bg-primary/5 transition-colors cursor-pointer text-center">
+                  <span className="text-primary">{action.icon}</span>
+                  <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">{action.label}</span>
                 </div>
               </Link>
-            ) : (
-              <Link href="/portal/milsim" className="group bg-card border border-border p-5 rounded clip-angled-sm hover:border-primary/50 transition-colors flex items-center gap-4">
-                <div className="w-11 h-11 bg-secondary flex items-center justify-center rounded group-hover:bg-primary/20 group-hover:text-primary transition-colors shrink-0">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold uppercase tracking-wider text-sm">MilSim</h3>
-                  <p className="text-xs font-sans text-muted-foreground">Manage your unit</p>
-                </div>
-              </Link>
-            )}
+            ))}
           </div>
         </div>
 
