@@ -1,0 +1,36 @@
+{
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "general",
+        "bug",
+        "feature",
+        "content",
+        "ux"
+      ]
+    },
+    "rating": {
+      "type": "number"
+    },
+    "message": {
+      "type": "string"
+    },
+    "page": {
+      "type": "string"
+    },
+    "reviewed": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [],
+  "name": "Feedback"
+}
