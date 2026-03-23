@@ -33,20 +33,22 @@
       "enum": [
         "pending",
         "approved",
-        "featured"
-      ],
-      "default": "pending"
+        "featured",
+        "rejected",
+        "suspended"
+      ]
     },
     "owner_id": {
       "type": "string"
     },
     "owner_username": {
       "type": "string"
+    },
+    "visibility": {
+      "type": "string",
+      "description": "JSON string of per-section OPSEC visibility flags"
     }
   },
-  "required": [
-    "name",
-    "owner_id"
-  ],
+  "required": [],
   "name": "MilsimGroup"
 }

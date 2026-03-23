@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
         name, slug, tag_line: tagLine ?? null, description: description ?? null,
         discord_url: discordUrl ?? null, website_url: websiteUrl ?? null,
         logo_url: logoUrl ?? null, sops: sops ?? null, orbat: orbat ?? null,
-        status: 'pending', owner_id: full.id, owner_username: full.username,
+        status: 'pending', owner_id: full.id, owner_username: full.username, visibility: null,
       });
       return Response.json(await groupFullDetail(base44, group), { status: 201 });
     }
@@ -144,6 +144,7 @@ Deno.serve(async (req) => {
       if (body.logoUrl !== undefined) updates.logo_url = body.logoUrl;
       if (body.sops !== undefined) updates.sops = body.sops;
       if (body.orbat !== undefined) updates.orbat = body.orbat;
+      if (body.visibility !== undefined) updates.visibility = JSON.stringify(body.visibility);
       await base44.asServiceRole.entities.MilsimGroup.update(parts[0], updates);
       const updated = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       return Response.json(await groupFullDetail(base44, updated));
