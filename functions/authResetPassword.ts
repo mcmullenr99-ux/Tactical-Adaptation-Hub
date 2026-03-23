@@ -1,10 +1,10 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClient } from 'npm:@base44/sdk@0.8.21';
 import bcrypt from 'npm:bcryptjs@2.4.3';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   try {
-    const base44 = createClientFromRequest(req);
+    const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') ?? '' });
     const { token, newPassword } = await req.json().catch(() => ({}));
     if (!token || !newPassword) return Response.json({ error: 'Token and new password required' }, { status: 400 });
     if (newPassword.length < 8) return Response.json({ error: 'Password must be at least 8 characters' }, { status: 400 });

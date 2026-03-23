@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClient } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
@@ -17,7 +17,7 @@ async function getCallerUser(base44: any, req: Request) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   try {
-    const base44 = createClientFromRequest(req);
+    const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') ?? '' });
     const url = new URL(req.url);
     const pathOverride = url.searchParams.get('path');
     const parts = pathOverride

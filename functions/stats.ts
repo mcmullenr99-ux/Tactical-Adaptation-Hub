@@ -1,9 +1,9 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClient } from 'npm:@base44/sdk@0.8.21';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   try {
-    const base44 = createClientFromRequest(req);
+    const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') ?? '' });
     const url = new URL(req.url);
     const pathOverride = url.searchParams.get('path');
     const parts = pathOverride
