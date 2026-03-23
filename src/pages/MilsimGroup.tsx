@@ -358,7 +358,16 @@ export default function MilsimGroup() {
 
           {tab === "orbat" && (
             <div className="w-full">
-              <OrbatBuilder value={group.orbat ?? undefined} readOnly />
+              <OrbatBuilder
+                value={group.orbat ?? undefined}
+                readOnly
+                roster={(group.roster ?? []).map((r: any) => ({
+                  id: r.id,
+                  callsign: r.callsign,
+                  rank: group.ranks?.find((rk: any) => rk.id === r.rankId)?.name ?? undefined,
+                  role: group.roles?.find((ro: any) => ro.id === r.roleId)?.name ?? undefined,
+                }))}
+              />
             </div>
           )}
 

@@ -113,7 +113,8 @@ Deno.serve(async (req) => {
       const existing = await base44.asServiceRole.entities.MilsimGroup.filter({ owner_id: full.id });
       if (existing.length > 0) return Response.json({ error: 'You already have a registered group' }, { status: 409 });
       const body = await req.json().catch(() => ({}));
-      const { name, tagLine, description, discordUrl, websiteUrl, logoUrl, sops, orbat } = body;
+      const { name, tagLine, description, discordUrl, websiteUrl, logoUrl, sops, orbat,
+              country, language, unitType, games, tags } = body;
       if (!name) return Response.json({ error: 'Name is required' }, { status: 400 });
       const slug = await makeUniqueSlug(base44, name);
       const group = await base44.asServiceRole.entities.MilsimGroup.create({
@@ -121,6 +122,8 @@ Deno.serve(async (req) => {
         discord_url: discordUrl ?? null, website_url: websiteUrl ?? null,
         logo_url: logoUrl ?? null, sops: sops ?? null, orbat: orbat ?? null,
         status: 'pending', owner_id: full.id, owner_username: full.username, visibility: null,
+        country: country ?? null, language: language ?? null, unit_type: unitType ?? null,
+        games: games ?? null, tags: tags ?? null,
       });
       return Response.json(await groupFullDetail(base44, group), { status: 201 });
     }
@@ -145,6 +148,11 @@ Deno.serve(async (req) => {
       if (body.sops !== undefined) updates.sops = body.sops;
       if (body.orbat !== undefined) updates.orbat = body.orbat;
       if (body.visibility !== undefined) updates.visibility = JSON.stringify(body.visibility);
+      if (body.country !== undefined) updates.country = body.country;
+      if (body.language !== undefined) updates.language = body.language;
+      if (body.unitType !== undefined) updates.unit_type = body.unitType;
+      if (body.games !== undefined) updates.games = body.games;
+      if (body.tags !== undefined) updates.tags = body.tags;
       await base44.asServiceRole.entities.MilsimGroup.update(parts[0], updates);
       const updated = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       return Response.json(await groupFullDetail(base44, updated));

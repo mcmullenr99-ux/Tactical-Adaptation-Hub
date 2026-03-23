@@ -29,7 +29,12 @@ const CreateGroupBody = z.object({
   websiteUrl: z.string().url().optional().or(z.literal("")),
   logoUrl: z.string().url().optional().or(z.literal("")),
   sops: z.string().max(10000).optional(),
-  orbat: z.string().max(10000).optional(),
+  orbat: z.string().max(50000).optional(),
+  country: z.string().max(100).optional(),
+  language: z.string().max(100).optional(),
+  unitType: z.string().max(100).optional(),
+  games: z.array(z.string().max(100)).max(20).optional(),
+  tags: z.array(z.string().max(50)).max(30).optional(),
 });
 
 const RoleBody = z.object({

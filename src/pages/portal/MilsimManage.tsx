@@ -146,7 +146,7 @@ export default function MilsimManage() {
           {tab === "orgchart" && <OrgChartTab group={group} />}
           {tab === "readiness" && <ReadinessTab group={group} />}
           {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-          {tab === "sops" && <SopsTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+          {tab === "sops" && <SopsTab group={group} roster={group.roster} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
           {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
         </motion.div>
       </div>
@@ -163,11 +163,38 @@ function MField({ label, children }: { label: string; children: React.ReactNode 
   );
 }
 
+
+const MANAGE_GAMES_LIST = [
+  "Arma 3", "Arma Reforger", "DCS World", "Squad", "Hell Let Loose",
+  "Post Scriptum", "Insurgency: Sandstorm", "GHPC", "Foxhole", "Other",
+];
+const MANAGE_UNIT_TYPES = [
+  "Infantry", "Armour", "Mechanized", "Motorized", "Special Forces",
+  "Aviation", "Artillery", "Logistics", "Reconnaissance", "Engineers",
+  "Naval", "Mixed Arms", "Other",
+];
+const MANAGE_COUNTRIES = [
+  "🇬🇧 United Kingdom", "🇺🇸 United States", "🇨🇦 Canada",
+  "🇦🇺 Australia", "🇳🇿 New Zealand", "🇩🇪 Germany", "🇫🇷 France",
+  "🇮🇹 Italy", "🇵🇱 Poland", "🇳🇱 Netherlands", "🇳🇴 Norway",
+  "🇸🇪 Sweden", "🇩🇰 Denmark", "🇧🇪 Belgium", "🇪🇸 Spain",
+  "🇵🇹 Portugal", "🇹🇷 Turkey", "🇯🇵 Japan", "🇰🇷 South Korea",
+  "🇧🇷 Brazil", "International", "Other",
+];
+const MANAGE_LANGUAGES = [
+  "English", "German", "French", "Spanish", "Italian", "Polish",
+  "Dutch", "Portuguese", "Norwegian", "Swedish", "Danish", "Turkish",
+  "Japanese", "Korean", "Other",
+];
+
 function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
-  const { register, handleSubmit } = useForm({ defaultValues: {
+  const { register, handleSubmit, watch, setValue } = useForm({ defaultValues: {
     name: group.name, tagLine: group.tagLine ?? "", description: group.description ?? "",
     discordUrl: group.discordUrl ?? "", websiteUrl: group.websiteUrl ?? "", logoUrl: group.logoUrl ?? "",
+    country: group.country ?? "", language: group.language ?? "", unitType: group.unitType ?? "",
+    games: (group.games ?? []) as string[],
   }});
+  const gamesValue: string[] = watch("games") ?? [];
   const onSubmit = async (data: any) => {
     setSaving(true);
     try {
@@ -185,6 +212,51 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
       <MField label="Logo URL"><input {...register("logoUrl")} className="mf-input" placeholder="https://i.imgur.com/..." /></MField>
       <MField label="Discord URL"><input {...register("discordUrl")} className="mf-input" /></MField>
       <MField label="Website URL"><input {...register("websiteUrl")} className="mf-input" /></MField>
+
+      <div className="border-t border-border pt-5">
+        <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Discovery & Filtering</p>
+        <div className="space-y-4">
+          <MField label="Country / Nationality">
+            <select {...register("country")} className="mf-input">
+              <option value="">Select...</option>
+              {MANAGE_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </MField>
+          <MField label="Primary Language">
+            <select {...register("language")} className="mf-input">
+              <option value="">Select...</option>
+              {MANAGE_LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </MField>
+          <MField label="Unit Type">
+            <select {...register("unitType")} className="mf-input">
+              <option value="">Select...</option>
+              {MANAGE_UNIT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </MField>
+          <MField label="Games You Play">
+            <div className="flex flex-wrap gap-2 mt-1">
+              {MANAGE_GAMES_LIST.map(game => {
+                const selected = gamesValue.includes(game);
+                return (
+                  <button key={game} type="button"
+                    onClick={() => {
+                      const next = selected ? gamesValue.filter(g => g !== game) : [...gamesValue, game];
+                      setValue("games", next);
+                    }}
+                    className={`px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                      selected ? "bg-primary/15 border-primary/50 text-primary" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    }`}
+                  >
+                    {game}
+                  </button>
+                );
+              })}
+            </div>
+          </MField>
+        </div>
+      </div>
+
       <button type="submit" disabled={saving}
         className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Changes
@@ -193,7 +265,7 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   );
 }
 
-function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
+function SopsTab({ group, onSaved, setSaving, saving, showMsg, roster }: any) {
   const { register, handleSubmit, setValue, watch } = useForm({ defaultValues: { sops: group.sops ?? "", orbat: group.orbat ?? "" } });
   const orbatValue = watch("orbat");
 
@@ -223,6 +295,12 @@ function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
         <OrbatBuilder
           value={orbatValue}
           onChange={(json) => setValue("orbat", json)}
+          roster={(roster ?? []).map((r: any) => ({
+            id: r.id,
+            callsign: r.callsign,
+            rank: group.ranks?.find((rk: any) => rk.id === r.rankId)?.name ?? undefined,
+            role: group.roles?.find((ro: any) => ro.id === r.roleId)?.name ?? undefined,
+          }))}
         />
       </div>
 

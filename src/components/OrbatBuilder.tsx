@@ -1,21 +1,41 @@
 /**
- * NATO ORBAT Builder
- * Uses milsymbol (APP-6 / MIL-STD-2525 compliant) for unit symbols
+ * NATO ORBAT Builder — v2
+ * Features:
+ *  - Roster member assignment per unit node
+ *  - Symbology standard selector (APP-6, 2525, UK, CA, AUS, NZ, EU)
+ *  - Symbol affiliation / colour selector (Friendly/Blue, Hostile/Red, Neutral/Green, Unknown/Yellow, Custom)
+ *  - ReadOnly display mode
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Save, Download,
-  ZoomIn, ZoomOut, RefreshCw, Settings, X
+  ZoomIn, ZoomOut, Settings, X, Users, Palette, Flag,
 } from "lucide-react";
 
-// ─── milsymbol SIDC map ───────────────────────────────────────────────────────
-// SIDC format (APP-6E / MIL-STD-2525E): 30-char string
-// Position 3: affiliation — 3 = friendly
-// Positions 5-6: symbol set — 10 = land units
-// Positions 11-16: entity/entity type/entity subtype
+// ─── Symbology Standards ──────────────────────────────────────────────────────
 
-// Echelon modifier codes (positions 9-10 in full SIDC, amplifier)
+export const SYMBOLOGY_STANDARDS = [
+  { id: "APP6",   label: "NATO APP-6",      flag: "🌍" },
+  { id: "2525",   label: "US MIL-STD 2525", flag: "🇺🇸" },
+  { id: "APP6UK", label: "UK APP-6",        flag: "🇬🇧" },
+  { id: "APP6CA", label: "Canadian APP-6",  flag: "🇨🇦" },
+  { id: "APP6AU", label: "Australian APP-6",flag: "🇦🇺" },
+  { id: "APP6NZ", label: "New Zealand",     flag: "🇳🇿" },
+  { id: "APP6EU", label: "EU Standard",     flag: "🇪🇺" },
+];
+
+// ─── Affiliation / Colour ─────────────────────────────────────────────────────
+
+export const AFFILIATIONS = [
+  { id: "friendly", label: "Friendly", sidcChar: "3", color: "#006ba6" },
+  { id: "hostile",  label: "Hostile",  sidcChar: "6", color: "#c8001f" },
+  { id: "neutral",  label: "Neutral",  sidcChar: "4", color: "#007243" },
+  { id: "unknown",  label: "Unknown",  sidcChar: "1", color: "#ffb300" },
+];
+
+// ─── Echelons ─────────────────────────────────────────────────────────────────
+
 export const NATO_ECHELONS = [
   { id: "fireteam",  label: "Fire Team",  echelonCode: "11" },
   { id: "squad",     label: "Squad",      echelonCode: "12" },
@@ -29,10 +49,8 @@ export const NATO_ECHELONS = [
   { id: "corps",     label: "Corps",      echelonCode: "20" },
 ];
 
-// Full 20-char SIDC (APP-6E style used by milsymbol v3+)
-// Format: SSTTEEEEFFFFFFF00000  — we use friendly (S=10, A=3)
-// Base: 10031000000000000000 = friendly land unit
-// Entity codes for common types
+// ─── SIDC Map ─────────────────────────────────────────────────────────────────
+
 const UNIT_SIDC_MAP: Record<string, string> = {
   infantry:         "10031000141200000000",
   armor:            "10031000141100000000",
@@ -103,10 +121,48 @@ export const NATO_UNIT_TYPES = [
   { id: "fac",              label: "FAC / JTAC",           category: "C2"       },
 ];
 
-// ─── milsymbol Symbol Component ───────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-function MilSymbol({ unitType, echelon, size = 56 }: { unitType: string; echelon: string; size?: number }) {
+export interface RosterMember {
+  id: number | string;
+  callsign: string;
+  rank?: string;
+  role?: string;
+}
+
+export interface OrbatNode {
+  id: string;
+  name: string;
+  callsign?: string;
+  unitType: string;
+  echelon: string;
+  slots: number;
+  assignedMembers?: string[]; // callsigns assigned to this node
+  children: OrbatNode[];
+  collapsed?: boolean;
+}
+
+function generateId() {
+  return Math.random().toString(36).slice(2, 9);
+}
+
+// ─── milsymbol Symbol ─────────────────────────────────────────────────────────
+
+function MilSymbol({
+  unitType,
+  echelon,
+  standard = "APP6",
+  affiliation = "friendly",
+  size = 56,
+}: {
+  unitType: string;
+  echelon: string;
+  standard?: string;
+  affiliation?: string;
+  size?: number;
+}) {
   const [svg, setSvg] = useState<string>("");
+  const affiliationData = AFFILIATIONS.find(a => a.id === affiliation) ?? AFFILIATIONS[0];
   const echelonData = NATO_ECHELONS.find(e => e.id === echelon);
 
   useEffect(() => {
@@ -114,39 +170,52 @@ function MilSymbol({ unitType, echelon, size = 56 }: { unitType: string; echelon
     import("milsymbol").then((ms) => {
       if (cancelled) return;
       const MS = ms.default || ms;
-      const baseSIDC = UNIT_SIDC_MAP[unitType] || UNIT_SIDC_MAP.infantry;
+      let baseSIDC = UNIT_SIDC_MAP[unitType] || UNIT_SIDC_MAP.infantry;
 
-      // Inject echelon amplifier into positions 8-9 of the SIDC
+      // Swap affiliation char (position 4 in 20-char SIDC)
+      baseSIDC = baseSIDC.slice(0, 4) + affiliationData.sidcChar + baseSIDC.slice(5);
+
+      // Inject echelon amplifier into positions 8-9
       const echelonCode = echelonData?.echelonCode ?? "14";
       const sidc = baseSIDC.slice(0, 8) + echelonCode + baseSIDC.slice(10);
+
+      // milsymbol standard mapping
+      const stdMap: Record<string, string> = {
+        APP6: "APP6", APP6UK: "APP6", APP6CA: "APP6", APP6AU: "APP6",
+        APP6NZ: "APP6", APP6EU: "APP6", "2525": "2525",
+      };
+      const milStandard = stdMap[standard] ?? "APP6";
 
       try {
         const sym = new MS.Symbol(sidc, {
           size,
-          standard: "APP6",
+          standard: milStandard,
           fillOpacity: 1,
         });
         setSvg(sym.asSVG());
       } catch {
-        // fallback — plain symbol without echelon
         try {
-          const sym = new MS.Symbol(baseSIDC, { size, standard: "APP6" });
+          const sym = new MS.Symbol(baseSIDC, { size, standard: milStandard });
           setSvg(sym.asSVG());
         } catch {
           setSvg("");
         }
       }
     }).catch(() => setSvg(""));
-
     return () => { cancelled = true; };
-  }, [unitType, echelon, size]);
+  }, [unitType, echelon, standard, affiliation]);
 
   if (!svg) {
-    // Placeholder while loading — uses a visible colored box so it doesn't look black
     return (
       <div
-        className="border border-primary/40 bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-xs rounded"
-        style={{ width: size, height: size * 0.75 }}
+        className="border flex items-center justify-center font-display font-bold text-xs rounded"
+        style={{
+          width: size,
+          height: size * 0.75,
+          borderColor: affiliationData.color + "66",
+          backgroundColor: affiliationData.color + "1a",
+          color: affiliationData.color,
+        }}
       >
         {unitType.slice(0, 3).toUpperCase()}
       </div>
@@ -162,63 +231,88 @@ function MilSymbol({ unitType, echelon, size = 56 }: { unitType: string; echelon
   );
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface OrbatNode {
-  id: string;
-  name: string;
-  callsign?: string;
-  unitType: string;
-  echelon: string;
-  slots: number;
-  children: OrbatNode[];
-  collapsed?: boolean;
-}
-
-function generateId() {
-  return Math.random().toString(36).slice(2, 9);
-}
-
 // ─── Node Editor Modal ────────────────────────────────────────────────────────
 
-function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: OrbatNode) => void; onClose: () => void }) {
-  const [draft, setDraft] = useState<OrbatNode>({ ...node });
+function NodeEditor({
+  node,
+  roster,
+  standard,
+  affiliation,
+  onSave,
+  onClose,
+}: {
+  node: OrbatNode;
+  roster: RosterMember[];
+  standard: string;
+  affiliation: string;
+  onSave: (n: OrbatNode) => void;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = useState<OrbatNode>({ ...node, assignedMembers: node.assignedMembers ?? [] });
+  const [memberSearch, setMemberSearch] = useState("");
   const categories = Array.from(new Set(NATO_UNIT_TYPES.map(u => u.category)));
 
+  const assignedSet = new Set(draft.assignedMembers ?? []);
+  const filteredRoster = roster.filter(m =>
+    m.callsign.toLowerCase().includes(memberSearch.toLowerCase()) ||
+    (m.rank ?? "").toLowerCase().includes(memberSearch.toLowerCase())
+  );
+
+  const toggleMember = (callsign: string) => {
+    setDraft(d => {
+      const current = d.assignedMembers ?? [];
+      return {
+        ...d,
+        assignedMembers: current.includes(callsign)
+          ? current.filter(c => c !== callsign)
+          : [...current, callsign],
+      };
+    });
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="bg-card border border-border rounded-lg w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-lg w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border sticky top-0 bg-card z-10">
           <h3 className="font-display font-black uppercase tracking-wider text-sm text-foreground">Edit Unit Node</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="p-5 space-y-4">
+
+        <div className="p-5 space-y-5">
+          {/* Preview */}
           <div className="flex justify-center py-2">
             <div className="flex flex-col items-center gap-1">
-              <MilSymbol unitType={draft.unitType} echelon={draft.echelon} size={64} />
+              <MilSymbol unitType={draft.unitType} echelon={draft.echelon} standard={standard} affiliation={affiliation} size={64} />
               <span className="text-xs text-muted-foreground font-sans mt-1">{draft.name || "Unnamed"}</span>
             </div>
           </div>
+
+          {/* Unit Name */}
           <div>
             <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Unit Name</label>
             <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
               className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm font-sans focus:outline-none focus:border-primary transition-colors"
               placeholder="e.g. 1st Platoon, Alpha Company" />
           </div>
+
+          {/* Callsign */}
           <div>
             <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Callsign</label>
             <input value={draft.callsign || ""} onChange={e => setDraft(d => ({ ...d, callsign: e.target.value }))}
               className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm font-sans focus:outline-none focus:border-primary transition-colors"
-              placeholder="e.g. ALPHA, BRAVO-1" />
+              placeholder="e.g. BRAVO-1" />
           </div>
+
+          {/* Unit Type */}
           <div>
             <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Unit Type</label>
             <select value={draft.unitType} onChange={e => setDraft(d => ({ ...d, unitType: e.target.value }))}
               className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm font-sans focus:outline-none focus:border-primary transition-colors">
               {categories.map(cat => (
-                <optgroup key={cat} label={`── ${cat} ──`}>
+                <optgroup key={cat} label={cat}>
                   {NATO_UNIT_TYPES.filter(u => u.category === cat).map(u => (
                     <option key={u.id} value={u.id}>{u.label}</option>
                   ))}
@@ -226,6 +320,8 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
               ))}
             </select>
           </div>
+
+          {/* Echelon */}
           <div>
             <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Echelon</label>
             <select value={draft.echelon} onChange={e => setDraft(d => ({ ...d, echelon: e.target.value }))}
@@ -235,26 +331,80 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
               ))}
             </select>
           </div>
+
+          {/* Slots */}
           <div>
             <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
-              Personnel Slots — <span className="text-primary">{draft.slots}</span>
+              Slots / Strength
             </label>
-            <input type="range" min={1} max={200} value={draft.slots}
-              onChange={e => setDraft(d => ({ ...d, slots: Number(e.target.value) }))}
-              className="w-full accent-primary" />
-            <div className="flex justify-between text-xs text-muted-foreground font-sans mt-0.5">
-              <span>1</span><span>50</span><span>100</span><span>150</span><span>200</span>
-            </div>
+            <input type="number" min={1} max={9999} value={draft.slots}
+              onChange={e => setDraft(d => ({ ...d, slots: parseInt(e.target.value) || 1 }))}
+              className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm font-sans focus:outline-none focus:border-primary transition-colors" />
           </div>
+
+          {/* Roster Member Assignment */}
+          {roster.length > 0 && (
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                <Users className="w-3 h-3" /> Assign Roster Members
+                {assignedSet.size > 0 && (
+                  <span className="ml-auto bg-primary/20 text-primary text-[10px] px-2 py-0.5 rounded-full font-sans font-normal">
+                    {assignedSet.size} assigned
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                value={memberSearch}
+                onChange={e => setMemberSearch(e.target.value)}
+                placeholder="Search callsign or rank..."
+                className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm font-sans focus:outline-none focus:border-primary transition-colors mb-2"
+              />
+              <div className="max-h-40 overflow-y-auto border border-border rounded divide-y divide-border/50">
+                {filteredRoster.length === 0 ? (
+                  <p className="text-xs text-muted-foreground font-sans p-3 text-center">No roster members found</p>
+                ) : (
+                  filteredRoster.map(member => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => toggleMember(member.callsign)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors text-sm hover:bg-secondary/50 ${
+                        assignedSet.has(member.callsign) ? "bg-primary/10 text-primary" : "text-foreground"
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                        assignedSet.has(member.callsign)
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : "border-border"
+                      }`}>
+                        {assignedSet.has(member.callsign) && <span className="text-[10px] leading-none">✓</span>}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-display font-bold text-xs uppercase tracking-wide truncate">{member.callsign}</span>
+                        {(member.rank || member.role) && (
+                          <span className="text-[10px] text-muted-foreground font-sans truncate">
+                            {[member.rank, member.role].filter(Boolean).join(" · ")}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
-        <div className="flex gap-3 px-5 py-4 border-t border-border">
-          <button onClick={() => onSave(draft)}
-            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-4 py-2.5 rounded transition-colors flex items-center justify-center gap-2">
-            <Save className="w-3.5 h-3.5" /> Apply
-          </button>
+
+        {/* Footer */}
+        <div className="flex gap-3 px-5 py-4 border-t border-border sticky bottom-0 bg-card">
           <button onClick={onClose}
-            className="px-4 py-2.5 border border-border text-muted-foreground hover:text-foreground font-display font-bold uppercase tracking-wider text-xs rounded transition-colors">
+            className="flex-1 border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground font-display font-bold uppercase tracking-wider text-xs px-4 py-2.5 rounded transition-all">
             Cancel
+          </button>
+          <button onClick={() => onSave(draft)}
+            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-4 py-2.5 rounded transition-all flex items-center justify-center gap-2">
+            <Save className="w-3.5 h-3.5" /> Save
           </button>
         </div>
       </div>
@@ -264,7 +414,18 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
 
 // ─── Tree Node ────────────────────────────────────────────────────────────────
 
-function OrbatTreeNode({ node, onUpdate, onDelete, onAddChild, depth = 0, isRoot = false, readOnly = false }: {
+function OrbatTreeNode({
+  node,
+  onUpdate,
+  onDelete,
+  onAddChild,
+  depth = 0,
+  isRoot = false,
+  readOnly = false,
+  roster,
+  standard,
+  affiliation,
+}: {
   node: OrbatNode;
   onUpdate: (updated: OrbatNode) => void;
   onDelete: () => void;
@@ -272,6 +433,9 @@ function OrbatTreeNode({ node, onUpdate, onDelete, onAddChild, depth = 0, isRoot
   depth?: number;
   isRoot?: boolean;
   readOnly?: boolean;
+  roster: RosterMember[];
+  standard: string;
+  affiliation: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [collapsed, setCollapsed] = useState(node.collapsed ?? false);
@@ -279,6 +443,7 @@ function OrbatTreeNode({ node, onUpdate, onDelete, onAddChild, depth = 0, isRoot
   const unitType = NATO_UNIT_TYPES.find(u => u.id === node.unitType);
   const echelon = NATO_ECHELONS.find(e => e.id === node.echelon);
   const hasChildren = node.children.length > 0;
+  const affiliationData = AFFILIATIONS.find(a => a.id === affiliation) ?? AFFILIATIONS[0];
 
   const handleSave = (updated: OrbatNode) => { onUpdate(updated); setEditing(false); };
   const updateChild = (idx: number, updated: OrbatNode) => {
@@ -288,70 +453,124 @@ function OrbatTreeNode({ node, onUpdate, onDelete, onAddChild, depth = 0, isRoot
     onUpdate({ ...node, children: node.children.filter((_, i) => i !== idx) });
   };
 
+  const assigned = node.assignedMembers ?? [];
+
   return (
     <div className="flex flex-col items-center">
       <div className="relative flex flex-col items-center group">
+        {/* Symbol box */}
         <div
-          className={`relative flex flex-col items-center cursor-pointer select-none transition-all duration-150 ${depth === 0 ? "scale-110" : ""}`}
+          className={`relative flex flex-col items-center select-none transition-all duration-150 ${
+            depth === 0 ? "scale-110" : ""
+          } ${!readOnly ? "cursor-pointer" : "cursor-default"}`}
           onClick={() => !readOnly && setEditing(true)}
         >
-          <MilSymbol unitType={node.unitType} echelon={node.echelon} size={depth === 0 ? 60 : 48} />
+          <MilSymbol
+            unitType={node.unitType}
+            echelon={node.echelon}
+            standard={standard}
+            affiliation={affiliation}
+            size={depth === 0 ? 60 : 48}
+          />
         </div>
 
-        <div className="text-center mt-1 max-w-[110px]">
+        {/* Labels */}
+        <div className="text-center mt-1 max-w-[120px]">
           <div className="text-xs font-display font-bold text-foreground leading-tight truncate">{node.name}</div>
           {node.callsign && (
-            <div className="text-[10px] font-sans text-primary truncate">{node.callsign}</div>
+            <div className="text-[10px] font-sans truncate" style={{ color: affiliationData.color }}>
+              {node.callsign}
+            </div>
           )}
           <div className="text-[9px] text-muted-foreground font-sans truncate">
             {echelon?.label} · {unitType?.label}
           </div>
           <div className="text-[9px] text-muted-foreground font-sans">{node.slots} slots</div>
+
+          {/* Assigned members list */}
+          {assigned.length > 0 && (
+            <div className="mt-1.5 flex flex-col items-center gap-0.5">
+              <div className="w-full h-px bg-border/60 mb-0.5" />
+              {assigned.map((callsign, i) => (
+                <div
+                  key={i}
+                  className="text-[9px] font-display font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-sm"
+                  style={{ color: affiliationData.color, backgroundColor: affiliationData.color + "15" }}
+                >
+                  {callsign}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {!readOnly && <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
-          <button onClick={e => { e.stopPropagation(); setEditing(true); }}
-            className="w-5 h-5 bg-secondary hover:bg-secondary/70 border border-border rounded text-foreground flex items-center justify-center transition-colors" title="Edit">
-            <Settings className="w-3 h-3" />
-          </button>
-          <button onClick={e => { e.stopPropagation(); onAddChild(node.id); }}
-            className="w-5 h-5 bg-primary/20 hover:bg-primary/40 border border-primary/40 rounded text-primary flex items-center justify-center transition-colors" title="Add subordinate">
-            <Plus className="w-3 h-3" />
-          </button>
-          {!isRoot && (
-            <button onClick={e => { e.stopPropagation(); onDelete(); }}
-              className="w-5 h-5 bg-destructive/20 hover:bg-destructive/40 border border-destructive/40 rounded text-destructive flex items-center justify-center transition-colors" title="Delete">
-              <Trash2 className="w-3 h-3" />
+        {/* Edit controls (non-readOnly) */}
+        {!readOnly && (
+          <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
+            <button onClick={e => { e.stopPropagation(); setEditing(true); }}
+              className="w-5 h-5 bg-secondary hover:bg-secondary/70 border border-border rounded text-foreground flex items-center justify-center transition-colors" title="Edit">
+              <Settings className="w-3 h-3" />
             </button>
-          )}
-        </div>}
+            <button onClick={e => { e.stopPropagation(); onAddChild(node.id); }}
+              className="w-5 h-5 bg-primary/20 hover:bg-primary/40 border border-primary/40 rounded text-primary flex items-center justify-center transition-colors" title="Add subordinate">
+              <Plus className="w-3 h-3" />
+            </button>
+            {!isRoot && (
+              <button onClick={e => { e.stopPropagation(); onDelete(); }}
+                className="w-5 h-5 bg-destructive/20 hover:bg-destructive/40 border border-destructive/40 rounded text-destructive flex items-center justify-center transition-colors" title="Delete">
+                <Trash2 className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
+      {/* Collapse toggle */}
       {hasChildren && (
         <button onClick={() => setCollapsed(c => !c)} className="mt-1 text-muted-foreground hover:text-foreground transition-colors">
           {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
       )}
 
+      {/* Children */}
       {hasChildren && !collapsed && (
         <div className="relative mt-0 pt-4">
           <div className="absolute top-0 left-1/2 -translate-x-px w-px h-4 bg-border" />
           {node.children.length > 1 && (
             <div className="absolute top-4 bg-border"
-              style={{ left: `calc(${100/(node.children.length*2)}%)`, right: `calc(${100/(node.children.length*2)}%)`, height: "1px" }} />
+              style={{ left: `calc(${100 / (node.children.length * 2)}%)`, right: `calc(${100 / (node.children.length * 2)}%)`, height: "1px" }} />
           )}
           <div className="flex gap-6 items-start">
             {node.children.map((child, idx) => (
               <div key={child.id} className="relative flex flex-col items-center">
                 <div className="w-px h-4 bg-border" />
-                <OrbatTreeNode node={child} onUpdate={u => updateChild(idx, u)} onDelete={() => deleteChild(idx)} onAddChild={onAddChild} depth={depth + 1} readOnly={readOnly} />
+                <OrbatTreeNode
+                  node={child}
+                  onUpdate={u => updateChild(idx, u)}
+                  onDelete={() => deleteChild(idx)}
+                  onAddChild={onAddChild}
+                  depth={depth + 1}
+                  readOnly={readOnly}
+                  roster={roster}
+                  standard={standard}
+                  affiliation={affiliation}
+                />
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {editing && !readOnly && <NodeEditor node={node} onSave={handleSave} onClose={() => setEditing(false)} />}
+      {editing && !readOnly && (
+        <NodeEditor
+          node={node}
+          roster={roster}
+          standard={standard}
+          affiliation={affiliation}
+          onSave={handleSave}
+          onClose={() => setEditing(false)}
+        />
+      )}
     </div>
   );
 }
@@ -362,6 +581,7 @@ interface OrbatBuilderProps {
   value?: string;
   onChange?: (json: string) => void;
   readOnly?: boolean;
+  roster?: RosterMember[];
 }
 
 const DEFAULT_ORBAT: OrbatNode = {
@@ -371,26 +591,59 @@ const DEFAULT_ORBAT: OrbatNode = {
   unitType: "hq",
   echelon: "battalion",
   slots: 4,
+  assignedMembers: [],
   children: [],
 };
 
-export default function OrbatBuilder({ value, onChange, readOnly = false }: OrbatBuilderProps) {
-  const parseValue = (): OrbatNode => {
-    try { if (value) return JSON.parse(value); } catch {}
-    return DEFAULT_ORBAT;
+interface OrbatSettings {
+  standard: string;
+  affiliation: string;
+}
+
+const DEFAULT_SETTINGS: OrbatSettings = { standard: "APP6", affiliation: "friendly" };
+
+export default function OrbatBuilder({ value, onChange, readOnly = false, roster = [] }: OrbatBuilderProps) {
+  const parseData = (): { tree: OrbatNode; settings: OrbatSettings } => {
+    try {
+      if (value) {
+        const parsed = JSON.parse(value);
+        // Support both plain tree (legacy) and new { tree, settings } format
+        if (parsed.tree && parsed.settings) {
+          return { tree: parsed.tree, settings: parsed.settings };
+        }
+        // Legacy format: just a tree node
+        if (parsed.id) {
+          return { tree: parsed, settings: DEFAULT_SETTINGS };
+        }
+      }
+    } catch {}
+    return { tree: { ...DEFAULT_ORBAT, id: generateId() }, settings: DEFAULT_SETTINGS };
   };
 
-  const [tree, setTree] = useState<OrbatNode>(parseValue);
+  const initial = parseData();
+  const [tree, setTree] = useState<OrbatNode>(initial.tree);
+  const [settings, setSettings] = useState<OrbatSettings>(initial.settings);
   const [zoom, setZoom] = useState(1);
+  const [showSettings, setShowSettings] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const updateTree = useCallback((updated: OrbatNode) => {
-    setTree(updated); onChange?.(JSON.stringify(updated));
+  const emitChange = useCallback((newTree: OrbatNode, newSettings: OrbatSettings) => {
+    onChange?.(JSON.stringify({ tree: newTree, settings: newSettings }));
   }, [onChange]);
+
+  const updateTree = useCallback((updated: OrbatNode) => {
+    setTree(updated);
+    emitChange(updated, settings);
+  }, [settings, emitChange]);
+
+  const updateSettings = (newSettings: OrbatSettings) => {
+    setSettings(newSettings);
+    emitChange(tree, newSettings);
+  };
 
   const addChildTo = (parentId: string, root: OrbatNode): OrbatNode => {
     if (root.id === parentId) {
-      const newChild: OrbatNode = { id: generateId(), name: "New Unit", unitType: "infantry", echelon: "platoon", slots: 20, children: [] };
+      const newChild: OrbatNode = { id: generateId(), name: "New Unit", unitType: "infantry", echelon: "platoon", slots: 20, assignedMembers: [], children: [] };
       return { ...root, children: [...root.children, newChild] };
     }
     return { ...root, children: root.children.map(c => addChildTo(parentId, c)) };
@@ -398,73 +651,99 @@ export default function OrbatBuilder({ value, onChange, readOnly = false }: Orba
 
   const countUnits = (node: OrbatNode): number => 1 + node.children.reduce((a, c) => a + countUnits(c), 0);
   const countSlots = (node: OrbatNode): number => node.slots + node.children.reduce((a, c) => a + countSlots(c), 0);
+  const countAssigned = (node: OrbatNode): number =>
+    (node.assignedMembers?.length ?? 0) + node.children.reduce((a, c) => a + countAssigned(c), 0);
 
-  const exportSVG = () => {
-    const container = containerRef.current;
-    if (!container) return;
-    const svgEls = container.querySelectorAll("svg");
-    if (!svgEls.length) return;
-    const blob = new Blob([svgEls[0].outerHTML], { type: "image/svg+xml" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "orbat.svg";
-    a.click();
-  };
+  const currentAffiliation = AFFILIATIONS.find(a => a.id === settings.affiliation) ?? AFFILIATIONS[0];
+  const currentStandard = SYMBOLOGY_STANDARDS.find(s => s.id === settings.standard) ?? SYMBOLOGY_STANDARDS[0];
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-secondary/20">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-secondary/20 flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <span className="text-xs font-display font-black uppercase tracking-widest text-foreground">ORBAT Builder</span>
-          <span className="text-[10px] font-sans text-muted-foreground">APP-6 Standard</span>
+          <span className="text-[10px] font-sans text-muted-foreground">{currentStandard.flag} {currentStandard.label}</span>
+          <div
+            className="w-3 h-3 rounded-full border border-white/20 shrink-0"
+            style={{ backgroundColor: currentAffiliation.color }}
+            title={currentAffiliation.label}
+          />
         </div>
+
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-sans text-muted-foreground mr-2">
-            {countUnits(tree)} units · {countSlots(tree)} total slots
+          {/* Stats */}
+          <span className="text-[10px] text-muted-foreground font-sans hidden sm:block">
+            {countUnits(tree)} units · {countSlots(tree)} slots
+            {countAssigned(tree) > 0 && ` · ${countAssigned(tree)} assigned`}
           </span>
-          <button onClick={() => setZoom(z => Math.max(0.4, z - 0.1))}
-            className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground border border-border rounded transition-colors">
+
+          {/* Zoom */}
+          <button onClick={() => setZoom(z => Math.max(0.4, z - 0.15))}
+            className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors" title="Zoom out">
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
-          <span className="text-[10px] font-sans text-muted-foreground w-10 text-center">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom(z => Math.min(2, z + 0.1))}
-            className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground border border-border rounded transition-colors">
+          <span className="text-[10px] text-muted-foreground font-sans w-9 text-center">{Math.round(zoom * 100)}%</span>
+          <button onClick={() => setZoom(z => Math.min(2, z + 0.15))}
+            className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors" title="Zoom in">
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => setZoom(1)}
-            className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground border border-border rounded transition-colors">
-            <RefreshCw className="w-3 h-3" />
-          </button>
+
+          {/* Settings */}
           {!readOnly && (
-            <button onClick={exportSVG}
-              className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-widest text-[10px] px-3 py-1.5 rounded transition-colors">
-              <Download className="w-3 h-3" /> Export SVG
+            <button onClick={() => setShowSettings(s => !s)}
+              className={`p-1.5 rounded border transition-colors ${showSettings ? "bg-primary/10 border-primary/40 text-primary" : "hover:bg-secondary border-transparent text-muted-foreground hover:text-foreground"}`}
+              title="Symbology & Colour settings">
+              <Palette className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 px-4 py-2 border-b border-border bg-secondary/10">
-        {[
-          { type: "infantry",  label: "Infantry"  },
-          { type: "armor",     label: "Armor"     },
-          { type: "artillery", label: "Artillery" },
-          { type: "cavalry",   label: "Recon"     },
-          { type: "engineer",  label: "Engineer"  },
-          { type: "medical",   label: "Medical"   },
-          { type: "hq",        label: "HQ"        },
-        ].map(item => (
-          <div key={item.type} className="flex items-center gap-1.5">
-            <MilSymbol unitType={item.type} echelon="platoon" size={24} />
-            <span className="text-[10px] text-muted-foreground font-sans">{item.label}</span>
+      {/* Settings Panel */}
+      {showSettings && !readOnly && (
+        <div className="px-4 py-3 border-b border-border bg-secondary/10 flex flex-wrap gap-6">
+          {/* Standard */}
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <label className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+              <Flag className="w-3 h-3" /> Symbology Standard
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {SYMBOLOGY_STANDARDS.map(s => (
+                <button key={s.id} onClick={() => updateSettings({ ...settings, standard: s.id })}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-[11px] font-sans transition-all ${
+                    settings.standard === s.id
+                      ? "bg-primary/15 border-primary/50 text-primary font-bold"
+                      : "border-border hover:border-border/80 text-muted-foreground hover:text-foreground bg-background"
+                  }`}>
+                  <span>{s.flag}</span> {s.label}
+                </button>
+              ))}
+            </div>
           </div>
-        ))}
-        <span className="text-[10px] text-muted-foreground font-sans ml-auto self-center hidden md:block">
-          Hover unit · click to edit · + to add subordinate
-        </span>
-      </div>
+
+          {/* Affiliation / Colour */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+              <Palette className="w-3 h-3" /> Symbol Colour
+            </label>
+            <div className="flex gap-2">
+              {AFFILIATIONS.map(a => (
+                <button key={a.id} onClick={() => updateSettings({ ...settings, affiliation: a.id })}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded border text-[11px] font-sans transition-all ${
+                    settings.affiliation === a.id
+                      ? "border-white/30 font-bold text-white"
+                      : "border-border hover:border-border/80 text-muted-foreground hover:text-foreground bg-background"
+                  }`}
+                  style={settings.affiliation === a.id ? { backgroundColor: a.color, borderColor: a.color } : {}}>
+                  <div className="w-3 h-3 rounded-full border border-white/30" style={{ backgroundColor: a.color }} />
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Canvas */}
       <div ref={containerRef} className="overflow-auto p-8 min-h-[400px] bg-background">
@@ -476,6 +755,9 @@ export default function OrbatBuilder({ value, onChange, readOnly = false }: Orba
             onAddChild={(parentId) => updateTree(addChildTo(parentId, tree))}
             isRoot
             readOnly={readOnly}
+            roster={roster}
+            standard={settings.standard}
+            affiliation={settings.affiliation}
           />
         </div>
       </div>

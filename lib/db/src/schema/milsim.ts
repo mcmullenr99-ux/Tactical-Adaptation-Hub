@@ -15,6 +15,12 @@ export const milsimGroupsTable = pgTable("milsim_groups", {
   status: text("status").notNull().default("pending"), // pending | approved | featured
   ownerId: integer("owner_id").notNull().references(() => usersTable.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  // Discovery / filter fields
+  country: text("country"),
+  language: text("language"),
+  unitType: text("unit_type"),
+  games: text("games").array(),
+  tags: text("tags").array(),
 });
 
 export const milsimRolesTable = pgTable("milsim_roles", {

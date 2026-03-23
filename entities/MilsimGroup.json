@@ -34,8 +34,7 @@
         "pending",
         "approved",
         "featured",
-        "rejected",
-        "suspended"
+        "rejected"
       ]
     },
     "owner_id": {
@@ -45,8 +44,33 @@
       "type": "string"
     },
     "visibility": {
+      "type": "string"
+    },
+    "games": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Games the group plays"
+    },
+    "country": {
       "type": "string",
-      "description": "JSON string of per-section OPSEC visibility flags"
+      "description": "Primary country / nationality of the group"
+    },
+    "language": {
+      "type": "string",
+      "description": "Primary language spoken in ops"
+    },
+    "unit_type": {
+      "type": "string",
+      "description": "Type of unit (e.g. Infantry, Armour, Special Forces, etc.)"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Free-form tags for discoverability"
     }
   },
   "required": [],

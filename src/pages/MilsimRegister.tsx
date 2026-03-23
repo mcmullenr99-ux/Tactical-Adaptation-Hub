@@ -16,9 +16,39 @@ interface FormData {
   logoUrl: string;
   sops: string;
   orbat: string;
+  country: string;
+  language: string;
+  unitType: string;
+  games: string[];
 }
 
-const STEPS = ["Identity", "About", "Doctrine", "Review"];
+const GAMES_LIST = [
+  "Arma 3", "Arma Reforger", "DCS World", "Squad", "Hell Let Loose",
+  "Post Scriptum", "Insurgency: Sandstorm", "GHPC", "Foxhole", "Other",
+];
+
+const UNIT_TYPES_LIST = [
+  "Infantry", "Armour", "Mechanized", "Motorized", "Special Forces",
+  "Aviation", "Artillery", "Logistics", "Reconnaissance", "Engineers",
+  "Naval", "Mixed Arms", "Other",
+];
+
+const COUNTRIES_LIST = [
+  "🇬🇧 United Kingdom", "🇺🇸 United States", "🇨🇦 Canada",
+  "🇦🇺 Australia", "🇳🇿 New Zealand", "🇩🇪 Germany", "🇫🇷 France",
+  "🇮🇹 Italy", "🇵🇱 Poland", "🇳🇱 Netherlands", "🇳🇴 Norway",
+  "🇸🇪 Sweden", "🇩🇰 Denmark", "🇧🇪 Belgium", "🇪🇸 Spain",
+  "🇵🇹 Portugal", "🇹🇷 Turkey", "🇯🇵 Japan", "🇰🇷 South Korea",
+  "🇧🇷 Brazil", "International", "Other",
+];
+
+const LANGUAGES_LIST = [
+  "English", "German", "French", "Spanish", "Italian", "Polish",
+  "Dutch", "Portuguese", "Norwegian", "Swedish", "Danish", "Turkish",
+  "Japanese", "Korean", "Other",
+];
+
+const STEPS = ["Identity", "About", "Details", "Doctrine", "Review"];
 
 export default function MilsimRegister() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -28,8 +58,8 @@ export default function MilsimRegister() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
-    defaultValues: { name: "", tagLine: "", description: "", discordUrl: "", websiteUrl: "", logoUrl: "", sops: "", orbat: "" },
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
+    defaultValues: { name: "", tagLine: "", description: "", discordUrl: "", websiteUrl: "", logoUrl: "", sops: "", orbat: "", country: "", language: "", unitType: "", games: [] },
   });
 
   const values = watch();
@@ -49,6 +79,10 @@ export default function MilsimRegister() {
           logoUrl: data.logoUrl || undefined,
           sops: data.sops || undefined,
           orbat: data.orbat || undefined,
+          country: data.country || undefined,
+          language: data.language || undefined,
+          unitType: data.unitType || undefined,
+          games: data.games?.length ? data.games : undefined,
         }),
       });
       setSuccess(true);
@@ -185,8 +219,61 @@ export default function MilsimRegister() {
               </div>
             )}
 
-            {/* Step 2: Doctrine */}
+
+            {/* Step 2: Details */}
             {step === 2 && (
+              <div className="space-y-6">
+                <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-6">Unit Details</h2>
+                <Field label="Primary Country / Nationality" hint="Where most of your members are based">
+                  <select {...register("country")} className="input-field">
+                    <option value="">Select country...</option>
+                    {COUNTRIES_LIST.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </Field>
+                <Field label="Primary Language" hint="Language used during operations">
+                  <select {...register("language")} className="input-field">
+                    <option value="">Select language...</option>
+                    {LANGUAGES_LIST.map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </Field>
+                <Field label="Unit Type" hint="What kind of unit are you?">
+                  <select {...register("unitType")} className="input-field">
+                    <option value="">Select unit type...</option>
+                    {UNIT_TYPES_LIST.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </Field>
+                <div>
+                  <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Games You Play</label>
+                  <p className="text-xs text-muted-foreground font-sans mb-3">Select all that apply.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {GAMES_LIST.map(game => {
+                      const selected = (values.games ?? []).includes(game);
+                      return (
+                        <button
+                          key={game}
+                          type="button"
+                          onClick={() => {
+                            const current = values.games ?? [];
+                            const next = selected ? current.filter(g => g !== game) : [...current, game];
+                            setValue("games", next);
+                          }}
+                          className={`px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                            selected
+                              ? "bg-primary/15 border-primary/50 text-primary"
+                              : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                          }`}
+                        >
+                          {game}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Doctrine */}
+            {step === 3 && (
               <div className="space-y-6">
                 <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-6">Doctrine</h2>
                 <Field label="SOPs — Standard Operating Procedures" hint="Rules of engagement, communication standards, engagement protocols, etc.">
@@ -200,8 +287,8 @@ export default function MilsimRegister() {
               </div>
             )}
 
-            {/* Step 3: Review */}
-            {step === 3 && (
+            {/* Step 4: Review */}
+            {step === 4 && (
               <div className="space-y-5">
                 <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-6">Review & Submit</h2>
                 <div className="bg-card border border-border rounded-lg divide-y divide-border">
