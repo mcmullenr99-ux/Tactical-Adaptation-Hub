@@ -20,6 +20,7 @@ interface GroupDetail {
   logoUrl: string | null; sops: string | null; orbat: string | null;
   status: string; createdAt: string;
   stream_url: string | null; is_live: boolean;
+  visibility: string | null;
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
@@ -87,16 +88,26 @@ export default function MilsimGroup() {
   const roleById = Object.fromEntries(group.roles.map((r) => [r.id, r]));
   const embedUrl = group.stream_url ? getEmbedUrl(group.stream_url) : null;
 
+  const DEFAULT_VIS: Record<string, boolean> = {
+    roles: true, ranks: true, roster: true, awards: true,
+    sops: false, orbat: false, appQuestions: true,
+    memberCount: true, discordUrl: true, websiteUrl: true,
+  };
+  const vis: Record<string, boolean> = (() => {
+    try { if (group.visibility) return { ...DEFAULT_VIS, ...JSON.parse(group.visibility) }; } catch {}
+    return { ...DEFAULT_VIS };
+  })();
+
   const TABS: { id: Tab; label: string; icon: typeof Shield; show: boolean }[] = [
     { id: "overview", label: "Overview", icon: Shield, show: true },
     { id: "stream", label: "Live", icon: Radio, show: !!group.stream_url },
-    { id: "roles", label: "Roles", icon: Crosshair, show: group.roles.length > 0 },
-    { id: "ranks", label: "Ranks", icon: Award, show: group.ranks.length > 0 },
-    { id: "roster", label: "Roster", icon: Users, show: group.roster.length > 0 },
-    { id: "awards", label: "Commendations", icon: Medal, show: true },
-    { id: "sops", label: "SOPs", icon: BookOpen, show: !!group.sops },
-    { id: "orbat", label: "ORBAT", icon: Map, show: !!group.orbat },
-    { id: "apply", label: "Apply", icon: FileText, show: group.questions.length > 0 },
+    { id: "roles", label: "Roles", icon: Crosshair, show: group.roles.length > 0 && vis.roles },
+    { id: "ranks", label: "Ranks", icon: Award, show: group.ranks.length > 0 && vis.ranks },
+    { id: "roster", label: "Roster", icon: Users, show: group.roster.length > 0 && vis.roster },
+    { id: "awards", label: "Commendations", icon: Medal, show: vis.awards },
+    { id: "sops", label: "SOPs", icon: BookOpen, show: !!group.sops && vis.sops },
+    { id: "orbat", label: "ORBAT", icon: Map, show: !!group.orbat && vis.orbat },
+    { id: "apply", label: "Apply", icon: FileText, show: group.questions.length > 0 && vis.appQuestions },
   ];
 
   return (
@@ -146,13 +157,13 @@ export default function MilsimGroup() {
                 <p className="font-display font-bold uppercase tracking-widest text-primary text-sm mb-3">{group.tagLine}</p>
               )}
               <div className="flex items-center gap-3 flex-wrap">
-                {group.discordUrl && (
+                {group.discordUrl && vis.discordUrl && (
                   <a href={group.discordUrl} target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground px-4 py-2 rounded text-xs font-display font-bold uppercase tracking-wider transition-all">
                     Discord <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
-                {group.websiteUrl && (
+                {group.websiteUrl && vis.websiteUrl && (
                   <a href={group.websiteUrl} target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground px-4 py-2 rounded text-xs font-display font-bold uppercase tracking-wider transition-all">
                     <Globe className="w-3.5 h-3.5" /> Website <ExternalLink className="w-3 h-3" />
@@ -164,9 +175,11 @@ export default function MilsimGroup() {
                     <Radio className="w-3.5 h-3.5" /> Watch Live
                   </button>
                 )}
+                {vis.memberCount && (
                 <span className="text-xs text-muted-foreground font-sans">
                   {group.roster.length} member{group.roster.length !== 1 ? "s" : ""}
                 </span>
+                )}
               </div>
             </div>
           </div>
@@ -206,11 +219,11 @@ export default function MilsimGroup() {
               )}
               <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
-                  { label: "Roles", value: group.roles.length, icon: Crosshair },
-                  { label: "Ranks", value: group.ranks.length, icon: Award },
-                  { label: "Members", value: group.roster.length, icon: Users },
-                  { label: "App Questions", value: group.questions.length, icon: FileText },
-                ].map((stat) => (
+                  { label: "Roles", value: group.roles.length, icon: Crosshair, visKey: "roles" },
+                  { label: "Ranks", value: group.ranks.length, icon: Award, visKey: "ranks" },
+                  { label: "Members", value: group.roster.length, icon: Users, visKey: "memberCount" },
+                  { label: "App Questions", value: group.questions.length, icon: FileText, visKey: "appQuestions" },
+                ].filter(stat => vis[stat.visKey]).map((stat) => (
                   <div key={stat.label} className="bg-card border border-border rounded-lg p-4 text-center">
                     <stat.icon className="w-5 h-5 text-primary mx-auto mb-2" />
                     <div className="font-display font-black text-2xl text-foreground">{stat.value}</div>
