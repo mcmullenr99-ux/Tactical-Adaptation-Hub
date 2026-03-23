@@ -142,10 +142,10 @@ function MilSymbol({ unitType, echelon, size = 56 }: { unitType: string; echelon
   }, [unitType, echelon, size]);
 
   if (!svg) {
-    // Placeholder while loading
+    // Placeholder while loading — uses a visible colored box so it doesn't look black
     return (
       <div
-        className="border border-border bg-card flex items-center justify-center text-muted-foreground font-display font-bold text-xs"
+        className="border border-primary/40 bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-xs rounded"
         style={{ width: size, height: size * 0.75 }}
       >
         {unitType.slice(0, 3).toUpperCase()}
@@ -264,13 +264,14 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
 
 // ─── Tree Node ────────────────────────────────────────────────────────────────
 
-function OrbatTreeNode({ node, onUpdate, onDelete, onAddChild, depth = 0, isRoot = false }: {
+function OrbatTreeNode({ node, onUpdate, onDelete, onAddChild, depth = 0, isRoot = false, readOnly = false }: {
   node: OrbatNode;
   onUpdate: (updated: OrbatNode) => void;
   onDelete: () => void;
   onAddChild: (parentId: string) => void;
   depth?: number;
   isRoot?: boolean;
+  readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [collapsed, setCollapsed] = useState(node.collapsed ?? false);
@@ -292,7 +293,7 @@ function OrbatTreeNode({ node, onUpdate, onDelete, onAddChild, depth = 0, isRoot
       <div className="relative flex flex-col items-center group">
         <div
           className={`relative flex flex-col items-center cursor-pointer select-none transition-all duration-150 ${depth === 0 ? "scale-110" : ""}`}
-          onClick={() => setEditing(true)}
+          onClick={() => !readOnly && setEditing(true)}
         >
           <MilSymbol unitType={node.unitType} echelon={node.echelon} size={depth === 0 ? 60 : 48} />
         </div>
@@ -308,7 +309,7 @@ function OrbatTreeNode({ node, onUpdate, onDelete, onAddChild, depth = 0, isRoot
           <div className="text-[9px] text-muted-foreground font-sans">{node.slots} slots</div>
         </div>
 
-        <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
+        {!readOnly && <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
           <button onClick={e => { e.stopPropagation(); setEditing(true); }}
             className="w-5 h-5 bg-secondary hover:bg-secondary/70 border border-border rounded text-foreground flex items-center justify-center transition-colors" title="Edit">
             <Settings className="w-3 h-3" />
@@ -323,7 +324,7 @@ function OrbatTreeNode({ node, onUpdate, onDelete, onAddChild, depth = 0, isRoot
               <Trash2 className="w-3 h-3" />
             </button>
           )}
-        </div>
+        </div>}
       </div>
 
       {hasChildren && (
@@ -343,14 +344,14 @@ function OrbatTreeNode({ node, onUpdate, onDelete, onAddChild, depth = 0, isRoot
             {node.children.map((child, idx) => (
               <div key={child.id} className="relative flex flex-col items-center">
                 <div className="w-px h-4 bg-border" />
-                <OrbatTreeNode node={child} onUpdate={u => updateChild(idx, u)} onDelete={() => deleteChild(idx)} onAddChild={onAddChild} depth={depth + 1} />
+                <OrbatTreeNode node={child} onUpdate={u => updateChild(idx, u)} onDelete={() => deleteChild(idx)} onAddChild={onAddChild} depth={depth + 1} readOnly={readOnly} />
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {editing && <NodeEditor node={node} onSave={handleSave} onClose={() => setEditing(false)} />}
+      {editing && !readOnly && <NodeEditor node={node} onSave={handleSave} onClose={() => setEditing(false)} />}
     </div>
   );
 }
@@ -474,6 +475,7 @@ export default function OrbatBuilder({ value, onChange, readOnly = false }: Orba
             onDelete={() => {}}
             onAddChild={(parentId) => updateTree(addChildTo(parentId, tree))}
             isRoot
+            readOnly={readOnly}
           />
         </div>
       </div>
