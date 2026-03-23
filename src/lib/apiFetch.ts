@@ -1,40 +1,42 @@
-export const FUNCTIONS_BASE = "https://agent-tag-lead-developer-cff87ae4.base44.app/api/functions";
+// Base44 backend function base URL
+export const FUNCTIONS_BASE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions";
 
 // Route map: /api/<prefix> → function name
 const ROUTE_MAP: Record<string, string> = {
   "/api/auth/login":            "authLogin",
-  "/api/auth/register":         "authRegister",
+  "/api/auth/register":        "authRegister",
   "/api/auth/me":               "authMe",
   "/api/auth/logout":           "authLogout",
   "/api/auth/profile":          "authUpdateProfile",
+  "/api/auth/password":         "authUpdateProfile",
   "/api/auth/forgot-password":  "authForgotPassword",
   "/api/auth/reset-password":   "authResetPassword",
-  "/api/events":                "events",
-  "/api/posts":                 "posts",
-  "/api/messages":              "messages",
-  "/api/friends":               "friends",
+  "/api/auth/account":          "authMe",
+  "/api/auth/2fa":              "twoFactor",
+  "/api/duty-status":           "users",
   "/api/users":                 "users",
-  "/api/milsim-groups":         "milsimGroups",
-  "/api/milsim-ops":            "milsimOps",
-  "/api/milsim-aars":           "milsimAars",
-  "/api/milsim-briefings":      "milsimBriefings",
-  "/api/milsim-applications":   "milsimApplications",
-  "/api/milsim-awards":         "milsimAwards",
-  "/api/qualifications":        "qualifications",
-  "/api/staff-applications":    "staffApplications",
-  "/api/motd":                  "motd",
+  "/api/messages":              "messages",
+  "/api/events":                "events",
+  "/api/ops":                   "events",
+  "/api/posts":                 "posts",
+  "/api/friends":               "friends",
   "/api/notifications":         "notifications",
+  "/api/milsim-groups":         "milsimGroups",
+  "/api/motd":                  "motd",
   "/api/admin":                 "admin",
   "/api/security":              "security",
+  "/api/staff-applications":    "staffApplications",
   "/api/stats":                 "stats",
-  "/api/duty-roster":           "dutyRoster",
+  "/api/support":               "support",
+  "/api/stripe":                "stripe",
   "/api/referral-code":         "users",
 };
 
-/** Resolve /api/... path to a full Base44 function URL */
+/** Resolve /api/... path to a full Base44 function URL, using ?path= for sub-paths */
 function resolveUrl(path: string): string {
   if (path.startsWith("http")) return path;
 
+  // Try longest prefix match
   let bestPrefix = "";
   let bestFn = "";
   for (const [prefix, fn] of Object.entries(ROUTE_MAP)) {
@@ -45,16 +47,19 @@ function resolveUrl(path: string): string {
   }
 
   if (bestFn) {
-    // Strip the /api/<resource> prefix and pass the rest as the sub-path
-    const subPath = path.slice(bestPrefix.length); // e.g. "" or "/inbox" or "/123/read"
-    return `${FUNCTIONS_BASE}/${bestFn}${subPath}`;
+    const subPath = path.slice(bestPrefix.length); // e.g. "" or "/mine/own" or "/123/info"
+    if (subPath) {
+      // Pass sub-path as query param since Base44 functions only route at root
+      return `${FUNCTIONS_BASE}/${bestFn}?path=${encodeURIComponent(subPath)}`;
+    }
+    return `${FUNCTIONS_BASE}/${bestFn}`;
   }
 
-  // Fallback: convert /api/foo/bar → /functions/foo/bar
+  // Fallback
   return `${FUNCTIONS_BASE}${path.replace(/^\/api/, "")}`;
 }
 
-/** Get the stored auth token (set by AuthContext after login) */
+/** Get the stored auth token */
 function getAuthToken(): string | null {
   try {
     return sessionStorage.getItem("tag_auth_token") ?? localStorage.getItem("tag_auth_token");
@@ -79,17 +84,11 @@ export async function apiFetch<T = unknown>(path: string, options?: RequestInit)
   const res = await fetch(url, {
     ...options,
     headers,
-    // No credentials:include needed — we use Bearer tokens
   });
 
   if (res.status === 204) return undefined as T;
 
   const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    const msg = (data as any)?.message ?? (data as any)?.error ?? `HTTP ${res.status}`;
-    throw new Error(msg);
-  }
-
+  if (!res.ok) throw new Error(data?.error ?? res.statusText);
   return data as T;
 }
