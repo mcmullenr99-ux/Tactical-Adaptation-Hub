@@ -295,6 +295,7 @@ function SopsTab({ group, onSaved, setSaving, saving, showMsg, roster }: any) {
         <OrbatBuilder
           value={orbatValue}
           onChange={(json) => setValue("orbat", json)}
+          groupName={group.name}
           roster={(roster ?? []).map((r: any) => ({
             id: r.id,
             callsign: r.callsign,

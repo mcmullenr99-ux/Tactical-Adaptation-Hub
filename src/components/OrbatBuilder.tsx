@@ -582,6 +582,7 @@ interface OrbatBuilderProps {
   onChange?: (json: string) => void;
   readOnly?: boolean;
   roster?: RosterMember[];
+  groupName?: string;
 }
 
 const DEFAULT_ORBAT: OrbatNode = {
@@ -602,7 +603,7 @@ interface OrbatSettings {
 
 const DEFAULT_SETTINGS: OrbatSettings = { standard: "APP6", affiliation: "friendly" };
 
-export default function OrbatBuilder({ value, onChange, readOnly = false, roster = [] }: OrbatBuilderProps) {
+export default function OrbatBuilder({ value, onChange, readOnly = false, roster = [], groupName }: OrbatBuilderProps) {
   const parseData = (): { tree: OrbatNode; settings: OrbatSettings } => {
     try {
       if (value) {
@@ -626,6 +627,7 @@ export default function OrbatBuilder({ value, onChange, readOnly = false, roster
   const [zoom, setZoom] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const emitChange = useCallback((newTree: OrbatNode, newSettings: OrbatSettings) => {
     onChange?.(JSON.stringify({ tree: newTree, settings: newSettings }));
@@ -639,6 +641,162 @@ export default function OrbatBuilder({ value, onChange, readOnly = false, roster
   const updateSettings = (newSettings: OrbatSettings) => {
     setSettings(newSettings);
     emitChange(tree, newSettings);
+  };
+
+  const exportOrbat = () => {
+    const printWindow = window.open('', '_blank', 'width=1200,height=900');
+    if (!printWindow) return;
+
+    // Capture the current ORBAT canvas HTML (milsymbol SVGs are inline already)
+    const canvasEl = containerRef.current?.querySelector('[data-orbat-canvas]');
+    const canvasHTML = canvasEl ? canvasEl.innerHTML : '';
+
+    const affiliationColor = AFFILIATIONS.find(a => a.id === settings.affiliation)?.color ?? '#006ba6';
+    const standardLabel = SYMBOLOGY_STANDARDS.find(s => s.id === settings.standard)?.label ?? 'NATO APP-6';
+    const title = groupName ?? 'Unit ORBAT';
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>${title} — ORBAT</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@400;600&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #ffffff;
+      color: #1a1a1a;
+      font-family: 'Inter', Arial, sans-serif;
+      padding: 32px 40px;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .orbat-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 3px solid ${affiliationColor};
+      padding-bottom: 16px;
+      margin-bottom: 32px;
+    }
+    .orbat-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #111;
+    }
+    .orbat-subtitle {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .orbat-meta {
+      text-align: right;
+      font-size: 11px;
+      color: #888;
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+    }
+    .orbat-meta strong { color: #444; }
+
+    /* Classification bar */
+    .classification {
+      text-align: center;
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #fff;
+      background: ${affiliationColor};
+      padding: 4px 12px;
+      margin-bottom: 24px;
+      display: inline-block;
+      border-radius: 2px;
+    }
+
+    /* Canvas */
+    .orbat-canvas {
+      overflow-x: auto;
+      display: flex;
+      justify-content: center;
+      padding: 16px 0 40px;
+    }
+
+    /* Tree structure — preserve flex layout from the component */
+    .orbat-canvas * {
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+
+    /* Override dark theme colors for print */
+    .orbat-canvas [class*="text-muted"] { color: #555 !important; }
+    .orbat-canvas [class*="text-foreground"] { color: #111 !important; }
+    .orbat-canvas [class*="bg-background"] { background: transparent !important; }
+    .orbat-canvas [class*="bg-card"] { background: transparent !important; }
+    .orbat-canvas [class*="bg-secondary"] { background: #f5f5f5 !important; }
+    .orbat-canvas [class*="border-border"] { border-color: #ddd !important; }
+
+    /* Fix connector lines */
+    .orbat-canvas .bg-border { background-color: #999 !important; }
+    .orbat-canvas .w-px { background-color: #999 !important; }
+
+    /* Member name chips */
+    .orbat-canvas [style*="15"] { background-color: rgba(0,107,166,0.08) !important; }
+
+    /* Footer */
+    .orbat-footer {
+      margin-top: 48px;
+      padding-top: 12px;
+      border-top: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #aaa;
+      font-family: 'Inter', sans-serif;
+    }
+
+    @media print {
+      body { padding: 16px 20px; }
+      @page { size: A3 landscape; margin: 12mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="orbat-header">
+    <div>
+      <div class="orbat-title">${title}</div>
+      <div class="orbat-subtitle">Order of Battle</div>
+    </div>
+    <div class="orbat-meta">
+      <strong>Standard:</strong> ${standardLabel}<br/>
+      <strong>Generated:</strong> ${dateStr}<br/>
+      <strong>Classification:</strong> UNCLASSIFIED
+    </div>
+  </div>
+
+  <div class="orbat-canvas">
+    ${canvasHTML}
+  </div>
+
+  <div class="orbat-footer">
+    <span>${title} — Order of Battle</span>
+    <span>UNCLASSIFIED // ${standardLabel} // ${dateStr}</span>
+  </div>
+
+  <script>
+    // Remove any edit controls (hover buttons) before printing
+    document.querySelectorAll('.group .absolute').forEach(el => el.remove());
+    // Wait for SVGs / fonts to settle then print
+    window.addEventListener('load', () => setTimeout(() => window.print(), 600));
+  </script>
+</body>
+</html>`);
+    printWindow.document.close();
   };
 
   const addChildTo = (parentId: string, root: OrbatNode): OrbatNode => {
@@ -697,6 +855,14 @@ export default function OrbatBuilder({ value, onChange, readOnly = false, roster
               <Palette className="w-3.5 h-3.5" />
             </button>
           )}
+
+          {/* Export / Print */}
+          <button
+            onClick={exportOrbat}
+            className="p-1.5 hover:bg-secondary rounded border border-transparent hover:border-border text-muted-foreground hover:text-foreground transition-colors"
+            title="Export / Print ORBAT">
+            <Download className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
@@ -747,6 +913,7 @@ export default function OrbatBuilder({ value, onChange, readOnly = false, roster
 
       {/* Canvas */}
       <div ref={containerRef} className="overflow-auto p-8 min-h-[400px] bg-background">
+        <div data-orbat-canvas style={{ display: "contents" }}>
         <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center", transition: "transform 0.15s ease" }}>
           <OrbatTreeNode
             node={tree}
@@ -759,7 +926,7 @@ export default function OrbatBuilder({ value, onChange, readOnly = false, roster
             standard={settings.standard}
             affiliation={settings.affiliation}
           />
-        </div>
+        </div></div>
       </div>
     </div>
   );

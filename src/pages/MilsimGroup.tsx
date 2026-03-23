@@ -360,6 +360,7 @@ export default function MilsimGroup() {
             <div className="w-full">
               <OrbatBuilder
                 value={group.orbat ?? undefined}
+                groupName={group.name}
                 readOnly
                 roster={(group.roster ?? []).map((r: any) => ({
                   id: r.id,
