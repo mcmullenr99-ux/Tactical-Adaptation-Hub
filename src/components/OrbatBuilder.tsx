@@ -8,6 +8,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { COUNTRIES, countryFlag } from "@/lib/countries";
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Save, Download,
   ZoomIn, ZoomOut, Settings, X, Users, Palette, Flag,
@@ -33,6 +34,178 @@ export const AFFILIATIONS = [
   { id: "neutral",  label: "Neutral",  sidcChar: "4", color: "#007243" },
   { id: "unknown",  label: "Unknown",  sidcChar: "1", color: "#ffb300" },
 ];
+
+// ─── National Symbology Resolver ─────────────────────────────────────────────
+// Maps country codes to their symbology approach.
+// "app6"  → uses milsymbol APP-6 rendering (NATO + Five Eyes)
+// "2525"  → uses milsymbol MIL-STD-2525 rendering (US)
+// "custom"→ uses hand-coded SVG (Russia, China, others with own doctrine)
+
+export type NationalSymStandard = "app6" | "2525" | "custom";
+
+export interface NationalProfile {
+  standard: NationalSymStandard;
+  label: string;
+  flag: string;
+  // Extra unit types specific to this nation (displayed alongside global types)
+  extraUnitTypes?: { id: string; label: string; category: string; sidc?: string }[];
+}
+
+export const NATIONAL_PROFILES: Record<string, NationalProfile> = {
+  // ── Five Eyes / NATO ──
+  GB: { standard: "app6", label: "British Army", flag: "🇬🇧",
+    extraUnitTypes: [
+      { id: "reme",            label: "REME",                     category: "Support" },
+      { id: "royal_marines",   label: "Royal Marines",            category: "Combat"  },
+      { id: "royal_artillery", label: "Royal Artillery",          category: "Fires"   },
+      { id: "rac",             label: "Royal Armoured Corps",     category: "Combat"  },
+      { id: "parachute_regt",  label: "Parachute Regiment",       category: "Combat"  },
+      { id: "sas",             label: "SAS",                      category: "Combat"  },
+      { id: "sbs",             label: "SBS",                      category: "Combat"  },
+    ]
+  },
+  US: { standard: "2525", label: "US Military", flag: "🇺🇸",
+    extraUnitTypes: [
+      { id: "usmc",            label: "USMC",                     category: "Combat"  },
+      { id: "rangers",         label: "Rangers",                  category: "Combat"  },
+      { id: "delta",           label: "Delta Force",              category: "Combat"  },
+      { id: "seals",           label: "Navy SEALs",               category: "Combat"  },
+      { id: "psyop",           label: "PSYOP",                    category: "Support" },
+      { id: "civil_affairs",   label: "Civil Affairs",            category: "Support" },
+    ]
+  },
+  CA: { standard: "app6", label: "Canadian Armed Forces", flag: "🇨🇦",
+    extraUnitTypes: [
+      { id: "jтf2",            label: "JTF2",                     category: "Combat"  },
+      { id: "rcd",             label: "Royal Canadian Dragoons",  category: "Combat"  },
+    ]
+  },
+  AU: { standard: "app6", label: "Australian Army", flag: "🇦🇺",
+    extraUnitTypes: [
+      { id: "sasr",            label: "SASR",                     category: "Combat"  },
+      { id: "commandos_aus",   label: "2nd Commando Regt",        category: "Combat"  },
+    ]
+  },
+  NZ: { standard: "app6", label: "New Zealand Army", flag: "🇳🇿",
+    extraUnitTypes: [
+      { id: "nzsas",           label: "NZSAS",                    category: "Combat"  },
+    ]
+  },
+  // ── NATO Europe ──
+  DE: { standard: "app6", label: "Bundeswehr", flag: "🇩🇪",
+    extraUnitTypes: [
+      { id: "ksk",             label: "KSK",                      category: "Combat"  },
+      { id: "panzergrenadier", label: "Panzergrenadier",          category: "Combat"  },
+    ]
+  },
+  FR: { standard: "app6", label: "French Army", flag: "🇫🇷",
+    extraUnitTypes: [
+      { id: "legion",          label: "Foreign Legion",           category: "Combat"  },
+      { id: "gign",            label: "GIGN",                     category: "Combat"  },
+    ]
+  },
+  PL: { standard: "app6", label: "Polish Army",   flag: "🇵🇱" },
+  NO: { standard: "app6", label: "Norwegian Army", flag: "🇳🇴",
+    extraUnitTypes: [
+      { id: "fsk",             label: "FSK",                      category: "Combat"  },
+    ]
+  },
+  SE: { standard: "app6", label: "Swedish Army",  flag: "🇸🇪" },
+  FI: { standard: "app6", label: "Finnish Army",  flag: "🇫🇮" },
+  NL: { standard: "app6", label: "Dutch Army",    flag: "🇳🇱" },
+  BE: { standard: "app6", label: "Belgian Army",  flag: "🇧🇪" },
+  IT: { standard: "app6", label: "Italian Army",  flag: "🇮🇹",
+    extraUnitTypes: [
+      { id: "alpini",          label: "Alpini",                   category: "Combat"  },
+      { id: "gis",             label: "GIS",                      category: "Combat"  },
+    ]
+  },
+  ES: { standard: "app6", label: "Spanish Army",  flag: "🇪🇸",
+    extraUnitTypes: [
+      { id: "legion_es",       label: "La Legión",                category: "Combat"  },
+      { id: "uoe",             label: "UOE",                      category: "Combat"  },
+    ]
+  },
+  TR: { standard: "app6", label: "Turkish Armed Forces", flag: "🇹🇷",
+    extraUnitTypes: [
+      { id: "ozel_kuvvetler",  label: "Özel Kuvvetler",           category: "Combat"  },
+    ]
+  },
+  GR: { standard: "app6", label: "Hellenic Army", flag: "🇬🇷" },
+  // ── Eastern ──
+  RU: { standard: "custom", label: "Russian Armed Forces", flag: "🇷🇺",
+    extraUnitTypes: [
+      { id: "vdv",             label: "VDV (Airborne)",           category: "Combat"  },
+      { id: "spetsnaz",        label: "Spetsnaz",                 category: "Combat"  },
+      { id: "fsb",             label: "FSB",                      category: "Support" },
+      { id: "rosgvardiya",     label: "Rosgvardiya",              category: "Combat"  },
+      { id: "wagner",          label: "Wagner Group",             category: "Combat"  },
+    ]
+  },
+  UA: { standard: "app6", label: "Ukrainian Armed Forces", flag: "🇺🇦",
+    extraUnitTypes: [
+      { id: "azov",            label: "Azov Brigade",             category: "Combat"  },
+      { id: "bureviy",         label: "Bureviy",                  category: "Combat"  },
+    ]
+  },
+  CN: { standard: "custom", label: "People's Liberation Army", flag: "🇨🇳",
+    extraUnitTypes: [
+      { id: "pla_sof",         label: "PLA Special Forces",       category: "Combat"  },
+      { id: "pla_marines",     label: "PLAN Marines",             category: "Combat"  },
+      { id: "paf",             label: "People's Armed Police",    category: "Support" },
+    ]
+  },
+  KP: { standard: "custom", label: "KPA (North Korea)", flag: "🇰🇵",
+    extraUnitTypes: [
+      { id: "kpa_sof",         label: "KPA Reconnaissance Bureau", category: "Combat" },
+    ]
+  },
+  KR: { standard: "app6", label: "Republic of Korea Army", flag: "🇰🇷",
+    extraUnitTypes: [
+      { id: "rok_sof",         label: "ROK Special Forces",       category: "Combat"  },
+      { id: "udt_seal",        label: "UDT/SEAL",                 category: "Combat"  },
+    ]
+  },
+  // ── Middle East ──
+  IL: { standard: "app6", label: "Israel Defense Forces", flag: "🇮🇱",
+    extraUnitTypes: [
+      { id: "sayeret_matkal",  label: "Sayeret Matkal",           category: "Combat"  },
+      { id: "shayetet13",      label: "Shayetet 13",              category: "Combat"  },
+      { id: "golani",          label: "Golani Brigade",           category: "Combat"  },
+    ]
+  },
+  SA: { standard: "app6", label: "Saudi Arabian National Guard", flag: "🇸🇦" },
+  IR: { standard: "custom", label: "Iranian Armed Forces", flag: "🇮🇷",
+    extraUnitTypes: [
+      { id: "irgc",            label: "IRGC",                     category: "Combat"  },
+      { id: "quds_force",      label: "Quds Force",               category: "Combat"  },
+    ]
+  },
+  // ── Africa ──
+  ZA: { standard: "app6", label: "South African Army", flag: "🇿🇦",
+    extraUnitTypes: [
+      { id: "recces",          label: "Recces",                   category: "Combat"  },
+    ]
+  },
+  // ── Generic fallback ──
+  NATO: { standard: "app6", label: "NATO", flag: "🌍" },
+};
+
+// Helper: given a country code, return which milsymbol standard to use
+export function resolveNationalStandard(countryCode?: string, globalStandard?: string): string {
+  if (!countryCode) return globalStandard ?? "APP6";
+  const profile = NATIONAL_PROFILES[countryCode];
+  if (!profile) return globalStandard ?? "APP6";
+  if (profile.standard === "2525") return "2525";
+  if (profile.standard === "custom") return "APP6"; // milsymbol fallback; SVG override applied in MilSymbol
+  return "APP6";
+}
+
+// Helper: get all unit types available for a given nationality
+export function getUnitTypesForNationality(countryCode?: string) {
+  const extras = countryCode ? (NATIONAL_PROFILES[countryCode]?.extraUnitTypes ?? []) : [];
+  return [...NATO_UNIT_TYPES, ...extras];
+}
 
 // ─── Echelons ─────────────────────────────────────────────────────────────────
 
@@ -140,6 +313,7 @@ export interface OrbatNode {
   assignedMembers?: string[]; // callsigns assigned to this node
   children: OrbatNode[];
   collapsed?: boolean;
+  nationality?: string; // ISO 3166-1 alpha-2 country code
 }
 
 function generateId() {
@@ -154,12 +328,14 @@ function MilSymbol({
   standard = "APP6",
   affiliation = "friendly",
   size = 56,
+  nationality,
 }: {
   unitType: string;
   echelon: string;
   standard?: string;
   affiliation?: string;
   size?: number;
+  nationality?: string;
 }) {
   const [svg, setSvg] = useState<string>("");
   const affiliationData = AFFILIATIONS.find(a => a.id === affiliation) ?? AFFILIATIONS[0];
@@ -179,12 +355,8 @@ function MilSymbol({
       const echelonCode = echelonData?.echelonCode ?? "14";
       const sidc = baseSIDC.slice(0, 8) + echelonCode + baseSIDC.slice(10);
 
-      // milsymbol standard mapping
-      const stdMap: Record<string, string> = {
-        APP6: "APP6", APP6UK: "APP6", APP6CA: "APP6", APP6AU: "APP6",
-        APP6NZ: "APP6", APP6EU: "APP6", "2525": "2525",
-      };
-      const milStandard = stdMap[standard] ?? "APP6";
+      // Resolve rendering standard: nationality overrides global setting for 2525 nations
+      const milStandard = resolveNationalStandard(nationality, standard);
 
       try {
         const sym = new MS.Symbol(sidc, {
@@ -250,7 +422,8 @@ function NodeEditor({
 }) {
   const [draft, setDraft] = useState<OrbatNode>({ ...node, assignedMembers: node.assignedMembers ?? [] });
   const [memberSearch, setMemberSearch] = useState("");
-  const categories = Array.from(new Set(NATO_UNIT_TYPES.map(u => u.category)));
+  const availableUnitTypes = getUnitTypesForNationality(draft.nationality);
+  const categories = Array.from(new Set(availableUnitTypes.map(u => u.category)));
 
   const assignedSet = new Set(draft.assignedMembers ?? []);
   const filteredRoster = roster.filter(m =>
@@ -285,7 +458,7 @@ function NodeEditor({
           {/* Preview */}
           <div className="flex justify-center py-2">
             <div className="flex flex-col items-center gap-1">
-              <MilSymbol unitType={draft.unitType} echelon={draft.echelon} standard={standard} affiliation={affiliation} size={64} />
+              <MilSymbol unitType={draft.unitType} echelon={draft.echelon} standard={standard} affiliation={affiliation} size={64} nationality={draft.nationality} />
               <span className="text-xs text-muted-foreground font-sans mt-1">{draft.name || "Unnamed"}</span>
             </div>
           </div>
@@ -313,7 +486,7 @@ function NodeEditor({
               className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm font-sans focus:outline-none focus:border-primary transition-colors">
               {categories.map(cat => (
                 <optgroup key={cat} label={cat}>
-                  {NATO_UNIT_TYPES.filter(u => u.category === cat).map(u => (
+                  {availableUnitTypes.filter(u => u.category === cat).map(u => (
                     <option key={u.id} value={u.id}>{u.label}</option>
                   ))}
                 </optgroup>
@@ -340,6 +513,47 @@ function NodeEditor({
             <input type="number" min={1} max={9999} value={draft.slots}
               onChange={e => setDraft(d => ({ ...d, slots: parseInt(e.target.value) || 1 }))}
               className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm font-sans focus:outline-none focus:border-primary transition-colors" />
+          </div>
+
+          {/* Nationality */}
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
+              Nationality / Nation
+            </label>
+            <select
+              value={draft.nationality ?? ""}
+              onChange={e => setDraft(d => ({ ...d, nationality: e.target.value || undefined }))}
+              className="w-full bg-background border border-border rounded px-3 py-2 text-foreground text-sm font-sans focus:outline-none focus:border-primary transition-colors"
+            >
+              <option value="">— None / Global Standard —</option>
+              {/* Highlighted nations with specific profiles first */}
+              <optgroup label="── Profiled Nations ──">
+                {Object.entries(NATIONAL_PROFILES).map(([code, profile]) => (
+                  <option key={code} value={code}>
+                    {profile.flag} {profile.label} ({code})
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="── All Countries ──">
+                {COUNTRIES.filter(c => !NATIONAL_PROFILES[c.code]).map(c => (
+                  <option key={c.code} value={c.code}>
+                    {countryFlag(c.code)} {c.name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+            {draft.nationality && NATIONAL_PROFILES[draft.nationality] && (
+              <p className="text-[10px] text-muted-foreground font-sans mt-1.5">
+                {NATIONAL_PROFILES[draft.nationality].flag} {NATIONAL_PROFILES[draft.nationality].label}
+                {" · "}
+                {NATIONAL_PROFILES[draft.nationality].extraUnitTypes?.length
+                  ? `${NATIONAL_PROFILES[draft.nationality].extraUnitTypes!.length} extra unit types unlocked`
+                  : "Standard APP-6 symbols"
+                }
+                {NATIONAL_PROFILES[draft.nationality].standard === "2525" && " · 🇺🇸 Renders as MIL-STD-2525"}
+                {NATIONAL_PROFILES[draft.nationality].standard === "custom" && " · ⚠️ Custom doctrine — APP-6 fallback"}
+              </p>
+            )}
           </div>
 
           {/* Roster Member Assignment */}
@@ -440,7 +654,7 @@ function OrbatTreeNode({
   const [editing, setEditing] = useState(false);
   const [collapsed, setCollapsed] = useState(node.collapsed ?? false);
 
-  const unitType = NATO_UNIT_TYPES.find(u => u.id === node.unitType);
+  const unitType = getUnitTypesForNationality(node.nationality).find(u => u.id === node.unitType);
   const echelon = NATO_ECHELONS.find(e => e.id === node.echelon);
   const hasChildren = node.children.length > 0;
   const affiliationData = AFFILIATIONS.find(a => a.id === affiliation) ?? AFFILIATIONS[0];
@@ -471,6 +685,7 @@ function OrbatTreeNode({
             standard={standard}
             affiliation={affiliation}
             size={depth === 0 ? 60 : 48}
+            nationality={node.nationality}
           />
         </div>
 
@@ -483,6 +698,9 @@ function OrbatTreeNode({
             </div>
           )}
           <div className="text-[9px] text-muted-foreground font-sans truncate">
+            {node.nationality && (
+              <span className="mr-1">{countryFlag(node.nationality)}</span>
+            )}
             {echelon?.label} · {unitType?.label}
           </div>
           <div className="text-[9px] text-muted-foreground font-sans">{node.slots} slots</div>
