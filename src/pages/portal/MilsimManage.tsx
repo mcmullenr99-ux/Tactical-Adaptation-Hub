@@ -9,7 +9,8 @@ import {
   Shield, Crosshair, Award, Users, FileText, BookOpen,
   Plus, Trash2, Loader2, Save, CheckCircle2, AlertCircle, ExternalLink,
   Pencil, Check, X, Radio, Star, Medal, Wifi, WifiOff,
-  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp
+  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp,
+  Eye, EyeOff, Lock
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
@@ -25,10 +26,11 @@ interface GroupDetail {
   description: string | null; discordUrl: string | null; websiteUrl: string | null;
   logoUrl: string | null; sops: string | null; orbat: string | null; status: string;
   stream_url: string | null; is_live: boolean;
+  visibility: string | null;
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness";
+type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "opsec";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -86,6 +88,7 @@ export default function MilsimManage() {
     { id: "stream", label: "Stream", icon: Radio },
     { id: "sops", label: "SOPs / ORBAT", icon: BookOpen },
     { id: "questions", label: "App Questions", icon: FileText },
+    { id: "opsec", label: "OPSEC", icon: Lock },
   ];
 
   return (
@@ -148,6 +151,7 @@ export default function MilsimManage() {
           {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
           {tab === "sops" && <SopsTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
           {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+          {tab === "opsec" && <OpsecTab group={group} onSaved={setGroup} showMsg={showMsg} />}
         </motion.div>
       </div>
     </PortalLayout>
@@ -231,6 +235,102 @@ function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Doctrine
       </button>
     </form>
+  );
+}
+
+
+// ─── OPSEC Visibility Tab ─────────────────────────────────────────────────────
+
+const VISIBILITY_SECTIONS = [
+  { key: "roles",          label: "Roles",              description: "Show your defined unit roles to the public" },
+  { key: "ranks",          label: "Ranks",              description: "Display your rank structure on the public page" },
+  { key: "roster",         label: "Roster",             description: "Show the member roster (callsigns)" },
+  { key: "awards",         label: "Commendations",      description: "Display medals and commendations publicly" },
+  { key: "sops",           label: "SOPs",               description: "Show Standard Operating Procedures to the public" },
+  { key: "orbat",          label: "ORBAT",              description: "Display the Order of Battle chart publicly" },
+  { key: "appQuestions",   label: "App Questions",      description: "Show application questions to prospective recruits" },
+  { key: "memberCount",    label: "Member Count",       description: "Show the number of members on the public page" },
+  { key: "discordUrl",     label: "Discord Link",       description: "Display your Discord server link publicly" },
+  { key: "websiteUrl",     label: "Website Link",       description: "Display your website link publicly" },
+];
+
+const DEFAULT_VISIBILITY: Record<string, boolean> = {
+  roles: true, ranks: true, roster: true, awards: true,
+  sops: false, orbat: false, appQuestions: true,
+  memberCount: true, discordUrl: true, websiteUrl: true,
+};
+
+function OpsecTab({ group, onSaved, showMsg }: any) {
+  const parseVis = () => {
+    try { if (group.visibility) return { ...DEFAULT_VISIBILITY, ...JSON.parse(group.visibility) }; } catch {}
+    return { ...DEFAULT_VISIBILITY };
+  };
+  const [vis, setVis] = useState<Record<string, boolean>>(parseVis);
+  const [saving, setSaving] = useState(false);
+
+  const toggle = (key: string) => setVis(v => ({ ...v, [key]: !v[key] }));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, {
+        method: "PATCH",
+        body: JSON.stringify({ visibility: vis }),
+      });
+      onSaved(updated);
+      showMsg(true, "OPSEC settings saved.");
+    } catch (e: any) { showMsg(false, e.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3">
+        <Lock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-xs font-display font-bold uppercase tracking-wider text-amber-400 mb-0.5">OPSEC Control Panel</p>
+          <p className="text-xs text-muted-foreground font-sans">Control exactly what the public sees on your group profile. Toggle sections off to hide sensitive information from non-members. Changes take effect immediately after saving.</p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {VISIBILITY_SECTIONS.map(section => {
+          const visible = vis[section.key] ?? true;
+          return (
+            <div key={section.key}
+              className={`flex items-center justify-between gap-4 px-4 py-3 rounded-lg border transition-all ${visible ? "bg-card border-border" : "bg-secondary/20 border-border/40"}`}>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-7 h-7 rounded flex items-center justify-center shrink-0 transition-colors ${visible ? "bg-primary/15 text-primary" : "bg-muted/40 text-muted-foreground"}`}>
+                  {visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-sm font-display font-bold uppercase tracking-wider leading-tight ${visible ? "text-foreground" : "text-muted-foreground"}`}>{section.label}</p>
+                  <p className="text-xs text-muted-foreground font-sans truncate">{section.description}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => toggle(section.key)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-all duration-200 focus:outline-none ${visible ? "bg-primary" : "bg-muted"}`}
+                role="switch"
+                aria-checked={visible}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ${visible ? "translate-x-5" : "translate-x-0"}`}
+                />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-3 pt-2">
+        <button onClick={save} disabled={saving}
+          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save OPSEC Settings
+        </button>
+        <p className="text-xs text-muted-foreground font-sans">Default: SOPs and ORBAT are private, all else public.</p>
+      </div>
+    </div>
   );
 }
 
