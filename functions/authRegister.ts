@@ -3,8 +3,37 @@ import bcrypt from 'npm:bcryptjs@2.4.3';
 import { sign } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://tactical-adaptation-hub.pages.dev';
 
 const BANNED_USERNAMES = ['admin', 'moderator', 'system', 'root', 'staff'];
+
+async function sendWelcomeEmail(to: string, username: string) {
+  if (!RESEND_API_KEY) return;
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'Tactical Adaptation Group <noreply@tacticaladaptationgroup.co.uk>',
+      to: [to],
+      subject: 'Welcome to Tactical Adaptation Group',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0d0d1a; color: #ffffff; padding: 32px; border-radius: 8px;">
+          <h2 style="color: #e63946; margin-bottom: 8px;">TACTICAL ADAPTATION GROUP</h2>
+          <h3 style="color: #ffffff; margin-top: 0;">Welcome, ${username}.</h3>
+          <p style="color: #cccccc;">Your account has been created. You are now part of the TAG community.</p>
+          <p style="color: #cccccc;">Head to the portal to complete your profile, join a milsim group, or check upcoming ops.</p>
+          <a href="${APP_URL}/portal/dashboard" style="display: inline-block; padding: 12px 24px; background-color: #e63946; color: white; text-decoration: none; border-radius: 4px; margin: 16px 0; font-weight: bold;">GO TO PORTAL</a>
+          <hr style="border: none; border-top: 1px solid #333; margin: 24px 0;">
+          <p style="color: #666; font-size: 12px;">Tactical Adaptation Group | tacticaladaptationgroup.co.uk</p>
+        </div>
+      `,
+    }),
+  });
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
@@ -52,6 +81,9 @@ Deno.serve(async (req) => {
     });
 
     const token = sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail(email.toLowerCase().trim(), username).catch(console.error);
 
     return Response.json({
       token,
