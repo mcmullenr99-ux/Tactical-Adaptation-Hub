@@ -12,13 +12,18 @@ import { useToast } from "@/hooks/use-toast";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getServiceTier(createdAt: string) {
-  const days = differenceInDays(new Date(), new Date(createdAt));
-  if (days >= 730) return "ELITE";
-  if (days >= 365) return "VETERAN";
-  if (days >= 180) return "OPERATOR";
-  if (days >= 30)  return "OPERATOR";
-  return "RECRUIT";
+function getServiceTier(createdAt: string | null | undefined) {
+  if (!createdAt) return "RECRUIT";
+  try {
+    const d = new Date(createdAt);
+    if (isNaN(d.getTime())) return "RECRUIT";
+    const days = differenceInDays(new Date(), d);
+    if (days >= 730) return "ELITE";
+    if (days >= 365) return "VETERAN";
+    if (days >= 180) return "OPERATOR";
+    if (days >= 30)  return "OPERATOR";
+    return "RECRUIT";
+  } catch { return "RECRUIT"; }
 }
 
 const DUTY_LABELS: Record<string, string> = {
@@ -70,12 +75,13 @@ export default function ServiceCard() {
 
   if (!user) return null;
 
-  const tier = getServiceTier(user.createdAt);
-  const daysIn = differenceInDays(new Date(), new Date(user.createdAt));
+  const tier = getServiceTier(user.createdAt ?? user.created_at);
+  const _createdAt = user.createdAt ?? user.created_at ?? null;
+  const daysIn = _createdAt && !isNaN(new Date(_createdAt).getTime()) ? differenceInDays(new Date(), new Date(_createdAt)) : 0;
   const dutyStatus = (user as any).on_duty_status ?? "available";
 
-  const unitDisplay = primaryUnit?.name ?? "FREELANCER";
-  const unitSub = primaryUnit ? "ACTIVE UNIT" : "INDEPENDENT OPERATOR";
+  const unitDisplay = primaryUnit?.name ?? (primaryUnit === null ? "FREELANCER" : "LOADING...");
+  const unitSub = primaryUnit?.name ? "ACTIVE UNIT" : "INDEPENDENT OPERATOR";
 
 
   const rep = repData?.score ?? null;
@@ -268,8 +274,8 @@ export default function ServiceCard() {
             {/* ── ROW 2: STATS ── */}
             <div className="grid grid-cols-4 gap-4 mb-5">
               {[
-                { label: "SERVICE NO.", value: `TAG-${String(user.id).slice(0, 8).toUpperCase()}` },
-                { label: "ENLISTED",    value: format(new Date(user.createdAt), "dd MMM yyyy").toUpperCase() },
+                { label: "SERVICE NO.", value: user?.id ? `TAG-${String(user.id).replace(/-/g,"").slice(0, 8).toUpperCase()}` : "TAG-UNKNOWN" },
+                { label: "ENLISTED",    value: _createdAt && !isNaN(new Date(_createdAt).getTime()) ? format(new Date(_createdAt), "dd MMM yyyy").toUpperCase() : "UNKNOWN" },
                 { label: "DAYS ACTIVE", value: String(daysIn) },
                 { label: "CLEARANCE",   value: (user.role ?? "OPERATOR").toUpperCase() },
               ].map(({ label, value }) => (
@@ -316,19 +322,23 @@ export default function ServiceCard() {
 
             {/* No rep yet — inline, subdued */}
             {!hasRep && (
-              <p className="text-[9px] italic mb-4" style={{ color: "#374151" }}>
-                No commander assessments on record.
-              </p>
+              <div className="mb-4 p-3" style={{ background: "#0d1014", border: "1px dashed #1f2937" }}>
+                <p className="text-[9px] italic" style={{ color: "#374151" }}>
+                  [ NO COMMANDER ASSESSMENTS ON FILE ]
+                </p>
+                <p className="text-[8px] mt-0.5" style={{ color: "#2d3748" }}>
+                  Reputation data is submitted by unit commanders after serving together.
+                </p>
+              </div>
             )}
 
             {/* ── BIO ── */}
-            {user.bio && (
-              <>
-                <div className="mb-3" style={{ borderTop: "1px solid #1f2937" }} />
-                <p className="text-[8px] font-bold uppercase tracking-[0.2em] mb-1" style={{ color: "#4b5563" }}>OPERATOR NOTES</p>
-                <p className="text-xs leading-relaxed mb-3" style={{ color: "#6b7280" }}>{user.bio}</p>
-              </>
-            )}
+            <div className="mb-3" style={{ borderTop: "1px solid #1f2937" }} />
+            <p className="text-[8px] font-bold uppercase tracking-[0.2em] mb-1" style={{ color: "#4b5563" }}>OPERATOR NOTES</p>
+            {user.bio
+              ? <p className="text-xs leading-relaxed mb-3" style={{ color: "#6b7280" }}>{user.bio}</p>
+              : <p className="text-[9px] italic mb-3" style={{ color: "#374151" }}>[ No operator notes on file. Update your profile to add a bio. ]</p>
+            }
 
             {/* ── FOOTER ── */}
             <div className="mb-3" style={{ borderTop: "1px solid #1a1f28" }} />
@@ -340,7 +350,7 @@ export default function ServiceCard() {
                 </span>
               </div>
               <span className="text-[8px] font-mono" style={{ color: "#374151" }}>
-                {format(new Date(user.createdAt), "MM/yy")} · {(user as any).nationality ?? "INT"}
+                {_createdAt && !isNaN(new Date(_createdAt).getTime()) ? format(new Date(_createdAt), "MM/yy") : "—"} · {(user as any).nationality ?? "INT"}
               </span>
             </div>
           </div>
@@ -366,12 +376,12 @@ export default function ServiceCard() {
         </div>
 
         {/* ── COMMANDER REVIEWS LIST ── */}
-        {repData?.reviews?.length > 0 && (
+        {(repData?.reviews?.length ?? 0) > 0 && (
           <div className="space-y-2">
             <p className="text-[9px] font-bold uppercase tracking-[0.25em]" style={{ color: "#4b5563" }}>
               FIELD ASSESSMENTS
             </p>
-            {repData.reviews.map((r: any) => (
+            {(repData?.reviews ?? []).map((r: any) => (
               <div
                 key={r.id}
                 className="p-3 space-y-1.5"
