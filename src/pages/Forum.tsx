@@ -133,9 +133,10 @@ function CreatePostModal({
     setMediaPreview(previewUrl);
 
     // Upload immediately so we have the path ready when the form is submitted
-    const response = await uploadFile(file);
-    if (response) {
-      setMediaPath(response.objectPath);
+    const result = await uploadFile(file);
+    if (result) {
+      // stub returns the URL string directly
+      setMediaPath(typeof result === "string" ? result : (result as any).objectPath ?? null);
     }
 
     // Reset input so same file can be re-selected
@@ -348,8 +349,19 @@ function PostCard({
     if (comments.length > 0) return;
     setCommentsLoading(true);
     try {
-      const data = await apiFetch<{ post: Post; comments: Comment[] }>(`/api/posts/${post.id}`);
-      setComments(data.comments);
+      const data = await apiFetch<{ post: any; comments: any[] }>(`/api/posts/${post.id}`);
+      const normalized = (data.comments ?? []).map((c: any) => ({
+        id: c.id,
+        post_id: c.post_id,
+        user_id: c.user_id,
+        username: c.username ?? "Unknown",
+        user_nationality: c.user_nationality ?? null,
+        content: c.body ?? c.content ?? "",
+        created_at: c.created_date ?? c.created_at ?? new Date().toISOString(),
+      }));
+      setComments(normalized);
+    } catch (err) {
+      console.error("[Forum] loadComments error:", err);
     } finally {
       setCommentsLoading(false);
     }
@@ -593,14 +605,37 @@ export default function Forum() {
   const PAGE_SIZE = 15;
   const { toast } = useToast();
 
+  // Normalize raw backend post → frontend Post shape
+  const normalizePost = (raw: any): Post => ({
+    id: raw.id,
+    user_id: raw.user_id,
+    username: raw.username ?? "Unknown",
+    user_nationality: raw.user_nationality ?? null,
+    milsim_group_id: raw.milsim_group_id ?? null,
+    milsim_group_name: raw.milsim_group_name ?? null,
+    category: raw.category ?? "general",
+    title: raw.title ?? "",
+    content: raw.body ?? raw.content ?? "",
+    image_url: raw.image_url ?? null,
+    pinned: raw.pinned ?? false,
+    reaction_count: raw.reactions ?? raw.reaction_count ?? 0,
+    comment_count: raw.comment_count ?? 0,
+    viewer_reacted: raw.viewer_reacted ?? false,
+    created_at: raw.created_date ?? raw.created_at ?? new Date().toISOString(),
+    updated_at: raw.updated_date ?? raw.updated_at ?? new Date().toISOString(),
+  });
+
   const fetchPosts = async (category: string, offset: number, append: boolean) => {
     if (offset === 0) setLoading(true); else setLoadingMore(true);
     try {
       const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
       if (category !== "all") params.set("category", category);
-      const data = await apiFetch<{ posts: Post[]; total: number }>(`/api/posts?${params}`);
-      setPosts(p => append ? [...p, ...data.posts] : data.posts);
-      setTotal(data.total);
+      const data = await apiFetch<{ posts: any[]; total: number }>(`/api/posts?${params}`);
+      const normalized = (data.posts ?? []).map(normalizePost);
+      setPosts(p => append ? [...p, ...normalized] : normalized);
+      setTotal(data.total ?? 0);
+    } catch (err) {
+      console.error("[Forum] fetchPosts error:", err);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -619,7 +654,8 @@ export default function Forum() {
     }
   }, [isAuthenticated]);
 
-  const handleCreated = (post: Post) => {
+  const handleCreated = (raw: any) => {
+    const post = normalizePost(raw);
     setPosts(p => [post, ...p]);
     setTotal(t => t + 1);
   };
