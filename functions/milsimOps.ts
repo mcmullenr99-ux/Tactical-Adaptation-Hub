@@ -58,6 +58,11 @@ Deno.serve(async (req) => {
         game: body.game ?? null, scheduled_at: body.scheduledAt ? new Date(body.scheduledAt).toISOString() : null,
         status: 'planned', created_by: full.id,
       });
+      // Stamp group's last_op_date
+      await base44.asServiceRole.entities.MilsimGroup.update(parts[0], {
+        last_op_date: new Date().toISOString(),
+        last_page_update: new Date().toISOString(),
+      }).catch(() => {});
       return Response.json(op, { status: 201 });
     }
 

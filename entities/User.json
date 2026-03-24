@@ -41,6 +41,26 @@
     },
     "ban_reason": {
       "type": "string"
+    },
+    "steam_profile_url": {
+      "type": "string"
+    },
+    "xbox_gamertag": {
+      "type": "string"
+    },
+    "psn_id": {
+      "type": "string"
+    },
+    "last_active_at": {
+      "type": "string"
+    },
+    "login_count": {
+      "type": "number",
+      "default": 0
+    },
+    "activity_score": {
+      "type": "number",
+      "default": 50
     }
   },
   "required": []

@@ -27,6 +27,7 @@ interface MilsimAward { id: number; title: string; description: string | null; i
 interface GroupDetail {
   id: number; name: string; slug: string; tagLine: string | null;
   description: string | null; discordUrl: string | null; websiteUrl: string | null;
+  steamGroupUrl: string | null;
   logoUrl: string | null; sops: string | null; orbat: string | null; status: string;
   stream_url: string | null; is_live: boolean;
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
@@ -187,7 +188,7 @@ const MC_LANGS = [
 function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const { register, handleSubmit, watch, setValue } = useForm({ defaultValues: {
     name: group.name, tagLine: group.tagLine ?? "", description: group.description ?? "",
-    discordUrl: group.discordUrl ?? "", websiteUrl: group.websiteUrl ?? "", logoUrl: group.logoUrl ?? "",
+    discordUrl: group.discordUrl ?? "", websiteUrl: group.websiteUrl ?? "", steamGroupUrl: group.steamGroupUrl ?? "", logoUrl: group.logoUrl ?? "",
     country: group.country ?? "", language: group.language ?? "",
     branch: group.branch ?? "", unitType: group.unitType ?? "",
     games: (group.games ?? []) as string[],
@@ -210,8 +211,9 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
       <MField label="Tag Line"><input {...register("tagLine")} className="mf-input" /></MField>
       <MField label="Description"><textarea {...register("description")} rows={5} className="mf-input resize-none" /></MField>
       <MField label="Logo URL"><input {...register("logoUrl")} className="mf-input" placeholder="https://i.imgur.com/..." /></MField>
-      <MField label="Discord URL"><input {...register("discordUrl")} className="mf-input" /></MField>
-      <MField label="Website URL"><input {...register("websiteUrl")} className="mf-input" /></MField>
+      <MField label="Discord URL"><input {...register("discordUrl")} className="mf-input" placeholder="https://discord.gg/invite" /></MField>
+      <MField label="Website URL"><input {...register("websiteUrl")} className="mf-input" placeholder="https://yourunit.com" /></MField>
+      <MField label="Steam Group URL"><input {...register("steamGroupUrl")} className="mf-input" placeholder="https://steamcommunity.com/groups/..." /></MField>
 
       <div className="border-t border-border pt-5">
         <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Discovery & Filtering</p>

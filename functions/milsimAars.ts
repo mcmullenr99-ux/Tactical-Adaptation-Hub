@@ -58,6 +58,11 @@ Deno.serve(async (req) => {
         title: body.title, content: body.content,
         outcome: body.outcome ?? null, lessons_learned: body.lessonsLearned ?? null,
       });
+      // Stamp group's last_aar_date
+      await base44.asServiceRole.entities.MilsimGroup.update(parts[0], {
+        last_aar_date: new Date().toISOString(),
+        last_page_update: new Date().toISOString(),
+      }).catch(() => {});
       return Response.json(aar, { status: 201 });
     }
 

@@ -35,6 +35,9 @@ export default function Profile() {
   const [bio, setBio] = useState(user?.bio ?? "");
   const [discordTag, setDiscordTag] = useState(user?.discordTag ?? "");
   const [nationality, setNationality] = useState((user as any)?.nationality ?? "");
+  const [steamProfileUrl, setSteamProfileUrl] = useState((user as any)?.steam_profile_url ?? "");
+  const [xboxGamertag, setXboxGamertag] = useState((user as any)?.xbox_gamertag ?? "");
+  const [psnId, setPsnId] = useState((user as any)?.psn_id ?? "");
   const [savingProfile, setSavingProfile] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -72,7 +75,7 @@ export default function Profile() {
       await apiFetch("/api/auth/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bio, discordTag, nationality: nationality || null }),
+        body: JSON.stringify({ bio, discordTag, nationality: nationality || null, steamProfileUrl: steamProfileUrl || null, xboxGamertag: xboxGamertag || null, psnId: psnId || null }),
       });
       qc.invalidateQueries({ queryKey: ["me"] });
       toast({ title: "Profile Updated", description: "Your profile has been saved." });
@@ -279,6 +282,43 @@ export default function Profile() {
                 ))}
               </select>
               <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">▾</div>
+            </div>
+          </div>
+
+          {/* Platform Links */}
+          <div className="pt-2 space-y-4 border-t border-border">
+            <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Platform Links</p>
+
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Steam Profile URL</label>
+              <input
+                value={steamProfileUrl}
+                onChange={e => setSteamProfileUrl(e.target.value)}
+                className="mf-input w-full"
+                placeholder="https://steamcommunity.com/id/yourname"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Xbox Gamertag</label>
+              <input
+                value={xboxGamertag}
+                onChange={e => setXboxGamertag(e.target.value)}
+                maxLength={60}
+                className="mf-input w-full"
+                placeholder="Your Xbox Gamertag"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">PlayStation Network ID</label>
+              <input
+                value={psnId}
+                onChange={e => setPsnId(e.target.value)}
+                maxLength={60}
+                className="mf-input w-full"
+                placeholder="Your PSN ID"
+              />
             </div>
           </div>
 

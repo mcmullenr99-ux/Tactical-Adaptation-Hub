@@ -28,12 +28,27 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
+interface ReadinessFlag {
+  severity: 'red' | 'amber';
+  code: string;
+  label: string;
+  detail: string;
+}
+
 interface ReadinessData {
   total: number; active_this_week: number; active_this_month: number;
   readiness_pct: number; status: string;
-  total_ops: number; completed_ops: number; win_rate: number;
+  total_ops: number; completed_ops: number;
+  capacity_grade: string;
+  days_since_last_op: number | null;
+  days_since_last_aar: number | null;
+  days_since_page_update: number | null;
   avg_rep_score: number; avg_experience: number; review_count: number;
+  has_discord: boolean; has_steam: boolean;
   op_capability_tier: string; op_cap_score: number;
+  flags: ReadinessFlag[];
+  narrative: string;
+  narrative_lines: string[];
 }
 
 type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "capabilities";
@@ -331,7 +346,7 @@ export default function MilsimGroup() {
                         style={{ width: `${readiness.readiness_pct}%`, background: readiness.status === "green" ? "#4ade80" : readiness.status === "amber" ? "#facc15" : "#f87171" }} />
                     </div>
                     <p className="text-xs text-muted-foreground font-sans">
-                      {readiness.total} members · {readiness.win_rate}% win rate · {readiness.review_count} rep review{readiness.review_count !== 1 ? "s" : ""}
+                      {readiness.total} members · {readiness.active_this_month} active 30d · {readiness.review_count} rep review{readiness.review_count !== 1 ? "s" : ""}
                     </p>
                   </div>
                 </div>
@@ -370,15 +385,15 @@ export default function MilsimGroup() {
                     </div>
                   </div>
 
-                  {/* Stat grid */}
+                  {/* Stat grid — no win rate (removed per design spec) */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {[
-                      { label: "Troop Strength",    value: readiness.total,              icon: Users,      sub: `${readiness.active_this_month} active 30d` },
-                      { label: "Ops Logged",         value: readiness.total_ops,          icon: Crosshair,  sub: `${readiness.completed_ops} completed` },
-                      { label: "Win Rate",           value: `${readiness.win_rate}%`,     icon: TrendingUp, sub: "from AAR outcomes" },
-                      { label: "Avg Rep Score",      value: readiness.avg_rep_score || "—", icon: Star,     sub: `${readiness.review_count} reviews` },
-                      { label: "Avg Experience",     value: readiness.avg_experience > 0 ? `${readiness.avg_experience}/10` : "—", icon: Award, sub: "from troop ratings" },
-                      { label: "Active This Week",   value: readiness.active_this_week,   icon: Activity,   sub: `of ${readiness.total} total` },
+                      { label: "Troop Strength",    value: readiness.total,                                              icon: Users,     sub: `${readiness.active_this_month} active 30d` },
+                      { label: "Ops Logged",         value: readiness.total_ops,                                          icon: Crosshair, sub: `${readiness.completed_ops} completed` },
+                      { label: "Last Op",            value: readiness.days_since_last_op !== null ? `${readiness.days_since_last_op}d ago` : "Never", icon: Target,    sub: "days since last operation" },
+                      { label: "Avg Rep Score",      value: readiness.avg_rep_score > 0 ? readiness.avg_rep_score : "—", icon: Star,      sub: `${readiness.review_count} review${readiness.review_count !== 1 ? "s" : ""}` },
+                      { label: "Avg Experience",     value: readiness.avg_experience > 0 ? `${readiness.avg_experience}/10` : "—", icon: Award, sub: "from peer ratings" },
+                      { label: "Active This Week",   value: readiness.active_this_week,                                  icon: Activity,  sub: `of ${readiness.total} total` },
                     ].map(s => (
                       <div key={s.label} className="bg-card border border-border rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-2">
@@ -391,16 +406,48 @@ export default function MilsimGroup() {
                     ))}
                   </div>
 
+                  {/* System-generated narrative */}
+                  <div className="bg-card border border-border rounded-lg p-5 space-y-3">
+                    <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">System Assessment</p>
+                    <div className="space-y-2">
+                      {readiness.narrative_lines.map((line: string, i: number) => (
+                        <p key={i} className="text-sm font-sans text-muted-foreground leading-relaxed">{line}</p>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Readiness flags */}
+                  {readiness.flags.length > 0 && (
+                    <div className="bg-card border border-border rounded-lg p-5 space-y-3">
+                      <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Readiness Flags</p>
+                      <div className="space-y-2">
+                        {readiness.flags.map((flag: any) => (
+                          <div key={flag.code} className={`flex items-start gap-3 p-3 rounded-lg border ${
+                            flag.severity === 'red'
+                              ? 'border-red-500/30 bg-red-500/5'
+                              : 'border-yellow-500/30 bg-yellow-500/5'
+                          }`}>
+                            <span className={`shrink-0 w-2 h-2 rounded-full mt-1.5 ${flag.severity === 'red' ? 'bg-red-400' : 'bg-yellow-400'}`} />
+                            <div>
+                              <p className={`text-xs font-display font-bold uppercase tracking-wider ${flag.severity === 'red' ? 'text-red-400' : 'text-yellow-400'}`}>{flag.label}</p>
+                              <p className="text-[11px] text-muted-foreground font-sans mt-0.5 leading-relaxed">{flag.detail}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Capability tier explanation */}
                   <div className="bg-card border border-border rounded-lg p-5">
-                    <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Tier Breakdown</p>
+                    <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Operational Capability Tier</p>
                     <div className="space-y-2">
                       {[
-                        { tier: "TIER I",   label: "Elite Force",        desc: "Sustained op record, high troop experience, proven win rate.",   min: 80 },
-                        { tier: "TIER II",  label: "Operational",        desc: "Active unit with solid rep and consistent performance.",          min: 60 },
-                        { tier: "TIER III", label: "Developing",         desc: "Building op history and troop ratings.",                          min: 40 },
-                        { tier: "TIER IV",  label: "Limited Capability", desc: "New or low-activity unit.",                                       min: 20 },
-                        { tier: "FORMING",  label: "Forming",            desc: "No established op record yet.",                                   min: 0  },
+                        { tier: "TIER I",   label: "Elite Force",        desc: "Extensive op record, high troop experience, strong AAR discipline." },
+                        { tier: "TIER II",  label: "Operational",        desc: "Active unit with solid rep and consistent operational output." },
+                        { tier: "TIER III", label: "Developing",         desc: "Building op history and troop experience ratings." },
+                        { tier: "TIER IV",  label: "Limited Capability", desc: "New or low-activity unit with minimal documented record." },
+                        { tier: "FORMING",  label: "Forming",            desc: "No established operational record yet." },
                       ].map(t => (
                         <div key={t.tier} className={`flex items-start gap-3 p-3 rounded border transition-colors ${readiness.op_capability_tier === t.tier ? "border-primary/40 bg-primary/5" : "border-transparent"}`}>
                           <TierBadge tier={t.tier} />
@@ -412,7 +459,7 @@ export default function MilsimGroup() {
                       ))}
                     </div>
                     <p className="text-[10px] text-muted-foreground font-sans mt-4 pt-3 border-t border-border">
-                      Tier is computed from ops logged, win rate, average troop experience rating and member count. Commanders can improve tier by logging operations and AAR outcomes.
+                      Tier is computed from operations logged, AAR discipline, average troop experience and member count. Win rate is not used — we can only assess what commanders actually log.
                     </p>
                   </div>
                 </>

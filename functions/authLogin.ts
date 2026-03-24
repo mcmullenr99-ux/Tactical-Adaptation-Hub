@@ -37,6 +37,12 @@ Deno.serve(async (req) => {
 
     const token = sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
 
+    // Update activity tracking
+    await base44.asServiceRole.entities.User.update(user.id, {
+      last_active_at: new Date().toISOString(),
+      login_count: (user.login_count ?? 0) + 1,
+    }).catch(() => {}); // non-fatal
+
     await base44.asServiceRole.entities.AuditLog.create({
       user_id: user.id,
       username: user.username,
@@ -54,6 +60,11 @@ Deno.serve(async (req) => {
       bio: user.bio ?? null,
       discordTag: user.discord_tag ?? null,
       nationality: user.nationality ?? null,
+      steam_profile_url: user.steam_profile_url ?? null,
+      xbox_gamertag: user.xbox_gamertag ?? null,
+      psn_id: user.psn_id ?? null,
+      last_active_at: user.last_active_at ?? null,
+      login_count: (user.login_count ?? 0) + 1,
       totpEnabled: user.totp_enabled ?? false,
       createdAt: user.created_date,
       created_at: user.created_date,

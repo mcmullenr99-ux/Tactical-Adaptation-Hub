@@ -56,12 +56,15 @@ Deno.serve(async (req) => {
     // PATCH — update profile fields
     if (req.method === 'PATCH') {
       const body = await req.json().catch(() => ({}));
-      const { bio, discordTag, nationality, currentPassword, newPassword } = body;
+      const { bio, discordTag, nationality, steamProfileUrl, xboxGamertag, psnId, currentPassword, newPassword } = body;
 
       const updates: Record<string, any> = {};
       if (bio !== undefined) updates.bio = bio;
       if (discordTag !== undefined) updates.discord_tag = discordTag;
       if (nationality !== undefined) updates.nationality = nationality;
+      if (steamProfileUrl !== undefined) updates.steam_profile_url = steamProfileUrl;
+      if (xboxGamertag !== undefined) updates.xbox_gamertag = xboxGamertag;
+      if (psnId !== undefined) updates.psn_id = psnId;
 
       if (newPassword) {
         if (!currentPassword) return Response.json({ error: 'Current password required' }, { status: 400 });
@@ -83,6 +86,9 @@ Deno.serve(async (req) => {
         bio: updated.bio ?? null,
         discordTag: updated.discord_tag ?? null,
         nationality: updated.nationality ?? null,
+        steam_profile_url: updated.steam_profile_url ?? null,
+        xbox_gamertag: updated.xbox_gamertag ?? null,
+        psn_id: updated.psn_id ?? null,
         avatar_url: updated.avatar_url ?? null,
         totpEnabled: updated.totp_enabled ?? false,
       });

@@ -16,7 +16,13 @@
     "discord_url": {
       "type": "string"
     },
+    "discord_server_id": {
+      "type": "string"
+    },
     "website_url": {
+      "type": "string"
+    },
+    "steam_group_url": {
       "type": "string"
     },
     "logo_url": {
@@ -64,26 +70,35 @@
       "type": "string"
     },
     "branch": {
-      "type": "string",
-      "enum": [
-        "Army",
-        "Marines",
-        "Air Force",
-        "Navy",
-        "Special Operations",
-        "Multi-Branch"
-      ],
-      "description": "Military branch this unit belongs to"
+      "type": "string"
     },
     "unit_type": {
-      "type": "string",
-      "description": "Specific unit type within the branch"
+      "type": "string"
     },
     "tags": {
       "type": "array",
       "items": {
         "type": "string"
       }
+    },
+    "stream_url": {
+      "type": "string"
+    },
+    "is_live": {
+      "type": "boolean",
+      "default": false
+    },
+    "last_page_update": {
+      "type": "string"
+    },
+    "last_aar_date": {
+      "type": "string"
+    },
+    "last_op_date": {
+      "type": "string"
+    },
+    "last_training_date": {
+      "type": "string"
     }
   },
   "required": [],
