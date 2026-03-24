@@ -60,8 +60,7 @@ export default function Dashboard() {
     queryFn: () => apiFetch("/api/messages/inbox"),
   });
   const qc = useQueryClient();
-  const [dutyStatus, setDutyStatus] = useState((user as any)?.on_duty_status ?? "available");
-  const [showDutyMenu, setShowDutyMenu] = useState(false);
+  const dutyStatus = (user as any)?.on_duty_status ?? "available";
 
   const { data: upcomingOps } = useQuery<OpsEvent[]>({
     queryKey: ["ops-upcoming"],
@@ -73,10 +72,6 @@ export default function Dashboard() {
     queryFn: () => apiFetch("/api/motd/latest"),
   });
 
-  const updateDuty = useMutation({
-    mutationFn: (status: string) => apiFetch("/api/users/me/duty", { method: "PATCH", body: JSON.stringify({ on_duty_status: status }) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["me"] }),
-  });
 
   const unread = inbox?.filter(m => !m.isRead).length ?? 0;
   const badge = user?.created_at ? getServiceBadge(user.created_at) : null;
@@ -148,48 +143,18 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Duty Status */}
+        {/* Duty Status — auto-computed from activity */}
         <div className="bg-card border border-border rounded-lg p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display font-bold uppercase tracking-widest text-sm text-muted-foreground flex items-center gap-2">
               <Activity className="w-4 h-4" /> Duty Status
             </h2>
           </div>
-          <div className="relative">
-            <button
-              onClick={() => setShowDutyMenu(v => !v)}
-              className={`flex items-center gap-3 px-4 py-3 border rounded font-display font-bold uppercase tracking-widest text-sm transition-all ${currentDuty.color}`}
-            >
-              <span className="w-2 h-2 rounded-full bg-current" />
-              {currentDuty.label}
-              <ChevronRight className={`w-3 h-3 ml-1 transition-transform ${showDutyMenu ? "rotate-90" : ""}`} />
-            </button>
-            <AnimatePresence>
-              {showDutyMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  className="absolute top-full left-0 mt-2 bg-card border border-border rounded-lg shadow-2xl z-10 overflow-hidden min-w-[160px]"
-                >
-                  {DUTY_OPTIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => {
-                        setDutyStatus(opt.value);
-                        setShowDutyMenu(false);
-                        updateDuty.mutate(opt.value);
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 font-display font-bold uppercase tracking-widest text-xs hover:bg-secondary transition-colors ${opt.color}`}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-current" />
-                      {opt.label}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className={`flex items-center gap-3 px-4 py-3 border rounded font-display font-bold uppercase tracking-widest text-sm ${currentDuty.color}`}>
+            <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+            {currentDuty.label}
           </div>
+          <p className="text-xs text-muted-foreground font-sans mt-2">Auto-updated based on your activity.</p>
         </div>
 
         {/* Upcoming Ops */}

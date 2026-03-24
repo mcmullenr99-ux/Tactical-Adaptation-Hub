@@ -52,8 +52,8 @@ export default function Profile() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const [dutyStatus, setDutyStatus] = useState((user as any)?.on_duty_status ?? "available");
-  const [savingDuty, setSavingDuty] = useState(false);
+  const dutyStatus = (user as any)?.on_duty_status ?? "available";
+  const currentDuty = DUTY_OPTIONS.find(d => d.value === dutyStatus) ?? DUTY_OPTIONS[0];
 
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [recruits, setRecruits] = useState<any[]>([]);
@@ -111,17 +111,6 @@ export default function Profile() {
     }
   };
 
-  const saveDutyStatus = async () => {
-    setSavingDuty(true);
-    try {
-      await apiFetch("/api/duty-status", { method: "PATCH", body: JSON.stringify({ status: dutyStatus }) });
-      toast({ title: "Status Updated", description: `Duty status set to ${dutyStatus}.` });
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
-    } finally {
-      setSavingDuty(false);
-    }
-  };
 
   const generateReferralCode = async () => {
     setGeneratingCode(true);
@@ -198,36 +187,22 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Duty Status */}
-        <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+        {/* Duty Status — auto-computed from activity */}
+        <div className="bg-card border border-border rounded-lg p-6 space-y-3">
           <div className="flex items-center gap-3 mb-2">
             <Activity className="w-5 h-5 text-primary" />
             <h2 className="font-display font-bold uppercase tracking-widest">Duty Status</h2>
           </div>
-          <p className="text-xs text-muted-foreground font-sans">Visible to unit commanders and on your profile.</p>
-          <div className="grid grid-cols-2 gap-2">
-            {DUTY_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setDutyStatus(opt.value)}
-                className={`flex items-center gap-2 px-4 py-3 rounded border font-display font-bold uppercase tracking-widest text-xs transition-all ${
-                  dutyStatus === opt.value ? opt.color : "border-border text-muted-foreground hover:border-border/80"
-                }`}
-              >
-                {dutyStatus === opt.value && <Check className="w-3.5 h-3.5" />}
-                {opt.label}
-              </button>
-            ))}
+          <div className={`flex items-center gap-3 px-4 py-3 border rounded font-display font-bold uppercase tracking-widest text-sm ${currentDuty.color}`}>
+            <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+            {currentDuty.label}
           </div>
-          <div className="flex justify-end">
-            <button
-              onClick={saveDutyStatus}
-              disabled={savingDuty}
-              className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm rounded transition-all disabled:opacity-50"
-            >
-              {savingDuty ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save Status
-            </button>
+          <p className="text-xs text-muted-foreground font-sans">Automatically set based on your login activity. No manual override needed.</p>
+          <div className="text-xs text-muted-foreground font-sans space-y-1 pt-1 border-t border-border">
+            <p><span className="text-green-400 font-bold">● Active</span> — logged in within 24 hours</p>
+            <p><span className="text-green-300 font-bold">● Available</span> — active within 7 days</p>
+            <p><span className="text-blue-400 font-bold">● On Leave</span> — active within 30 days</p>
+            <p><span className="text-red-400 font-bold">● MIA</span> — inactive for 30+ days</p>
           </div>
         </div>
 

@@ -2,6 +2,25 @@ import { createClient, createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+/**
+ * Compute duty status from last_active_at (mirrors authMe.ts logic).
+ * - <1d  → "active"
+ * - <7d  → "available"
+ * - <30d → "on-leave"
+ * - ≥30d → "mia"
+ */
+function computeDutyStatus(lastActiveAt: string | null | undefined): string {
+  if (!lastActiveAt) return 'mia';
+  const last = new Date(lastActiveAt);
+  if (isNaN(last.getTime())) return 'mia';
+  const diffDays = (Date.now() - last.getTime()) / (1000 * 60 * 60 * 24);
+  if (diffDays < 1)  return 'active';
+  if (diffDays < 7)  return 'available';
+  if (diffDays < 30) return 'on-leave';
+  return 'mia';
+}
+
+
 
 async function getCallerUser(base44: any, req: Request) {
   const authHeader = req.headers.get('Authorization') ?? '';
@@ -35,7 +54,7 @@ Deno.serve(async (req) => {
         .map((u: any) => ({
           id: u.id, username: u.username, role: u.role,
           nationality: u.nationality ?? null,
-          on_duty_status: u.on_duty_status ?? 'available',
+          on_duty_status: computeDutyStatus(u.last_active_at),
           createdAt: u.created_date,
         })));
     }
@@ -48,22 +67,12 @@ Deno.serve(async (req) => {
         id: user.id, username: user.username, role: user.role,
         bio: user.bio ?? null, nationality: user.nationality ?? null,
         discordTag: user.discord_tag ?? null,
-        on_duty_status: user.on_duty_status ?? 'available',
+        on_duty_status: computeDutyStatus(user.last_active_at),
         createdAt: user.created_date,
       });
     }
 
-    // PATCH /users/me/duty — update own duty status
-    if (method === 'PATCH' && parts[0] === 'me' && parts[1] === 'duty') {
-      const full = await getCallerUser(base44, req);
-      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-      const body = await req.json().catch(() => ({}));
-      const validStatuses = ['available', 'away', 'in-op', 'offline'];
-      const status = body.status ?? body.on_duty_status;
-      if (!validStatuses.includes(status)) return Response.json({ error: 'Invalid duty status' }, { status: 400 });
-      await base44.asServiceRole.entities.User.update(full.id, { on_duty_status: status });
-      return Response.json({ on_duty_status: status });
-    }
+    // PATCH /users/me/duty — removed: duty status is now computed automatically from last_active_at
 
     // GET /referral-code/mine
     if (method === 'GET' && parts[0] === 'referral-code' && parts[1] === 'mine') {
