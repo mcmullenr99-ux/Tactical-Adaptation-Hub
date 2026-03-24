@@ -204,6 +204,18 @@ function classColor(c: string): [number, number, number] {
   return [0, 100, 0];
 }
 
+// ── Sanitise text for WinAnsi (pdf-lib standard fonts are Latin-only) ────
+function sanitize(text: string): string {
+  return text
+    .replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/—/g, '--')
+    .replace(/–/g, '-')
+    .replace(/…/g, '...')
+    .replace(/[^	
+ -~ -ÿ]/g, '?');
+}
+
 // ── PDF ───────────────────────────────────────────────────────────────────
 async function buildPdf(title: string, author: string, classification: string, sections: StoredSection[]): Promise<Uint8Array> {
   const { PDFDocument, rgb, StandardFonts, PageSizes } = await import('npm:pdf-lib@1.17.1');
@@ -320,14 +332,14 @@ async function buildPdf(title: string, author: string, classification: string, s
     ensureSpace(LINE_H * 3);
     page.drawLine({ start: { x: M, y: y + 4 }, end: { x: W - M, y: y + 4 }, thickness: 1, color: black });
     y -= 6;
-    drawWrapped(section.heading.toUpperCase(), M, 11, fontBold, black, W - M * 2);
+    drawWrapped(sanitize(section.heading.toUpperCase()), M, 11, fontBold, black, W - M * 2);
     page.drawLine({ start: { x: M, y: y + 2 }, end: { x: W - M, y: y + 2 }, thickness: 0.5, color: black });
     y -= 10;
 
     for (const msg of section.messages) {
       ensureSpace(LINE_H * 3);
       const ts = new Date(msg.timestamp).toISOString().replace('T', ' ').slice(0, 16);
-      page.drawText(`${msg.author.toUpperCase()}  ·  ${ts}`, { x: M, y, size: 7, font: fontBold, color: grey });
+      page.drawText(sanitize(`${msg.author.toUpperCase()}  ·  ${ts}`), { x: M, y, size: 7, font: fontBold, color: grey });
       y -= 12;
 
       const clean = msg.content
