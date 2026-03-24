@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "UNCLASSIFIED",
+        "RESTRICTED",
+        "CONFIDENTIAL"
+      ]
+    },
+    "channel_id": {
+      "type": "string"
+    },
+    "channel_name": {
+      "type": "string"
+    },
+    "file_uri": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "section_count": {
+      "type": "number"
+    },
+    "message_count": {
+      "type": "number"
+    }
+  },
+  "required": [],
+  "name": "BotExportedPdf"
+}
