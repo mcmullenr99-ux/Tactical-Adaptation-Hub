@@ -1,12 +1,12 @@
 /**
  * NATO ORBAT Builder
- * NATO APP-6 standard. No switcher.
+ * NATO APP-6 standard. One uniform system. No switcher.
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Save,
-  ZoomIn, ZoomOut, Settings, X,
+  ZoomIn, ZoomOut, Settings, X, Download,
 } from "lucide-react";
 
 // ─── Echelons ─────────────────────────────────────────────────────────────────
@@ -208,8 +208,8 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
           <div>
             <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Unit Type</label>
             {categories.map(cat => (
-              <div key={cat} className="mb-2">
-                <div className="text-[9px] text-muted-foreground font-display uppercase tracking-widest mb-1">{cat}</div>
+              <div key={cat} className="mb-3">
+                <div className="text-[9px] font-display font-bold uppercase tracking-widest text-muted-foreground/60 mb-1.5 px-1">{cat}</div>
                 <div className="flex flex-wrap gap-1">
                   {NATO_UNIT_TYPES.filter(u => u.category === cat).map(u => (
                     <button key={u.id} onClick={() => setDraft(d => ({ ...d, unitType: u.id }))}
@@ -354,7 +354,7 @@ const DEFAULT_ORBAT: OrbatNode = {
   children: [],
 };
 
-export default function OrbatBuilder({ value, onChange, readOnly = false }: OrbatBuilderProps) {
+export default function OrbatBuilder({ value, onChange, readOnly = false, groupName }: OrbatBuilderProps) {
   const parseTree = (): OrbatNode => {
     try {
       if (value) {
@@ -368,6 +368,7 @@ export default function OrbatBuilder({ value, onChange, readOnly = false }: Orba
 
   const [tree, setTree] = useState<OrbatNode>(parseTree);
   const [zoom, setZoom] = useState(1);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   const updateTree = useCallback((updated: OrbatNode) => {
     setTree(updated);
@@ -384,6 +385,63 @@ export default function OrbatBuilder({ value, onChange, readOnly = false }: Orba
   const countUnits = (n: OrbatNode): number => 1 + n.children.reduce((a, c) => a + countUnits(c), 0);
   const countSlots  = (n: OrbatNode): number => n.slots + n.children.reduce((a, c) => a + countSlots(c), 0);
 
+  const exportOrbat = () => {
+    const printWindow = window.open('', '_blank', 'width=1200,height=900');
+    if (!printWindow) return;
+
+    const canvasEl = canvasRef.current;
+    const canvasHTML = canvasEl ? canvasEl.innerHTML : '';
+    const title = groupName ?? 'Unit ORBAT';
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>${title} — ORBAT</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@400;600&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #fff; color: #1a1a1a; font-family: 'Inter', Arial, sans-serif; padding: 32px 40px; }
+    .orbat-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 3px solid #006ba6; padding-bottom: 16px; margin-bottom: 32px; }
+    .orbat-title { font-family: 'Oswald', sans-serif; font-size: 32px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #111; }
+    .orbat-subtitle { font-size: 13px; color: #666; margin-top: 4px; }
+    .orbat-meta { text-align: right; font-size: 11px; color: #888; line-height: 1.6; }
+    .orbat-meta strong { color: #444; }
+    .classification { display: inline-block; font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #fff; background: #006ba6; padding: 4px 12px; margin-bottom: 24px; border-radius: 2px; }
+    .orbat-canvas { overflow-x: auto; display: flex; justify-content: center; padding: 16px 0 40px; }
+    .orbat-canvas * { font-family: 'Inter', Arial, sans-serif !important; }
+    .orbat-footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; font-size: 10px; color: #aaa; }
+    @media print { body { padding: 16px 20px; } @page { size: A3 landscape; margin: 12mm; } }
+  </style>
+</head>
+<body>
+  <div class="orbat-header">
+    <div>
+      <div class="orbat-title">${title}</div>
+      <div class="orbat-subtitle">Order of Battle</div>
+    </div>
+    <div class="orbat-meta">
+      <strong>Standard:</strong> NATO APP-6<br/>
+      <strong>Generated:</strong> ${dateStr}<br/>
+      <strong>Classification:</strong> UNCLASSIFIED
+    </div>
+  </div>
+  <div><span class="classification">UNCLASSIFIED // NATO APP-6</span></div>
+  <div class="orbat-canvas">${canvasHTML}</div>
+  <div class="orbat-footer">
+    <span>${title} — Order of Battle</span>
+    <span>UNCLASSIFIED // NATO APP-6 // ${dateStr}</span>
+  </div>
+  <script>
+    document.querySelectorAll('.group .absolute').forEach(el => el.remove());
+    window.addEventListener('load', () => setTimeout(() => window.print(), 600));
+  </script>
+</body>
+</html>`);
+    printWindow.document.close();
+  };
+
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-secondary/20 flex-wrap gap-2">
@@ -396,19 +454,25 @@ export default function OrbatBuilder({ value, onChange, readOnly = false }: Orba
           <button onClick={() => setZoom(z => Math.max(0.3, z - 0.15))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors" title="Zoom out"><ZoomOut className="w-3.5 h-3.5" /></button>
           <span className="text-[10px] text-muted-foreground w-9 text-center">{Math.round(zoom * 100)}%</span>
           <button onClick={() => setZoom(z => Math.min(2, z + 0.15))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors" title="Zoom in"><ZoomIn className="w-3.5 h-3.5" /></button>
+          <button onClick={exportOrbat} className="p-1.5 hover:bg-secondary rounded border border-transparent hover:border-border text-muted-foreground hover:text-foreground transition-colors" title="Export / Print ORBAT">
+            <Download className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
       <div className="overflow-auto p-8 min-h-[400px] bg-background">
-        <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center", transition: "transform 0.15s ease" }}>
+        <div ref={canvasRef} data-orbat-canvas style={{ transform: `scale(${zoom})`, transformOrigin: "top center", transition: "transform 0.15s ease" }}>
           <OrbatTreeNode node={tree} onUpdate={updateTree} onDelete={() => {}}
             onAddChild={parentId => updateTree(addChildTo(parentId, tree))} isRoot readOnly={readOnly} />
         </div>
       </div>
 
       {!readOnly && (
-        <div className="px-4 py-2 border-t border-border bg-secondary/5">
-          <span className="text-[10px] text-muted-foreground">Hover a unit to edit · click <strong>+</strong> to add subordinate</span>
+        <div className="px-4 py-2 border-t border-border bg-secondary/10 flex justify-end">
+          <button onClick={() => updateTree(addChildTo(tree.id, tree))}
+            className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Add Unit
+          </button>
         </div>
       )}
     </div>
