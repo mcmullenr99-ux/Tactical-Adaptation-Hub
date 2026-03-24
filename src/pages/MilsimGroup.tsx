@@ -111,15 +111,22 @@ function ReadinessGauge({ pct, status }: { pct: number; status: string }) {
 // ─── Capability Tier badge ─────────────────────────────────────────────────────
 function TierBadge({ tier }: { tier: string }) {
   const styles: Record<string, string> = {
-    "TIER I":   "bg-yellow-500/15 border-yellow-500/40 text-yellow-400",
-    "TIER II":  "bg-green-500/15 border-green-500/40 text-green-400",
-    "TIER III": "bg-blue-500/15 border-blue-500/40 text-blue-400",
-    "TIER IV":  "bg-slate-500/15 border-slate-500/30 text-slate-400",
+    "PLATINUM": "bg-slate-200/15 border-slate-300/60 text-slate-200",
+    "GOLD":     "bg-yellow-500/15 border-yellow-500/50 text-yellow-400",
+    "SILVER":   "bg-blue-300/15 border-blue-300/50 text-blue-300",
+    "BRONZE":   "bg-orange-700/15 border-orange-600/50 text-orange-500",
     "FORMING":  "bg-border/30 border-border text-muted-foreground",
   };
+  const icons: Record<string, string> = {
+    "PLATINUM": "⬡",
+    "GOLD":     "★",
+    "SILVER":   "◆",
+    "BRONZE":   "▲",
+    "FORMING":  "●",
+  };
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded border text-[10px] font-display font-bold uppercase tracking-widest ${styles[tier] ?? styles["FORMING"]}`}>
-      <Target className="w-2.5 h-2.5" /> {tier}
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded border text-[10px] font-display font-bold uppercase tracking-widest ${styles[tier] ?? styles["FORMING"]}`}>
+      <span>{icons[tier] ?? "●"}</span> {tier}
     </span>
   );
 }
@@ -443,10 +450,10 @@ export default function MilsimGroup() {
                     <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Operational Capability Tier</p>
                     <div className="space-y-2">
                       {[
-                        { tier: "TIER I",   label: "Elite Force",        desc: "Extensive op record, high troop experience, strong AAR discipline." },
-                        { tier: "TIER II",  label: "Operational",        desc: "Active unit with solid rep and consistent operational output." },
-                        { tier: "TIER III", label: "Developing",         desc: "Building op history and troop experience ratings." },
-                        { tier: "TIER IV",  label: "Limited Capability", desc: "New or low-activity unit with minimal documented record." },
+                        { tier: "PLATINUM", label: "Elite Force",        desc: "Platinum-tier units demonstrate an extensive op record, high troop experience, strong AAR discipline, and comprehensive training documentation." },
+                        { tier: "GOLD",     label: "Operational",        desc: "Active unit with solid rep, consistent operational output, and documented training resources." },
+                        { tier: "SILVER",   label: "Developing",         desc: "Building op history and troop experience. Some training doctrine in place." },
+                        { tier: "BRONZE",   label: "Limited Capability", desc: "New or low-activity unit with minimal documented record and few training resources." },
                         { tier: "FORMING",  label: "Forming",            desc: "No established operational record yet." },
                       ].map(t => (
                         <div key={t.tier} className={`flex items-start gap-3 p-3 rounded border transition-colors ${readiness.op_capability_tier === t.tier ? "border-primary/40 bg-primary/5" : "border-transparent"}`}>
@@ -459,7 +466,7 @@ export default function MilsimGroup() {
                       ))}
                     </div>
                     <p className="text-[10px] text-muted-foreground font-sans mt-4 pt-3 border-t border-border">
-                      Tier is computed from operations logged, AAR discipline, average troop experience and member count. Win rate is not used — we can only assess what commanders actually log.
+                      Tier is computed from operations logged, AAR discipline, average troop experience, member count, and training documentation depth. Win rate is not used — we can only assess what commanders actually log.
                     </p>
                   </div>
                 </>

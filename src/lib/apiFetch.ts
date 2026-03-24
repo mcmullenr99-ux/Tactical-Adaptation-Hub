@@ -32,6 +32,7 @@ const ROUTE_MAP: Record<string, string> = {
   "/api/stripe":                "stripe",
   "/api/referral-code":         "users",
   "/api/reputation":            "reputation",
+  "/api/training-docs":         "trainingDocs",
 };
 
 /** Resolve /api/... path to a full Base44 function URL, using ?path= for sub-paths */

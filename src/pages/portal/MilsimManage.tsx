@@ -13,7 +13,7 @@ import {
   Shield, Crosshair, Award, Users, FileText, BookOpen,
   Plus, Trash2, Loader2, Save, CheckCircle2, AlertCircle, ExternalLink,
   Pencil, Check, X, Radio, Star, Medal, Wifi, WifiOff,
-  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp
+  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp, Upload, FileCheck, Brain, AlertTriangle, Eye, AlertCircle
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
@@ -33,7 +33,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "reputation" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness";
+type Tab = "info" | "roles" | "ranks" | "roster" | "reputation" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "training";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -92,6 +92,7 @@ export default function MilsimManage() {
     { id: "stream", label: "Stream", icon: Radio },
     { id: "sops", label: "SOPs / ORBAT", icon: BookOpen },
     { id: "questions", label: "App Questions", icon: FileText },
+    { id: "training", label: "Training Docs", icon: Brain },
   ];
 
   return (
@@ -154,6 +155,7 @@ export default function MilsimManage() {
           {tab === "readiness" && <ReadinessTab group={group} />}
           {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
           {tab === "sops" && <SopsTab group={group} roster={group.roster} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+          {tab === "training" && <TrainingDocsTab group={group} showMsg={showMsg} />}
           {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
         </motion.div>
       </div>
@@ -1516,8 +1518,11 @@ function ReadinessTab({ group }: any) {
   const sc = readiness.status === "green" ? "text-green-400" : readiness.status === "amber" ? "text-yellow-400" : "text-red-400";
   const bc = readiness.status === "green" ? "bg-green-500" : readiness.status === "amber" ? "bg-yellow-500" : "bg-red-500";
   const tierStyles: Record<string, string> = {
-    "TIER I":   "text-yellow-400", "TIER II": "text-green-400",
-    "TIER III": "text-blue-400",   "TIER IV": "text-slate-400", "FORMING": "text-muted-foreground",
+    "PLATINUM": "text-slate-200", "GOLD": "text-yellow-400",
+    "SILVER":   "text-blue-300",  "BRONZE": "text-orange-500", "FORMING": "text-muted-foreground",
+  };
+  const tierIcons: Record<string, string> = {
+    "PLATINUM": "⬡", "GOLD": "★", "SILVER": "◆", "BRONZE": "▲", "FORMING": "●",
   };
   return (
     <div className="max-w-2xl space-y-5">
@@ -1528,7 +1533,7 @@ function ReadinessTab({ group }: any) {
           <div className="flex items-center gap-3">
             <span className={`font-display font-black text-xl uppercase ${sc}`}>{readiness.status.toUpperCase()}</span>
             <span className={`text-xs font-display font-bold uppercase tracking-widest px-2 py-1 rounded border border-current/30 bg-current/10 ${tierStyles[readiness.op_capability_tier] ?? "text-muted-foreground"}`}>
-              {readiness.op_capability_tier}
+              {tierIcons[readiness.op_capability_tier] ?? "●"} {readiness.op_capability_tier}
             </span>
           </div>
         </div>
@@ -1567,8 +1572,39 @@ function ReadinessTab({ group }: any) {
           <p className="text-[10px] text-muted-foreground">from troop ratings</p>
         </div>
       </div>
+      {/* Training Knowledge Assessment */}
+      {readiness.training && readiness.training.knowledge_grade !== 'none' && (
+        <div className={`border rounded-lg p-5 space-y-2 ${
+          readiness.training.knowledge_grade === 'expert'     ? 'border-slate-300/40 bg-slate-200/5' :
+          readiness.training.knowledge_grade === 'proficient' ? 'border-yellow-500/40 bg-yellow-500/5' :
+          readiness.training.knowledge_grade === 'developing' ? 'border-blue-300/40 bg-blue-300/5' :
+          'border-orange-500/30 bg-orange-500/5'
+        }`}>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="font-display font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+              <Brain className="w-4 h-4" /> Training Knowledge
+            </span>
+            <span className={`text-xs font-display font-bold px-2 py-0.5 rounded border ${
+              readiness.training.knowledge_grade === 'expert' ? 'text-slate-200 border-slate-300/40' :
+              readiness.training.knowledge_grade === 'proficient' ? 'text-yellow-400 border-yellow-500/40' :
+              readiness.training.knowledge_grade === 'developing' ? 'text-blue-300 border-blue-300/40' :
+              'text-orange-500 border-orange-600/40'
+            }`}>{readiness.training.knowledge_label}</span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans leading-relaxed">{readiness.training.knowledge_detail}</p>
+          <div className="flex gap-3 text-xs text-muted-foreground font-sans pt-1 border-t border-border/50">
+            <span>{readiness.training.doc_count} docs · {readiness.training.total_pages} pages · Knowledge factor: {readiness.training.knowledge_factor}/100</span>
+          </div>
+        </div>
+      )}
+      {readiness.training && readiness.training.knowledge_grade === 'none' && (
+        <div className="border border-dashed border-orange-500/30 bg-orange-500/5 rounded-lg p-4 text-xs text-orange-400 font-sans flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>No training documents filed. Upload SOPs, TTPs, and drills in the <strong>Training Docs</strong> tab to improve your capability tier score.</span>
+        </div>
+      )}
       <p className="text-xs text-muted-foreground font-sans">
-        Readiness = 40% capacity (active/total) + 40% avg rep score + 20% win rate. Tier = ops logged, win rate, avg experience, and troop count. 70%+ = Green, 40–69% = Amber, &lt;40% = Red.
+        Capability tier now includes training documentation depth (20pt weight). Tier = ops logged, troop experience, roster size, AAR discipline, and training knowledge. Platinum/Gold/Silver/Bronze/Forming.
       </p>
     </div>
   );
@@ -1787,6 +1823,297 @@ function ReputationTab({ group }: any) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Training Docs Tab ────────────────────────────────────────────────────────
+const DOC_TYPES = ["SOP", "TTP", "Drill", "Reference", "Rules of Engagement", "Other"] as const;
+
+function TrainingDocsTab({ group, showMsg }: any) {
+  const { user } = useAuth();
+  const [docs, setDocs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [assessment, setAssessment] = useState<any | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [form, setForm] = useState({
+    title: "", description: "", doc_type: "SOP" as typeof DOC_TYPES[number],
+    last_reviewed_at: new Date().toISOString().split("T")[0],
+  });
+
+  const loadDocs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch<any[]>(`/api/training-docs/${group.id}`);
+      setDocs(data ?? []);
+    } catch { setDocs([]); } finally { setLoading(false); }
+  }, [group.id]);
+
+  const loadAssessment = useCallback(async () => {
+    try {
+      const r = await apiFetch<any>(`/api/stats/readiness/${group.id}`);
+      if (r?.training) setAssessment(r.training);
+    } catch {}
+  }, [group.id]);
+
+  useEffect(() => { loadDocs(); loadAssessment(); }, [loadDocs, loadAssessment]);
+
+  const uploadDoc = async () => {
+    const file = fileInputRef.current?.files?.[0];
+    if (!file || !form.title.trim()) {
+      showMsg(false, "Title and file are required."); return;
+    }
+    const allowed = ["application/pdf", "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain", "text/markdown"];
+    if (!allowed.includes(file.type)) {
+      showMsg(false, "Only PDF, DOCX, DOC, TXT, or MD files are supported."); return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      showMsg(false, "File must be under 20MB."); return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("group_id", group.id);
+      fd.append("title", form.title);
+      fd.append("description", form.description);
+      fd.append("doc_type", form.doc_type);
+      fd.append("last_reviewed_at", form.last_reviewed_at ? new Date(form.last_reviewed_at).toISOString() : new Date().toISOString());
+      fd.append("uploaded_by", user?.id ?? "");
+      fd.append("uploaded_by_username", (user as any)?.username ?? "");
+      const result = await apiFetch<any>("/api/training-docs/upload", { method: "POST", body: fd, isFormData: true });
+      if (result?.id) {
+        setDocs(prev => [result, ...prev]);
+        setForm({ title: "", description: "", doc_type: "SOP", last_reviewed_at: new Date().toISOString().split("T")[0] });
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        setShowForm(false);
+        showMsg(true, "Training document uploaded.");
+        loadAssessment();
+      } else { showMsg(false, "Upload failed — try again."); }
+    } catch (e: any) { showMsg(false, e.message ?? "Upload failed."); } finally { setUploading(false); }
+  };
+
+  const deleteDoc = async (id: string) => {
+    if (!confirm("Remove this training document?")) return;
+    try {
+      await apiFetch(`/api/training-docs/${group.id}/${id}`, { method: "DELETE" });
+      setDocs(prev => prev.filter(d => d.id !== id));
+      showMsg(true, "Document removed.");
+      loadAssessment();
+    } catch { showMsg(false, "Failed to remove document."); }
+  };
+
+  const markReviewed = async (doc: any) => {
+    try {
+      const updated = await apiFetch<any>(`/api/training-docs/${group.id}/${doc.id}`, {
+        method: "PATCH", body: JSON.stringify({ last_reviewed_at: new Date().toISOString() }),
+      });
+      setDocs(prev => prev.map(d => d.id === doc.id ? { ...d, ...updated } : d));
+      showMsg(true, "Marked as reviewed.");
+      loadAssessment();
+    } catch { showMsg(false, "Failed to update."); }
+  };
+
+  const gradeColor: Record<string, string> = {
+    expert:     "text-slate-200 border-slate-300/60 bg-slate-200/10",
+    proficient: "text-yellow-400 border-yellow-500/40 bg-yellow-500/10",
+    developing: "text-blue-300 border-blue-300/40 bg-blue-300/10",
+    minimal:    "text-orange-500 border-orange-600/40 bg-orange-500/10",
+    none:       "text-muted-foreground border-border bg-secondary/40",
+  };
+  const gradeIcon: Record<string, string> = {
+    expert: "⬡", proficient: "★", developing: "◆", minimal: "▲", none: "●",
+  };
+
+  const nowMs = Date.now();
+  const isStale = (doc: any) => {
+    const ref = doc.last_reviewed_at ?? doc.updated_date ?? doc.created_date;
+    if (!ref) return true;
+    return (nowMs - new Date(ref).getTime()) > 180 * 86_400_000;
+  };
+
+  const docTypeColor: Record<string, string> = {
+    "SOP": "text-green-400 border-green-500/30 bg-green-500/10",
+    "TTP": "text-blue-400 border-blue-500/30 bg-blue-500/10",
+    "Drill": "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
+    "Reference": "text-purple-400 border-purple-500/30 bg-purple-500/10",
+    "Rules of Engagement": "text-red-400 border-red-500/30 bg-red-500/10",
+    "Other": "text-muted-foreground border-border bg-secondary/40",
+  };
+
+  return (
+    <div className="space-y-5 max-w-3xl">
+      {/* Assessment Banner */}
+      {assessment && (
+        <div className={`border rounded-lg p-5 space-y-2 ${gradeColor[assessment.knowledge_grade] ?? gradeColor.none}`}>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Brain className="w-5 h-5 shrink-0" />
+            <span className="font-display font-black uppercase tracking-widest text-sm">
+              {gradeIcon[assessment.knowledge_grade]} {assessment.knowledge_label}
+            </span>
+            <span className="ml-auto font-display font-bold text-xs opacity-70">
+              Knowledge Factor: {assessment.knowledge_factor}/100
+            </span>
+          </div>
+          <p className="text-xs font-sans leading-relaxed opacity-85">{assessment.knowledge_detail}</p>
+          <div className="flex flex-wrap gap-3 pt-1 text-xs font-sans opacity-70">
+            <span>{assessment.doc_count} document{assessment.doc_count !== 1 ? "s" : ""}</span>
+            <span>·</span>
+            <span>{assessment.total_pages} page{assessment.total_pages !== 1 ? "s" : ""} total</span>
+            <span>·</span>
+            <span>Avg depth: {assessment.avg_depth_score}/100</span>
+            {assessment.outdated_count > 0 && <><span>·</span><span className="text-orange-400">{assessment.outdated_count} outdated</span></>}
+          </div>
+          {/* Coverage badges */}
+          <div className="flex flex-wrap gap-2 pt-1">
+            {[
+              { label: "SOPs", has: assessment.has_sop },
+              { label: "TTPs", has: assessment.has_ttp },
+              { label: "ROE", has: assessment.has_roe },
+              { label: "Drills", has: assessment.has_drill },
+            ].map(b => (
+              <span key={b.label} className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${b.has ? "border-green-500/40 text-green-400 bg-green-500/10" : "border-border text-muted-foreground bg-secondary/30 opacity-50"}`}>
+                {b.has ? "✓" : "✗"} {b.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h3 className="font-display font-bold uppercase tracking-widest">Training Documents</h3>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Upload SOPs, TTPs, drills, and references. Depth and recency directly influence your unit's capability tier.</p>
+        </div>
+        <button onClick={() => setShowForm(v => !v)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs rounded clip-angled-sm transition-all">
+          <Plus className="w-3.5 h-3.5" /> Upload Doc
+        </button>
+      </div>
+
+      {/* Upload Form */}
+      {showForm && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-card border border-primary/30 rounded-lg p-5 space-y-4">
+          <h4 className="font-display font-bold uppercase tracking-widest text-sm text-primary">New Training Document</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Document Title *</label>
+              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                placeholder="e.g. Section Attack Procedure SOP" className="mf-input w-full" />
+            </div>
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Document Type</label>
+              <select value={form.doc_type} onChange={e => setForm(f => ({ ...f, doc_type: e.target.value as any }))} className="mf-input w-full">
+                {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Effective / Reviewed Date</label>
+              <input type="date" value={form.last_reviewed_at} onChange={e => setForm(f => ({ ...f, last_reviewed_at: e.target.value }))} className="mf-input w-full" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Description (optional)</label>
+              <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                rows={2} placeholder="Brief summary of what this document covers..." className="mf-input w-full resize-none" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">File * (PDF, DOCX, DOC, TXT, MD — max 20MB)</label>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2 border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground font-display font-bold uppercase tracking-wider text-xs rounded transition-all">
+                  <Upload className="w-3.5 h-3.5" /> Choose File
+                </button>
+                <span className="text-xs text-muted-foreground font-sans" id="file-label">No file selected</span>
+              </div>
+              <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.md"
+                className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) { const lbl = document.getElementById('file-label'); if (lbl) lbl.textContent = f.name; } }} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setShowForm(false)}
+              className="px-4 py-2 border border-border hover:border-destructive/50 text-muted-foreground hover:text-destructive font-display font-bold uppercase tracking-wider text-xs rounded transition-all">
+              Cancel
+            </button>
+            <button onClick={uploadDoc} disabled={uploading}
+              className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs rounded clip-angled-sm transition-all disabled:opacity-50">
+              {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+              {uploading ? "Uploading..." : "Upload"}
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Docs List */}
+      {loading ? (
+        <div className="flex justify-center py-10"><Loader2 className="w-7 h-7 animate-spin text-primary" /></div>
+      ) : docs.length === 0 ? (
+        <div className="text-center py-14 border border-dashed border-border rounded-lg text-muted-foreground">
+          <Brain className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="font-display text-sm uppercase tracking-widest">No Training Documents</p>
+          <p className="text-xs mt-2 font-sans">Upload your SOPs, TTPs, and drill references to build your knowledge baseline.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {docs.map(doc => {
+            const stale = isStale(doc);
+            return (
+              <div key={doc.id} className={`bg-card border rounded-lg p-4 flex items-start gap-4 transition-colors ${stale ? "border-orange-500/30" : "border-border"}`}>
+                <div className="shrink-0 mt-0.5">
+                  <FileCheck className={`w-5 h-5 ${stale ? "text-orange-400" : "text-primary"}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="font-display font-bold text-sm">{doc.title}</span>
+                    <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${docTypeColor[doc.doc_type] ?? docTypeColor.Other}`}>
+                      {doc.doc_type}
+                    </span>
+                    {stale && (
+                      <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border border-orange-500/40 text-orange-400 bg-orange-500/10">
+                        <AlertTriangle className="w-2.5 h-2.5" /> Outdated
+                      </span>
+                    )}
+                  </div>
+                  {doc.description && <p className="text-xs text-muted-foreground font-sans mb-2 line-clamp-2">{doc.description}</p>}
+                  <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground font-sans">
+                    {doc.page_count && <span>{doc.page_count} pages</span>}
+                    {doc.file_name && <span>{doc.file_name}</span>}
+                    {doc.file_size_bytes && <span>{(doc.file_size_bytes / 1024).toFixed(0)} KB</span>}
+                    {doc.depth_score && <span>Depth: {doc.depth_score}/100</span>}
+                    <span>Reviewed: {doc.last_reviewed_at ? format(new Date(doc.last_reviewed_at), "dd MMM yyyy") : "—"}</span>
+                    <span>By: {doc.uploaded_by_username ?? "—"}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {doc.file_url && (
+                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
+                      className="p-1.5 text-muted-foreground hover:text-primary transition-colors" title="View document">
+                      <Eye className="w-4 h-4" />
+                    </a>
+                  )}
+                  {stale && (
+                    <button onClick={() => markReviewed(doc)}
+                      className="p-1.5 text-muted-foreground hover:text-green-400 transition-colors" title="Mark as reviewed today">
+                      <FileCheck className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button onClick={() => deleteDoc(doc.id)}
+                    className="p-1.5 text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

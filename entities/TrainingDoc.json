@@ -1,0 +1,64 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "doc_type": {
+      "type": "string",
+      "enum": [
+        "SOP",
+        "TTP",
+        "Drill",
+        "Reference",
+        "Rules of Engagement",
+        "Other"
+      ]
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "file_size_bytes": {
+      "type": "number"
+    },
+    "mime_type": {
+      "type": "string"
+    },
+    "page_count": {
+      "type": "number"
+    },
+    "word_count": {
+      "type": "number"
+    },
+    "uploaded_by": {
+      "type": "string"
+    },
+    "uploaded_by_username": {
+      "type": "string"
+    },
+    "last_reviewed_at": {
+      "type": "string"
+    },
+    "is_current": {
+      "type": "boolean",
+      "default": true
+    },
+    "depth_score": {
+      "type": "number"
+    },
+    "ai_summary": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "TrainingDoc"
+}
