@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import bcrypt from 'npm:bcryptjs@2.4.3';
 
 const ADMIN_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
@@ -6,7 +6,7 @@ const ADMIN_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-i
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   try {
-    const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') ?? '' });
+    const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
 
     const { secret, user_id, username, password } = body;
