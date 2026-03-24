@@ -74,7 +74,7 @@ export default function Profile() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bio, discordTag, nationality: nationality || null }),
       });
-      qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      qc.invalidateQueries({ queryKey: ["me"] });
       toast({ title: "Profile Updated", description: "Your profile has been saved." });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });

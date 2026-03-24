@@ -12,6 +12,7 @@ import {
   LifeBuoy, MessageSquare, ChevronRight, Loader2, Send, Star,
   CheckCircle2, Clock, AlertTriangle, BarChart3, Trash2, Eye
 } from "lucide-react";
+import { PortalLayout } from "@/components/layout/PortalLayout";
 
 const STATUS_COLORS: Record<string, string> = {
   open: "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -166,6 +167,7 @@ export default function SupportAdmin() {
   );
 
   return (
+    <PortalLayout>
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-2"><LifeBuoy className="w-6 h-6 text-green-400" /> Support Admin</h1>
@@ -263,5 +265,6 @@ export default function SupportAdmin() {
         </TabsContent>
       </Tabs>
     </div>
+    </PortalLayout>
   );
 }

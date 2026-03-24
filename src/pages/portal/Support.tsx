@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { LifeBuoy, MessageSquare, Plus, Star, ChevronRight, Clock, CheckCircle2, Loader2, Send } from "lucide-react";
+import { PortalLayout } from "@/components/layout/PortalLayout";
 
 const STATUS_COLORS: Record<string, string> = {
   open: "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -104,7 +105,8 @@ export default function Support() {
   }
 
   if (activeTicket) return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
+    <PortalLayout>
+      <div className="max-w-3xl mx-auto p-6 space-y-6">
       <button onClick={() => setActiveTicket(null)} className="text-sm text-zinc-400 hover:text-white flex items-center gap-1">
         ← Back to tickets
       </button>
@@ -152,10 +154,12 @@ export default function Support() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </PortalLayout>
   );
 
   return (
+    <PortalLayout>
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -280,5 +284,6 @@ export default function Support() {
         </DialogContent>
       </Dialog>
     </div>
+    </PortalLayout>
   );
 }
