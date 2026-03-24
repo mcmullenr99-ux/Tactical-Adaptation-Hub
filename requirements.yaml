@@ -1,0 +1,10 @@
+packages:
+  "framer-motion": "Animations and page transitions"
+  "react-hook-form": "Form state management"
+  "@hookform/resolvers": "Zod validation for forms"
+  "zod": "Schema validation"
+  "date-fns": "Date formatting"
+images: []
+notes:
+  - "Portal uses cookie-based auth via API"
+  - "Auth contexts and layouts wrap the portal functionality"
