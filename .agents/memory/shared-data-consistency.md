@@ -186,3 +186,17 @@ Last confirmed schema — `entities/MilsimGroup.json`
 
 > Last updated: 2026-03-24
 > Maintained by: TAG Lead Developer Agent
+
+### 2026-03-24 — Bug fix sweep + Readiness/Capability system overhaul
+- **ORBAT crash fixed:** `MilsimGroup.tsx` ORBAT tab now wraps JSON.parse in try/catch, shows EmptyState instead of crashing
+- **All tabs null-safe:** Every tab in `MilsimGroup.tsx` now renders EmptyState when data is missing — no more blank screens
+- **Stats API mismatch fixed:** `functions/stats.ts` readiness endpoint completely rewritten — now returns all fields the UI expects: `status`, `readiness_pct`, `total`, `active_this_week`, `active_this_month`, `win_rate`, `avg_rep_score`, `avg_experience`, `op_capability_tier`
+- **ReadinessTab fixed:** MilsimManage ReadinessTab now uses correct API fields, shows error state gracefully
+- **Readiness formula:** 40% capacity (active_this_month/total) + 40% avg rep score + 20% win rate
+- **Op Capability Tier added:** TIER I–IV + FORMING, computed from ops logged, win rate, avg experience, troop count. Shown in hero + Capabilities tab
+- **SOF unit types cleaned:** Removed all country-specific references (Green Berets/SAS etc). Replaced with: Mountain, Maritime, Air Assault Wing, Desert, Mobility, Counter Terrorism Wing, Demolitions/Breaching, Direct Action, Unconventional Warfare, etc.
+- **Branch icons:** Removed all emoji. Registry now uses inline SVG icons in BranchFilter. MilsimManage InfoTab uses dot indicator. MilsimGroup public page uses custom SVG BranchBadge component
+- **Capabilities tab added:** New public-facing tab on MilsimGroup.tsx showing full readiness breakdown, tier explanation, and all stat cards
+- **groupFullDetail null-safe:** Backend now wraps all filter calls in `.catch(() => [])`, normalises snake_case → camelCase on return
+- **branch field:** milsimGroups.ts create + update now handles `branch` field correctly
+
