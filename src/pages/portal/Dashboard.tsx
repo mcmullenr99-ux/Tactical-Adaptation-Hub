@@ -31,8 +31,11 @@ const DUTY_OPTIONS = [
   { value: "mia", label: "MIA", color: "text-red-400 border-red-500/40 bg-red-500/10" },
 ];
 
-function getServiceBadge(createdAt: string) {
-  const days = differenceInDays(new Date(), new Date(createdAt));
+function getServiceBadge(createdAt: string | null | undefined) {
+  if (!createdAt) return { label: "Recruit", icon: "●", color: "text-muted-foreground" };
+  const _d = new Date(createdAt);
+  if (isNaN(_d.getTime())) return { label: "Recruit", icon: "●", color: "text-muted-foreground" };
+  const days = differenceInDays(new Date(), _d);
   if (days >= 730) return { label: "2-Year Elite", icon: "★★", color: "text-accent border-accent/40 bg-accent/10" };
   if (days >= 365) return { label: "1-Year Veteran", icon: "★", color: "text-yellow-400 border-yellow-500/40 bg-yellow-500/10" };
   if (days >= 180) return { label: "6-Month Operator", icon: "◆", color: "text-blue-400 border-blue-500/40 bg-blue-500/10" };
@@ -122,7 +125,7 @@ export default function Dashboard() {
             </div>
             <p className="font-sans text-foreground whitespace-pre-wrap text-sm leading-relaxed">{motd.content}</p>
             <p className="text-xs text-muted-foreground mt-3 font-display uppercase tracking-widest">
-              — {motd.author} · {format(new Date(motd.created_at), "MMM dd, yyyy")}
+              — {motd.author} · {motd.created_at && !isNaN(new Date(motd.created_at).getTime()) ? format(new Date(motd.created_at), "MMM dd, yyyy") : "—"}
             </p>
           </div>
         )}
@@ -200,10 +203,10 @@ export default function Dashboard() {
                 <div key={op.id} className="flex items-center gap-4 p-3 bg-secondary/40 border border-border rounded hover:border-primary/30 transition-colors">
                   <div className="text-center min-w-[48px]">
                     <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">
-                      {format(new Date(op.event_date), "MMM")}
+                      {op.event_date && !isNaN(new Date(op.event_date).getTime()) ? format(new Date(op.event_date), "MMM") : "—"}
                     </p>
                     <p className="text-2xl font-display font-bold text-primary leading-none">
-                      {format(new Date(op.event_date), "dd")}
+                      {op.event_date && !isNaN(new Date(op.event_date).getTime()) ? format(new Date(op.event_date), "dd") : "—"}
                     </p>
                   </div>
                   <div className="flex-1 min-w-0">
@@ -211,7 +214,7 @@ export default function Dashboard() {
                     {op.game && <p className="text-xs text-muted-foreground font-sans truncate">{op.game}</p>}
                   </div>
                   <p className="text-xs text-muted-foreground font-sans flex-shrink-0">
-                    {formatDistanceToNow(new Date(op.event_date), { addSuffix: true })}
+                    {op.event_date && !isNaN(new Date(op.event_date).getTime()) ? formatDistanceToNow(new Date(op.event_date), { addSuffix: true }) : "—"}
                   </p>
                 </div>
               ))}

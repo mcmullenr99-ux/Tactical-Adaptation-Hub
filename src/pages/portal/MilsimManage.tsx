@@ -1277,7 +1277,7 @@ function OpsTab({ group, showMsg }: any) {
                 <div className="flex items-center gap-3"><span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground px-2 py-0.5 bg-secondary border border-border rounded">Ended</span><span className="font-display font-bold text-sm text-foreground">{op.name}</span></div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground"><span>{op.checkin_count} checked in</span>{expandedOp === op.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</div>
               </button>
-              {expandedOp === op.id && <div className="border-t border-border px-5 py-3 bg-secondary/10 text-xs text-muted-foreground">Started: {format(new Date(op.started_at), "PPpp")}{op.ended_at && <> · Ended: {format(new Date(op.ended_at), "PPpp")}</>}</div>}
+              {expandedOp === op.id && <div className="border-t border-border px-5 py-3 bg-secondary/10 text-xs text-muted-foreground">Started: {op.started_at && !isNaN(new Date(op.started_at).getTime()) ? format(new Date(op.started_at), "PPpp") : "—"}{op.ended_at && !isNaN(new Date(op.ended_at).getTime()) && <> · Ended: {format(new Date(op.ended_at), "PPpp")}</>}</div>}
             </div>
           ))}
         </div>

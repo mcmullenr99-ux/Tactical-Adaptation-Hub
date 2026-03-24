@@ -185,7 +185,7 @@ export default function AdminPanel() {
                     <div key={token.id} className="flex items-center justify-between gap-4 p-4 bg-secondary/40 border border-border rounded-lg">
                       <div>
                         <p className="font-display font-bold text-foreground">{token.username}</p>
-                        <p className="text-xs text-muted-foreground">{token.email} · Expires {format(new Date(token.expires_at), "HH:mm, MMM d")}</p>
+                        <p className="text-xs text-muted-foreground">{token.email} · Expires {token.expires_at && !isNaN(new Date(token.expires_at).getTime()) ? format(new Date(token.expires_at), "HH:mm, MMM d") : "—"}</p>
                       </div>
                       <button onClick={() => copyResetLink(token.token)}
                         className="flex items-center gap-2 px-3 py-2 border border-border rounded text-sm font-display uppercase tracking-wider text-muted-foreground hover:text-foreground hover:border-primary transition-colors">

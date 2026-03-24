@@ -17,8 +17,11 @@ const DUTY_OPTIONS = [
   { value: "mia", label: "MIA", color: "bg-red-500/20 text-red-400 border-red-500/40" },
 ];
 
-function getServiceBadge(createdAt: string) {
-  const days = differenceInDays(new Date(), new Date(createdAt));
+function getServiceBadge(createdAt: string | null | undefined) {
+  if (!createdAt) return { label: "Recruit", icon: "●", color: "text-muted-foreground" };
+  const d = new Date(createdAt);
+  if (isNaN(d.getTime())) return { label: "Recruit", icon: "●", color: "text-muted-foreground" };
+  const days = differenceInDays(new Date(), d);
   if (days >= 730) return { label: "2-Year Elite", icon: "★★", color: "text-accent" };
   if (days >= 365) return { label: "1-Year Veteran", icon: "★", color: "text-yellow-400" };
   if (days >= 180) return { label: "6-Month Operator", icon: "◆", color: "text-blue-400" };
@@ -66,8 +69,9 @@ export default function Profile() {
 
   if (!user) return null;
 
-  const badge = getServiceBadge(user.createdAt);
-  const daysIn = differenceInDays(new Date(), new Date(user.createdAt));
+  const _createdAt = user.createdAt ?? user.created_at ?? null;
+  const badge = getServiceBadge(_createdAt);
+  const daysIn = _createdAt && !isNaN(new Date(_createdAt).getTime()) ? differenceInDays(new Date(), new Date(_createdAt)) : 0;
 
   const saveProfile = async () => {
     setSavingProfile(true);
@@ -184,7 +188,7 @@ export default function Profile() {
             </div>
             <div>
               <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Enlisted</p>
-              <p className="font-display font-bold">{format(new Date(user.createdAt), "MMM dd, yyyy")}</p>
+              <p className="font-display font-bold">{_createdAt && !isNaN(new Date(_createdAt).getTime()) ? format(new Date(_createdAt), "MMM dd, yyyy") : "—"}</p>
             </div>
             <div>
               <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Service Badge</p>
@@ -371,7 +375,7 @@ export default function Profile() {
                 {recruits.map((r: any) => (
                   <div key={r.id} className="flex items-center justify-between text-sm px-3 py-2 bg-secondary/40 rounded">
                     <span className="font-display font-bold text-foreground">{r.username}</span>
-                    <span className="text-xs text-muted-foreground">{format(new Date(r.created_at), "MMM dd, yyyy")}</span>
+                    <span className="text-xs text-muted-foreground">{r.created_at && !isNaN(new Date(r.created_at).getTime()) ? format(new Date(r.created_at), "MMM dd, yyyy") : "—"}</span>
                   </div>
                 ))}
               </div>

@@ -206,7 +206,7 @@ function AccountsTab({ isAdmin }: { isAdmin: boolean }) {
               {expanded === user.id && (
                 <div className="border-t border-border bg-secondary/10 px-4 py-4 space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-sans">
-                    <div><p className="text-muted-foreground mb-1 font-display font-bold uppercase tracking-wider">Joined</p><p className="text-foreground">{format(new Date(user.createdAt), "MMM dd, yyyy")}</p></div>
+                    <div><p className="text-muted-foreground mb-1 font-display font-bold uppercase tracking-wider">Joined</p><p className="text-foreground">{user.createdAt && !isNaN(new Date(user.createdAt).getTime()) ? format(new Date(user.createdAt), "MMM dd, yyyy") : "—"}</p></div>
                     <div><p className="text-muted-foreground mb-1 font-display font-bold uppercase tracking-wider">Discord</p><p className="text-foreground">{user.discordTag || "—"}</p></div>
                     <div><p className="text-muted-foreground mb-1 font-display font-bold uppercase tracking-wider">Bio</p><p className="text-foreground truncate">{user.bio || "—"}</p></div>
                     {user.status === "banned" && <div><p className="text-muted-foreground mb-1 font-display font-bold uppercase tracking-wider">Ban Reason</p><p className="text-destructive">{user.banReason || "—"}</p></div>}

@@ -153,7 +153,7 @@ export default function Inbox() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
-                    <span className="text-xs font-sans text-muted-foreground">{format(new Date(msg.createdAt), "MMM dd, HH:mm")}</span>
+                    <span className="text-xs font-sans text-muted-foreground">{msg.createdAt && !isNaN(new Date(msg.createdAt).getTime()) ? format(new Date(msg.createdAt), "MMM dd, HH:mm") : "—"}</span>
                     <button onClick={(e) => handleDelete(e, msg.id)} className="p-2 hover:bg-destructive/20 text-muted-foreground hover:text-destructive rounded transition-colors" title="Delete">
                       <Trash2 className="w-4 h-4" />
                     </button>
