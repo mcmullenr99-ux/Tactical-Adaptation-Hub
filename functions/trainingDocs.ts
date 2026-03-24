@@ -99,15 +99,22 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'File too large (max 20MB)' }, { status: 400 });
       }
 
-      // Upload via Base44 file storage
+      // Upload via Base44 public files API
       const arrayBuf = await file.arrayBuffer();
-      const fileBlob = new Blob([arrayBuf], { type: file.type });
-      const uploadResult = await base44.asServiceRole.storage.upload(fileBlob, {
-        filename: file.name,
-        contentType: file.type,
-        public: true,
-      });
-      const fileUrl = uploadResult?.url ?? uploadResult?.publicUrl ?? null;
+      const appId = Deno.env.get('BASE44_APP_ID') ?? '';
+      const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
+      const uploadForm = new FormData();
+      uploadForm.append('file', new Blob([arrayBuf], { type: file.type }), file.name);
+      const uploadRes = await fetch(
+        `https://api.base44.com/api/apps/${appId}/files/upload`,
+        {
+          method: 'POST',
+          headers: { 'x-api-key': serviceToken },
+          body: uploadForm,
+        }
+      );
+      const uploadJson = uploadRes.ok ? await uploadRes.json().catch(() => ({})) : {};
+      const fileUrl: string | null = uploadJson?.file_url ?? uploadJson?.url ?? null;
 
       // Estimate page count from file size (rough heuristic — ~50KB per page for PDFs)
       const estimatedPages = file.type === 'application/pdf'
