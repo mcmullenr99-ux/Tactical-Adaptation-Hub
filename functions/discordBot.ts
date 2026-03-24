@@ -304,7 +304,7 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
           components: [
             { type: 1, components: [{ type: 4, custom_id: 'doc_title', label: 'Document Title', style: 1, required: true, placeholder: 'e.g. Leadership Cadre Manual' }] },
             { type: 1, components: [{ type: 4, custom_id: 'doc_author', label: 'Author / Unit', style: 1, required: true, placeholder: 'e.g. SunrayActual / E-Squadron TAG' }] },
-            { type: 1, components: [{ type: 4, custom_id: 'doc_class', label: 'Classification (UNCLASSIFIED / RESTRICTED / CONFIDENTIAL)', style: 1, required: true, value: 'UNCLASSIFIED' }] },
+            { type: 1, components: [{ type: 4, custom_id: 'doc_class', label: 'Classification Level', style: 1, required: true, value: 'UNCLASSIFIED' }] },
           ]
         }
       });
