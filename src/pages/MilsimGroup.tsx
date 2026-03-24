@@ -62,6 +62,7 @@ function BranchBadge({ branch }: { branch: string }) {
     "Navy":               <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><path d="M3 9l5 4 5-4V6l-5-3-5 3v3zm5 2.8L4.2 9 4 6.9 8 4.4l4 2.5-.2 2.1L8 11.8z"/></svg>,
     "Special Operations": <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10l-3.7 2.5 1.4-4.3L2 5.5h4.5L8 1z"/></svg>,
     "Multi-Branch":       <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><circle cx="8" cy="8" r="6" fillOpacity=".15" stroke="currentColor" strokeWidth="1.2" fill="none"/><path d="M8 3v10M3 8h10" strokeWidth="1.2" stroke="currentColor"/></svg>,
+    "PMC":                <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><circle cx="8" cy="6.5" r="3.5"/><path d="M5.5 9.5c-1.5.5-2.5 1.5-2.5 2.5h10c0-1-1-2-2.5-2.5M6.5 11h3"/></svg>,
   };
   return (
     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/8 border border-primary/25 rounded text-[10px] font-display font-bold uppercase tracking-widest text-primary/80">

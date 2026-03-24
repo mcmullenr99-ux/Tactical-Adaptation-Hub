@@ -9,6 +9,7 @@ export const BRANCHES = [
   "Navy",
   "Special Operations",
   "Multi-Branch",
+  "PMC",
 ] as const;
 
 export type Branch = typeof BRANCHES[number];
@@ -95,6 +96,24 @@ export const UNIT_TYPES_BY_BRANCH: Record<Branch, string[]> = {
     "Mixed SOF",
     "Other",
   ],
+  "PMC": [
+    "Close Protection / PSD",
+    "Security Contracting",
+    "Armed Escort",
+    "Site / Compound Security",
+    "Advance Reconnaissance",
+    "High-Value Target Recovery",
+    "Hostile Environment Operations",
+    "Combat Search & Rescue (Contract)",
+    "Logistics Security",
+    "Maritime Security",
+    "Aviation Security",
+    "Counter-IED / EOD Contract",
+    "Training & Advisory (MPRI-type)",
+    "Intelligence & Surveillance Contract",
+    "Mixed Contractor Force",
+    "Other",
+  ],
   "Multi-Branch": [
     "Joint Task Force",
     "Combined Arms",
@@ -147,4 +166,5 @@ export const BRANCH_ICONS: Record<Branch, string> = {
   Navy: "🚢",
   "Special Operations": "🎯",
   "Multi-Branch": "🌐",
+  "PMC": "💀",
 };
