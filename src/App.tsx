@@ -1,5 +1,7 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/components/auth/AuthContext";
@@ -47,7 +49,30 @@ import TwoFactorAuth from "@/pages/portal/TwoFactorAuth";
 import Support from "@/pages/portal/Support";
 import SupportAdmin from "@/pages/portal/SupportAdmin";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Data considered fresh for 15 minutes — no refetch within that window
+      staleTime: 15 * 60 * 1000,
+      // Keep unused data in cache for 30 minutes after last use
+      gcTime: 30 * 60 * 1000,
+      // Don't refetch just because the user switches tabs / windows
+      refetchOnWindowFocus: false,
+      // Don't refetch on reconnect unless stale
+      refetchOnReconnect: "always",
+      // Retry failed requests once before surfacing the error
+      retry: 1,
+      retryDelay: 2000,
+    },
+  },
+});
+
+// Persist cache to localStorage — survives page refreshes and browser restarts
+// buster key = update this string any time you want to wipe old caches
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: "tag-query-cache-v1",
+});
 
 function Router() {
   return (
@@ -96,7 +121,7 @@ function Router() {
 function App() {
   return (
     <ThemeProvider>
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 24 * 60 * 60 * 1000 }}>
       <AuthProvider>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
@@ -106,7 +131,7 @@ function App() {
           <MacEasterEgg />
         </TooltipProvider>
       </AuthProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
     </ThemeProvider>
   );
 }

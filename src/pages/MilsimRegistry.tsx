@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -119,8 +120,13 @@ function BranchFilter({ value, onChange }: { value: string; onChange: (v: string
 
 export default function MilsimRegistry() {
   useSEO({ title: "MilSim Registry", description: "Browse TAG's registered MilSim groups — find your unit and enlist." });
-  const [groups, setGroups] = useState<MilsimGroup[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: groups = [], isLoading: loading } = useQuery<MilsimGroup[]>({
+    queryKey: ["milsim-groups-public"],
+    queryFn: () => apiFetch<MilsimGroup[]>("/api/milsim-groups"),
+    // Registry data: fresh for 20 mins, stays in cache for 1 hour
+    staleTime: 20 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
 
   const [search, setSearch] = useState("");
   const [filterBranch, setFilterBranch] = useState("");
@@ -129,12 +135,6 @@ export default function MilsimRegistry() {
   const [filterCountry, setFilterCountry] = useState("");
   const [filterLanguage, setFilterLanguage] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "featured">("all");
-
-  useEffect(() => {
-    apiFetch<MilsimGroup[]>("/api/milsim-groups")
-      .then(setGroups).catch(() => setGroups([]))
-      .finally(() => setLoading(false));
-  }, []);
 
   // When branch changes, reset unit type filter
   const handleBranchChange = (b: string) => { setFilterBranch(b); setFilterUnitType(""); };
