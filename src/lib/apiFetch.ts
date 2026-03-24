@@ -9,6 +9,7 @@ const ROUTE_MAP: Record<string, string> = {
   "/api/auth/logout":           "authLogout",
   "/api/auth/profile":          "authUpdateProfile",
   "/api/auth/password":         "authUpdateProfile",
+  "/api/auth/upload-avatar":    "authUpdateProfile",
   "/api/auth/forgot-password":  "authForgotPassword",
   "/api/auth/reset-password":   "authResetPassword",
   "/api/auth/account":          "authMe",
@@ -30,6 +31,7 @@ const ROUTE_MAP: Record<string, string> = {
   "/api/support":               "support",
   "/api/stripe":                "stripe",
   "/api/referral-code":         "users",
+  "/api/reputation":            "reputation",
 };
 
 /** Resolve /api/... path to a full Base44 function URL, using ?path= for sub-paths */
@@ -72,8 +74,11 @@ export async function apiFetch<T = unknown>(path: string, options?: RequestInit)
   const url = resolveUrl(path);
   const token = getAuthToken();
 
+  // Don't set Content-Type for FormData — let the browser set multipart boundary
+  const isFormData = options?.body instanceof FormData;
+
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(options?.headers as Record<string, string> ?? {}),
   };
 
