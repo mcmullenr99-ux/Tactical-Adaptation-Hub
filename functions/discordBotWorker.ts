@@ -1,6 +1,5 @@
 /**
- * TAG Discord Bot Worker — does the heavy lifting (scrape + PDF + upload)
- * Called by discordBot function via HTTP after immediately acking Discord
+ * TAG Discord Bot Worker — scrape + plain text upload
  */
 
 const DISCORD_BOT_TOKEN = Deno.env.get('DISCORD_BOT_TOKEN') ?? '';
@@ -13,7 +12,6 @@ function serviceHeaders(extra?: Record<string, string>) {
   return { 'Authorization': `Bearer ${token}`, ...(extra ?? {}) };
 }
 
-// ── Discord ───────────────────────────────────────────────────────────────
 async function discordGet(path: string) {
   const r = await fetch(`${DISCORD_API}${path}`, { headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` } });
   if (!r.ok) throw new Error(`Discord GET ${path} -> ${r.status}: ${await r.text()}`);
@@ -34,7 +32,6 @@ async function postMessage(channelId: string, content: string) {
   });
 }
 
-// ── Storage ───────────────────────────────────────────────────────────────
 async function uploadFile(bytes: Uint8Array, filename: string, mime: string): Promise<string> {
   const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
   const form = new FormData();
@@ -51,31 +48,11 @@ async function uploadFile(bytes: Uint8Array, filename: string, mime: string): Pr
   return url;
 }
 
-async function uploadContentJson(sections: StoredSection[], label: string): Promise<string> {
-  const bytes = new TextEncoder().encode(JSON.stringify(sections));
-  return uploadFile(bytes, `${label}_content.json`, 'application/json');
-}
-
-async function fetchContentJson(url: string): Promise<StoredSection[]> {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`Failed to fetch content JSON: ${r.status}`);
-  return r.json();
-}
-
-// ── Entities ──────────────────────────────────────────────────────────────
 async function entityCreate(entityName: string, data: Record<string, unknown>): Promise<any> {
   const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/entities/${entityName}`, {
     method: 'POST', headers: serviceHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(data),
   });
   if (!r.ok) throw new Error(`Entity create failed ${r.status}: ${await r.text()}`);
-  return r.json();
-}
-
-async function entityUpdate(entityName: string, id: string, data: Record<string, unknown>): Promise<any> {
-  const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
-    method: 'PUT', headers: serviceHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(data),
-  });
-  if (!r.ok) throw new Error(`Entity update failed ${r.status}: ${await r.text()}`);
   return r.json();
 }
 
@@ -87,28 +64,15 @@ async function entityGet(entityName: string, id: string): Promise<any> {
   return r.json();
 }
 
-// ── Scraping ──────────────────────────────────────────────────────────────
-interface StoredMessage { author: string; timestamp: string; content: string; }
-interface StoredSection { heading: string; messages: StoredMessage[]; sourceChannel?: string; }
-
-async function getForumThreads(channelId: string): Promise<any[]> {
-  const channel = await discordGet(`/channels/${channelId}`);
-  const guildId = channel.guild_id;
-  const activeRes = await discordGet(`/guilds/${guildId}/threads/active`);
-  const active: any[] = (activeRes.threads ?? []).filter((t: any) => t.parent_id === channelId);
-  let archived: any[] = [];
-  let before: string | null = null;
-  while (true) {
-    const q = before ? `?before=${before}&limit=100` : '?limit=100';
-    const res = await discordGet(`/channels/${channelId}/threads/archived/public${q}`);
-    const threads: any[] = res.threads ?? [];
-    archived = archived.concat(threads);
-    if (!res.has_more || threads.length === 0) break;
-    before = threads[threads.length - 1].id;
-  }
-  return [...active, ...archived];
+async function entityUpdate(entityName: string, id: string, data: Record<string, unknown>): Promise<any> {
+  const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
+    method: 'PUT', headers: serviceHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(data),
+  });
+  if (!r.ok) throw new Error(`Entity update failed ${r.status}: ${await r.text()}`);
+  return r.json();
 }
 
+// ── Scraping ──────────────────────────────────────────────────────────────
 async function getThreadMessages(threadId: string): Promise<any[]> {
   let all: any[] = [];
   let before: string | null = null;
@@ -123,252 +87,158 @@ async function getThreadMessages(threadId: string): Promise<any[]> {
   return all.reverse();
 }
 
-async function scrapeChannel(channelId: string): Promise<{ channelName: string; sections: StoredSection[] }> {
+async function scrapeChannel(channelId: string): Promise<{ channelName: string; text: string; sectionCount: number; messageCount: number }> {
   const channel = await discordGet(`/channels/${channelId}`);
-  const channelName = channel.name ?? channelId;
-  const sections: StoredSection[] = [];
+  const channelName: string = channel.name ?? channelId;
+  const lines: string[] = [];
+  let sectionCount = 0;
+  let messageCount = 0;
+
   if (channel.type === 15) {
-    const threads = await getForumThreads(channelId);
+    // Forum channel — scrape threads
+    const guildId = channel.guild_id;
+    const activeRes = await discordGet(`/guilds/${guildId}/threads/active`);
+    const active: any[] = (activeRes.threads ?? []).filter((t: any) => t.parent_id === channelId);
+    let archived: any[] = [];
+    let before: string | null = null;
+    while (true) {
+      const q = before ? `?before=${before}&limit=100` : '?limit=100';
+      const res = await discordGet(`/channels/${channelId}/threads/archived/public${q}`);
+      const threads: any[] = res.threads ?? [];
+      archived = archived.concat(threads);
+      if (!res.has_more || threads.length === 0) break;
+      before = threads[threads.length - 1].id;
+    }
+    const threads = [...active, ...archived];
+
     for (const thread of threads) {
       const msgs = await getThreadMessages(thread.id);
-      const filtered = msgs
-        .filter((m: any) => (m.content ?? '').trim().length > 0)
-        .map((m: any) => ({ author: m.author?.global_name ?? m.author?.username ?? 'Unknown', timestamp: m.timestamp, content: m.content }));
-      if (filtered.length > 0) sections.push({ heading: thread.name, messages: filtered });
+      const filtered = msgs.filter((m: any) => (m.content ?? '').trim().length > 0);
+      if (filtered.length === 0) continue;
+      sectionCount++;
+      lines.push(`\n========================================`);
+      lines.push(`SECTION: ${thread.name}`);
+      lines.push(`========================================`);
+      for (const m of filtered) {
+        const author = m.author?.global_name ?? m.author?.username ?? 'Unknown';
+        const ts = new Date(m.timestamp).toISOString().replace('T', ' ').slice(0, 16);
+        lines.push(`\n[${author} | ${ts}]`);
+        lines.push(m.content);
+        messageCount++;
+      }
     }
   } else {
+    // Regular channel
     const msgs = await getThreadMessages(channelId);
-    const filtered = msgs
-      .filter((m: any) => (m.content ?? '').trim().length > 0)
-      .map((m: any) => ({ author: m.author?.global_name ?? m.author?.username ?? 'Unknown', timestamp: m.timestamp, content: m.content }));
-    if (filtered.length > 0) sections.push({ heading: channelName, messages: filtered });
-  }
-  return { channelName, sections };
-}
-
-// ── WinAnsi sanitizer ─────────────────────────────────────────────────────
-function sanitize(text: string): string {
-  return text
-    .replace(/\u2018|\u2019/g, "'")
-    .replace(/\u201C|\u201D/g, '"')
-    .replace(/\u2014/g, '--')
-    .replace(/\u2013/g, '-')
-    .replace(/\u2026/g, '...')
-    .replace(/\u2022/g, '*')
-    .replace(/[^\u0009\u000A\u000D\u0020-\u007E\u00A0-\u00FF]/g, '?');
-}
-
-// ── PDF ───────────────────────────────────────────────────────────────────
-async function buildPdf(title: string, author: string, classification: string, sections: StoredSection[]): Promise<Uint8Array> {
-  const { PDFDocument, rgb, StandardFonts, PageSizes } = await import('npm:pdf-lib@1.17.1');
-
-  const doc = await PDFDocument.create();
-  const font     = await doc.embedFont(StandardFonts.Helvetica);
-  const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
-
-  const classUpper = sanitize(classification.toUpperCase());
-  const cc = (() => {
-    if (classUpper.includes('TOP SECRET'))  return rgb(0.5,  0,   0.5);
-    if (classUpper.includes('SECRET'))      return rgb(0.78, 0,   0);
-    if (classUpper.includes('RESTRICTED'))  return rgb(0.78, 0.4, 0);
-    return rgb(0, 0.39, 0);
-  })();
-  const black = rgb(0, 0, 0);
-  const white = rgb(1, 1, 1);
-  const grey  = rgb(0.33, 0.33, 0.33);
-
-  const W = PageSizes.A4[0];
-  const H = PageSizes.A4[1];
-  const M = 50;
-  const BANNER = 26;
-  const LINE_H = 13;
-
-  function addPage() {
-    const p = doc.addPage(PageSizes.A4);
-    p.drawRectangle({ x: 0, y: H - BANNER, width: W, height: BANNER, color: cc });
-    const cw = fontBold.widthOfTextAtSize(classUpper, 10);
-    p.drawText(classUpper, { x: (W - cw) / 2, y: H - BANNER + 8, size: 10, font: fontBold, color: white });
-    p.drawRectangle({ x: 0, y: 0, width: W, height: BANNER, color: cc });
-    p.drawText(classUpper, { x: (W - cw) / 2, y: 8, size: 10, font: fontBold, color: white });
-    return p;
-  }
-
-  const cover = addPage();
-  let cy = H - BANNER - 50;
-  cover.drawText('TACTICAL ADAPTATION GROUP', { x: M, y: cy, size: 8, font: fontBold, color: black });
-  cy -= 16;
-  cover.drawLine({ start: { x: M, y: cy }, end: { x: W - M, y: cy }, thickness: 2, color: black });
-  cy -= 40;
-
-  const titleSanitized = sanitize(title.toUpperCase());
-  const titleWords = titleSanitized.split(' ');
-  const titleLines: string[] = [];
-  let tl = '';
-  for (const w of titleWords) {
-    const test = tl ? `${tl} ${w}` : w;
-    if (fontBold.widthOfTextAtSize(test, 22) > W - M * 2) { titleLines.push(tl); tl = w; }
-    else tl = test;
-  }
-  if (tl) titleLines.push(tl);
-
-  for (const line of titleLines) {
-    const tw = fontBold.widthOfTextAtSize(line, 22);
-    cover.drawText(line, { x: (W - tw) / 2, y: cy, size: 22, font: fontBold, color: black });
-    cy -= 30;
-  }
-  cy -= 20;
-  cover.drawLine({ start: { x: M, y: cy }, end: { x: W - M, y: cy }, thickness: 1, color: black });
-  cy -= 20;
-  cover.drawText(sanitize(`Author: ${author}`), { x: M, y: cy, size: 10, font, color: black }); cy -= 16;
-  cover.drawText(`Classification: ${classUpper}`, { x: M, y: cy, size: 10, font, color: black }); cy -= 16;
-  cover.drawText(`Date: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}`, { x: M, y: cy, size: 10, font, color: black }); cy -= 16;
-  cover.drawText(`Sections: ${sections.length}`, { x: M, y: cy, size: 10, font, color: black });
-
-  const maxY = H - BANNER - 18;
-  const minY = BANNER + 18;
-  let page = addPage();
-  let y = maxY;
-
-  function ensureSpace(needed: number) {
-    if (y - needed < minY) { page = addPage(); y = maxY; }
-  }
-
-  function drawWrapped(text: string, x: number, size: number, f: any, color: any, maxW: number) {
-    const wds = text.replace(/\t/g, '  ').split(' ');
-    let cur = '';
-    for (const w of wds) {
-      const test = cur ? `${cur} ${w}` : w;
-      if (f.widthOfTextAtSize(test, size) > maxW) {
-        if (cur) { ensureSpace(LINE_H + 2); page.drawText(cur, { x, y, size, font: f, color }); y -= LINE_H; }
-        cur = w;
-      } else cur = test;
+    const filtered = msgs.filter((m: any) => (m.content ?? '').trim().length > 0);
+    sectionCount = 1;
+    lines.push(`\n========================================`);
+    lines.push(`CHANNEL: ${channelName}`);
+    lines.push(`========================================`);
+    for (const m of filtered) {
+      const author = m.author?.global_name ?? m.author?.username ?? 'Unknown';
+      const ts = new Date(m.timestamp).toISOString().replace('T', ' ').slice(0, 16);
+      lines.push(`\n[${author} | ${ts}]`);
+      lines.push(m.content);
+      messageCount++;
     }
-    if (cur) { ensureSpace(LINE_H + 2); page.drawText(cur, { x, y, size, font: f, color }); y -= LINE_H; }
   }
 
-  for (const section of sections) {
-    ensureSpace(LINE_H * 4);
-    page.drawLine({ start: { x: M, y: y + 4 }, end: { x: W - M, y: y + 4 }, thickness: 1.5, color: black });
-    y -= 8;
-    drawWrapped(sanitize(section.heading.toUpperCase()), M, 11, fontBold, black, W - M * 2);
-    page.drawLine({ start: { x: M, y: y + 2 }, end: { x: W - M, y: y + 2 }, thickness: 0.5, color: black });
-    y -= 12;
-
-    for (const msg of section.messages) {
-      ensureSpace(LINE_H * 2);
-      const ts = new Date(msg.timestamp).toISOString().replace('T', ' ').slice(0, 16);
-      page.drawText(sanitize(`${msg.author.toUpperCase()}  .  ${ts}`), { x: M, y, size: 7, font: fontBold, color: grey });
-      y -= 11;
-
-      const clean = sanitize(
-        msg.content
-          .replace(/\*\*(.*?)\*\*/gs, '$1').replace(/\*(.*?)\*/gs, '$1')
-          .replace(/`{1,3}(.*?)`{1,3}/gs, '$1').replace(/^#{1,6}\s/gm, '').replace(/^>\s/gm, '  ')
-      );
-
-      for (const para of clean.split(/\n+/)) {
-        const trimmed = para.trim();
-        if (!trimmed) { y -= 5; continue; }
-        drawWrapped(trimmed, M, 9, font, black, W - M * 2);
-      }
-      y -= 8;
-    }
-    y -= 8;
-  }
-
-  const bytes = await doc.save();
-  return new Uint8Array(bytes);
+  return { channelName, text: lines.join('\n'), sectionCount, messageCount };
 }
 
-// ── Main handler ──────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
-  if (req.method === 'GET') return Response.json({ ok: true, service: 'TAG Bot Worker v1' });
+  if (req.method === 'GET') return Response.json({ ok: true, service: 'TAG Bot Worker v2 (plaintext)' });
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
   let job: any;
-  try {
-    job = await req.json();
-  } catch {
-    return new Response('Bad JSON', { status: 400 });
-  }
+  try { job = await req.json(); } catch { return new Response('Bad JSON', { status: 400 }); }
 
   const { action, appId, token, channelId, title, author, classification, existingRecordId } = job;
 
-  // Respond immediately — worker runs to completion independently
-  const response = Response.json({ ok: true, started: true });
+  try {
+    if (action === 'create') {
+      await patchFollowup(appId, token, `Scraping channel...`);
+      const { channelName, text, sectionCount, messageCount } = await scrapeChannel(channelId);
+      if (!text.trim()) throw new Error('No text content found in this channel.');
 
-  // Do the work after responding
-  (async () => {
-    try {
-      if (action === 'create') {
-        await patchFollowup(appId, token, `Scraping channel...`);
-        const { channelName, sections } = await scrapeChannel(channelId);
-        if (sections.length === 0) throw new Error('No text content found in this channel.');
-        const taggedSections = sections.map((s) => ({ ...s, sourceChannel: channelName }));
+      const header = [
+        `TACTICAL ADAPTATION GROUP`,
+        `DOCUMENT: ${title}`,
+        `AUTHOR: ${author}`,
+        `CLASSIFICATION: ${classification}`,
+        `SOURCE CHANNEL: ${channelName}`,
+        `DATE: ${new Date().toISOString().slice(0, 10)}`,
+        `SECTIONS: ${sectionCount} | MESSAGES: ${messageCount}`,
+        `========================================\n`,
+      ].join('\n');
 
-        await patchFollowup(appId, token, `Building PDF (${taggedSections.length} sections)...`);
-        const pdfBytes = await buildPdf(title, author, classification, taggedSections);
-        const pdfUrl = await uploadFile(pdfBytes, `${title.replace(/[^a-z0-9]/gi, '_')}.pdf`, 'application/pdf');
+      const fullText = header + text;
+      const bytes = new TextEncoder().encode(fullText);
+      const filename = `${title.replace(/[^a-z0-9]/gi, '_')}.txt`;
 
-        await postMessage(channelId,
-          `**${title}** [${classification}] -- ${taggedSections.length} sections from **${channelName}**.\nDownload: ${pdfUrl}\n\nUse /scrape -> Add Channel to Existing Doc to keep building.`
-        );
+      await patchFollowup(appId, token, `Uploading document...`);
+      const fileUrl = await uploadFile(bytes, filename, 'text/plain');
 
-        const contentUrl = await uploadContentJson(taggedSections, title.replace(/[^a-z0-9]/gi, '_'));
-        await entityCreate('BotExportedPdf', {
-          title, author, classification,
-          channel_id: channelId, channel_name: channelName,
-          section_count: taggedSections.length,
-          message_count: taggedSections.reduce((s, sec) => s + sec.messages.length, 0),
-          content_json: contentUrl, file_url: pdfUrl,
-        });
+      await postMessage(channelId, `**${title}** [${classification}] -- ${sectionCount} sections, ${messageCount} messages from **${channelName}**.\nDownload: ${fileUrl}`);
 
-        await patchFollowup(appId, token, `Done! Download link posted in the channel.`);
+      await entityCreate('BotExportedPdf', {
+        title, author, classification,
+        channel_id: channelId, channel_name: channelName,
+        section_count: sectionCount, message_count: messageCount,
+        file_url: fileUrl, content_json: fileUrl,
+      });
 
-      } else if (action === 'append') {
-        const existingRecord = await entityGet('BotExportedPdf', existingRecordId);
-        if (!existingRecord) throw new Error('Could not find the selected document.');
+      await patchFollowup(appId, token, `Done! Download link posted in the channel.`);
 
-        let existingSections: StoredSection[] = [];
-        if (existingRecord.content_json) {
-          try { existingSections = await fetchContentJson(existingRecord.content_json); } catch {}
-        }
+    } else if (action === 'append') {
+      const existingRecord = await entityGet('BotExportedPdf', existingRecordId);
+      if (!existingRecord) throw new Error('Could not find the selected document.');
 
-        await patchFollowup(appId, token, `Scraping channel...`);
-        const { channelName, sections: newSections } = await scrapeChannel(channelId);
-        if (newSections.length === 0) throw new Error('No text content found in this channel.');
+      await patchFollowup(appId, token, `Scraping channel...`);
+      const { channelName, text, sectionCount, messageCount } = await scrapeChannel(channelId);
+      if (!text.trim()) throw new Error('No text content found in this channel.');
 
-        if (existingSections.some((s) => s.sourceChannel === channelName)) {
-          await patchFollowup(appId, token, `**${channelName}** is already in this document. Skipping.`);
-          return;
-        }
-
-        const taggedSections = newSections.map((s) => ({ ...s, sourceChannel: channelName }));
-        const mergedSections = [...existingSections, ...taggedSections];
-
-        await patchFollowup(appId, token, `Building combined PDF (${mergedSections.length} total sections)...`);
-        const pdfBytes = await buildPdf(existingRecord.title, existingRecord.author, existingRecord.classification ?? 'UNCLASSIFIED', mergedSections);
-        const pdfUrl = await uploadFile(pdfBytes, `${existingRecord.title.replace(/[^a-z0-9]/gi, '_')}.pdf`, 'application/pdf');
-
-        const newMsgCount = taggedSections.reduce((s, sec) => s + sec.messages.length, 0);
-        await postMessage(channelId,
-          `**${existingRecord.title}** updated -- added **${channelName}** (+${taggedSections.length} sections, +${newMsgCount} messages). Total: **${mergedSections.length} sections**.\nDownload: ${pdfUrl}`
-        );
-
-        const contentUrl = await uploadContentJson(mergedSections, existingRecord.title.replace(/[^a-z0-9]/gi, '_'));
-        await entityUpdate('BotExportedPdf', existingRecordId, {
-          content_json: contentUrl, file_url: pdfUrl,
-          section_count: mergedSections.length,
-          message_count: mergedSections.reduce((s, sec) => s + sec.messages.length, 0),
-        });
-
-        await patchFollowup(appId, token, `Done! **${mergedSections.length} sections** total. Download link posted in the channel.`);
+      // Fetch existing text
+      let existingText = '';
+      if (existingRecord.content_json) {
+        try {
+          const r = await fetch(existingRecord.content_json);
+          if (r.ok) existingText = await r.text();
+        } catch {}
       }
 
-    } catch (err: any) {
-      try { await patchFollowup(appId, token, `Failed: ${err.message}`); } catch {}
-    }
-  })();
+      if (existingText.includes(`CHANNEL: ${channelName}`) || existingText.includes(`SOURCE CHANNEL: ${channelName}`)) {
+        await patchFollowup(appId, token, `**${channelName}** is already in this document. Skipping.`);
+        return Response.json({ ok: true });
+      }
 
-  return response;
+      const appendHeader = `\n\n========================================\nAPPENDED CHANNEL: ${channelName}\nDATE: ${new Date().toISOString().slice(0, 10)}\n========================================`;
+      const fullText = existingText + appendHeader + text;
+      const bytes = new TextEncoder().encode(fullText);
+      const filename = `${existingRecord.title.replace(/[^a-z0-9]/gi, '_')}.txt`;
+
+      await patchFollowup(appId, token, `Uploading updated document...`);
+      const fileUrl = await uploadFile(bytes, filename, 'text/plain');
+
+      const totalSections = (existingRecord.section_count ?? 0) + sectionCount;
+      const totalMessages = (existingRecord.message_count ?? 0) + messageCount;
+
+      await postMessage(channelId, `**${existingRecord.title}** updated -- added **${channelName}** (+${sectionCount} sections, +${messageCount} messages). Total: ${totalSections} sections, ${totalMessages} messages.\nDownload: ${fileUrl}`);
+
+      await entityUpdate('BotExportedPdf', existingRecordId, {
+        file_url: fileUrl, content_json: fileUrl,
+        section_count: totalSections, message_count: totalMessages,
+      });
+
+      await patchFollowup(appId, token, `Done! Download link posted in the channel.`);
+    }
+
+  } catch (err: any) {
+    try { await patchFollowup(appId, token, `Failed: ${err.message}`); } catch {}
+    return Response.json({ ok: false, error: err.message }, { status: 500 });
+  }
+
+  return Response.json({ ok: true });
 });
