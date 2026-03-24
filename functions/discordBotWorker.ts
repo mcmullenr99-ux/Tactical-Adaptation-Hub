@@ -76,7 +76,7 @@ async function entityUpdate(entityName: string, id: string, data: Record<string,
 async function getThreadMessages(threadId: string): Promise<any[]> {
   let all: any[] = [];
   let before: string | null = null;
-  while (true) {
+  while (all.length < 200) {  // hard cap 200 messages per thread
     const q = before ? `?before=${before}&limit=100` : '?limit=100';
     const msgs: any[] = await discordGet(`/channels/${threadId}/messages${q}`);
     if (!msgs || msgs.length === 0) break;
@@ -84,7 +84,7 @@ async function getThreadMessages(threadId: string): Promise<any[]> {
     if (msgs.length < 100) break;
     before = msgs[msgs.length - 1].id;
   }
-  return all.reverse();
+  return all.slice(0, 200).reverse();
 }
 
 async function scrapeChannel(channelId: string): Promise<{ channelName: string; text: string; sectionCount: number; messageCount: number }> {
@@ -109,7 +109,7 @@ async function scrapeChannel(channelId: string): Promise<{ channelName: string; 
       if (!res.has_more || threads.length === 0) break;
       before = threads[threads.length - 1].id;
     }
-    const threads = [...active, ...archived];
+    const threads = [...active, ...archived].slice(0, 50); // hard cap 50 threads
 
     for (const thread of threads) {
       const msgs = await getThreadMessages(thread.id);
