@@ -1,11 +1,6 @@
 /**
  * TAG Discord Bot — Forum Scraper with Interactive Flow
- *
- * /scrape flow:
- *   1. Bot asks: New PDF or Append to existing?
- *   2a. New → Modal: Title, Author, Classification
- *   2b. Append → Select menu of existing PDFs for this channel
- *   3. Scrape all threads → build PDF → post back + save to DB
+ * Uses jsPDF via CDN for proper PDF generation
  */
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
@@ -18,7 +13,7 @@ const DISCORD_API = 'https://discord.com/api/v10';
 async function verifyDiscordSignature(req: Request, body: string): Promise<boolean> {
   if (!DISCORD_PUBLIC_KEY) return true;
   const signature = req.headers.get('x-signature-ed25519') ?? '';
-  const timestamp  = req.headers.get('x-signature-timestamp') ?? '';
+  const timestamp = req.headers.get('x-signature-timestamp') ?? '';
   if (!signature || !timestamp) return false;
   try {
     const key = await crypto.subtle.importKey('raw', hexToBytes(DISCORD_PUBLIC_KEY), { name: 'Ed25519' }, false, ['verify']);
@@ -29,7 +24,7 @@ async function verifyDiscordSignature(req: Request, body: string): Promise<boole
 
 function hexToBytes(hex: string): Uint8Array {
   const b = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) b[i/2] = parseInt(hex.slice(i, i+2), 16);
+  for (let i = 0; i < hex.length; i += 2) b[i / 2] = parseInt(hex.slice(i, i + 2), 16);
   return b;
 }
 
@@ -40,26 +35,13 @@ async function discordGet(path: string) {
   return r.json();
 }
 
-async function discordPost(path: string, body: unknown) {
-  const r = await fetch(`${DISCORD_API}${path}`, {
-    method: 'POST',
-    headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error(`Discord POST ${path} → ${r.status}: ${await r.text()}`);
-  return r.json();
-}
-
 async function ackCallback(interactionId: string, token: string, body: unknown) {
   const r = await fetch(`${DISCORD_API}/interactions/${interactionId}/${token}/callback`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!r.ok) {
-    const t = await r.text();
-    throw new Error(`ack failed: ${r.status} ${t}`);
-  }
+  if (!r.ok) throw new Error(`ack failed: ${r.status} ${await r.text()}`);
 }
 
 async function patchFollowup(appId: string, token: string, content: string) {
@@ -84,8 +66,8 @@ async function sendPdfToChannel(channelId: string, filename: string, pdfBytes: U
 
 // ── Scraping ───────────────────────────────────────────────────────────────
 async function getForumThreads(channelId: string): Promise<any[]> {
-  const guild = await discordGet(`/channels/${channelId}`);
-  const guildId = guild.guild_id;
+  const channel = await discordGet(`/channels/${channelId}`);
+  const guildId = channel.guild_id;
   const activeRes = await discordGet(`/guilds/${guildId}/threads/active`);
   const active: any[] = (activeRes.threads ?? []).filter((t: any) => t.parent_id === channelId);
 
@@ -116,118 +98,120 @@ async function getThreadMessages(threadId: string): Promise<any[]> {
   return all.reverse();
 }
 
-// ── PDF builder ────────────────────────────────────────────────────────────
-function buildPdfLines(
+// ── PDF generation using pdfkit via npm ───────────────────────────────────
+async function buildPdf(
   title: string,
   author: string,
   classification: string,
-  sections: { heading: string; messages: any[] }[],
-  appendMode = false,
-  existingTitle = ''
-): string[] {
-  const lines: string[] = [];
-  const banner = `[${classification}]`;
+  sections: { heading: string; messages: any[] }[]
+): Promise<Uint8Array> {
+  // Use PDFKit via npm
+  const PDFDocument = (await import('npm:pdfkit')).default;
 
-  if (!appendMode) {
-    lines.push(banner);
-    lines.push('');
-    lines.push('TACTICAL ADAPTATION GROUP');
-    lines.push('Training Document Export');
-    lines.push('');
-    lines.push(`TITLE: ${title}`);
-    lines.push(`AUTHOR: ${author}`);
-    lines.push(`CLASSIFICATION: ${classification}`);
-    lines.push(`GENERATED: ${new Date().toUTCString()}`);
-    lines.push('═'.repeat(60));
-    lines.push('');
-  } else {
-    lines.push('');
-    lines.push('─'.repeat(60));
-    lines.push(`APPENDED: ${new Date().toUTCString()}`);
-    lines.push('─'.repeat(60));
-    lines.push('');
-  }
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const chunks: Uint8Array[] = [];
 
-  for (const section of sections) {
-    lines.push(`■ ${section.heading.toUpperCase()}`);
-    lines.push('─'.repeat(50));
-    for (const msg of section.messages) {
-      const content = (msg.content ?? '').trim();
-      if (!content) continue;
-      const author2 = msg.author?.username ?? 'Unknown';
-      const ts = new Date(msg.timestamp).toISOString().replace('T', ' ').slice(0, 16);
-      lines.push(`[${ts}] ${author2}:`);
-      const words = content.split(' ');
-      let line = '';
-      for (const word of words) {
-        if ((line + ' ' + word).length > 80) { lines.push(`  ${line.trim()}`); line = word; }
-        else line += (line ? ' ' : '') + word;
+    doc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
+    doc.on('end', () => {
+      const total = chunks.reduce((s, c) => s + c.length, 0);
+      const out = new Uint8Array(total);
+      let pos = 0;
+      for (const c of chunks) { out.set(c, pos); pos += c.length; }
+      resolve(out);
+    });
+    doc.on('error', reject);
+
+    const classColor: [number, number, number] =
+      classification === 'CONFIDENTIAL' ? [180, 0, 0] :
+      classification === 'RESTRICTED'   ? [200, 100, 0] :
+                                          [0, 100, 0];
+
+    // ── Classification banner ──
+    doc.rect(0, 0, doc.page.width, 28).fill(classColor);
+    doc.fillColor('white').fontSize(11).font('Helvetica-Bold')
+      .text(`⬛ ${classification} ⬛`, 0, 7, { align: 'center' });
+    doc.moveDown(1.5);
+
+    // ── Header ──
+    doc.fillColor('#1a1a2e').fontSize(20).font('Helvetica-Bold')
+      .text('TACTICAL ADAPTATION GROUP', { align: 'center' });
+    doc.fillColor('#444').fontSize(12).font('Helvetica')
+      .text('Training Document Export', { align: 'center' });
+    doc.moveDown(0.5);
+
+    // ── Meta box ──
+    doc.rect(50, doc.y, doc.page.width - 100, 70).fillAndStroke('#f0f0f0', '#cccccc');
+    const metaY = doc.y + 8;
+    doc.fillColor('#222').fontSize(10).font('Helvetica-Bold')
+      .text(`TITLE:`, 65, metaY)
+      .font('Helvetica').text(title, 115, metaY);
+    doc.font('Helvetica-Bold').text(`AUTHOR:`, 65, metaY + 18)
+      .font('Helvetica').text(author, 115, metaY + 18);
+    doc.font('Helvetica-Bold').text(`GENERATED:`, 65, metaY + 36)
+      .font('Helvetica').text(new Date().toUTCString(), 145, metaY + 36);
+    doc.moveDown(4.5);
+
+    // ── Divider ──
+    doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke('#cccccc');
+    doc.moveDown(1);
+
+    // ── Sections ──
+    for (const section of sections) {
+      // Section heading
+      doc.rect(50, doc.y, doc.page.width - 100, 24).fill('#1a1a2e');
+      doc.fillColor('white').fontSize(11).font('Helvetica-Bold')
+        .text(`  ${section.heading.toUpperCase()}`, 55, doc.y - 20, { width: doc.page.width - 110 });
+      doc.moveDown(1.2);
+
+      for (const msg of section.messages) {
+        const content = (msg.content ?? '').trim();
+        if (!content) continue;
+
+        const msgAuthor = msg.author?.global_name ?? msg.author?.username ?? 'Unknown';
+        const ts = new Date(msg.timestamp).toISOString().replace('T', ' ').slice(0, 16);
+
+        // Author + timestamp line
+        doc.fillColor('#666').fontSize(8).font('Helvetica-Oblique')
+          .text(`${msgAuthor}  ·  ${ts}`, 55, doc.y, { width: doc.page.width - 110 });
+        doc.moveDown(0.3);
+
+        // Content — strip Discord markdown symbols for readability
+        const clean = content
+          .replace(/\*\*(.*?)\*\*/g, '$1')  // bold
+          .replace(/\*(.*?)\*/g, '$1')       // italic
+          .replace(/`(.*?)`/g, '$1')         // code
+          .replace(/#{1,6} /g, '')           // headings
+          .replace(/> /g, '  ');             // blockquotes
+
+        doc.fillColor('#111').fontSize(10).font('Helvetica')
+          .text(clean, 55, doc.y, { width: doc.page.width - 110, lineGap: 2 });
+        doc.moveDown(0.8);
       }
-      if (line) lines.push(`  ${line.trim()}`);
-      lines.push('');
+
+      doc.moveDown(0.5);
+      doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke('#eeeeee');
+      doc.moveDown(1);
     }
-    lines.push('');
-  }
 
-  lines.push('');
-  lines.push(banner);
-  return lines;
+    // ── Footer classification banner ──
+    const footerY = doc.page.height - 28;
+    doc.rect(0, footerY, doc.page.width, 28).fill(classColor);
+    doc.fillColor('white').fontSize(11).font('Helvetica-Bold')
+      .text(`⬛ ${classification} ⬛`, 0, footerY + 7, { align: 'center' });
+
+    doc.end();
+  });
 }
 
-function encodePdf(title: string, bodyLines: string[]): Uint8Array {
-  const enc = new TextEncoder();
-
-  let stream = 'BT\n/F1 10 Tf\n40 800 Td\n14 TL\n';
-  const safeTitle = title.replace(/[()\\]/g, '\\$&');
-  stream += `/F1 13 Tf\n(${safeTitle}) Tj\n/F1 10 Tf\nT*\nT*\n`;
-  for (const rawLine of bodyLines) {
-    const safe = rawLine.replace(/[()\\]/g, '\\$&');
-    stream += `(${safe}) Tj T*\n`;
-  }
-  stream += 'ET\n';
-
-  const streamBytes = enc.encode(stream);
-  const streamLen = streamBytes.length;
-
-  const catalog  = `1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`;
-  const pages    = `2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`;
-  const font     = `4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>\nendobj\n`;
-  const page     = `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Contents 5 0 R /Resources << /Font << /F1 4 0 R >> >> >>\nendobj\n`;
-  const contentH = `5 0 obj\n<< /Length ${streamLen} >>\nstream\n`;
-  const contentF = `\nendstream\nendobj\n`;
-  const header   = '%PDF-1.4\n';
-  const headerB  = enc.encode(header);
-
-  const parts: Uint8Array[] = [headerB, enc.encode(catalog), enc.encode(pages), enc.encode(font), enc.encode(page), enc.encode(contentH), streamBytes, enc.encode(contentF)];
-  let xrefOffset = parts.reduce((s, p) => s + p.length, 0);
-
-  const xref: string[] = ['xref\n', '0 6\n', '0000000000 65535 f \n'];
-  let off = headerB.length;
-  xref.push(off.toString().padStart(10,'0') + ' 00000 n \n'); off += enc.encode(catalog).length;
-  xref.push(off.toString().padStart(10,'0') + ' 00000 n \n'); off += enc.encode(pages).length;
-  xref.push(off.toString().padStart(10,'0') + ' 00000 n \n'); off += enc.encode(font).length;
-  xref.push(off.toString().padStart(10,'0') + ' 00000 n \n'); off += enc.encode(page).length;
-  xref.push(off.toString().padStart(10,'0') + ' 00000 n \n');
-
-  const trailer = `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
-  parts.push(enc.encode(xref.join('') + trailer));
-
-  const total = parts.reduce((s, p) => s + p.length, 0);
-  const out = new Uint8Array(total);
-  let pos = 0;
-  for (const p of parts) { out.set(p, pos); pos += p.length; }
-  return out;
-}
-
-// ── Scrape + build + send ──────────────────────────────────────────────────
+// ── Core scrape + build ────────────────────────────────────────────────────
 async function scrapeAndBuild(
   channelId: string,
   appId: string,
   token: string,
   title: string,
   author: string,
-  classification: string,
-  req: Request
+  classification: string
 ): Promise<{ pdfBytes: Uint8Array; sections: number; messages: number; channelName: string }> {
   const channel = await discordGet(`/channels/${channelId}`);
   const channelName = channel.name ?? channelId;
@@ -251,32 +235,23 @@ async function scrapeAndBuild(
   const totalMsgs = sections.reduce((s, sec) => s + sec.messages.length, 0);
   if (totalMsgs === 0) throw new Error('No messages found to export.');
 
-  const lines = buildPdfLines(title, author, classification, sections);
-  const pdfBytes = encodePdf(title, lines);
+  const pdfBytes = await buildPdf(title, author, classification, sections);
   return { pdfBytes, sections: sections.length, messages: totalMsgs, channelName };
 }
-
-// ── Custom ID parsers ──────────────────────────────────────────────────────
-// Format: scrape_new:<channelId>  |  scrape_append:<channelId>  |  scrape_modal_submit:<channelId>
-// Modal custom_id: scrape_modal:<channelId>
-// Select custom_id: scrape_select:<channelId>
 
 // ── Main interaction handler ───────────────────────────────────────────────
 async function handleInteraction(interaction: any, req: Request): Promise<Response> {
   const type = interaction.type;
 
-  // PING
   if (type === 1) return Response.json({ type: 1 });
 
-  // SLASH COMMAND — /scrape
   if (type === 2 && interaction.data?.name === 'scrape') {
     const channelId = interaction.channel_id;
-    // Ask: New or Append?
     await ackCallback(interaction.id, interaction.token, {
       type: 4,
       data: {
-        flags: 64, // ephemeral
-        content: '📄 **What would you like to do?**',
+        flags: 64,
+        content: '📄 **What would you like to do with this channel?**',
         components: [{
           type: 1,
           components: [
@@ -289,15 +264,13 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
     return Response.json({ type: 1 });
   }
 
-  // BUTTON / SELECT COMPONENT
   if (type === 3) {
     const customId: string = interaction.data?.custom_id ?? '';
 
-    // "Create New PDF" button → show modal
     if (customId.startsWith('scrape_new:')) {
       const channelId = customId.split(':')[1];
       await ackCallback(interaction.id, interaction.token, {
-        type: 9, // MODAL
+        type: 9,
         data: {
           custom_id: `scrape_modal:${channelId}`,
           title: 'New Training Document',
@@ -311,29 +284,23 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       return Response.json({ type: 1 });
     }
 
-    // "Append to Existing PDF" button → show select menu of existing PDFs
     if (customId.startsWith('scrape_append:')) {
       const channelId = customId.split(':')[1];
       const base44 = createClientFromRequest(req);
       let existingPdfs: any[] = [];
-      try {
-        existingPdfs = await base44.asServiceRole.entities.BotExportedPdf.list({ channel_id: channelId });
-      } catch (e) {
-        // fallback: list all
-        try { existingPdfs = await base44.asServiceRole.entities.BotExportedPdf.list(); } catch {}
-      }
+      try { existingPdfs = await base44.asServiceRole.entities.BotExportedPdf.list(); } catch {}
 
       if (!existingPdfs || existingPdfs.length === 0) {
         await ackCallback(interaction.id, interaction.token, {
           type: 4,
-          data: { flags: 64, content: '❌ No existing PDFs found for this channel. Use **Create New PDF** instead.' }
+          data: { flags: 64, content: '❌ No existing PDFs found. Use **Create New PDF** instead.' }
         });
         return Response.json({ type: 1 });
       }
 
       const options = existingPdfs.slice(0, 25).map((pdf: any) => ({
-        label: pdf.title ?? pdf.id,
-        description: `${pdf.classification ?? ''} · ${pdf.section_count ?? 0} sections · ${new Date(pdf.created_date).toLocaleDateString()}`,
+        label: (pdf.title ?? pdf.id).slice(0, 100),
+        description: `${pdf.classification ?? 'UNCLASSIFIED'} · ${pdf.channel_name ?? ''} · ${new Date(pdf.created_date).toLocaleDateString()}`,
         value: pdf.id,
       }));
 
@@ -342,21 +309,12 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
         data: {
           flags: 64,
           content: '📎 **Which PDF would you like to append to?**',
-          components: [{
-            type: 1,
-            components: [{
-              type: 3, // SELECT_MENU
-              custom_id: `scrape_select:${channelId}`,
-              options,
-              placeholder: 'Choose a PDF...',
-            }]
-          }]
+          components: [{ type: 1, components: [{ type: 3, custom_id: `scrape_select:${channelId}`, options, placeholder: 'Choose a PDF...' }] }]
         }
       });
       return Response.json({ type: 1 });
     }
 
-    // Select menu — user picked an existing PDF to append to
     if (customId.startsWith('scrape_select:')) {
       const channelId = customId.split(':')[1];
       const selectedPdfId = interaction.data?.values?.[0];
@@ -364,25 +322,17 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
         await ackCallback(interaction.id, interaction.token, { type: 4, data: { flags: 64, content: '❌ No PDF selected.' } });
         return Response.json({ type: 1 });
       }
-
-      // Store selection in modal via custom_id, ask for append confirmation
       await ackCallback(interaction.id, interaction.token, {
         type: 4,
         data: {
           flags: 64,
-          content: `✅ Got it — I'll append new content to that PDF. Click below to start the scrape.`,
-          components: [{
-            type: 1,
-            components: [
-              { type: 2, style: 1, label: '🚀 Start Scrape & Append', custom_id: `scrape_do_append:${channelId}:${selectedPdfId}` },
-            ]
-          }]
+          content: `✅ Got it — ready to append. Click below to start.`,
+          components: [{ type: 1, components: [{ type: 2, style: 1, label: '🚀 Start Scrape & Append', custom_id: `scrape_do_append:${channelId}:${selectedPdfId}` }] }]
         }
       });
       return Response.json({ type: 1 });
     }
 
-    // Do append — fire scrape
     if (customId.startsWith('scrape_do_append:')) {
       const parts = customId.split(':');
       const channelId = parts[1];
@@ -390,8 +340,7 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       const appId = interaction.application_id;
       const token = interaction.token;
 
-      // Defer
-      await ackCallback(interaction.id, token, { type: 7, data: { flags: 64, content: '⏳ Scraping channel...' } });
+      await ackCallback(interaction.id, token, { type: 7, data: { flags: 64, content: '⏳ Starting scrape...' } });
 
       (async () => {
         try {
@@ -400,21 +349,18 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
           if (!existingPdf) throw new Error('Could not find existing PDF record.');
 
           const { pdfBytes, sections, messages, channelName } = await scrapeAndBuild(
-            channelId, appId, token,
-            existingPdf.title, existingPdf.author, existingPdf.classification ?? 'UNCLASSIFIED',
-            req
+            channelId, appId, token, existingPdf.title, existingPdf.author, existingPdf.classification ?? 'UNCLASSIFIED'
           );
 
-          const filename = `TAG_${channelName.replace(/[^a-z0-9]/gi, '_')}_v${Date.now()}.pdf`;
-          await sendPdfToChannel(channelId, filename, pdfBytes, `📎 **APPEND** to "${existingPdf.title}" — ${sections} sections, ${messages} messages added.`);
+          const filename = `TAG_${channelName.replace(/[^a-z0-9]/gi, '_')}_appended_${Date.now()}.pdf`;
+          await sendPdfToChannel(channelId, filename, pdfBytes, `📎 **APPEND** — "${existingPdf.title}" [${existingPdf.classification}] — ${sections} sections, ${messages} messages.`);
 
-          // Update record
           await base44.asServiceRole.entities.BotExportedPdf.update(pdfId, {
             section_count: (existingPdf.section_count ?? 0) + sections,
             message_count: (existingPdf.message_count ?? 0) + messages,
           });
 
-          await patchFollowup(appId, token, `✅ Done! Appended **${sections} sections** (${messages} messages) to "${existingPdf.title}". PDF posted above.`);
+          await patchFollowup(appId, token, `✅ Done! Appended **${sections} sections** (${messages} messages). PDF posted above.`);
         } catch (err: any) {
           await patchFollowup(appId, token, `❌ Failed: ${err.message}`);
         }
@@ -424,7 +370,6 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
     }
   }
 
-  // MODAL SUBMIT
   if (type === 5) {
     const customId: string = interaction.data?.custom_id ?? '';
 
@@ -439,24 +384,19 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       const title = getValue('doc_title').trim();
       const author = getValue('doc_author').trim();
       const rawClass = getValue('doc_class').trim().toUpperCase();
-      const classification = ['UNCLASSIFIED','RESTRICTED','CONFIDENTIAL'].includes(rawClass) ? rawClass : 'UNCLASSIFIED';
+      const classification = ['UNCLASSIFIED', 'RESTRICTED', 'CONFIDENTIAL'].includes(rawClass) ? rawClass : 'UNCLASSIFIED';
 
-      // Defer
-      await ackCallback(interaction.id, token, {
-        type: 5,
-        data: { flags: 64 }
-      });
+      await ackCallback(interaction.id, token, { type: 5, data: { flags: 64 } });
 
       (async () => {
         try {
           const { pdfBytes, sections, messages, channelName } = await scrapeAndBuild(
-            channelId, appId, token, title, author, classification, req
+            channelId, appId, token, title, author, classification
           );
 
           const filename = `TAG_${channelName.replace(/[^a-z0-9]/gi, '_')}_export.pdf`;
           await sendPdfToChannel(channelId, filename, pdfBytes, `✅ **${title}** [${classification}] — ${sections} sections, ${messages} messages exported.`);
 
-          // Save record to DB
           const base44 = createClientFromRequest(req);
           await base44.asServiceRole.entities.BotExportedPdf.create({
             title, author, classification,
@@ -479,7 +419,6 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
   return Response.json({ type: 1 });
 }
 
-// ── Entry point ────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === 'GET') return Response.json({ ok: true, service: 'TAG Discord Bot v2' });
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
