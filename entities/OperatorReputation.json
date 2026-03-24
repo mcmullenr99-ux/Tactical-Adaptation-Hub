@@ -1,0 +1,59 @@
+{
+  "type": "object",
+  "properties": {
+    "subject_id": {
+      "type": "string"
+    },
+    "subject_username": {
+      "type": "string"
+    },
+    "reviewer_id": {
+      "type": "string"
+    },
+    "reviewer_username": {
+      "type": "string"
+    },
+    "group_id": {
+      "type": "string"
+    },
+    "group_name": {
+      "type": "string"
+    },
+    "activity": {
+      "type": "number"
+    },
+    "attitude": {
+      "type": "number"
+    },
+    "experience": {
+      "type": "number"
+    },
+    "discipline": {
+      "type": "number"
+    },
+    "overall_vote": {
+      "type": "string",
+      "enum": [
+        "commend",
+        "neutral",
+        "flag"
+      ]
+    },
+    "blacklisted": {
+      "type": "boolean",
+      "default": false
+    },
+    "blacklist_reason": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "subject_id",
+    "reviewer_id",
+    "overall_vote"
+  ],
+  "name": "OperatorReputation"
+}
