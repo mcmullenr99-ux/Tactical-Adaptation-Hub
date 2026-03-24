@@ -1,14 +1,18 @@
 /**
  * TAG Discord Bot — Forum Scraper v5
- * FM-style cover, free-text classification, private signed URLs
+ * Fully self-contained — no SDK, direct REST API calls only
  */
-
 
 const DISCORD_BOT_TOKEN = Deno.env.get('DISCORD_BOT_TOKEN') ?? '';
 const DISCORD_PUBLIC_KEY = Deno.env.get('DISCORD_PUBLIC_KEY') ?? '';
 const DISCORD_API = 'https://discord.com/api/v10';
 const BASE44_APP_ID = '69bf52c997cae5d4cff87ae4';
-const BASE44_SERVICE_TOKEN = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
+const BASE44_BASE = 'https://app.base44.com';
+
+function serviceHeaders(extra?: Record<string, string>) {
+  const token = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
+  return { 'Authorization': `Bearer ${token}`, ...(extra ?? {}) };
+}
 
 // ── Signature verification ────────────────────────────────────────────────
 async function verifyDiscordSignature(req: Request, body: string): Promise<boolean> {
@@ -38,18 +42,14 @@ async function discordGet(path: string) {
 
 async function ackCallback(interactionId: string, token: string, body: unknown) {
   const r = await fetch(`${DISCORD_API}/interactions/${interactionId}/${token}/callback`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`ack failed: ${r.status} ${await r.text()}`);
 }
 
 async function patchFollowup(appId: string, token: string, content: string) {
   await fetch(`${DISCORD_API}/webhooks/${appId}/${token}/messages/@original`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content }),
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }),
   });
 }
 
@@ -61,41 +61,25 @@ async function postMessage(channelId: string, content: string) {
   });
 }
 
-// ── Storage helpers ───────────────────────────────────────────────────────
+// ── Storage ───────────────────────────────────────────────────────────────
 async function uploadFile(bytes: Uint8Array, filename: string, mime: string): Promise<string> {
-  // Use base44 SDK upload endpoint
   const form = new FormData();
   form.append('file', new Blob([bytes], { type: mime }), filename);
-  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/files/upload`, {
+  const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/integration-endpoints/Core/UploadFile`, {
     method: 'POST',
-    headers: { 'x-api-key': Deno.env.get('BASE44_SERVICE_TOKEN') ?? '' },
+    headers: serviceHeaders(),
     body: form,
   });
-  if (!r.ok) {
-    const errText = await r.text();
-    throw new Error(`Upload failed ${r.status}: ${errText}`);
-  }
+  if (!r.ok) throw new Error(`Upload failed ${r.status}: ${await r.text()}`);
   const data = await r.json();
-  console.log('[UPLOAD RESPONSE]', JSON.stringify(data));
-  return data.file_url ?? data.url ?? data.uri ?? data.public_url ?? Object.values(data)[0];
-}
-
-async function uploadPrivateFile(bytes: Uint8Array, filename: string, mime: string): Promise<string> {
-  return uploadFile(bytes, filename, mime);
-}
-
-async function uploadPublicFile(bytes: Uint8Array, filename: string, mime: string): Promise<string> {
-  return uploadFile(bytes, filename, mime);
-}
-
-async function getSignedUrl(fileUri: string): Promise<string> {
-  return fileUri;
+  const url = data.file_url ?? data.url;
+  if (!url) throw new Error(`No URL in upload response: ${JSON.stringify(data)}`);
+  return url;
 }
 
 async function uploadContentJson(sections: StoredSection[], label: string): Promise<string> {
-  const json = JSON.stringify(sections);
-  const bytes = new TextEncoder().encode(json);
-  return uploadPublicFile(bytes, `${label}_content.json`, 'application/json');
+  const bytes = new TextEncoder().encode(JSON.stringify(sections));
+  return uploadFile(bytes, `${label}_content.json`, 'application/json');
 }
 
 async function fetchContentJson(url: string): Promise<StoredSection[]> {
@@ -104,11 +88,11 @@ async function fetchContentJson(url: string): Promise<StoredSection[]> {
   return r.json();
 }
 
+// ── Entities ──────────────────────────────────────────────────────────────
 async function entityCreate(entityName: string, data: Record<string, unknown>): Promise<any> {
-  const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
-  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/${entityName}`, {
+  const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/entities/${entityName}`, {
     method: 'POST',
-    headers: { 'x-api-key': serviceToken, 'Content-Type': 'application/json' },
+    headers: serviceHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(data),
   });
   if (!r.ok) throw new Error(`Entity create failed ${r.status}: ${await r.text()}`);
@@ -116,10 +100,9 @@ async function entityCreate(entityName: string, data: Record<string, unknown>): 
 }
 
 async function entityUpdate(entityName: string, id: string, data: Record<string, unknown>): Promise<any> {
-  const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
-  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
+  const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
     method: 'PUT',
-    headers: { 'x-api-key': serviceToken, 'Content-Type': 'application/json' },
+    headers: serviceHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(data),
   });
   if (!r.ok) throw new Error(`Entity update failed ${r.status}: ${await r.text()}`);
@@ -127,36 +110,34 @@ async function entityUpdate(entityName: string, id: string, data: Record<string,
 }
 
 async function entityGet(entityName: string, id: string): Promise<any> {
-  const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
-  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
-    headers: { 'x-api-key': serviceToken },
+  const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
+    headers: serviceHeaders(),
   });
   if (!r.ok) throw new Error(`Entity get failed ${r.status}: ${await r.text()}`);
   return r.json();
 }
 
 async function entityList(entityName: string): Promise<any[]> {
-  const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
-  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/${entityName}`, {
-    headers: { 'x-api-key': serviceToken },
+  const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/entities/${entityName}`, {
+    headers: serviceHeaders(),
   });
   if (!r.ok) throw new Error(`Entity list failed ${r.status}: ${await r.text()}`);
   const data = await r.json();
-  return Array.isArray(data) ? data : data.items ?? data.results ?? [];
+  return Array.isArray(data) ? data : (data.items ?? data.results ?? []);
 }
 
 async function entityDelete(entityName: string, id: string): Promise<void> {
-  const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
-  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
+  const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
     method: 'DELETE',
-    headers: { 'x-api-key': serviceToken },
+    headers: serviceHeaders(),
   });
   if (!r.ok) throw new Error(`Entity delete failed ${r.status}: ${await r.text()}`);
 }
 
-
-
 // ── Scraping ──────────────────────────────────────────────────────────────
+interface StoredMessage { author: string; timestamp: string; content: string; }
+interface StoredSection { heading: string; messages: StoredMessage[]; sourceChannel?: string; }
+
 async function getForumThreads(channelId: string): Promise<any[]> {
   const channel = await discordGet(`/channels/${channelId}`);
   const guildId = channel.guild_id;
@@ -192,10 +173,8 @@ async function getThreadMessages(threadId: string): Promise<any[]> {
 async function scrapeChannel(channelId: string): Promise<{ channelName: string; sections: StoredSection[] }> {
   const channel = await discordGet(`/channels/${channelId}`);
   const channelName = channel.name ?? channelId;
-  const channelType = channel.type;
   const sections: StoredSection[] = [];
-
-  if (channelType === 15) {
+  if (channel.type === 15) {
     const threads = await getForumThreads(channelId);
     for (const thread of threads) {
       const msgs = await getThreadMessages(thread.id);
@@ -211,28 +190,22 @@ async function scrapeChannel(channelId: string): Promise<{ channelName: string; 
       .map((m: any) => ({ author: m.author?.global_name ?? m.author?.username ?? 'Unknown', timestamp: m.timestamp, content: m.content }));
     if (filtered.length > 0) sections.push({ heading: channelName, messages: filtered });
   }
-
   return { channelName, sections };
 }
 
-// ── Types ─────────────────────────────────────────────────────────────────
-interface StoredMessage { author: string; timestamp: string; content: string; }
-interface StoredSection { heading: string; messages: StoredMessage[]; sourceChannel?: string; }
-
-// ── Classification color ──────────────────────────────────────────────────
+// ── Classification colour ─────────────────────────────────────────────────
 function classColor(c: string): [number, number, number] {
   const u = c.toUpperCase();
   if (u.includes('TOP SECRET')) return [128, 0, 128];
   if (u.includes('SECRET'))     return [200, 0, 0];
   if (u.includes('CONFIDENTIAL')) return [180, 0, 0];
   if (u.includes('RESTRICTED')) return [200, 100, 0];
-  return [0, 100, 0]; // UNCLASSIFIED
+  return [0, 100, 0];
 }
 
-// ── PDF generation — FM Field Manual style ───────────────────────────────
+// ── PDF ───────────────────────────────────────────────────────────────────
 async function buildPdf(title: string, author: string, classification: string, sections: StoredSection[]): Promise<Uint8Array> {
   const PDFDocument = (await import('npm:pdfkit')).default;
-
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 60, size: 'A4' });
     const chunks: Uint8Array[] = [];
@@ -249,147 +222,82 @@ async function buildPdf(title: string, author: string, classification: string, s
     const W = doc.page.width;
     const M = 60;
 
-    // ════════════════════════════════════════
     // COVER PAGE
-    // ════════════════════════════════════════
-
-    // Classification banner — top
     doc.rect(0, 0, W, 32).fill(cc);
-    doc.fillColor('white').fontSize(13).font('Helvetica-Bold')
-      .text(classification.toUpperCase(), 0, 9, { align: 'center', characterSpacing: 2 });
-
-    // Top rule
+    doc.fillColor('white').fontSize(13).font('Helvetica-Bold').text(classification.toUpperCase(), 0, 9, { align: 'center', characterSpacing: 2 });
     doc.moveDown(2);
     doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(3).strokeColor('#000').stroke();
     doc.moveDown(0.3);
-
-    // FM number top-right style
-    const docNumber = `TAG-FM-${new Date().getFullYear()}`;
-    doc.fillColor('#000').fontSize(28).font('Helvetica-Bold')
-      .text(docNumber, M, doc.y, { align: 'right', characterSpacing: 1 });
+    doc.fillColor('#000').fontSize(28).font('Helvetica-Bold').text(`TAG-FM-${new Date().getFullYear()}`, M, doc.y, { align: 'right', characterSpacing: 1 });
     doc.moveDown(0.2);
-
-    // Org header
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#000')
       .text('T A C T I C A L   A D A P T A T I O N   G R O U P   F I E L D   M A N U A L', M, doc.y, { align: 'center', characterSpacing: 1 });
     doc.moveDown(0.3);
-
-    // Second rule
     doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(2).strokeColor('#000').stroke();
     doc.moveDown(2.5);
 
-    // Big bold title — centered, all caps, FM style
-    const titleLines = title.toUpperCase().split(' ');
-    // Group into lines of ~3 words for dramatic effect
     const grouped: string[] = [];
-    for (let i = 0; i < titleLines.length; i += 3) grouped.push(titleLines.slice(i, i + 3).join(' '));
+    const words = title.toUpperCase().split(' ');
+    for (let i = 0; i < words.length; i += 3) grouped.push(words.slice(i, i + 3).join(' '));
     doc.fillColor('#000').fontSize(36).font('Helvetica-Bold');
-    for (const line of grouped) {
-      doc.text(line, M, doc.y, { align: 'center', characterSpacing: 2 });
-      doc.moveDown(0.2);
-    }
+    for (const line of grouped) { doc.text(line, M, doc.y, { align: 'center', characterSpacing: 2 }); doc.moveDown(0.2); }
     doc.moveDown(1.5);
 
-    // Distribution box (mimics FM stamp)
     const boxY = doc.y;
     doc.rect(M, boxY, 220, 52).lineWidth(1.5).stroke('#000');
-    doc.fillColor('#000').fontSize(8).font('Helvetica-Bold')
-      .text('DISTRIBUTION STATEMENT', M + 8, boxY + 6, { width: 204 });
-    doc.fontSize(7).font('Helvetica')
-      .text(`Approved for use within Tactical Adaptation Group.\nAuthorised personnel only. Classification: ${classification}.`, M + 8, boxY + 18, { width: 204 });
-    doc.moveDown(0.5);
-
-    // Doc date bottom right
-    doc.fillColor('#000').fontSize(10).font('Helvetica-Bold')
-      .text(new Date().toISOString().slice(0, 10).replace(/-/g, ''), M, boxY, { align: 'right', width: W - M * 2 });
-
+    doc.fillColor('#000').fontSize(8).font('Helvetica-Bold').text('DISTRIBUTION STATEMENT', M + 8, boxY + 6, { width: 204 });
+    doc.fontSize(7).font('Helvetica').text(`Approved for use within Tactical Adaptation Group.\nAuthorised personnel only. Classification: ${classification}.`, M + 8, boxY + 18, { width: 204 });
+    doc.fillColor('#000').fontSize(10).font('Helvetica-Bold').text(new Date().toISOString().slice(0, 10).replace(/-/g, ''), M, boxY, { align: 'right', width: W - M * 2 });
     doc.moveDown(4);
-
-    // Third rule
     doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(2).strokeColor('#000').stroke();
     doc.moveDown(0.6);
-
-    // HQ line
     doc.fillColor('#000').fontSize(10).font('Helvetica-Bold')
       .text('H E A D Q U A R T E R S ,   T A C T I C A L   A D A P T A T I O N   G R O U P', M, doc.y, { align: 'center', characterSpacing: 1 });
     doc.moveDown(0.3);
     doc.fontSize(9).font('Helvetica')
       .text(`Author: ${author}     ·     ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}`, M, doc.y, { align: 'center' });
     doc.moveDown(0.5);
-
-    // Bottom rule
     doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(2).strokeColor('#000').stroke();
-    doc.moveDown(0.5);
+    doc.rect(0, doc.page.height - 32, W, 32).fill(cc);
+    doc.fillColor('white').fontSize(13).font('Helvetica-Bold').text(classification.toUpperCase(), 0, doc.page.height - 23, { align: 'center', characterSpacing: 2 });
 
-    // Classification banner — bottom of cover
-    const footerY = doc.page.height - 32;
-    doc.rect(0, footerY, W, 32).fill(cc);
-    doc.fillColor('white').fontSize(13).font('Helvetica-Bold')
-      .text(classification.toUpperCase(), 0, footerY + 9, { align: 'center', characterSpacing: 2 });
-
-    // ════════════════════════════════════════
-    // TABLE OF CONTENTS PAGE
-    // ════════════════════════════════════════
+    // TABLE OF CONTENTS
     doc.addPage();
-
-    // Classification banner
     doc.rect(0, 0, W, 32).fill(cc);
-    doc.fillColor('white').fontSize(11).font('Helvetica-Bold')
-      .text(classification.toUpperCase(), 0, 10, { align: 'center', characterSpacing: 2 });
+    doc.fillColor('white').fontSize(11).font('Helvetica-Bold').text(classification.toUpperCase(), 0, 10, { align: 'center', characterSpacing: 2 });
     doc.moveDown(2);
-
     doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(2).strokeColor('#000').stroke();
     doc.moveDown(0.5);
-    doc.fillColor('#000').fontSize(14).font('Helvetica-Bold')
-      .text('C O N T E N T S', M, doc.y, { align: 'center', characterSpacing: 3 });
+    doc.fillColor('#000').fontSize(14).font('Helvetica-Bold').text('C O N T E N T S', M, doc.y, { align: 'center', characterSpacing: 3 });
     doc.moveDown(0.5);
     doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(1).strokeColor('#000').stroke();
     doc.moveDown(0.8);
-
     sections.forEach((s, i) => {
       doc.fillColor('#000').fontSize(9).font('Helvetica')
         .text(`${String(i + 1).padStart(3, '0')}   ${s.heading.toUpperCase()}${s.sourceChannel ? `   [${s.sourceChannel.toUpperCase()}]` : ''}`, M + 10, doc.y);
       doc.moveDown(0.3);
     });
-
     doc.moveDown(0.5);
     doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(1).strokeColor('#000').stroke();
+    doc.rect(0, doc.page.height - 32, W, 32).fill(cc);
+    doc.fillColor('white').fontSize(11).font('Helvetica-Bold').text(classification.toUpperCase(), 0, doc.page.height - 22, { align: 'center', characterSpacing: 2 });
 
-    // Classification banner bottom
-    const tocFooterY = doc.page.height - 32;
-    doc.rect(0, tocFooterY, W, 32).fill(cc);
-    doc.fillColor('white').fontSize(11).font('Helvetica-Bold')
-      .text(classification.toUpperCase(), 0, tocFooterY + 10, { align: 'center', characterSpacing: 2 });
-
-    // ════════════════════════════════════════
     // CONTENT PAGES
-    // ════════════════════════════════════════
     doc.addPage();
-
-    // Page header/footer helper
-    const addPageBanners = () => {
+    const addBanners = () => {
       doc.rect(0, 0, W, 32).fill(cc);
-      doc.fillColor('white').fontSize(11).font('Helvetica-Bold')
-        .text(classification.toUpperCase(), 0, 10, { align: 'center', characterSpacing: 2 });
-      const pf = doc.page.height - 32;
-      doc.rect(0, pf, W, 32).fill(cc);
-      doc.fillColor('white').fontSize(11).font('Helvetica-Bold')
-        .text(classification.toUpperCase(), 0, pf + 10, { align: 'center', characterSpacing: 2 });
+      doc.fillColor('white').fontSize(11).font('Helvetica-Bold').text(classification.toUpperCase(), 0, 10, { align: 'center', characterSpacing: 2 });
+      doc.rect(0, doc.page.height - 32, W, 32).fill(cc);
+      doc.fillColor('white').fontSize(11).font('Helvetica-Bold').text(classification.toUpperCase(), 0, doc.page.height - 22, { align: 'center', characterSpacing: 2 });
     };
-
-    addPageBanners();
+    addBanners();
     doc.moveDown(2);
 
     let currentChannel = '';
     for (const section of sections) {
-      // Channel divider
       if (section.sourceChannel && section.sourceChannel !== currentChannel) {
         currentChannel = section.sourceChannel;
-        if (doc.y > doc.page.height - 140) {
-          doc.addPage();
-          addPageBanners();
-          doc.moveDown(2);
-        }
+        if (doc.y > doc.page.height - 140) { doc.addPage(); addBanners(); doc.moveDown(2); }
         doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(2).strokeColor('#000').stroke();
         doc.moveDown(0.4);
         doc.fillColor('#000').fontSize(9).font('Helvetica-Bold')
@@ -398,58 +306,36 @@ async function buildPdf(title: string, author: string, classification: string, s
         doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(2).strokeColor('#000').stroke();
         doc.moveDown(1);
       }
-
-      if (doc.y > doc.page.height - 120) {
-        doc.addPage();
-        addPageBanners();
-        doc.moveDown(2);
-      }
-
-      // Section heading — FM style ruled
+      if (doc.y > doc.page.height - 120) { doc.addPage(); addBanners(); doc.moveDown(2); }
       doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(1.5).strokeColor('#000').stroke();
       doc.moveDown(0.3);
-      doc.fillColor('#000').fontSize(12).font('Helvetica-Bold')
-        .text(section.heading.toUpperCase(), M, doc.y, { characterSpacing: 1 });
+      doc.fillColor('#000').fontSize(12).font('Helvetica-Bold').text(section.heading.toUpperCase(), M, doc.y, { characterSpacing: 1 });
       doc.moveDown(0.3);
       doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(1).strokeColor('#000').stroke();
       doc.moveDown(0.8);
-
       for (const msg of section.messages) {
-        if (doc.y > doc.page.height - 90) {
-          doc.addPage();
-          addPageBanners();
-          doc.moveDown(2);
-        }
-
-        // Author/timestamp in small caps style
+        if (doc.y > doc.page.height - 90) { doc.addPage(); addBanners(); doc.moveDown(2); }
         doc.fillColor('#555').fontSize(7).font('Helvetica-Bold')
           .text(`${msg.author.toUpperCase()}   ·   ${new Date(msg.timestamp).toISOString().replace('T', ' ').slice(0, 16)}`, M, doc.y, { characterSpacing: 1 });
         doc.moveDown(0.3);
-
         const clean = msg.content
-          .replace(/\*\*(.*?)\*\*/gs, '$1')
-          .replace(/\*(.*?)\*/gs, '$1')
-          .replace(/`{1,3}(.*?)`{1,3}/gs, '$1')
-          .replace(/^#{1,6}\s/gm, '')
-          .replace(/^>\s/gm, '    ');
-
-        doc.fillColor('#000').fontSize(10).font('Helvetica')
-          .text(clean, M, doc.y, { width: W - M * 2, lineGap: 3, paragraphGap: 2 });
+          .replace(/\*\*(.*?)\*\*/gs, '$1').replace(/\*(.*?)\*/gs, '$1')
+          .replace(/`{1,3}(.*?)`{1,3}/gs, '$1').replace(/^#{1,6}\s/gm, '').replace(/^>\s/gm, '    ');
+        doc.fillColor('#000').fontSize(10).font('Helvetica').text(clean, M, doc.y, { width: W - M * 2, lineGap: 3, paragraphGap: 2 });
         doc.moveDown(0.8);
       }
-
       doc.moveDown(0.5);
     }
-
     doc.end();
   });
 }
 
 // ── Interaction handler ───────────────────────────────────────────────────
-async function handleInteraction(interaction: any, req: Request): Promise<Response> {
+async function handleInteraction(interaction: any): Promise<Response> {
   const type = interaction.type;
   if (type === 1) return Response.json({ type: 1 });
 
+  // Slash command: /scrape
   if (type === 2 && interaction.data?.name === 'scrape') {
     const channelId = interaction.channel_id;
     await ackCallback(interaction.id, interaction.token, {
@@ -461,15 +347,17 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
           { type: 2, style: 1, label: '✨ Create New Document', custom_id: `scrape_new:${channelId}` },
           { type: 2, style: 2, label: '➕ Add Channel to Existing Doc', custom_id: `scrape_append:${channelId}` },
           { type: 2, style: 4, label: '🗑️ Delete a Document', custom_id: `scrape_delete:${channelId}` },
-        ]}]
-      }
+        ]}],
+      },
     });
     return Response.json({ type: 1 });
   }
 
+  // Button / select interactions
   if (type === 3) {
     const customId: string = interaction.data?.custom_id ?? '';
 
+    // ── Create New → open modal
     if (customId.startsWith('scrape_new:')) {
       const channelId = customId.split(':')[1];
       await ackCallback(interaction.id, interaction.token, {
@@ -479,19 +367,20 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
           title: 'New Training Document',
           components: [
             { type: 1, components: [{ type: 4, custom_id: 'doc_title', label: 'Document Title', style: 1, required: true, placeholder: 'e.g. Combat Infantryman Course' }] },
-            { type: 1, components: [{ type: 4, custom_id: 'doc_author', label: 'Author / Unit', style: 1, required: true, placeholder: 'e.g. SunrayActual / E-Squadron TAG' }] },
+            { type: 1, components: [{ type: 4, custom_id: 'doc_author', label: 'Author / Unit', style: 1, required: true, placeholder: 'e.g. SunrayActual / TAG' }] },
             { type: 1, components: [{ type: 4, custom_id: 'doc_class', label: 'Classification Level', style: 1, required: true, value: 'UNCLASSIFIED' }] },
-          ]
-        }
+          ],
+        },
       });
       return Response.json({ type: 1 });
     }
 
+    // ── Append → show doc picker
     if (customId.startsWith('scrape_append:')) {
       const channelId = customId.split(':')[1];
       let existingPdfs: any[] = [];
       try { existingPdfs = await entityList('BotExportedPdf'); } catch {}
-      if (!existingPdfs || existingPdfs.length === 0) {
+      if (!existingPdfs.length) {
         await ackCallback(interaction.id, interaction.token, { type: 4, data: { flags: 64, content: '❌ No existing documents found. Use **Create New Document** first.' } });
         return Response.json({ type: 1 });
       }
@@ -505,16 +394,17 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
         data: {
           flags: 64,
           content: '➕ **Which document should this channel be added to?**',
-          components: [{ type: 1, components: [{ type: 3, custom_id: `scrape_select:${channelId}`, options, placeholder: 'Choose a document...' }] }]
-        }
+          components: [{ type: 1, components: [{ type: 3, custom_id: `scrape_select:${channelId}`, options, placeholder: 'Choose a document...' }] }],
+        },
       });
       return Response.json({ type: 1 });
     }
 
+    // ── Delete → show doc picker
     if (customId.startsWith('scrape_delete:')) {
       let existingPdfs: any[] = [];
       try { existingPdfs = await entityList('BotExportedPdf'); } catch {}
-      if (!existingPdfs || existingPdfs.length === 0) {
+      if (!existingPdfs.length) {
         await ackCallback(interaction.id, interaction.token, { type: 4, data: { flags: 64, content: '❌ No documents found to delete.' } });
         return Response.json({ type: 1 });
       }
@@ -528,12 +418,13 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
         data: {
           flags: 64,
           content: '🗑️ **Which document do you want to delete?**',
-          components: [{ type: 1, components: [{ type: 3, custom_id: `scrape_delete_select`, options, placeholder: 'Choose a document to delete...' }] }]
-        }
+          components: [{ type: 1, components: [{ type: 3, custom_id: `scrape_delete_select`, options, placeholder: 'Choose a document to delete...' }] }],
+        },
       });
       return Response.json({ type: 1 });
     }
 
+    // ── Delete confirm picker
     if (customId === 'scrape_delete_select') {
       const selectedPdfId = interaction.data?.values?.[0];
       if (!selectedPdfId) {
@@ -544,12 +435,12 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
         type: 4,
         data: {
           flags: 64,
-          content: `⚠️ **Are you sure?** This will permanently delete this document.`,
+          content: '⚠️ **Are you sure?** This will permanently delete this document.',
           components: [{ type: 1, components: [
             { type: 2, style: 4, label: '🗑️ Yes, Delete It', custom_id: `scrape_delete_confirm:${selectedPdfId}` },
             { type: 2, style: 2, label: '✖ Cancel', custom_id: `scrape_delete_cancel` },
-          ]}]
-        }
+          ]}],
+        },
       });
       return Response.json({ type: 1 });
     }
@@ -559,6 +450,7 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       return Response.json({ type: 1 });
     }
 
+    // ── Delete confirmed
     if (customId.startsWith('scrape_delete_confirm:')) {
       const pdfId = customId.split(':')[1];
       const appId = interaction.application_id;
@@ -576,6 +468,7 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       return Response.json({ type: 1 });
     }
 
+    // ── Append: doc selected → scrape + merge
     if (customId.startsWith('scrape_select:')) {
       const channelId = customId.split(':')[1];
       const selectedPdfId = interaction.data?.values?.[0];
@@ -599,41 +492,36 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
           const { channelName, sections: newSections } = await scrapeChannel(channelId);
           if (newSections.length === 0) throw new Error('No text content found in this channel.');
 
-          const alreadyImported = existingSections.some(s => s.sourceChannel === channelName);
-          if (alreadyImported) {
-            await patchFollowup(appId, token, `⚠️ **${channelName}** is already in this document. Skipping to avoid duplicates.`);
+          if (existingSections.some((s) => s.sourceChannel === channelName)) {
+            await patchFollowup(appId, token, `⚠️ **${channelName}** is already in this document. Skipping.`);
             return;
           }
 
-          const taggedSections = newSections.map(s => ({ ...s, sourceChannel: channelName }));
+          const taggedSections = newSections.map((s) => ({ ...s, sourceChannel: channelName }));
           const mergedSections = [...existingSections, ...taggedSections];
 
           await patchFollowup(appId, token, `⏳ Building combined document (${mergedSections.length} total sections)...`);
+
           const pdfBytes = await buildPdf(
             existingRecord.title, existingRecord.author,
-            existingRecord.classification ?? 'UNCLASSIFIED',
-            mergedSections
+            existingRecord.classification ?? 'UNCLASSIFIED', mergedSections,
           );
-
-          // Upload PDF as private file and get signed URL
-          const pdfUri = await uploadPrivateFile(pdfBytes, `${existingRecord.title.replace(/[^a-z0-9]/gi, '_')}.pdf`, 'application/pdf');
-          const signedUrl = await getSignedUrl(pdfUri);
+          const pdfUrl = await uploadFile(pdfBytes, `${existingRecord.title.replace(/[^a-z0-9]/gi, '_')}.pdf`, 'application/pdf');
 
           const newMsgCount = taggedSections.reduce((s, sec) => s + sec.messages.length, 0);
           await postMessage(channelId,
-            `✅ **${existingRecord.title}** updated — added **${channelName}** (+${taggedSections.length} sections, +${newMsgCount} messages). Total: **${mergedSections.length} sections**.\n📥 **Download (expires 1hr):** ${signedUrl}`
+            `✅ **${existingRecord.title}** updated — added **${channelName}** (+${taggedSections.length} sections, +${newMsgCount} messages). Total: **${mergedSections.length} sections**.\n📥 **Download:** ${pdfUrl}`,
           );
 
           const contentUrl = await uploadContentJson(mergedSections, existingRecord.title.replace(/[^a-z0-9]/gi, '_'));
-          const totalMessages = mergedSections.reduce((s, sec) => s + sec.messages.length, 0);
           await entityUpdate('BotExportedPdf', selectedPdfId, {
             content_json: contentUrl,
-            file_url: pdfUri,
+            file_url: pdfUrl,
             section_count: mergedSections.length,
-            message_count: totalMessages,
+            message_count: mergedSections.reduce((s, sec) => s + sec.messages.length, 0),
           });
 
-          await patchFollowup(appId, token, `✅ Done! **${mergedSections.length} sections** total. Download link posted above (valid 1 hour).`);
+          await patchFollowup(appId, token, `✅ Done! **${mergedSections.length} sections** total. Download link posted above.`);
         } catch (err: any) {
           await patchFollowup(appId, token, `❌ Failed: ${err.message}`);
         }
@@ -642,6 +530,7 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
     }
   }
 
+  // Modal submit
   if (type === 5) {
     const customId: string = interaction.data?.custom_id ?? '';
     if (customId.startsWith('scrape_modal:')) {
@@ -650,7 +539,8 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       const token = interaction.token;
 
       const components = interaction.data?.components ?? [];
-      const getValue = (id: string) => components.flatMap((r: any) => r.components).find((c: any) => c.custom_id === id)?.value ?? '';
+      const getValue = (id: string) =>
+        components.flatMap((r: any) => r.components).find((c: any) => c.custom_id === id)?.value ?? '';
 
       const title = getValue('doc_title').trim();
       const author = getValue('doc_author').trim();
@@ -661,20 +551,19 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       (async () => {
         try {
           await patchFollowup(appId, token, `⏳ Scraping channel...`);
+
           const { channelName, sections } = await scrapeChannel(channelId);
           if (sections.length === 0) throw new Error('No text content found in this channel.');
 
-          const taggedSections = sections.map(s => ({ ...s, sourceChannel: channelName }));
+          const taggedSections = sections.map((s) => ({ ...s, sourceChannel: channelName }));
 
           await patchFollowup(appId, token, `⏳ Building document (${taggedSections.length} sections)...`);
-          const pdfBytes = await buildPdf(title, author, classification, taggedSections);
 
-          // Upload as private file and generate signed URL
-          const pdfUri = await uploadPrivateFile(pdfBytes, `${title.replace(/[^a-z0-9]/gi, '_')}.pdf`, 'application/pdf');
-          const signedUrl = await getSignedUrl(pdfUri);
+          const pdfBytes = await buildPdf(title, author, classification, taggedSections);
+          const pdfUrl = await uploadFile(pdfBytes, `${title.replace(/[^a-z0-9]/gi, '_')}.pdf`, 'application/pdf');
 
           await postMessage(channelId,
-            `✅ **${title}** [${classification}] — ${taggedSections.length} sections from **${channelName}**.\n📥 **Download (expires 1hr):** ${signedUrl}\n\nGo to your next channel and use \`/scrape\` → **Add Channel to Existing Doc** to keep building.`
+            `✅ **${title}** [${classification}] — ${taggedSections.length} sections from **${channelName}**.\n📥 **Download:** ${pdfUrl}\n\nUse \`/scrape\` → **Add Channel to Existing Doc** in other channels to keep building.`,
           );
 
           const contentUrl = await uploadContentJson(taggedSections, title.replace(/[^a-z0-9]/gi, '_'));
@@ -686,10 +575,10 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
             section_count: taggedSections.length,
             message_count: taggedSections.reduce((s, sec) => s + sec.messages.length, 0),
             content_json: contentUrl,
-            file_uri: pdfUri,
+            file_url: pdfUrl,
           });
 
-          await patchFollowup(appId, token, `✅ Done! Download link posted above (valid 1 hour). Head to your next channel and use \`/scrape\` → **Add Channel to Existing Doc** to keep building.`);
+          await patchFollowup(appId, token, `✅ Done! Download link posted above.`);
         } catch (err: any) {
           await patchFollowup(appId, token, `❌ Scrape failed: ${err.message}`);
         }
@@ -709,5 +598,5 @@ Deno.serve(async (req) => {
   const valid = await verifyDiscordSignature(req, body);
   if (!valid) return new Response('Invalid signature', { status: 401 });
   const interaction = JSON.parse(body);
-  return handleInteraction(interaction, req);
+  return handleInteraction(interaction);
 });
