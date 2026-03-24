@@ -1,1 +1,4 @@
 .agents/.env
+
+# Agent uploaded files
+incoming_files/
