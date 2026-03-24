@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@base44/sdk@0.8.21';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { randomBytes } from 'node:crypto';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
@@ -28,7 +28,7 @@ async function sendEmail(to: string, subject: string, html: string) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   try {
-    const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') ?? '' });
+    const base44 = createClientFromRequest(req);
     const { email } = await req.json().catch(() => ({}));
     if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
 
