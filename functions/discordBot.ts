@@ -3,7 +3,6 @@
  * FM-style cover, free-text classification, private signed URLs
  */
 
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
 const DISCORD_BOT_TOKEN = Deno.env.get('DISCORD_BOT_TOKEN') ?? '';
 const DISCORD_PUBLIC_KEY = Deno.env.get('DISCORD_PUBLIC_KEY') ?? '';
@@ -104,6 +103,58 @@ async function fetchContentJson(url: string): Promise<StoredSection[]> {
   if (!r.ok) throw new Error(`Failed to fetch content JSON: ${r.status}`);
   return r.json();
 }
+
+async function entityCreate(entityName: string, data: Record<string, unknown>): Promise<any> {
+  const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
+  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/${entityName}`, {
+    method: 'POST',
+    headers: { 'x-api-key': serviceToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!r.ok) throw new Error(`Entity create failed ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
+async function entityUpdate(entityName: string, id: string, data: Record<string, unknown>): Promise<any> {
+  const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
+  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
+    method: 'PUT',
+    headers: { 'x-api-key': serviceToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!r.ok) throw new Error(`Entity update failed ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
+async function entityGet(entityName: string, id: string): Promise<any> {
+  const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
+  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
+    headers: { 'x-api-key': serviceToken },
+  });
+  if (!r.ok) throw new Error(`Entity get failed ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
+async function entityList(entityName: string): Promise<any[]> {
+  const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
+  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/${entityName}`, {
+    headers: { 'x-api-key': serviceToken },
+  });
+  if (!r.ok) throw new Error(`Entity list failed ${r.status}: ${await r.text()}`);
+  const data = await r.json();
+  return Array.isArray(data) ? data : data.items ?? data.results ?? [];
+}
+
+async function entityDelete(entityName: string, id: string): Promise<void> {
+  const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
+  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
+    method: 'DELETE',
+    headers: { 'x-api-key': serviceToken },
+  });
+  if (!r.ok) throw new Error(`Entity delete failed ${r.status}: ${await r.text()}`);
+}
+
+
 
 // ── Scraping ──────────────────────────────────────────────────────────────
 async function getForumThreads(channelId: string): Promise<any[]> {
@@ -438,9 +489,8 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
 
     if (customId.startsWith('scrape_append:')) {
       const channelId = customId.split(':')[1];
-      const base44 = createClientFromRequest(req);
       let existingPdfs: any[] = [];
-      try { existingPdfs = await base44.asServiceRole.entities.BotExportedPdf.list(); } catch {}
+      try { existingPdfs = await entityList('BotExportedPdf'); } catch {}
       if (!existingPdfs || existingPdfs.length === 0) {
         await ackCallback(interaction.id, interaction.token, { type: 4, data: { flags: 64, content: '❌ No existing documents found. Use **Create New Document** first.' } });
         return Response.json({ type: 1 });
@@ -462,9 +512,8 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
     }
 
     if (customId.startsWith('scrape_delete:')) {
-      const base44 = createClientFromRequest(req);
       let existingPdfs: any[] = [];
-      try { existingPdfs = await base44.asServiceRole.entities.BotExportedPdf.list(); } catch {}
+      try { existingPdfs = await entityList('BotExportedPdf'); } catch {}
       if (!existingPdfs || existingPdfs.length === 0) {
         await ackCallback(interaction.id, interaction.token, { type: 4, data: { flags: 64, content: '❌ No documents found to delete.' } });
         return Response.json({ type: 1 });
@@ -517,9 +566,8 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       await ackCallback(interaction.id, token, { type: 7, data: { flags: 64, content: '⏳ Deleting...' } });
       (async () => {
         try {
-          const base44 = createClientFromRequest(req);
-          const record = await base44.asServiceRole.entities.BotExportedPdf.get(pdfId);
-          await base44.asServiceRole.entities.BotExportedPdf.delete(pdfId);
+          const record = await entityGet('BotExportedPdf', pdfId);
+          await entityDelete('BotExportedPdf', pdfId);
           await patchFollowup(appId, token, `🗑️ Deleted **${record?.title ?? pdfId}** successfully.`);
         } catch (err: any) {
           await patchFollowup(appId, token, `❌ Delete failed: ${err.message}`);
@@ -540,8 +588,7 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       await ackCallback(interaction.id, token, { type: 7, data: { flags: 64, content: '⏳ Scraping channel...' } });
       (async () => {
         try {
-          const base44 = createClientFromRequest(req);
-          const existingRecord = await base44.asServiceRole.entities.BotExportedPdf.get(selectedPdfId);
+          const existingRecord = await entityGet('BotExportedPdf', selectedPdfId);
           if (!existingRecord) throw new Error('Could not find the selected document.');
 
           let existingSections: StoredSection[] = [];
@@ -579,9 +626,9 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
 
           const contentUrl = await uploadContentJson(mergedSections, existingRecord.title.replace(/[^a-z0-9]/gi, '_'));
           const totalMessages = mergedSections.reduce((s, sec) => s + sec.messages.length, 0);
-          await base44.asServiceRole.entities.BotExportedPdf.update(selectedPdfId, {
+          await entityUpdate('BotExportedPdf', selectedPdfId, {
             content_json: contentUrl,
-            file_uri: pdfUri,
+            file_url: pdfUri,
             section_count: mergedSections.length,
             message_count: totalMessages,
           });
@@ -632,8 +679,7 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
 
           const contentUrl = await uploadContentJson(taggedSections, title.replace(/[^a-z0-9]/gi, '_'));
 
-          const base44 = createClientFromRequest(req);
-          await base44.asServiceRole.entities.BotExportedPdf.create({
+          await entityCreate('BotExportedPdf', {
             title, author, classification,
             channel_id: channelId,
             channel_name: channelName,
