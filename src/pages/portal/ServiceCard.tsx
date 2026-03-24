@@ -55,9 +55,9 @@ export default function ServiceCard() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>((user as any)?.avatar_url ?? null);
 
-  const { data: milsimRosters } = useQuery<any[]>({
-    queryKey: ["my-milsim-rosters"],
-    queryFn: () => apiFetch("/api/milsim-groups/mine/all").catch(() => []),
+  const { data: primaryUnit } = useQuery<any>({
+    queryKey: ["my-milsim-group"],
+    queryFn: () => apiFetch("/api/milsim-groups/mine/all").catch(() => null),
     staleTime: 60_000,
   });
 
@@ -74,9 +74,9 @@ export default function ServiceCard() {
   const daysIn = differenceInDays(new Date(), new Date(user.createdAt));
   const dutyStatus = (user as any).on_duty_status ?? "available";
 
-  const primaryUnit = milsimRosters?.[0] ?? null;
   const unitDisplay = primaryUnit?.name ?? "FREELANCER";
   const unitSub = primaryUnit ? "ACTIVE UNIT" : "INDEPENDENT OPERATOR";
+
 
   const rep = repData?.score ?? null;
   const hasRep = rep && rep.grade !== "UNRATED";
