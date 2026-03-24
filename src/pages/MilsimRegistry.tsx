@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import {
   BRANCHES, UNIT_TYPES_BY_BRANCH, ALL_UNIT_TYPES, GAMES_LIST,
-  COUNTRIES_LIST, LANGUAGES_LIST, BRANCH_ICONS, type Branch,
+  COUNTRIES_LIST, LANGUAGES_LIST, type Branch,
 } from "@/lib/milsimConstants";
 
 interface MilsimGroup {
@@ -77,7 +77,17 @@ function FilterDropdown({ label, options, value, onChange }: {
   );
 }
 
-// ─── Branch pill buttons ───────────────────────────────────────────────────────
+// ─── Branch pill buttons (no emoji — SVG icons) ───────────────────────────────
+
+const BRANCH_SVG: Record<string, React.ReactNode> = {
+  "All":                <svg viewBox="0 0 12 12" className="w-3 h-3 fill-current"><circle cx="6" cy="6" r="5" fillOpacity=".15" stroke="currentColor" strokeWidth="1" fill="none"/><path d="M6 1v10M1 6h10" strokeWidth="1" stroke="currentColor"/></svg>,
+  "Army":               <svg viewBox="0 0 12 12" className="w-3 h-3 fill-current"><path d="M6 1L1 4v1.5h1V10h8V5.5h1V4L6 1zm0 1.2L10 4.4V5H9v4H3V5H2v-.6L6 2.2z"/></svg>,
+  "Marines":            <svg viewBox="0 0 12 12" className="w-3 h-3 fill-current"><path d="M6 1.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9zm0 1a3.5 3.5 0 110 7 3.5 3.5 0 010-7zm0 1.5a2 2 0 100 4 2 2 0 000-4z"/></svg>,
+  "Air Force":          <svg viewBox="0 0 12 12" className="w-3 h-3 fill-current"><path d="M6 1L5 4.5H2l2 1.5-1 4 3-2 3 2-1-4 2-1.5H7L6 1z"/></svg>,
+  "Navy":               <svg viewBox="0 0 12 12" className="w-3 h-3 fill-current"><path d="M2 7l4 3.5L10 7V5L6 2 2 5v2zm4 1.8L3.2 7 3 5.4 6 3.4l3 2-.2 1.6L6 8.8z"/></svg>,
+  "Special Operations": <svg viewBox="0 0 12 12" className="w-3 h-3 fill-current"><path d="M6 1l1.2 3.4H11L8.1 6.5 9.2 10 6 8l-3.2 2 1.1-3.5L1 4.4h3.8L6 1z"/></svg>,
+  "Multi-Branch":       <svg viewBox="0 0 12 12" className="w-3 h-3 fill-current"><circle cx="6" cy="6" r="4.5" fillOpacity=".1" stroke="currentColor" strokeWidth="1" fill="none"/><path d="M6 2v8M2 6h8" strokeWidth="1" stroke="currentColor"/><circle cx="6" cy="6" r="1.5"/></svg>,
+};
 
 function BranchFilter({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
@@ -88,7 +98,7 @@ function BranchFilter({ value, onChange }: { value: string; onChange: (v: string
           value === "" ? "bg-primary/15 border-primary/50 text-primary" : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
         }`}
       >
-        🌐 All Branches
+        <span className="text-current">{BRANCH_SVG["All"]}</span> All Branches
       </button>
       {BRANCHES.map(b => (
         <button
@@ -98,7 +108,7 @@ function BranchFilter({ value, onChange }: { value: string; onChange: (v: string
             value === b ? "bg-primary/15 border-primary/50 text-primary" : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
           }`}
         >
-          {BRANCH_ICONS[b as Branch]} {b}
+          <span className="text-current">{BRANCH_SVG[b]}</span> {b}
         </button>
       ))}
     </div>
@@ -310,7 +320,7 @@ function GroupCard({ group, index, featured = false }: { group: MilsimGroup; ind
         {/* Branch badge */}
         {group.branch && (
           <div className="absolute top-3 left-3 flex items-center gap-1 bg-black/60 border border-white/10 px-2 py-1 rounded text-[10px] font-display font-bold uppercase tracking-widest z-10 text-white/70">
-            {BRANCH_ICONS[group.branch as Branch]} {group.branch}
+{group.branch}
           </div>
         )}
         {group.logoUrl

@@ -3,27 +3,40 @@ import { motion } from "framer-motion";
 import { useRoute, Link } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { apiFetch } from "@/lib/apiFetch";
+import { BRANCH_ICONS, type Branch } from "@/lib/milsimConstants";
 import {
   Shield, Globe, ExternalLink, Loader2, Users, Award, Crosshair,
-  FileText, ChevronLeft, Star, BookOpen, Map, Radio, Medal
+  FileText, ChevronLeft, Star, BookOpen, Map, Radio, Medal,
+  Zap, Target, TrendingUp, Activity,
 } from "lucide-react";
+import OrbatBuilder from "@/components/OrbatBuilder";
+import { formatDistanceToNow } from "date-fns";
 
-interface Role { id: number; name: string; description: string | null; sortOrder: number }
-interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
-interface RosterEntry { id: number; callsign: string; rankId: number | null; roleId: number | null; notes: string | null }
-interface AppQuestion { id: number; question: string; sortOrder: number; required: boolean }
-interface MilsimAward { id: number; title: string; description: string | null; icon: string; awarded_by: string | null; awarded_at: string; roster_entry_id: number; callsign: string | null }
+interface Role    { id: string; name: string; description: string | null; sortOrder: number }
+interface Rank    { id: string; name: string; abbreviation: string | null; tier: number }
+interface RosterEntry { id: string; callsign: string; rankId: string | null; roleId: string | null; notes: string | null }
+interface AppQuestion { id: string; question: string; sortOrder: number; required: boolean }
+interface MilsimAward { id: string; title: string; description: string | null; icon: string; awarded_by: string | null; awarded_at: string; roster_entry_id: string; callsign: string | null }
 
 interface GroupDetail {
-  id: number; name: string; slug: string; tagLine: string | null;
+  id: string; name: string; slug: string; tagLine: string | null;
   description: string | null; discordUrl: string | null; websiteUrl: string | null;
   logoUrl: string | null; sops: string | null; orbat: string | null;
-  status: string; createdAt: string;
+  status: string; branch: string | null; unitType: string | null;
+  country: string | null; language: string | null; games: string[] | null;
   stream_url: string | null; is_live: boolean;
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply";
+interface ReadinessData {
+  total: number; active_this_week: number; active_this_month: number;
+  readiness_pct: number; status: string;
+  total_ops: number; completed_ops: number; win_rate: number;
+  avg_rep_score: number; avg_experience: number; review_count: number;
+  op_capability_tier: string; op_cap_score: number;
+}
+
+type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "capabilities";
 
 function getEmbedUrl(url: string): string | null {
   try {
@@ -40,6 +53,62 @@ function getEmbedUrl(url: string): string | null {
   return null;
 }
 
+// ─── Branch badge — proper UI element, no emoji ───────────────────────────────
+function BranchBadge({ branch }: { branch: string }) {
+  const icons: Record<string, React.ReactNode> = {
+    "Army":               <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><path d="M8 1L2 5v2h1v6h10V7h1V5L8 1zm0 1.6L13 5.5V6h-1v7H4V6H3v-.5L8 2.6z"/></svg>,
+    "Marines":            <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zm0 1a5 5 0 110 10A5 5 0 018 3zm0 2.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/></svg>,
+    "Air Force":          <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><path d="M8 2l-1 4H4l2.5 2-1 4L8 10l2.5 2-1-4L12 6H9L8 2z"/></svg>,
+    "Navy":               <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><path d="M3 9l5 4 5-4V6l-5-3-5 3v3zm5 2.8L4.2 9 4 6.9 8 4.4l4 2.5-.2 2.1L8 11.8z"/></svg>,
+    "Special Operations": <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10l-3.7 2.5 1.4-4.3L2 5.5h4.5L8 1z"/></svg>,
+    "Multi-Branch":       <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><circle cx="8" cy="8" r="6" fillOpacity=".15" stroke="currentColor" strokeWidth="1.2" fill="none"/><path d="M8 3v10M3 8h10" strokeWidth="1.2" stroke="currentColor"/></svg>,
+  };
+  return (
+    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/8 border border-primary/25 rounded text-[10px] font-display font-bold uppercase tracking-widest text-primary/80">
+      <span className="w-3 h-3 shrink-0">{icons[branch] ?? icons["Army"]}</span>
+      {branch}
+    </div>
+  );
+}
+
+// ─── Readiness gauge ──────────────────────────────────────────────────────────
+function ReadinessGauge({ pct, status }: { pct: number; status: string }) {
+  const col = status === "green" ? "#4ade80" : status === "amber" ? "#facc15" : "#f87171";
+  const r = 28, circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  return (
+    <div className="relative w-16 h-16 shrink-0">
+      <svg viewBox="0 0 72 72" className="w-full h-full -rotate-90">
+        <circle cx="36" cy="36" r={r} fill="none" stroke="hsl(var(--border))" strokeWidth="5" />
+        <circle cx="36" cy="36" r={r} fill="none" stroke={col} strokeWidth="5"
+          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+          style={{ transition: "stroke-dasharray 0.8s ease" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-xs font-display font-black" style={{ color: col }}>{pct}%</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Capability Tier badge ─────────────────────────────────────────────────────
+function TierBadge({ tier }: { tier: string }) {
+  const styles: Record<string, string> = {
+    "TIER I":   "bg-yellow-500/15 border-yellow-500/40 text-yellow-400",
+    "TIER II":  "bg-green-500/15 border-green-500/40 text-green-400",
+    "TIER III": "bg-blue-500/15 border-blue-500/40 text-blue-400",
+    "TIER IV":  "bg-slate-500/15 border-slate-500/30 text-slate-400",
+    "FORMING":  "bg-border/30 border-border text-muted-foreground",
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded border text-[10px] font-display font-bold uppercase tracking-widest ${styles[tier] ?? styles["FORMING"]}`}>
+      <Target className="w-2.5 h-2.5" /> {tier}
+    </span>
+  );
+}
+
+// ─── Main page ─────────────────────────────────────────────────────────────────
 export default function MilsimGroup() {
   const [, params] = useRoute("/milsim/:slug");
   const slug = params?.slug ?? "";
@@ -48,6 +117,8 @@ export default function MilsimGroup() {
   const [tab, setTab] = useState<Tab>("overview");
   const [awards, setAwards] = useState<MilsimAward[]>([]);
   const [awardsLoaded, setAwardsLoaded] = useState(false);
+  const [readiness, setReadiness] = useState<ReadinessData | null>(null);
+  const [readinessLoaded, setReadinessLoaded] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -60,10 +131,15 @@ export default function MilsimGroup() {
   useEffect(() => {
     if (tab === "awards" && group && !awardsLoaded) {
       apiFetch<MilsimAward[]>(`/api/milsim-groups/${group.id}/awards`)
-        .then(data => { setAwards(data); setAwardsLoaded(true); })
-        .catch(() => {});
+        .then(data => { setAwards(data ?? []); setAwardsLoaded(true); })
+        .catch(() => { setAwards([]); setAwardsLoaded(true); });
     }
-  }, [tab, group, awardsLoaded]);
+    if ((tab === "capabilities" || tab === "overview") && group && !readinessLoaded) {
+      apiFetch<ReadinessData>(`/api/stats/readiness/${group.id}`)
+        .then(data => { setReadiness(data); setReadinessLoaded(true); })
+        .catch(() => { setReadinessLoaded(true); });
+    }
+  }, [tab, group, awardsLoaded, readinessLoaded]);
 
   if (loading) return (
     <MainLayout>
@@ -83,25 +159,30 @@ export default function MilsimGroup() {
     </MainLayout>
   );
 
-  const rankById = Object.fromEntries(group.ranks.map((r) => [r.id, r]));
-  const roleById = Object.fromEntries(group.roles.map((r) => [r.id, r]));
+  const roles    = group.roles    ?? [];
+  const ranks    = group.ranks    ?? [];
+  const roster   = group.roster   ?? [];
+  const questions = group.questions ?? [];
+
+  const rankById = Object.fromEntries(ranks.map(r => [r.id, r]));
+  const roleById = Object.fromEntries(roles.map(r => [r.id, r]));
   const embedUrl = group.stream_url ? getEmbedUrl(group.stream_url) : null;
 
   const TABS: { id: Tab; label: string; icon: typeof Shield; show: boolean }[] = [
-    { id: "overview", label: "Overview", icon: Shield, show: true },
-    { id: "stream", label: "Live", icon: Radio, show: !!group.stream_url },
-    { id: "roles", label: "Roles", icon: Crosshair, show: group.roles.length > 0 },
-    { id: "ranks", label: "Ranks", icon: Award, show: group.ranks.length > 0 },
-    { id: "roster", label: "Roster", icon: Users, show: group.roster.length > 0 },
-    { id: "awards", label: "Commendations", icon: Medal, show: true },
-    { id: "sops", label: "SOPs", icon: BookOpen, show: !!group.sops },
-    { id: "orbat", label: "ORBAT", icon: Map, show: !!group.orbat },
-    { id: "apply", label: "Apply", icon: FileText, show: group.questions.length > 0 },
+    { id: "overview",      label: "Overview",      icon: Shield,     show: true },
+    { id: "capabilities",  label: "Capabilities",  icon: Zap,        show: true },
+    { id: "stream",        label: "Live",          icon: Radio,      show: !!group.stream_url },
+    { id: "roles",         label: "Roles",         icon: Crosshair,  show: roles.length > 0 },
+    { id: "ranks",         label: "Ranks",         icon: Award,      show: ranks.length > 0 },
+    { id: "roster",        label: "Roster",        icon: Users,      show: roster.length > 0 },
+    { id: "awards",        label: "Commendations", icon: Medal,      show: true },
+    { id: "sops",          label: "SOPs",          icon: BookOpen,   show: !!group.sops },
+    { id: "orbat",         label: "ORBAT",         icon: Map,        show: !!group.orbat },
+    { id: "apply",         label: "Apply",         icon: FileText,   show: questions.length > 0 },
   ];
 
   return (
     <MainLayout>
-      {/* LIVE banner */}
       {group.is_live && (
         <div className="bg-red-500/10 border-b border-red-500/30 text-red-400 px-6 py-2 flex items-center justify-center gap-2 font-display font-bold uppercase tracking-widest text-sm animate-pulse">
           <span className="w-2 h-2 bg-red-400 rounded-full" />
@@ -119,11 +200,10 @@ export default function MilsimGroup() {
 
           <div className="flex flex-col md:flex-row items-start gap-8">
             <div className="w-24 h-24 shrink-0 bg-background border border-border rounded-lg flex items-center justify-center overflow-hidden">
-              {group.logoUrl ? (
-                <img src={group.logoUrl} alt={`${group.name} logo`} className="w-full h-full object-contain p-2" />
-              ) : (
-                <Shield className="w-10 h-10 text-muted-foreground/40" />
-              )}
+              {group.logoUrl
+                ? <img src={group.logoUrl} alt={`${group.name} logo`} className="w-full h-full object-contain p-2" onError={e => (e.currentTarget.style.display = "none")} />
+                : <Shield className="w-10 h-10 text-muted-foreground/40" />
+              }
             </div>
 
             <div className="flex-1">
@@ -145,6 +225,18 @@ export default function MilsimGroup() {
               {group.tagLine && (
                 <p className="font-display font-bold uppercase tracking-widest text-primary text-sm mb-3">{group.tagLine}</p>
               )}
+
+              {/* Branch + unit type + capability tier */}
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                {group.branch && <BranchBadge branch={group.branch} />}
+                {group.unitType && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-secondary border border-border rounded text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">
+                    <Crosshair className="w-2.5 h-2.5" /> {group.unitType}
+                  </span>
+                )}
+                {readiness?.op_capability_tier && <TierBadge tier={readiness.op_capability_tier} />}
+              </div>
+
               <div className="flex items-center gap-3 flex-wrap">
                 {group.discordUrl && (
                   <a href={group.discordUrl} target="_blank" rel="noopener noreferrer"
@@ -158,17 +250,17 @@ export default function MilsimGroup() {
                     <Globe className="w-3.5 h-3.5" /> Website <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
-                {group.is_live && (
-                  <button onClick={() => setTab("stream")}
-                    className="inline-flex items-center gap-2 bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 px-4 py-2 rounded text-xs font-display font-bold uppercase tracking-wider transition-all">
-                    <Radio className="w-3.5 h-3.5" /> Watch Live
-                  </button>
-                )}
-                <span className="text-xs text-muted-foreground font-sans">
-                  {group.roster.length} member{group.roster.length !== 1 ? "s" : ""}
-                </span>
+                <span className="text-xs text-muted-foreground font-sans">{roster.length} member{roster.length !== 1 ? "s" : ""}</span>
               </div>
             </div>
+
+            {/* Readiness gauge in hero */}
+            {readiness && (
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <ReadinessGauge pct={readiness.readiness_pct} status={readiness.status} />
+                <p className="text-[9px] font-display font-bold uppercase tracking-widest text-muted-foreground">Readiness</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -177,16 +269,12 @@ export default function MilsimGroup() {
       <div className="border-b border-border bg-background sticky top-20 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex overflow-x-auto gap-0 scrollbar-hide">
-            {TABS.filter((t) => t.show).map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
+            {TABS.filter(t => t.show).map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
                 className={`flex items-center gap-2 px-5 py-4 font-display font-bold uppercase tracking-wider text-xs shrink-0 border-b-2 transition-all ${
                   tab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-                } ${t.id === "stream" && group.is_live ? "text-red-400 border-red-400" : ""}`}
-              >
+                } ${t.id === "stream" && group.is_live ? "text-red-400 border-red-400" : ""}`}>
                 <t.icon className="w-3.5 h-3.5" /> {t.label}
-                {t.id === "stream" && group.is_live && <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />}
               </button>
             ))}
           </div>
@@ -194,23 +282,32 @@ export default function MilsimGroup() {
       </div>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
 
+          {/* ── OVERVIEW ─────────────────────────────────────────────────── */}
           {tab === "overview" && (
-            <div className="max-w-3xl">
-              {group.description ? (
-                <p className="font-sans text-muted-foreground leading-relaxed text-lg">{group.description}</p>
-              ) : (
-                <p className="text-muted-foreground font-sans italic">No description provided.</p>
-              )}
-              <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="max-w-3xl space-y-8">
+              {group.description
+                ? <p className="font-sans text-muted-foreground leading-relaxed text-lg">{group.description}</p>
+                : <p className="text-muted-foreground font-sans italic">No description provided.</p>
+              }
+
+              {/* Meta pills */}
+              <div className="flex flex-wrap gap-2">
+                {group.country && <span className="text-[10px] font-display font-bold uppercase tracking-wider px-3 py-1.5 bg-secondary border border-border rounded text-muted-foreground">{group.country.replace(/^[^\s]+\s/, "")}</span>}
+                {group.language && <span className="text-[10px] font-display font-bold uppercase tracking-wider px-3 py-1.5 bg-secondary border border-border rounded text-muted-foreground">{group.language}</span>}
+                {(group.games ?? []).map(g => <span key={g} className="text-[10px] font-sans px-3 py-1.5 bg-secondary border border-border rounded text-muted-foreground">{g}</span>)}
+              </div>
+
+              {/* Quick stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
-                  { label: "Roles", value: group.roles.length, icon: Crosshair },
-                  { label: "Ranks", value: group.ranks.length, icon: Award },
-                  { label: "Members", value: group.roster.length, icon: Users },
-                  { label: "App Questions", value: group.questions.length, icon: FileText },
-                ].map((stat) => (
+                  { label: "Roles",    value: roles.length,     icon: Crosshair },
+                  { label: "Ranks",    value: ranks.length,     icon: Award },
+                  { label: "Members",  value: roster.length,    icon: Users },
+                  { label: "Ops Logged", value: readiness?.total_ops ?? "—", icon: Target },
+                ].map(stat => (
                   <div key={stat.label} className="bg-card border border-border rounded-lg p-4 text-center">
                     <stat.icon className="w-5 h-5 text-primary mx-auto mb-2" />
                     <div className="font-display font-black text-2xl text-foreground">{stat.value}</div>
@@ -218,9 +315,111 @@ export default function MilsimGroup() {
                   </div>
                 ))}
               </div>
+
+              {/* Readiness strip */}
+              {readiness && (
+                <div className="bg-card border border-border rounded-lg p-5 flex items-center gap-6">
+                  <ReadinessGauge pct={readiness.readiness_pct} status={readiness.status} />
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-display font-bold uppercase tracking-widest text-sm">Unit Readiness</p>
+                      <TierBadge tier={readiness.op_capability_tier} />
+                    </div>
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all"
+                        style={{ width: `${readiness.readiness_pct}%`, background: readiness.status === "green" ? "#4ade80" : readiness.status === "amber" ? "#facc15" : "#f87171" }} />
+                    </div>
+                    <p className="text-xs text-muted-foreground font-sans">
+                      {readiness.total} members · {readiness.win_rate}% win rate · {readiness.review_count} rep review{readiness.review_count !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
+          {/* ── CAPABILITIES ─────────────────────────────────────────────── */}
+          {tab === "capabilities" && (
+            <div className="max-w-3xl space-y-6">
+              {!readiness ? (
+                <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+              ) : (
+                <>
+                  {/* Tier + Readiness hero row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-card border border-border rounded-lg p-6 flex items-center gap-5">
+                      <ReadinessGauge pct={readiness.readiness_pct} status={readiness.status} />
+                      <div>
+                        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Overall Readiness</p>
+                        <p className={`font-display font-black text-2xl uppercase ${
+                          readiness.status === "green" ? "text-green-400" : readiness.status === "amber" ? "text-yellow-400" : "text-red-400"
+                        }`}>{readiness.status.toUpperCase()}</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-sans">{readiness.readiness_pct}% composite score</p>
+                      </div>
+                    </div>
+                    <div className="bg-card border border-border rounded-lg p-6 flex items-center gap-5">
+                      <div className="w-14 h-14 rounded bg-primary/10 border border-primary/25 flex items-center justify-center shrink-0">
+                        <Target className="w-7 h-7 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Operational Capability</p>
+                        <TierBadge tier={readiness.op_capability_tier} />
+                        <p className="text-xs text-muted-foreground mt-2 font-sans">{readiness.op_cap_score}/100 composite</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stat grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {[
+                      { label: "Troop Strength",    value: readiness.total,              icon: Users,      sub: `${readiness.active_this_month} active 30d` },
+                      { label: "Ops Logged",         value: readiness.total_ops,          icon: Crosshair,  sub: `${readiness.completed_ops} completed` },
+                      { label: "Win Rate",           value: `${readiness.win_rate}%`,     icon: TrendingUp, sub: "from AAR outcomes" },
+                      { label: "Avg Rep Score",      value: readiness.avg_rep_score || "—", icon: Star,     sub: `${readiness.review_count} reviews` },
+                      { label: "Avg Experience",     value: readiness.avg_experience > 0 ? `${readiness.avg_experience}/10` : "—", icon: Award, sub: "from troop ratings" },
+                      { label: "Active This Week",   value: readiness.active_this_week,   icon: Activity,   sub: `of ${readiness.total} total` },
+                    ].map(s => (
+                      <div key={s.label} className="bg-card border border-border rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <s.icon className="w-4 h-4 text-primary" />
+                          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">{s.label}</p>
+                        </div>
+                        <p className="font-display font-black text-2xl text-foreground">{s.value}</p>
+                        <p className="text-[10px] text-muted-foreground font-sans mt-0.5">{s.sub}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Capability tier explanation */}
+                  <div className="bg-card border border-border rounded-lg p-5">
+                    <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Tier Breakdown</p>
+                    <div className="space-y-2">
+                      {[
+                        { tier: "TIER I",   label: "Elite Force",        desc: "Sustained op record, high troop experience, proven win rate.",   min: 80 },
+                        { tier: "TIER II",  label: "Operational",        desc: "Active unit with solid rep and consistent performance.",          min: 60 },
+                        { tier: "TIER III", label: "Developing",         desc: "Building op history and troop ratings.",                          min: 40 },
+                        { tier: "TIER IV",  label: "Limited Capability", desc: "New or low-activity unit.",                                       min: 20 },
+                        { tier: "FORMING",  label: "Forming",            desc: "No established op record yet.",                                   min: 0  },
+                      ].map(t => (
+                        <div key={t.tier} className={`flex items-start gap-3 p-3 rounded border transition-colors ${readiness.op_capability_tier === t.tier ? "border-primary/40 bg-primary/5" : "border-transparent"}`}>
+                          <TierBadge tier={t.tier} />
+                          <div>
+                            <p className="text-xs font-display font-bold uppercase tracking-wider text-foreground">{t.label}</p>
+                            <p className="text-[10px] text-muted-foreground font-sans">{t.desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground font-sans mt-4 pt-3 border-t border-border">
+                      Tier is computed from ops logged, win rate, average troop experience rating and member count. Commanders can improve tier by logging operations and AAR outcomes.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── STREAM ───────────────────────────────────────────────────── */}
           {tab === "stream" && (
             <div className="max-w-4xl space-y-6">
               {group.is_live ? (
@@ -228,7 +427,6 @@ export default function MilsimGroup() {
                   <div className="flex items-center gap-3 mb-4">
                     <span className="w-3 h-3 bg-red-400 rounded-full animate-pulse" />
                     <h2 className="font-display font-bold uppercase tracking-widest text-red-400">Live Now</h2>
-                    <span className="text-muted-foreground text-sm">— {group.name} is broadcasting</span>
                   </div>
                   {embedUrl ? (
                     <div className="aspect-video rounded-lg overflow-hidden border border-red-500/30 shadow-lg shadow-red-500/10">
@@ -253,79 +451,85 @@ export default function MilsimGroup() {
                 <div className="text-center py-16 border border-dashed border-border rounded-lg">
                   <Radio className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-30" />
                   <p className="font-display font-bold uppercase tracking-widest text-muted-foreground text-sm">No live stream currently</p>
-                  <p className="text-xs text-muted-foreground mt-2">Come back when {group.name} goes live.</p>
-                  {group.discordUrl && (
-                    <a href={group.discordUrl} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 mt-4 text-primary hover:underline text-sm font-display">
-                      Follow on Discord for alerts <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
                 </div>
               )}
             </div>
           )}
 
+          {/* ── ROLES ───────────────────────────────────────────────────── */}
           {tab === "roles" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {group.roles.map((role) => (
-                <div key={role.id} className="bg-card border border-border rounded-lg p-5 hover:border-primary/30 transition-colors">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Crosshair className="w-4 h-4 text-primary" />
-                    <h3 className="font-display font-bold uppercase tracking-wider text-foreground text-sm">{role.name}</h3>
-                  </div>
-                  {role.description && <p className="text-muted-foreground font-sans text-sm leading-relaxed">{role.description}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {tab === "ranks" && (
-            <div className="space-y-2 max-w-2xl">
-              {[...group.ranks].sort((a, b) => b.tier - a.tier).map((rank, i) => (
-                <div key={rank.id} className={`flex items-center gap-4 p-4 rounded-lg border ${i === 0 ? "bg-primary/5 border-primary/30" : "bg-card border-border"}`}>
-                  <div className="w-8 h-8 shrink-0 rounded bg-secondary border border-border flex items-center justify-center">
-                    <span className="font-display font-black text-xs text-primary">{rank.tier}</span>
-                  </div>
-                  <div>
-                    <p className="font-display font-bold uppercase tracking-wider text-foreground text-sm">{rank.name}</p>
-                    {rank.abbreviation && <p className="text-xs text-muted-foreground font-mono">{rank.abbreviation}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {tab === "roster" && (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    {["Callsign", "Rank", "Role", "Notes"].map((h) => (
-                      <th key={h} className="text-left py-3 px-4 font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {group.roster.map((entry) => (
-                    <tr key={entry.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                      <td className="py-3 px-4 font-display font-bold uppercase tracking-wider text-sm text-foreground">{entry.callsign}</td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground font-sans">{entry.rankId ? rankById[entry.rankId]?.name ?? "—" : "—"}</td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground font-sans">{entry.roleId ? roleById[entry.roleId]?.name ?? "—" : "—"}</td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground font-sans">{entry.notes ?? "—"}</td>
-                    </tr>
+            roles.length === 0
+              ? <EmptyState icon={Crosshair} message="No roles defined" />
+              : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {roles.map(role => (
+                    <div key={role.id} className="bg-card border border-border rounded-lg p-5 hover:border-primary/30 transition-colors">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Crosshair className="w-4 h-4 text-primary" />
+                        <h3 className="font-display font-bold uppercase tracking-wider text-foreground text-sm">{role.name}</h3>
+                      </div>
+                      {role.description && <p className="text-muted-foreground font-sans text-sm leading-relaxed">{role.description}</p>}
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              )
           )}
 
+          {/* ── RANKS ───────────────────────────────────────────────────── */}
+          {tab === "ranks" && (
+            ranks.length === 0
+              ? <EmptyState icon={Award} message="No ranks defined" />
+              : (
+                <div className="space-y-2 max-w-2xl">
+                  {[...ranks].sort((a, b) => b.tier - a.tier).map((rank, i) => (
+                    <div key={rank.id} className={`flex items-center gap-4 p-4 rounded-lg border ${i === 0 ? "bg-primary/5 border-primary/30" : "bg-card border-border"}`}>
+                      <div className="w-8 h-8 shrink-0 rounded bg-secondary border border-border flex items-center justify-center">
+                        <span className="font-display font-black text-xs text-primary">{rank.tier}</span>
+                      </div>
+                      <div>
+                        <p className="font-display font-bold uppercase tracking-wider text-foreground text-sm">{rank.name}</p>
+                        {rank.abbreviation && <p className="text-xs text-muted-foreground font-mono">{rank.abbreviation}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+          )}
+
+          {/* ── ROSTER ──────────────────────────────────────────────────── */}
+          {tab === "roster" && (
+            roster.length === 0
+              ? <EmptyState icon={Users} message="Roster is empty" />
+              : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        {["Callsign", "Rank", "Role", "Notes"].map(h => (
+                          <th key={h} className="text-left py-3 px-4 font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {roster.map(entry => (
+                        <tr key={entry.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                          <td className="py-3 px-4 font-display font-bold uppercase tracking-wider text-sm text-foreground">{entry.callsign}</td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground font-sans">{entry.rankId ? (rankById[entry.rankId]?.name ?? "—") : "—"}</td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground font-sans">{entry.roleId ? (roleById[entry.roleId]?.name ?? "—") : "—"}</td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground font-sans">{entry.notes ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+          )}
+
+          {/* ── AWARDS ──────────────────────────────────────────────────── */}
           {tab === "awards" && (
             <div className="max-w-2xl">
               {awards.length === 0 ? (
-                <div className="text-center py-16 border border-dashed border-border rounded-lg text-muted-foreground">
-                  <Medal className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  <p className="font-display text-sm uppercase tracking-widest">No commendations issued yet</p>
-                </div>
+                <EmptyState icon={Medal} message="No commendations issued yet" />
               ) : (
                 <div className="space-y-3">
                   {awards.map(a => (
@@ -340,6 +544,7 @@ export default function MilsimGroup() {
                           {a.awarded_by && <> · Issued by <strong className="text-foreground">{a.awarded_by}</strong></>}
                         </p>
                         {a.description && <p className="text-xs text-muted-foreground italic mt-0.5">{a.description}</p>}
+                        {a.awarded_at && <p className="text-[10px] text-muted-foreground mt-1">{formatDistanceToNow(new Date(a.awarded_at), { addSuffix: true })}</p>}
                       </div>
                     </div>
                   ))}
@@ -348,57 +553,85 @@ export default function MilsimGroup() {
             </div>
           )}
 
+          {/* ── SOPs ────────────────────────────────────────────────────── */}
           {tab === "sops" && (
-            <div className="max-w-3xl">
-              <pre className="bg-card border border-border rounded-lg p-6 font-sans text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                {group.sops}
-              </pre>
-            </div>
+            group.sops
+              ? (
+                <div className="max-w-3xl">
+                  <pre className="bg-card border border-border rounded-lg p-6 font-sans text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed overflow-x-auto">
+                    {group.sops}
+                  </pre>
+                </div>
+              )
+              : <EmptyState icon={BookOpen} message="No SOPs published" />
           )}
 
+          {/* ── ORBAT ───────────────────────────────────────────────────── */}
           {tab === "orbat" && (
-            <div className="w-full">
-              <OrbatBuilder
-                value={group.orbat ?? undefined}
-                groupName={group.name}
-                readOnly
-                roster={(group.roster ?? []).map((r: any) => ({
-                  id: r.id,
-                  callsign: r.callsign,
-                  rank: group.ranks?.find((rk: any) => rk.id === r.rankId)?.name ?? undefined,
-                  role: group.roles?.find((ro: any) => ro.id === r.roleId)?.name ?? undefined,
-                }))}
-              />
-            </div>
+            (() => {
+              // Safe ORBAT parse — never crash
+              let hasValidOrbat = false;
+              if (group.orbat) {
+                try {
+                  const parsed = JSON.parse(group.orbat);
+                  hasValidOrbat = !!(parsed && (parsed.id || parsed.tree));
+                } catch { /* invalid JSON */ }
+              }
+              if (!hasValidOrbat) {
+                return <EmptyState icon={Map} message="No ORBAT published yet" sub="The unit commander hasn't set up an ORBAT for this group." />;
+              }
+              return (
+                <div className="w-full">
+                  <OrbatBuilder
+                    value={group.orbat ?? undefined}
+                    groupName={group.name}
+                    readOnly
+                    roster={roster.map(r => ({
+                      id: r.id,
+                      callsign: r.callsign,
+                      rank: ranks.find(rk => rk.id === r.rankId)?.name ?? undefined,
+                      role: roles.find(ro => ro.id === r.roleId)?.name ?? undefined,
+                    }))}
+                  />
+                </div>
+              );
+            })()
           )}
 
+          {/* ── APPLY ───────────────────────────────────────────────────── */}
           {tab === "apply" && (
             <div className="max-w-2xl">
-              <div className="bg-card border border-border rounded-lg p-6 mb-6">
-                <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-2">Application Questions</h2>
-                <p className="text-sm text-muted-foreground font-sans mb-6">
-                  To apply to <strong className="text-foreground">{group.name}</strong>, reach out on their
-                  {group.discordUrl ? (
-                    <> <a href={group.discordUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Discord</a> and </>) : " "}
-                  be ready to answer the following:
-                </p>
-                <ol className="space-y-4">
-                  {group.questions.map((q, i) => (
-                    <li key={q.id} className="flex items-start gap-3">
-                      <span className="w-6 h-6 shrink-0 rounded bg-primary/10 border border-primary/30 flex items-center justify-center font-display font-bold text-xs text-primary">{i + 1}</span>
-                      <span className="font-sans text-muted-foreground leading-relaxed">
-                        {q.question}
-                        {q.required && <span className="ml-2 text-[10px] font-display font-bold uppercase text-accent">Required</span>}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-              {group.discordUrl && (
-                <a href={group.discordUrl} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-black uppercase tracking-widest text-sm px-8 py-4 rounded clip-angled transition-all active:scale-95">
-                  Apply via Discord <ExternalLink className="w-4 h-4" />
-                </a>
+              {questions.length === 0 ? (
+                <EmptyState icon={FileText} message="No application process set up" />
+              ) : (
+                <>
+                  <div className="bg-card border border-border rounded-lg p-6 mb-6">
+                    <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-2">Application Questions</h2>
+                    <p className="text-sm text-muted-foreground font-sans mb-5">
+                      To apply to <strong className="text-foreground">{group.name}</strong>, reach out via
+                      {group.discordUrl ? (
+                        <> <a href={group.discordUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Discord</a> and </>) : " "}
+                      be ready to answer the following:
+                    </p>
+                    <ol className="space-y-4">
+                      {questions.map((q, i) => (
+                        <li key={q.id} className="flex items-start gap-3">
+                          <span className="w-6 h-6 shrink-0 rounded bg-primary/10 border border-primary/30 flex items-center justify-center font-display font-bold text-xs text-primary">{i + 1}</span>
+                          <span className="font-sans text-muted-foreground leading-relaxed">
+                            {q.question}
+                            {q.required && <span className="ml-2 text-[10px] font-display font-bold uppercase text-accent">Required</span>}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                  {group.discordUrl && (
+                    <a href={group.discordUrl} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-black uppercase tracking-widest text-sm px-8 py-4 rounded clip-angled transition-all active:scale-95">
+                      Apply via Discord <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -406,5 +639,16 @@ export default function MilsimGroup() {
         </motion.div>
       </div>
     </MainLayout>
+  );
+}
+
+// ─── Reusable empty state ─────────────────────────────────────────────────────
+function EmptyState({ icon: Icon, message, sub }: { icon: typeof Shield; message: string; sub?: string }) {
+  return (
+    <div className="text-center py-16 border border-dashed border-border rounded-lg">
+      <Icon className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-30" />
+      <p className="font-display font-bold uppercase tracking-widest text-muted-foreground text-sm">{message}</p>
+      {sub && <p className="text-xs text-muted-foreground font-sans mt-2 max-w-xs mx-auto">{sub}</p>}
+    </div>
   );
 }

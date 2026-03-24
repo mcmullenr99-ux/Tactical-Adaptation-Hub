@@ -31,13 +31,31 @@ async function makeUniqueSlug(base44: any, name: string): Promise<string> {
 }
 
 async function groupFullDetail(base44: any, group: any) {
-  const [roles, ranks, roster, questions] = await Promise.all([
-    base44.asServiceRole.entities.MilsimRole.filter({ group_id: group.id }),
-    base44.asServiceRole.entities.MilsimRank.filter({ group_id: group.id }),
-    base44.asServiceRole.entities.MilsimRoster.filter({ group_id: group.id }),
-    base44.asServiceRole.entities.MilsimAppQuestion.filter({ group_id: group.id }),
-  ]);
-  return { ...group, roles, ranks, roster, questions };
+  try {
+    const [roles, ranks, roster, questions] = await Promise.all([
+      base44.asServiceRole.entities.MilsimRole.filter({ group_id: group.id }).catch(() => []),
+      base44.asServiceRole.entities.MilsimRank.filter({ group_id: group.id }).catch(() => []),
+      base44.asServiceRole.entities.MilsimRoster.filter({ group_id: group.id }).catch(() => []),
+      base44.asServiceRole.entities.MilsimAppQuestion.filter({ group_id: group.id }).catch(() => []),
+    ]);
+    return {
+      ...group,
+      // normalise snake_case → camelCase for frontend
+      tagLine: group.tagLine ?? group.tag_line ?? null,
+      discordUrl: group.discordUrl ?? group.discord_url ?? null,
+      websiteUrl: group.websiteUrl ?? group.website_url ?? null,
+      logoUrl: group.logoUrl ?? group.logo_url ?? null,
+      unitType: group.unitType ?? group.unit_type ?? null,
+      branch: group.branch ?? null,
+      roles: roles ?? [],
+      ranks: ranks ?? [],
+      roster: roster ?? [],
+      questions: questions ?? [],
+    };
+  } catch (err) {
+    console.error('[groupFullDetail]', err);
+    return { ...group, roles: [], ranks: [], roster: [], questions: [] };
+  }
 }
 
 Deno.serve(async (req) => {
@@ -114,7 +132,7 @@ Deno.serve(async (req) => {
       if (existing.length > 0) return Response.json({ error: 'You already have a registered group' }, { status: 409 });
       const body = await req.json().catch(() => ({}));
       const { name, tagLine, description, discordUrl, websiteUrl, logoUrl, sops, orbat,
-              country, language, unitType, games, tags } = body;
+              country, language, branch, unitType, games, tags } = body;
       if (!name) return Response.json({ error: 'Name is required' }, { status: 400 });
       const slug = await makeUniqueSlug(base44, name);
       const group = await base44.asServiceRole.entities.MilsimGroup.create({
@@ -122,7 +140,8 @@ Deno.serve(async (req) => {
         discord_url: discordUrl ?? null, website_url: websiteUrl ?? null,
         logo_url: logoUrl ?? null, sops: sops ?? null, orbat: orbat ?? null,
         status: 'pending', owner_id: full.id, owner_username: full.username, visibility: null,
-        country: country ?? null, language: language ?? null, unit_type: unitType ?? null,
+        country: country ?? null, language: language ?? null,
+        branch: branch ?? null, unit_type: unitType ?? null,
         games: games ?? null, tags: tags ?? null,
       });
       return Response.json(await groupFullDetail(base44, group), { status: 201 });
@@ -150,6 +169,7 @@ Deno.serve(async (req) => {
       if (body.visibility !== undefined) updates.visibility = JSON.stringify(body.visibility);
       if (body.country !== undefined) updates.country = body.country;
       if (body.language !== undefined) updates.language = body.language;
+      if (body.branch !== undefined) updates.branch = body.branch;
       if (body.unitType !== undefined) updates.unit_type = body.unitType;
       if (body.games !== undefined) updates.games = body.games;
       if (body.tags !== undefined) updates.tags = body.tags;

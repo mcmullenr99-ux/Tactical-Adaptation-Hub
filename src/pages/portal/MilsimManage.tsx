@@ -7,7 +7,7 @@ import { PortalLayout } from "@/components/layout/PortalLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import {
   BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST as MC_GAMES, COUNTRIES_LIST as MC_COUNTRIES,
-  LANGUAGES_LIST as MC_LANGS, BRANCH_ICONS, type Branch,
+  LANGUAGES_LIST as MC_LANGS, type Branch,
 } from "@/lib/milsimConstants";
 import {
   Shield, Crosshair, Award, Users, FileText, BookOpen,
@@ -227,7 +227,7 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
                       sel ? "bg-primary/15 border-primary/50 text-primary" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
                     }`}>
-                    {BRANCH_ICONS[b as Branch]} {b}
+                    <span className="w-2 h-2 rounded-full bg-current opacity-60 shrink-0" />{b}
                   </button>
                 );
               })}
@@ -1496,27 +1496,78 @@ function OrgChartTab({ group }: any) {
 function ReadinessTab({ group }: any) {
   const [readiness, setReadiness] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  useEffect(() => { apiFetch<any>(`/api/stats/readiness/${group.id}`).then(setReadiness).catch(() => {}).finally(() => setLoading(false)); }, [group.id]);
+  const [error, setError] = useState(false);
+  useEffect(() => {
+    apiFetch<any>(`/api/stats/readiness/${group.id}`)
+      .then(data => { setReadiness(data); })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [group.id]);
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-  if (!readiness) return null;
+  if (error || !readiness) return (
+    <div className="text-center py-16 border border-dashed border-border rounded-lg text-muted-foreground">
+      <Activity className="w-10 h-10 mx-auto mb-3 opacity-30" />
+      <p className="font-display text-sm uppercase tracking-widest">Readiness data unavailable</p>
+      <p className="text-xs mt-2">Add roster members and log operations to generate readiness data.</p>
+    </div>
+  );
   const sc = readiness.status === "green" ? "text-green-400" : readiness.status === "amber" ? "text-yellow-400" : "text-red-400";
   const bc = readiness.status === "green" ? "bg-green-500" : readiness.status === "amber" ? "bg-yellow-500" : "bg-red-500";
+  const tierStyles: Record<string, string> = {
+    "TIER I":   "text-yellow-400", "TIER II": "text-green-400",
+    "TIER III": "text-blue-400",   "TIER IV": "text-slate-400", "FORMING": "text-muted-foreground",
+  };
   return (
-    <div className="max-w-xl space-y-6">
-      <div className="bg-card border border-border rounded-lg p-6 space-y-5">
-        <div className="flex items-center justify-between"><h3 className="font-display font-bold uppercase tracking-widest">Unit Readiness</h3><span className={`font-display font-black text-2xl uppercase ${sc}`}>{readiness.status.toUpperCase()}</span></div>
+    <div className="max-w-2xl space-y-5">
+      {/* Readiness header */}
+      <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h3 className="font-display font-bold uppercase tracking-widest">Unit Readiness</h3>
+          <div className="flex items-center gap-3">
+            <span className={`font-display font-black text-xl uppercase ${sc}`}>{readiness.status.toUpperCase()}</span>
+            <span className={`text-xs font-display font-bold uppercase tracking-widest px-2 py-1 rounded border border-current/30 bg-current/10 ${tierStyles[readiness.op_capability_tier] ?? "text-muted-foreground"}`}>
+              {readiness.op_capability_tier}
+            </span>
+          </div>
+        </div>
         <div className="space-y-1">
-          <div className="flex justify-between text-xs font-display font-bold uppercase tracking-widest text-muted-foreground"><span>Active (7d) / Total</span><span>{readiness.active_this_week} / {readiness.total}</span></div>
-          <div className="h-3 bg-secondary rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all ${bc}`} style={{ width: `${readiness.readiness_pct}%` }} /></div>
-          <p className={`text-right text-sm font-display font-bold ${sc}`}>{readiness.readiness_pct}% READY</p>
+          <div className="flex justify-between text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">
+            <span>Composite Readiness</span><span>{readiness.readiness_pct}%</span>
+          </div>
+          <div className="h-3 bg-secondary rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${bc}`} style={{ width: `${readiness.readiness_pct}%` }} />
+          </div>
         </div>
-        <div className="grid grid-cols-3 gap-4 pt-2 border-t border-border">
-          <div className="text-center"><p className="text-2xl font-display font-bold text-foreground">{readiness.total}</p><p className="text-xs text-muted-foreground font-display uppercase tracking-widest">Total</p></div>
-          <div className="text-center"><p className="text-2xl font-display font-bold text-green-400">{readiness.active_this_week}</p><p className="text-xs text-muted-foreground font-display uppercase tracking-widest">Active 7d</p></div>
-          <div className="text-center"><p className="text-2xl font-display font-bold text-blue-400">{readiness.active_this_month}</p><p className="text-xs text-muted-foreground font-display uppercase tracking-widest">Active 30d</p></div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-border text-center">
+          {[
+            { label: "Total", value: readiness.total, col: "" },
+            { label: "Active 7d", value: readiness.active_this_week, col: "text-green-400" },
+            { label: "Active 30d", value: readiness.active_this_month, col: "text-blue-400" },
+            { label: "Win Rate", value: `${readiness.win_rate}%`, col: "text-primary" },
+          ].map(s => (
+            <div key={s.label}>
+              <p className={`text-xl font-display font-bold ${s.col || "text-foreground"}`}>{s.value}</p>
+              <p className="text-[10px] text-muted-foreground font-display uppercase tracking-widest">{s.label}</p>
+            </div>
+          ))}
         </div>
-        <p className="text-xs text-muted-foreground font-sans">Readiness based on portal logins in the last 7 days. 70%+ = Green, 40–69% = Amber, &lt;40% = Red.</p>
       </div>
+      {/* Rep stats */}
+      <div className="bg-card border border-border rounded-lg p-5 grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Avg Rep Score</p>
+          <p className="text-2xl font-display font-bold text-foreground">{readiness.avg_rep_score || "—"}</p>
+          <p className="text-[10px] text-muted-foreground">{readiness.review_count} review{readiness.review_count !== 1 ? "s" : ""}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Avg Experience</p>
+          <p className="text-2xl font-display font-bold text-foreground">{readiness.avg_experience > 0 ? `${readiness.avg_experience}/10` : "—"}</p>
+          <p className="text-[10px] text-muted-foreground">from troop ratings</p>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground font-sans">
+        Readiness = 40% capacity (active/total) + 40% avg rep score + 20% win rate. Tier = ops logged, win rate, avg experience, and troop count. 70%+ = Green, 40–69% = Amber, &lt;40% = Red.
+      </p>
     </div>
   );
 }

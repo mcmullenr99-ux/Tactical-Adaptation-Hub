@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import { Shield, ChevronRight, ChevronLeft, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import {
-  BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST, COUNTRIES_LIST, LANGUAGES_LIST, BRANCH_ICONS, type Branch,
+  BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST, COUNTRIES_LIST, LANGUAGES_LIST, type Branch,
 } from "@/lib/milsimConstants";
 
 interface FormData {
@@ -217,7 +217,7 @@ export default function MilsimRegister() {
                           className={`flex items-center gap-1.5 px-3 py-2 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
                             sel ? "bg-primary/15 border-primary/50 text-primary" : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
                           }`}>
-                          {BRANCH_ICONS[b as Branch]} {b}
+                          <span className="w-2 h-2 rounded-full bg-current opacity-60 shrink-0" />{b}
                         </button>
                       );
                     })}
