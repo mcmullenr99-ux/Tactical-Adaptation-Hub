@@ -63,11 +63,12 @@ async function postMessage(channelId: string, content: string) {
 
 // ── Storage ───────────────────────────────────────────────────────────────
 async function uploadFile(bytes: Uint8Array, filename: string, mime: string): Promise<string> {
+  const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
   const form = new FormData();
   form.append('file', new Blob([bytes], { type: mime }), filename);
-  const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/integration-endpoints/Core/UploadFile`, {
+  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/files/upload`, {
     method: 'POST',
-    headers: serviceHeaders(),
+    headers: { 'x-api-key': serviceToken },
     body: form,
   });
   if (!r.ok) throw new Error(`Upload failed ${r.status}: ${await r.text()}`);
