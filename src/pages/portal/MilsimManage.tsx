@@ -18,6 +18,7 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
 import { useAuth } from "@/components/auth/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
 interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
