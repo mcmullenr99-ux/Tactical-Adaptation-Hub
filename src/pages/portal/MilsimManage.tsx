@@ -1518,11 +1518,8 @@ function ReadinessTab({ group }: any) {
   const sc = readiness.status === "green" ? "text-green-400" : readiness.status === "amber" ? "text-yellow-400" : "text-red-400";
   const bc = readiness.status === "green" ? "bg-green-500" : readiness.status === "amber" ? "bg-yellow-500" : "bg-red-500";
   const tierStyles: Record<string, string> = {
-    "PLATINUM": "text-slate-200", "GOLD": "text-yellow-400",
-    "SILVER":   "text-blue-300",  "BRONZE": "text-orange-500", "FORMING": "text-muted-foreground",
-  };
-  const tierIcons: Record<string, string> = {
-    "PLATINUM": "⬡", "GOLD": "★", "SILVER": "◆", "BRONZE": "▲", "FORMING": "●",
+    "TIER I":   "text-slate-200", "TIER II":  "text-yellow-400",
+    "TIER III": "text-blue-300",  "TIER IV": "text-orange-500", "FORMING": "text-muted-foreground",
   };
   return (
     <div className="max-w-2xl space-y-5">
@@ -1533,7 +1530,7 @@ function ReadinessTab({ group }: any) {
           <div className="flex items-center gap-3">
             <span className={`font-display font-black text-xl uppercase ${sc}`}>{readiness.status.toUpperCase()}</span>
             <span className={`text-xs font-display font-bold uppercase tracking-widest px-2 py-1 rounded border border-current/30 bg-current/10 ${tierStyles[readiness.op_capability_tier] ?? "text-muted-foreground"}`}>
-              {tierIcons[readiness.op_capability_tier] ?? "●"} {readiness.op_capability_tier}
+              {readiness.op_capability_tier}
             </span>
           </div>
         </div>
