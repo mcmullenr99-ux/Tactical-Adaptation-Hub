@@ -33,9 +33,9 @@
       "enum": [
         "pending",
         "approved",
-        "featured",
         "rejected"
-      ]
+      ],
+      "default": "pending"
     },
     "owner_id": {
       "type": "string"
@@ -44,33 +44,46 @@
       "type": "string"
     },
     "visibility": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "public",
+        "private"
+      ],
+      "default": "public"
     },
     "games": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Games the group plays"
+      }
     },
     "country": {
-      "type": "string",
-      "description": "Primary country / nationality of the group"
+      "type": "string"
     },
     "language": {
+      "type": "string"
+    },
+    "branch": {
       "type": "string",
-      "description": "Primary language spoken in ops"
+      "enum": [
+        "Army",
+        "Marines",
+        "Air Force",
+        "Navy",
+        "Special Operations",
+        "Multi-Branch"
+      ],
+      "description": "Military branch this unit belongs to"
     },
     "unit_type": {
       "type": "string",
-      "description": "Type of unit (e.g. Infantry, Armour, Special Forces, etc.)"
+      "description": "Specific unit type within the branch"
     },
     "tags": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Free-form tags for discoverability"
+      }
     }
   },
   "required": [],
