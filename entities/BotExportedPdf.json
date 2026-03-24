@@ -32,6 +32,9 @@
     },
     "message_count": {
       "type": "number"
+    },
+    "content_json": {
+      "type": "string"
     }
   },
   "required": [],
