@@ -13,7 +13,7 @@ import { countryFlag } from "@/lib/countries";
 import { UavHudScene } from "./UavHudScene";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { useUpload } from "@workspace/object-storage-web";
+import { useUpload } from "@/stubs/object-storage-web";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
