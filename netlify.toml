@@ -1,0 +1,3 @@
+[build]
+  command = "echo 'No build needed - using pre-built dist'"
+  publish = "dist"
