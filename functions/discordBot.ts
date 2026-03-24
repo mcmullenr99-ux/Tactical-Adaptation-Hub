@@ -206,130 +206,150 @@ function classColor(c: string): [number, number, number] {
 
 // ── PDF ───────────────────────────────────────────────────────────────────
 async function buildPdf(title: string, author: string, classification: string, sections: StoredSection[]): Promise<Uint8Array> {
-  const PDFDocument = (await import('npm:pdfkit')).default;
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 60, size: 'A4' });
-    const chunks: Uint8Array[] = [];
-    doc.on('data', (c: Uint8Array) => chunks.push(c));
-    doc.on('end', () => {
-      const total = chunks.reduce((s, c) => s + c.length, 0);
-      const out = new Uint8Array(total); let pos = 0;
-      for (const c of chunks) { out.set(c, pos); pos += c.length; }
-      resolve(out);
-    });
-    doc.on('error', reject);
+  const { PDFDocument, rgb, StandardFonts, PageSizes } = await import('npm:pdf-lib@1.17.1');
 
-    const cc = classColor(classification);
-    const W = doc.page.width;
-    const M = 60;
+  const doc = await PDFDocument.create();
+  const font      = await doc.embedFont(StandardFonts.Helvetica);
+  const fontBold  = await doc.embedFont(StandardFonts.HelveticaBold);
 
-    // COVER PAGE
-    doc.rect(0, 0, W, 32).fill(cc);
-    doc.fillColor('white').fontSize(13).font('Helvetica-Bold').text(classification.toUpperCase(), 0, 9, { align: 'center', characterSpacing: 2 });
-    doc.moveDown(2);
-    doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(3).strokeColor('#000').stroke();
-    doc.moveDown(0.3);
-    doc.fillColor('#000').fontSize(28).font('Helvetica-Bold').text(`TAG-FM-${new Date().getFullYear()}`, M, doc.y, { align: 'right', characterSpacing: 1 });
-    doc.moveDown(0.2);
-    doc.fontSize(11).font('Helvetica-Bold').fillColor('#000')
-      .text('T A C T I C A L   A D A P T A T I O N   G R O U P   F I E L D   M A N U A L', M, doc.y, { align: 'center', characterSpacing: 1 });
-    doc.moveDown(0.3);
-    doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(2).strokeColor('#000').stroke();
-    doc.moveDown(2.5);
+  const classUpper = classification.toUpperCase();
+  const cc = (() => {
+    if (classUpper.includes('TOP SECRET'))    return rgb(0.5,  0,   0.5);
+    if (classUpper.includes('SECRET'))        return rgb(0.78, 0,   0);
+    if (classUpper.includes('RESTRICTED'))    return rgb(0.78, 0.4, 0);
+    return rgb(0, 0.39, 0);
+  })();
+  const black = rgb(0, 0, 0);
+  const white = rgb(1, 1, 1);
+  const grey  = rgb(0.33, 0.33, 0.33);
 
-    const grouped: string[] = [];
-    const words = title.toUpperCase().split(' ');
-    for (let i = 0; i < words.length; i += 3) grouped.push(words.slice(i, i + 3).join(' '));
-    doc.fillColor('#000').fontSize(36).font('Helvetica-Bold');
-    for (const line of grouped) { doc.text(line, M, doc.y, { align: 'center', characterSpacing: 2 }); doc.moveDown(0.2); }
-    doc.moveDown(1.5);
+  const W = PageSizes.A4[0];
+  const H = PageSizes.A4[1];
+  const M = 60;
+  const BANNER = 28;
+  const LINE_H = 14;
 
-    const boxY = doc.y;
-    doc.rect(M, boxY, 220, 52).lineWidth(1.5).stroke('#000');
-    doc.fillColor('#000').fontSize(8).font('Helvetica-Bold').text('DISTRIBUTION STATEMENT', M + 8, boxY + 6, { width: 204 });
-    doc.fontSize(7).font('Helvetica').text(`Approved for use within Tactical Adaptation Group.\nAuthorised personnel only. Classification: ${classification}.`, M + 8, boxY + 18, { width: 204 });
-    doc.fillColor('#000').fontSize(10).font('Helvetica-Bold').text(new Date().toISOString().slice(0, 10).replace(/-/g, ''), M, boxY, { align: 'right', width: W - M * 2 });
-    doc.moveDown(4);
-    doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(2).strokeColor('#000').stroke();
-    doc.moveDown(0.6);
-    doc.fillColor('#000').fontSize(10).font('Helvetica-Bold')
-      .text('H E A D Q U A R T E R S ,   T A C T I C A L   A D A P T A T I O N   G R O U P', M, doc.y, { align: 'center', characterSpacing: 1 });
-    doc.moveDown(0.3);
-    doc.fontSize(9).font('Helvetica')
-      .text(`Author: ${author}     ·     ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}`, M, doc.y, { align: 'center' });
-    doc.moveDown(0.5);
-    doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(2).strokeColor('#000').stroke();
-    doc.rect(0, doc.page.height - 32, W, 32).fill(cc);
-    doc.fillColor('white').fontSize(13).font('Helvetica-Bold').text(classification.toUpperCase(), 0, doc.page.height - 23, { align: 'center', characterSpacing: 2 });
+  function addPage() {
+    const p = doc.addPage(PageSizes.A4);
+    // top banner
+    p.drawRectangle({ x: 0, y: H - BANNER, width: W, height: BANNER, color: cc });
+    p.drawText(classUpper, { x: 0, y: H - BANNER + 8, size: 10, font: fontBold, color: white, maxWidth: W });
+    // bottom banner
+    p.drawRectangle({ x: 0, y: 0, width: W, height: BANNER, color: cc });
+    p.drawText(classUpper, { x: 0, y: 8, size: 10, font: fontBold, color: white, maxWidth: W });
+    return p;
+  }
 
-    // TABLE OF CONTENTS
-    doc.addPage();
-    doc.rect(0, 0, W, 32).fill(cc);
-    doc.fillColor('white').fontSize(11).font('Helvetica-Bold').text(classification.toUpperCase(), 0, 10, { align: 'center', characterSpacing: 2 });
-    doc.moveDown(2);
-    doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(2).strokeColor('#000').stroke();
-    doc.moveDown(0.5);
-    doc.fillColor('#000').fontSize(14).font('Helvetica-Bold').text('C O N T E N T S', M, doc.y, { align: 'center', characterSpacing: 3 });
-    doc.moveDown(0.5);
-    doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(1).strokeColor('#000').stroke();
-    doc.moveDown(0.8);
-    sections.forEach((s, i) => {
-      doc.fillColor('#000').fontSize(9).font('Helvetica')
-        .text(`${String(i + 1).padStart(3, '0')}   ${s.heading.toUpperCase()}${s.sourceChannel ? `   [${s.sourceChannel.toUpperCase()}]` : ''}`, M + 10, doc.y);
-      doc.moveDown(0.3);
-    });
-    doc.moveDown(0.5);
-    doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(1).strokeColor('#000').stroke();
-    doc.rect(0, doc.page.height - 32, W, 32).fill(cc);
-    doc.fillColor('white').fontSize(11).font('Helvetica-Bold').text(classification.toUpperCase(), 0, doc.page.height - 22, { align: 'center', characterSpacing: 2 });
+  // ── COVER PAGE ──
+  const cover = addPage();
+  let cy = H - BANNER - 40;
 
-    // CONTENT PAGES
-    doc.addPage();
-    const addBanners = () => {
-      doc.rect(0, 0, W, 32).fill(cc);
-      doc.fillColor('white').fontSize(11).font('Helvetica-Bold').text(classification.toUpperCase(), 0, 10, { align: 'center', characterSpacing: 2 });
-      doc.rect(0, doc.page.height - 32, W, 32).fill(cc);
-      doc.fillColor('white').fontSize(11).font('Helvetica-Bold').text(classification.toUpperCase(), 0, doc.page.height - 22, { align: 'center', characterSpacing: 2 });
-    };
-    addBanners();
-    doc.moveDown(2);
+  cover.drawText('TACTICAL ADAPTATION GROUP', { x: M, y: cy, size: 8, font: fontBold, color: black });
+  cy -= 20;
+  cover.drawLine({ start: { x: M, y: cy }, end: { x: W - M, y: cy }, thickness: 2, color: black });
+  cy -= 30;
 
-    let currentChannel = '';
-    for (const section of sections) {
-      if (section.sourceChannel && section.sourceChannel !== currentChannel) {
-        currentChannel = section.sourceChannel;
-        if (doc.y > doc.page.height - 140) { doc.addPage(); addBanners(); doc.moveDown(2); }
-        doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(2).strokeColor('#000').stroke();
-        doc.moveDown(0.4);
-        doc.fillColor('#000').fontSize(9).font('Helvetica-Bold')
-          .text(`C H A P T E R   S O U R C E :   ${currentChannel.toUpperCase()}`, M, doc.y, { align: 'center', characterSpacing: 2 });
-        doc.moveDown(0.4);
-        doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(2).strokeColor('#000').stroke();
-        doc.moveDown(1);
-      }
-      if (doc.y > doc.page.height - 120) { doc.addPage(); addBanners(); doc.moveDown(2); }
-      doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(1.5).strokeColor('#000').stroke();
-      doc.moveDown(0.3);
-      doc.fillColor('#000').fontSize(12).font('Helvetica-Bold').text(section.heading.toUpperCase(), M, doc.y, { characterSpacing: 1 });
-      doc.moveDown(0.3);
-      doc.moveTo(M, doc.y).lineTo(W - M, doc.y).lineWidth(1).strokeColor('#000').stroke();
-      doc.moveDown(0.8);
-      for (const msg of section.messages) {
-        if (doc.y > doc.page.height - 90) { doc.addPage(); addBanners(); doc.moveDown(2); }
-        doc.fillColor('#555').fontSize(7).font('Helvetica-Bold')
-          .text(`${msg.author.toUpperCase()}   ·   ${new Date(msg.timestamp).toISOString().replace('T', ' ').slice(0, 16)}`, M, doc.y, { characterSpacing: 1 });
-        doc.moveDown(0.3);
-        const clean = msg.content
-          .replace(/\*\*(.*?)\*\*/gs, '$1').replace(/\*(.*?)\*/gs, '$1')
-          .replace(/`{1,3}(.*?)`{1,3}/gs, '$1').replace(/^#{1,6}\s/gm, '').replace(/^>\s/gm, '    ');
-        doc.fillColor('#000').fontSize(10).font('Helvetica').text(clean, M, doc.y, { width: W - M * 2, lineGap: 3, paragraphGap: 2 });
-        doc.moveDown(0.8);
-      }
-      doc.moveDown(0.5);
+  // Title — break into lines
+  const words = title.toUpperCase().split(' ');
+  const titleLines: string[] = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? `${line} ${w}` : w;
+    if (fontBold.widthOfTextAtSize(test, 24) > W - M * 2) { titleLines.push(line); line = w; }
+    else line = test;
+  }
+  if (line) titleLines.push(line);
+
+  for (const tl of titleLines) {
+    const tw = fontBold.widthOfTextAtSize(tl, 24);
+    cover.drawText(tl, { x: (W - tw) / 2, y: cy, size: 24, font: fontBold, color: black });
+    cy -= 32;
+  }
+  cy -= 10;
+  cover.drawLine({ start: { x: M, y: cy }, end: { x: W - M, y: cy }, thickness: 1, color: black });
+  cy -= 20;
+
+  cover.drawText(`Author: ${author}`, { x: M, y: cy, size: 10, font, color: black });
+  cy -= 16;
+  cover.drawText(`Classification: ${classUpper}`, { x: M, y: cy, size: 10, font, color: black });
+  cy -= 16;
+  cover.drawText(`Date: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}`, { x: M, y: cy, size: 10, font, color: black });
+  cy -= 16;
+  cover.drawText(`Sections: ${sections.length}`, { x: M, y: cy, size: 10, font, color: black });
+
+  // ── CONTENT PAGES ──
+  const maxY = H - BANNER - 20;
+  const minY = BANNER + 20;
+
+  let page = addPage();
+  let y = maxY;
+
+  function ensureSpace(needed: number) {
+    if (y - needed < minY) {
+      page = addPage();
+      y = maxY;
     }
-    doc.end();
-  });
+  }
+
+  function drawWrapped(text: string, x: number, size: number, f: any, color: any, maxW: number): number {
+    // Simple word-wrap
+    const wds = text.split(' ');
+    let cur = '';
+    let linesDrawn = 0;
+    for (const w of wds) {
+      const test = cur ? `${cur} ${w}` : w;
+      if (f.widthOfTextAtSize(test, size) > maxW) {
+        ensureSpace(LINE_H + 4);
+        page.drawText(cur, { x, y, size, font: f, color });
+        y -= LINE_H;
+        linesDrawn++;
+        cur = w;
+      } else cur = test;
+    }
+    if (cur) {
+      ensureSpace(LINE_H + 4);
+      page.drawText(cur, { x, y, size, font: f, color });
+      y -= LINE_H;
+      linesDrawn++;
+    }
+    return linesDrawn;
+  }
+
+  for (const section of sections) {
+    // Section heading
+    ensureSpace(LINE_H * 3);
+    page.drawLine({ start: { x: M, y: y + 4 }, end: { x: W - M, y: y + 4 }, thickness: 1, color: black });
+    y -= 6;
+    drawWrapped(section.heading.toUpperCase(), M, 11, fontBold, black, W - M * 2);
+    page.drawLine({ start: { x: M, y: y + 2 }, end: { x: W - M, y: y + 2 }, thickness: 0.5, color: black });
+    y -= 10;
+
+    for (const msg of section.messages) {
+      ensureSpace(LINE_H * 3);
+      const ts = new Date(msg.timestamp).toISOString().replace('T', ' ').slice(0, 16);
+      page.drawText(`${msg.author.toUpperCase()}  ·  ${ts}`, { x: M, y, size: 7, font: fontBold, color: grey });
+      y -= 12;
+
+      const clean = msg.content
+        .replace(/\*\*(.*?)\*\*/gs, '$1').replace(/\*(.*?)\*/gs, '$1')
+        .replace(/`{1,3}(.*?)`{1,3}/gs, '$1').replace(/^#{1,6}\s/gm, '').replace(/^>\s/gm, '  ');
+
+      // Split on newlines first, then word-wrap each line
+      for (const para of clean.split(/
++/)) {
+        const trimmed = para.trim();
+        if (!trimmed) { y -= 6; continue; }
+        drawWrapped(trimmed, M, 9, font, black, W - M * 2);
+      }
+      y -= 8;
+    }
+    y -= 6;
+  }
+
+  const bytes = await doc.save();
+  return new Uint8Array(bytes);
 }
+
 
 // ── Interaction handler ───────────────────────────────────────────────────
 async function handleInteraction(interaction: any): Promise<Response> {
