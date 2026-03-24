@@ -1,6 +1,6 @@
 /**
  * TAG Discord Bot — Forum Scraper
- * Scrape any channel into a PDF. Append multiple channels into one growing master document.
+ * Stores section content as uploaded JSON file to avoid DB size limits.
  */
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
@@ -8,6 +8,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 const DISCORD_BOT_TOKEN = Deno.env.get('DISCORD_BOT_TOKEN') ?? '';
 const DISCORD_PUBLIC_KEY = Deno.env.get('DISCORD_PUBLIC_KEY') ?? '';
 const DISCORD_API = 'https://discord.com/api/v10';
+const BASE44_APP_ID = '69bf52c997cae5d4cff87ae4';
 
 // ── Signature verification ────────────────────────────────────────────────
 async function verifyDiscordSignature(req: Request, body: string): Promise<boolean> {
@@ -64,13 +65,33 @@ async function sendPdfToChannel(channelId: string, filename: string, pdfBytes: U
   if (!r.ok) throw new Error(`sendPdf failed: ${r.status} ${await r.text()}`);
 }
 
+// ── Storage helpers ───────────────────────────────────────────────────────
+async function uploadContentJson(sections: StoredSection[], label: string): Promise<string> {
+  const json = JSON.stringify(sections);
+  const form = new FormData();
+  form.append('file', new Blob([json], { type: 'application/json' }), `${label}_content.json`);
+  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/files/upload`, {
+    method: 'POST',
+    headers: { 'x-api-key': Deno.env.get('BASE44_SERVICE_TOKEN') ?? '' },
+    body: form,
+  });
+  if (!r.ok) throw new Error(`Upload failed: ${r.status} ${await r.text()}`);
+  const data = await r.json();
+  return data.file_url ?? data.url ?? data.uri;
+}
+
+async function fetchContentJson(url: string): Promise<StoredSection[]> {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Failed to fetch content JSON: ${r.status}`);
+  return r.json();
+}
+
 // ── Scraping ──────────────────────────────────────────────────────────────
 async function getForumThreads(channelId: string): Promise<any[]> {
   const channel = await discordGet(`/channels/${channelId}`);
   const guildId = channel.guild_id;
   const activeRes = await discordGet(`/guilds/${guildId}/threads/active`);
   const active: any[] = (activeRes.threads ?? []).filter((t: any) => t.parent_id === channelId);
-
   let archived: any[] = [];
   let before: string | null = null;
   while (true) {
@@ -98,133 +119,84 @@ async function getThreadMessages(threadId: string): Promise<any[]> {
   return all.reverse();
 }
 
-// Scrape a channel and return structured sections
 async function scrapeChannel(channelId: string): Promise<{ channelName: string; sections: StoredSection[] }> {
   const channel = await discordGet(`/channels/${channelId}`);
   const channelName = channel.name ?? channelId;
   const channelType = channel.type;
-
   const sections: StoredSection[] = [];
 
   if (channelType === 15) {
-    // Forum channel — each thread is a section
     const threads = await getForumThreads(channelId);
     for (const thread of threads) {
       const msgs = await getThreadMessages(thread.id);
       const filtered = msgs
         .filter((m: any) => (m.content ?? '').trim().length > 0)
-        .map((m: any) => ({
-          author: m.author?.global_name ?? m.author?.username ?? 'Unknown',
-          timestamp: m.timestamp,
-          content: m.content,
-        }));
-      if (filtered.length > 0) {
-        sections.push({ heading: thread.name, messages: filtered });
-      }
+        .map((m: any) => ({ author: m.author?.global_name ?? m.author?.username ?? 'Unknown', timestamp: m.timestamp, content: m.content }));
+      if (filtered.length > 0) sections.push({ heading: thread.name, messages: filtered });
     }
   } else {
-    // Regular channel — one section
     const msgs = await getThreadMessages(channelId);
     const filtered = msgs
       .filter((m: any) => (m.content ?? '').trim().length > 0)
-      .map((m: any) => ({
-        author: m.author?.global_name ?? m.author?.username ?? 'Unknown',
-        timestamp: m.timestamp,
-        content: m.content,
-      }));
-    if (filtered.length > 0) {
-      sections.push({ heading: channelName, messages: filtered });
-    }
+      .map((m: any) => ({ author: m.author?.global_name ?? m.author?.username ?? 'Unknown', timestamp: m.timestamp, content: m.content }));
+    if (filtered.length > 0) sections.push({ heading: channelName, messages: filtered });
   }
 
   return { channelName, sections };
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────
-interface StoredMessage {
-  author: string;
-  timestamp: string;
-  content: string;
-}
-
-interface StoredSection {
-  heading: string;
-  messages: StoredMessage[];
-  sourceChannel?: string;
-}
+interface StoredMessage { author: string; timestamp: string; content: string; }
+interface StoredSection { heading: string; messages: StoredMessage[]; sourceChannel?: string; }
 
 // ── PDF generation ────────────────────────────────────────────────────────
-async function buildPdf(
-  title: string,
-  author: string,
-  classification: string,
-  sections: StoredSection[]
-): Promise<Uint8Array> {
+async function buildPdf(title: string, author: string, classification: string, sections: StoredSection[]): Promise<Uint8Array> {
   const PDFDocument = (await import('npm:pdfkit')).default;
-
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
     const chunks: Uint8Array[] = [];
-
-    doc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
+    doc.on('data', (c: Uint8Array) => chunks.push(c));
     doc.on('end', () => {
       const total = chunks.reduce((s, c) => s + c.length, 0);
-      const out = new Uint8Array(total);
-      let pos = 0;
+      const out = new Uint8Array(total); let pos = 0;
       for (const c of chunks) { out.set(c, pos); pos += c.length; }
       resolve(out);
     });
     doc.on('error', reject);
 
-    const classColor: [number, number, number] =
-      classification === 'CONFIDENTIAL' ? [180, 0, 0] :
-      classification === 'RESTRICTED'   ? [200, 100, 0] :
-                                          [0, 100, 0];
+    const classColor: [number,number,number] =
+      classification === 'CONFIDENTIAL' ? [180,0,0] :
+      classification === 'RESTRICTED'   ? [200,100,0] : [0,100,0];
 
-    // Top classification banner
-    doc.rect(0, 0, doc.page.width, 28).fill(classColor);
-    doc.fillColor('white').fontSize(11).font('Helvetica-Bold')
-      .text(`[ ${classification} ]`, 0, 8, { align: 'center' });
+    doc.rect(0,0,doc.page.width,28).fill(classColor);
+    doc.fillColor('white').fontSize(11).font('Helvetica-Bold').text(`[ ${classification} ]`, 0, 8, { align: 'center' });
     doc.moveDown(1.5);
 
-    // Title block
-    doc.fillColor('#1a1a2e').fontSize(20).font('Helvetica-Bold')
-      .text('TACTICAL ADAPTATION GROUP', { align: 'center' });
-    doc.fillColor('#444').fontSize(12).font('Helvetica')
-      .text('Training Document Export', { align: 'center' });
+    doc.fillColor('#1a1a2e').fontSize(20).font('Helvetica-Bold').text('TACTICAL ADAPTATION GROUP', { align: 'center' });
+    doc.fillColor('#444').fontSize(12).font('Helvetica').text('Training Document Export', { align: 'center' });
     doc.moveDown(0.8);
 
-    // Meta
-    doc.fontSize(10).font('Helvetica-Bold').fillColor('#222').text(`Title: `, { continued: true })
-      .font('Helvetica').text(title);
-    doc.font('Helvetica-Bold').text(`Author: `, { continued: true })
-      .font('Helvetica').text(author);
-    doc.font('Helvetica-Bold').text(`Classification: `, { continued: true })
-      .font('Helvetica').text(classification);
-    doc.font('Helvetica-Bold').text(`Generated: `, { continued: true })
-      .font('Helvetica').text(new Date().toUTCString());
-    doc.font('Helvetica-Bold').text(`Total Sections: `, { continued: true })
-      .font('Helvetica').text(String(sections.length));
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#222').text(`Title: `, { continued: true }).font('Helvetica').text(title);
+    doc.font('Helvetica-Bold').text(`Author: `, { continued: true }).font('Helvetica').text(author);
+    doc.font('Helvetica-Bold').text(`Classification: `, { continued: true }).font('Helvetica').text(classification);
+    doc.font('Helvetica-Bold').text(`Generated: `, { continued: true }).font('Helvetica').text(new Date().toUTCString());
+    doc.font('Helvetica-Bold').text(`Total Sections: `, { continued: true }).font('Helvetica').text(String(sections.length));
     doc.moveDown(0.5);
-
     doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor('#cccccc').stroke();
     doc.moveDown(1);
 
-    // Table of contents
     doc.fillColor('#1a1a2e').fontSize(13).font('Helvetica-Bold').text('TABLE OF CONTENTS');
     doc.moveDown(0.5);
     sections.forEach((s, i) => {
       doc.fillColor('#333').fontSize(9).font('Helvetica')
-        .text(`${String(i + 1).padStart(2, '0')}.  ${s.heading}${s.sourceChannel ? `  (${s.sourceChannel})` : ''}`, 55, doc.y);
+        .text(`${String(i+1).padStart(2,'0')}.  ${s.heading}${s.sourceChannel ? `  [${s.sourceChannel}]` : ''}`, 55, doc.y);
     });
     doc.moveDown(1);
     doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor('#cccccc').stroke();
     doc.addPage();
 
-    // Sections
     let currentChannel = '';
     for (const section of sections) {
-      // Channel separator if source changed
       if (section.sourceChannel && section.sourceChannel !== currentChannel) {
         currentChannel = section.sourceChannel;
         if (doc.y > doc.page.height - 120) doc.addPage();
@@ -233,10 +205,7 @@ async function buildPdf(
           .text(`  CHANNEL: ${currentChannel.toUpperCase()}`, 55, doc.y - 14);
         doc.moveDown(1.2);
       }
-
       if (doc.y > doc.page.height - 100) doc.addPage();
-
-      // Section heading
       const headY = doc.y;
       doc.rect(50, headY, doc.page.width - 100, 22).fill('#1a1a2e');
       doc.fillColor('white').fontSize(10).font('Helvetica-Bold')
@@ -245,28 +214,20 @@ async function buildPdf(
 
       for (const msg of section.messages) {
         if (doc.y > doc.page.height - 80) doc.addPage();
-
         doc.fillColor('#888').fontSize(8).font('Helvetica-Oblique')
-          .text(`${msg.author}  ·  ${new Date(msg.timestamp).toISOString().replace('T', ' ').slice(0, 16)}`, 55, doc.y);
+          .text(`${msg.author}  ·  ${new Date(msg.timestamp).toISOString().replace('T',' ').slice(0,16)}`, 55, doc.y);
         doc.moveDown(0.3);
-
         const clean = msg.content
-          .replace(/\*\*(.*?)\*\*/gs, '$1')
-          .replace(/\*(.*?)\*/gs, '$1')
-          .replace(/`{1,3}(.*?)`{1,3}/gs, '$1')
-          .replace(/^#{1,6}\s/gm, '')
-          .replace(/^>\s/gm, '  ');
-
+          .replace(/\*\*(.*?)\*\*/gs, '$1').replace(/\*(.*?)\*/gs, '$1')
+          .replace(/`{1,3}(.*?)`{1,3}/gs, '$1').replace(/^#{1,6}\s/gm, '').replace(/^>\s/gm, '  ');
         doc.fillColor('#111').fontSize(10).font('Helvetica')
           .text(clean, 55, doc.y, { width: doc.page.width - 110, lineGap: 2 });
         doc.moveDown(0.8);
       }
-
       doc.moveDown(0.3);
       doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor('#eeeeee').stroke();
       doc.moveDown(1);
     }
-
     doc.end();
   });
 }
@@ -274,10 +235,9 @@ async function buildPdf(
 // ── Interaction handler ───────────────────────────────────────────────────
 async function handleInteraction(interaction: any, req: Request): Promise<Response> {
   const type = interaction.type;
-
   if (type === 1) return Response.json({ type: 1 });
 
-  // Slash command /scrape
+  // /scrape command
   if (type === 2 && interaction.data?.name === 'scrape') {
     const channelId = interaction.channel_id;
     await ackCallback(interaction.id, interaction.token, {
@@ -285,13 +245,11 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       data: {
         flags: 64,
         content: '📄 **What would you like to do?**',
-        components: [{
-          type: 1,
-          components: [
-            { type: 2, style: 1, label: '✨ Create New Document', custom_id: `scrape_new:${channelId}` },
-            { type: 2, style: 2, label: '➕ Add Channel to Existing Doc', custom_id: `scrape_append:${channelId}` },
-          ]
-        }]
+        components: [{ type: 1, components: [
+          { type: 2, style: 1, label: '✨ Create New Document', custom_id: `scrape_new:${channelId}` },
+          { type: 2, style: 2, label: '➕ Add Channel to Existing Doc', custom_id: `scrape_append:${channelId}` },
+          { type: 2, style: 4, label: '🗑️ Delete a Document', custom_id: `scrape_delete:${channelId}` },
+        ]}]
       }
     });
     return Response.json({ type: 1 });
@@ -301,6 +259,7 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
   if (type === 3) {
     const customId: string = interaction.data?.custom_id ?? '';
 
+    // ── Create New ──
     if (customId.startsWith('scrape_new:')) {
       const channelId = customId.split(':')[1];
       await ackCallback(interaction.id, interaction.token, {
@@ -318,26 +277,21 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       return Response.json({ type: 1 });
     }
 
+    // ── Add to Existing ──
     if (customId.startsWith('scrape_append:')) {
       const channelId = customId.split(':')[1];
       const base44 = createClientFromRequest(req);
       let existingPdfs: any[] = [];
       try { existingPdfs = await base44.asServiceRole.entities.BotExportedPdf.list(); } catch {}
-
       if (!existingPdfs || existingPdfs.length === 0) {
-        await ackCallback(interaction.id, interaction.token, {
-          type: 4,
-          data: { flags: 64, content: '❌ No existing documents found. Use **Create New Document** first.' }
-        });
+        await ackCallback(interaction.id, interaction.token, { type: 4, data: { flags: 64, content: '❌ No existing documents found. Use **Create New Document** first.' } });
         return Response.json({ type: 1 });
       }
-
       const options = existingPdfs.slice(0, 25).map((pdf: any) => ({
         label: (pdf.title ?? pdf.id).slice(0, 100),
-        description: `${pdf.section_count ?? 0} sections · ${pdf.classification ?? 'UNCLASSIFIED'} · ${new Date(pdf.created_date).toLocaleDateString()}`,
+        description: `${pdf.section_count ?? 0} sections · ${pdf.classification ?? 'UNCLASSIFIED'}`,
         value: pdf.id,
       }));
-
       await ackCallback(interaction.id, interaction.token, {
         type: 4,
         data: {
@@ -349,6 +303,76 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       return Response.json({ type: 1 });
     }
 
+    // ── Delete a Document ──
+    if (customId.startsWith('scrape_delete:')) {
+      const base44 = createClientFromRequest(req);
+      let existingPdfs: any[] = [];
+      try { existingPdfs = await base44.asServiceRole.entities.BotExportedPdf.list(); } catch {}
+      if (!existingPdfs || existingPdfs.length === 0) {
+        await ackCallback(interaction.id, interaction.token, { type: 4, data: { flags: 64, content: '❌ No documents found to delete.' } });
+        return Response.json({ type: 1 });
+      }
+      const options = existingPdfs.slice(0, 25).map((pdf: any) => ({
+        label: (pdf.title ?? pdf.id).slice(0, 100),
+        description: `${pdf.section_count ?? 0} sections · ${pdf.classification ?? 'UNCLASSIFIED'}`,
+        value: pdf.id,
+      }));
+      await ackCallback(interaction.id, interaction.token, {
+        type: 4,
+        data: {
+          flags: 64,
+          content: '🗑️ **Which document do you want to delete?**',
+          components: [{ type: 1, components: [{ type: 3, custom_id: `scrape_delete_select`, options, placeholder: 'Choose a document to delete...' }] }]
+        }
+      });
+      return Response.json({ type: 1 });
+    }
+
+    // ── Confirm delete selection ──
+    if (customId === 'scrape_delete_select') {
+      const selectedPdfId = interaction.data?.values?.[0];
+      if (!selectedPdfId) {
+        await ackCallback(interaction.id, interaction.token, { type: 4, data: { flags: 64, content: '❌ No document selected.' } });
+        return Response.json({ type: 1 });
+      }
+      await ackCallback(interaction.id, interaction.token, {
+        type: 4,
+        data: {
+          flags: 64,
+          content: `⚠️ **Are you sure?** This will permanently delete the document and all its stored content.`,
+          components: [{ type: 1, components: [
+            { type: 2, style: 4, label: '🗑️ Yes, Delete It', custom_id: `scrape_delete_confirm:${selectedPdfId}` },
+            { type: 2, style: 2, label: '✖ Cancel', custom_id: `scrape_delete_cancel` },
+          ]}]
+        }
+      });
+      return Response.json({ type: 1 });
+    }
+
+    if (customId === 'scrape_delete_cancel') {
+      await ackCallback(interaction.id, interaction.token, { type: 7, data: { flags: 64, content: '✅ Cancelled.' } });
+      return Response.json({ type: 1 });
+    }
+
+    if (customId.startsWith('scrape_delete_confirm:')) {
+      const pdfId = customId.split(':')[1];
+      const appId = interaction.application_id;
+      const token = interaction.token;
+      await ackCallback(interaction.id, token, { type: 7, data: { flags: 64, content: '⏳ Deleting...' } });
+      (async () => {
+        try {
+          const base44 = createClientFromRequest(req);
+          const record = await base44.asServiceRole.entities.BotExportedPdf.get(pdfId);
+          await base44.asServiceRole.entities.BotExportedPdf.delete(pdfId);
+          await patchFollowup(appId, token, `🗑️ Deleted **${record?.title ?? pdfId}** successfully.`);
+        } catch (err: any) {
+          await patchFollowup(appId, token, `❌ Delete failed: ${err.message}`);
+        }
+      })();
+      return Response.json({ type: 1 });
+    }
+
+    // ── Select doc to append to ──
     if (customId.startsWith('scrape_select:')) {
       const channelId = customId.split(':')[1];
       const selectedPdfId = interaction.data?.values?.[0];
@@ -356,69 +380,56 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
         await ackCallback(interaction.id, interaction.token, { type: 4, data: { flags: 64, content: '❌ No document selected.' } });
         return Response.json({ type: 1 });
       }
-
       const appId = interaction.application_id;
       const token = interaction.token;
-
-      await ackCallback(interaction.id, token, { type: 7, data: { flags: 64, content: '⏳ Scraping channel and merging into document...' } });
-
+      await ackCallback(interaction.id, token, { type: 7, data: { flags: 64, content: '⏳ Scraping channel...' } });
       (async () => {
         try {
           const base44 = createClientFromRequest(req);
           const existingRecord = await base44.asServiceRole.entities.BotExportedPdf.get(selectedPdfId);
           if (!existingRecord) throw new Error('Could not find the selected document.');
 
-          // Load existing stored sections
+          // Load existing sections from stored JSON file
           let existingSections: StoredSection[] = [];
           if (existingRecord.content_json) {
-            try { existingSections = JSON.parse(existingRecord.content_json); } catch {}
+            try { existingSections = await fetchContentJson(existingRecord.content_json); } catch {}
           }
 
-          // Scrape new channel
-          await patchFollowup(appId, token, `⏳ Scraping channel...`);
           const { channelName, sections: newSections } = await scrapeChannel(channelId);
+          if (newSections.length === 0) throw new Error('No text content found in this channel.');
 
-          if (newSections.length === 0) throw new Error('No content found in this channel.');
-
-          // Tag new sections with their source channel
-          const taggedSections = newSections.map(s => ({ ...s, sourceChannel: channelName }));
-
-          // Merge — avoid duplicate channel imports
           const alreadyImported = existingSections.some(s => s.sourceChannel === channelName);
           if (alreadyImported) {
-            await patchFollowup(appId, token, `⚠️ Channel **${channelName}** is already in this document. Skipping to avoid duplicates.`);
+            await patchFollowup(appId, token, `⚠️ **${channelName}** is already in this document. Skipping to avoid duplicates.`);
             return;
           }
 
+          const taggedSections = newSections.map(s => ({ ...s, sourceChannel: channelName }));
           const mergedSections = [...existingSections, ...taggedSections];
 
-          // Rebuild the full PDF with all sections combined
-          await patchFollowup(appId, token, `⏳ Building combined PDF (${mergedSections.length} sections total)...`);
-          const pdfBytes = await buildPdf(
-            existingRecord.title,
-            existingRecord.author,
-            existingRecord.classification ?? 'UNCLASSIFIED',
-            mergedSections
+          await patchFollowup(appId, token, `⏳ Building combined PDF (${mergedSections.length} total sections)...`);
+          const pdfBytes = await buildPdf(existingRecord.title, existingRecord.author, existingRecord.classification ?? 'UNCLASSIFIED', mergedSections);
+
+          const filename = `${existingRecord.title.replace(/[^a-z0-9]/gi, '_')}_v${Date.now()}.pdf`;
+          const newMsgCount = taggedSections.reduce((s, sec) => s + sec.messages.length, 0);
+          await sendPdfToChannel(channelId, filename, pdfBytes,
+            `✅ **${existingRecord.title}** updated — added **${channelName}** (+${taggedSections.length} sections, +${newMsgCount} messages). Total: **${mergedSections.length} sections**.`
           );
 
-          // Send to channel
-          const filename = `${existingRecord.title.replace(/[^a-z0-9]/gi, '_')}_v${Date.now()}.pdf`;
-          await sendPdfToChannel(channelId, filename, pdfBytes, `✅ **${existingRecord.title}** updated — added **${channelName}** (${taggedSections.length} sections, ${taggedSections.reduce((s, sec) => s + sec.messages.length, 0)} messages). Total: **${mergedSections.length} sections**.`);
-
-          // Save merged content back to DB
+          // Upload merged content JSON as file
+          const contentUrl = await uploadContentJson(mergedSections, existingRecord.title.replace(/[^a-z0-9]/gi, '_'));
           const totalMessages = mergedSections.reduce((s, sec) => s + sec.messages.length, 0);
           await base44.asServiceRole.entities.BotExportedPdf.update(selectedPdfId, {
-            content_json: JSON.stringify(mergedSections),
+            content_json: contentUrl,
             section_count: mergedSections.length,
             message_count: totalMessages,
           });
 
-          await patchFollowup(appId, token, `✅ Done! **${existingRecord.title}** now has **${mergedSections.length} sections** across all channels. PDF posted above.`);
+          await patchFollowup(appId, token, `✅ Done! Document now has **${mergedSections.length} sections**. Go to your next channel and use \`/scrape\` → **Add Channel to Existing Doc** to keep building.`);
         } catch (err: any) {
           await patchFollowup(appId, token, `❌ Failed: ${err.message}`);
         }
       })();
-
       return Response.json({ type: 1 });
     }
   }
@@ -426,7 +437,6 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
   // Modal submit — Create New
   if (type === 5) {
     const customId: string = interaction.data?.custom_id ?? '';
-
     if (customId.startsWith('scrape_modal:')) {
       const channelId = customId.split(':')[1];
       const appId = interaction.application_id;
@@ -438,7 +448,7 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
       const title = getValue('doc_title').trim();
       const author = getValue('doc_author').trim();
       const rawClass = getValue('doc_class').trim().toUpperCase();
-      const classification = ['UNCLASSIFIED', 'RESTRICTED', 'CONFIDENTIAL'].includes(rawClass) ? rawClass : 'UNCLASSIFIED';
+      const classification = ['UNCLASSIFIED','RESTRICTED','CONFIDENTIAL'].includes(rawClass) ? rawClass : 'UNCLASSIFIED';
 
       await ackCallback(interaction.id, token, { type: 5, data: { flags: 64 } });
 
@@ -446,19 +456,21 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
         try {
           await patchFollowup(appId, token, `⏳ Scraping channel...`);
           const { channelName, sections } = await scrapeChannel(channelId);
+          if (sections.length === 0) throw new Error('No text content found in this channel.');
 
-          if (sections.length === 0) throw new Error('No content found in this channel.');
-
-          // Tag sections with source
           const taggedSections = sections.map(s => ({ ...s, sourceChannel: channelName }));
 
           await patchFollowup(appId, token, `⏳ Building PDF (${taggedSections.length} sections)...`);
           const pdfBytes = await buildPdf(title, author, classification, taggedSections);
 
           const filename = `${title.replace(/[^a-z0-9]/gi, '_')}.pdf`;
-          await sendPdfToChannel(channelId, filename, pdfBytes, `✅ **${title}** [${classification}] created — ${taggedSections.length} sections from **${channelName}**. Use \`/scrape\` → **Add Channel to Existing Doc** in other channels to keep building this document.`);
+          await sendPdfToChannel(channelId, filename, pdfBytes,
+            `✅ **${title}** [${classification}] created — ${taggedSections.length} sections from **${channelName}**. Use \`/scrape\` → **Add Channel to Existing Doc** in other channels to keep building.`
+          );
 
-          // Save to DB with full content
+          // Upload content JSON as file
+          const contentUrl = await uploadContentJson(taggedSections, title.replace(/[^a-z0-9]/gi, '_'));
+
           const base44 = createClientFromRequest(req);
           await base44.asServiceRole.entities.BotExportedPdf.create({
             title, author, classification,
@@ -466,10 +478,10 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
             channel_name: channelName,
             section_count: taggedSections.length,
             message_count: taggedSections.reduce((s, sec) => s + sec.messages.length, 0),
-            content_json: JSON.stringify(taggedSections),
+            content_json: contentUrl,
           });
 
-          await patchFollowup(appId, token, `✅ Done! **${filename}** posted above (${taggedSections.length} sections). Go to your next channel and use \`/scrape\` → **Add Channel to Existing Doc** to keep adding to it.`);
+          await patchFollowup(appId, token, `✅ Done! **${filename}** posted above. Head to your next channel and use \`/scrape\` → **Add Channel to Existing Doc** to keep building.`);
         } catch (err: any) {
           await patchFollowup(appId, token, `❌ Scrape failed: ${err.message}`);
         }
@@ -483,13 +495,11 @@ async function handleInteraction(interaction: any, req: Request): Promise<Respon
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'GET') return Response.json({ ok: true, service: 'TAG Discord Bot v3' });
+  if (req.method === 'GET') return Response.json({ ok: true, service: 'TAG Discord Bot v4' });
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
-
   const body = await req.text();
   const valid = await verifyDiscordSignature(req, body);
   if (!valid) return new Response('Invalid signature', { status: 401 });
-
   const interaction = JSON.parse(body);
   return handleInteraction(interaction, req);
 });
