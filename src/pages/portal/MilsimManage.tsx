@@ -6,6 +6,10 @@ import { useForm } from "react-hook-form";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import {
+  BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST as MC_GAMES, COUNTRIES_LIST as MC_COUNTRIES,
+  LANGUAGES_LIST as MC_LANGS, BRANCH_ICONS, type Branch,
+} from "@/lib/milsimConstants";
+import {
   Shield, Crosshair, Award, Users, FileText, BookOpen,
   Plus, Trash2, Loader2, Save, CheckCircle2, AlertCircle, ExternalLink,
   Pencil, Check, X, Radio, Star, Medal, Wifi, WifiOff,
@@ -28,7 +32,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness";
+type Tab = "info" | "roles" | "ranks" | "roster" | "reputation" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -76,6 +80,7 @@ export default function MilsimManage() {
     { id: "ranks", label: "Ranks", icon: Award },
     { id: "roster", label: "Roster", icon: Users },
     { id: "awards", label: "Awards", icon: Medal },
+    { id: "reputation", label: "Service Files", icon: Star },
     { id: "commendations", label: "Commendations", icon: Megaphone },
     { id: "quals", label: "Qualifications", icon: GraduationCap },
     { id: "ops", label: "Live Ops", icon: Siren },
@@ -137,6 +142,7 @@ export default function MilsimManage() {
           {tab === "roles" && <RolesTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
           {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
           {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+          {tab === "reputation" && <ReputationTab group={group} />}
           {tab === "awards" && <AwardsTab group={group} showMsg={showMsg} />}
           {tab === "commendations" && <CommendationsTab group={group} />}
           {tab === "quals" && <QualsTab group={group} showMsg={showMsg} />}
@@ -164,16 +170,7 @@ function MField({ label, children }: { label: string; children: React.ReactNode 
 }
 
 
-const MANAGE_GAMES_LIST = [
-  "Arma 3", "Arma Reforger", "DCS World", "Squad", "Hell Let Loose",
-  "Post Scriptum", "Insurgency: Sandstorm", "GHPC", "Foxhole", "Other",
-];
-const MANAGE_UNIT_TYPES = [
-  "Infantry", "Armour", "Mechanized", "Motorized", "Special Forces",
-  "Aviation", "Artillery", "Logistics", "Reconnaissance", "Engineers",
-  "Naval", "Mixed Arms", "Other",
-];
-const MANAGE_COUNTRIES = [
+const MC_COUNTRIES = [
   "🇬🇧 United Kingdom", "🇺🇸 United States", "🇨🇦 Canada",
   "🇦🇺 Australia", "🇳🇿 New Zealand", "🇩🇪 Germany", "🇫🇷 France",
   "🇮🇹 Italy", "🇵🇱 Poland", "🇳🇱 Netherlands", "🇳🇴 Norway",
@@ -181,7 +178,7 @@ const MANAGE_COUNTRIES = [
   "🇵🇹 Portugal", "🇹🇷 Turkey", "🇯🇵 Japan", "🇰🇷 South Korea",
   "🇧🇷 Brazil", "International", "Other",
 ];
-const MANAGE_LANGUAGES = [
+const MC_LANGS = [
   "English", "German", "French", "Spanish", "Italian", "Polish",
   "Dutch", "Portuguese", "Norwegian", "Swedish", "Danish", "Turkish",
   "Japanese", "Korean", "Other",
@@ -191,10 +188,13 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const { register, handleSubmit, watch, setValue } = useForm({ defaultValues: {
     name: group.name, tagLine: group.tagLine ?? "", description: group.description ?? "",
     discordUrl: group.discordUrl ?? "", websiteUrl: group.websiteUrl ?? "", logoUrl: group.logoUrl ?? "",
-    country: group.country ?? "", language: group.language ?? "", unitType: group.unitType ?? "",
+    country: group.country ?? "", language: group.language ?? "",
+    branch: group.branch ?? "", unitType: group.unitType ?? "",
     games: (group.games ?? []) as string[],
   }});
   const gamesValue: string[] = watch("games") ?? [];
+  const branchValue: string = watch("branch") ?? "";
+  const unitTypeOptions = branchValue ? (UNIT_TYPES_BY_BRANCH[branchValue as Branch] ?? []) : [];
   const onSubmit = async (data: any) => {
     setSaving(true);
     try {
@@ -216,27 +216,51 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
       <div className="border-t border-border pt-5">
         <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Discovery & Filtering</p>
         <div className="space-y-4">
+          {/* Branch selector */}
+          <MField label="Military Branch">
+            <div className="flex flex-wrap gap-2 mt-1">
+              {BRANCHES.map(b => {
+                const sel = branchValue === b;
+                return (
+                  <button key={b} type="button"
+                    onClick={() => { setValue("branch", b); setValue("unitType", ""); }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                      sel ? "bg-primary/15 border-primary/50 text-primary" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    }`}>
+                    {BRANCH_ICONS[b as Branch]} {b}
+                  </button>
+                );
+              })}
+              {branchValue && (
+                <button type="button" onClick={() => { setValue("branch", ""); setValue("unitType", ""); }}
+                  className="px-2 py-1.5 rounded border border-border text-xs text-muted-foreground hover:text-destructive transition-colors">
+                  ✕ Clear
+                </button>
+              )}
+            </div>
+          </MField>
+          {/* Unit type — context-aware */}
+          <MField label="Unit Type">
+            <select {...register("unitType")} className="mf-input" disabled={!branchValue}>
+              <option value="">{branchValue ? "Select unit type..." : "Select a branch first"}</option>
+              {unitTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </MField>
           <MField label="Country / Nationality">
             <select {...register("country")} className="mf-input">
               <option value="">Select...</option>
-              {MANAGE_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {MC_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </MField>
           <MField label="Primary Language">
             <select {...register("language")} className="mf-input">
               <option value="">Select...</option>
-              {MANAGE_LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </MField>
-          <MField label="Unit Type">
-            <select {...register("unitType")} className="mf-input">
-              <option value="">Select...</option>
-              {MANAGE_UNIT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {MC_LANGS.map(l => <option key={l} value={l}>{l}</option>)}
             </select>
           </MField>
           <MField label="Games You Play">
             <div className="flex flex-wrap gap-2 mt-1">
-              {MANAGE_GAMES_LIST.map(game => {
+              {MC_GAMES.map(game => {
                 const selected = gamesValue.includes(game);
                 return (
                   <button key={game} type="button"
@@ -1497,3 +1521,219 @@ function ReadinessTab({ group }: any) {
   );
 }
 
+// ─── Reputation / Service Files Tab ──────────────────────────────────────────
+function ReputationTab({ group }: any) {
+  const [roster, setRoster] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any | null>(null);
+  const [repData, setRepData] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ activity: 7, attitude: 7, experience: 5, discipline: 7, overall_vote: "commend", blacklisted: false, blacklist_reason: "", notes: "" });
+  const [saved, setSaved] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    apiFetch<any>(`/api/milsim-groups/${group.id}/full`)
+      .then(g => setRoster(g.roster ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [group.id]);
+
+  const loadRep = async (member: any) => {
+    setSelected(member);
+    if (repData[member.userId]) return;
+    try {
+      const data = await apiFetch<any>(`/api/reputation/${member.userId}`);
+      setRepData(prev => ({ ...prev, [member.userId]: data }));
+    } catch {}
+  };
+
+  const submitReview = async () => {
+    if (!selected) return;
+    setSubmitting(true);
+    try {
+      await apiFetch(`/api/reputation/${selected.userId}`, {
+        method: "POST",
+        body: JSON.stringify({
+          ...form,
+          group_id: group.id,
+          group_name: group.name,
+          blacklist_reason: form.blacklisted ? form.blacklist_reason : undefined,
+        }),
+      });
+      // Refresh rep
+      const updated = await apiFetch<any>(`/api/reputation/${selected.userId}`);
+      setRepData(prev => ({ ...prev, [selected.userId]: updated }));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+      toast({ title: "Review submitted", description: `Service file for ${selected.callsign} updated.` });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally { setSubmitting(false); }
+  };
+
+  const GRADE_COLORS: Record<string, string> = {
+    ELITE: "#fbbf24", TRUSTED: "#4ade80", STANDARD: "#60a5fa",
+    CAUTION: "#fb923c", "HIGH RISK": "#f87171", BLACKLISTED: "#ef4444", UNRATED: "#6b7280",
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="max-w-5xl space-y-6">
+      <div>
+        <h3 className="font-display font-bold text-lg uppercase tracking-widest">Member Service Files</h3>
+        <p className="text-sm text-muted-foreground font-sans mt-1">
+          As a unit commander, you can rate your members' performance. These scores are <strong>public</strong> and visible to all commanders across the registry — they help filter out unit hoppers and inactive operators.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Member list */}
+        <div className="space-y-2">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Roster ({roster.length})</p>
+          {roster.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-border rounded-lg text-muted-foreground">
+              <p className="text-sm font-display uppercase tracking-widest">No roster members</p>
+            </div>
+          ) : (
+            roster.map((m: any) => {
+              const rep = repData[m.userId]?.score ?? null;
+              const isSelected = selected?.id === m.id;
+              return (
+                <button key={m.id} onClick={() => loadRep(m)}
+                  className={`w-full text-left flex items-center justify-between p-3 rounded-lg border transition-all ${
+                    isSelected ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/30 bg-card"
+                  }`}>
+                  <div>
+                    <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{m.callsign}</p>
+                    {m.rankName && <p className="text-xs text-muted-foreground">{m.rankName}</p>}
+                  </div>
+                  {rep ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-black" style={{ color: GRADE_COLORS[rep.grade] ?? "#6b7280" }}>{rep.overall}</span>
+                      <span className="text-[9px] font-bold uppercase" style={{ color: GRADE_COLORS[rep.grade] ?? "#6b7280" }}>{rep.grade}</span>
+                    </div>
+                  ) : (
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Unrated</span>
+                  )}
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        {/* Rating panel */}
+        <div>
+          {!selected ? (
+            <div className="flex flex-col items-center justify-center h-64 border border-dashed border-border rounded-lg text-muted-foreground text-sm text-center px-6">
+              <Star className="w-8 h-8 mb-3 opacity-30" />
+              <p className="font-display font-bold uppercase tracking-widest">Select a member to view or submit their service assessment</p>
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-lg p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-display font-black uppercase tracking-widest text-lg">{selected.callsign}</p>
+                  {repData[selected.userId]?.score && (
+                    <p className="text-xs font-bold uppercase" style={{ color: GRADE_COLORS[repData[selected.userId].score.grade] }}>
+                      {repData[selected.userId].score.grade} · {repData[selected.userId].score.overall}/100
+                    </p>
+                  )}
+                </div>
+                {repData[selected.userId]?.score?.blacklisted && (
+                  <div className="flex items-center gap-1 text-xs font-bold text-red-400 bg-red-400/10 border border-red-400/30 px-2 py-1 rounded">
+                    ⚠ BLACKLISTED
+                  </div>
+                )}
+              </div>
+
+              {/* Existing reviews summary */}
+              {repData[selected.userId] && (
+                <div className="text-xs text-muted-foreground font-sans">
+                  {repData[selected.userId].reviews?.length ?? 0} review(s) on record —{" "}
+                  {repData[selected.userId].score?.commends ?? 0} commend(s),{" "}
+                  {repData[selected.userId].score?.flags ?? 0} flag(s)
+                </div>
+              )}
+
+              <div className="border-t border-border pt-4 space-y-3">
+                <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Your Assessment</p>
+
+                {/* Score sliders */}
+                {[
+                  { key: "activity", label: "Activity", hint: "How active are they in ops and events?" },
+                  { key: "attitude", label: "Attitude", hint: "Conduct, teamwork, professionalism." },
+                  { key: "experience", label: "Experience", hint: "Tactical knowledge and skill level." },
+                  { key: "discipline", label: "Discipline", hint: "Follows orders, SOP compliance." },
+                ].map(({ key, label, hint }) => (
+                  <div key={key} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-xs font-display font-bold uppercase tracking-widest">{label}</label>
+                        <p className="text-[9px] text-muted-foreground">{hint}</p>
+                      </div>
+                      <span className="text-sm font-bold font-mono text-foreground w-6 text-right">
+                        {(form as any)[key]}
+                      </span>
+                    </div>
+                    <input type="range" min={1} max={10} value={(form as any)[key]}
+                      onChange={e => setForm(f => ({ ...f, [key]: parseInt(e.target.value) }))}
+                      className="w-full accent-primary" />
+                    <div className="flex justify-between text-[8px] text-muted-foreground"><span>1</span><span>10</span></div>
+                  </div>
+                ))}
+
+                {/* Overall vote */}
+                <div>
+                  <label className="text-xs font-display font-bold uppercase tracking-widest mb-2 block">Overall Vote</label>
+                  <div className="flex gap-2">
+                    {[
+                      { v: "commend", label: "✓ Commend", cls: "text-green-400 border-green-500/40 bg-green-500/10" },
+                      { v: "neutral", label: "— Neutral", cls: "text-slate-400 border-border bg-secondary" },
+                      { v: "flag",    label: "⚑ Flag",    cls: "text-red-400 border-red-500/40 bg-red-500/10" },
+                    ].map(({ v, label, cls }) => (
+                      <button key={v} type="button" onClick={() => setForm(f => ({ ...f, overall_vote: v }))}
+                        className={`flex-1 py-2 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                          form.overall_vote === v ? cls : "border-border text-muted-foreground"
+                        }`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="text-xs font-display font-bold uppercase tracking-widest mb-1 block">Notes (optional)</label>
+                  <textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                    placeholder="Additional context or observations..."
+                    className="mf-input resize-none text-xs" />
+                </div>
+
+                {/* Blacklist toggle */}
+                <div className="border border-red-500/20 rounded-lg p-3 space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.blacklisted} onChange={e => setForm(f => ({ ...f, blacklisted: e.target.checked }))}
+                      className="accent-red-500" />
+                    <span className="text-xs font-display font-bold uppercase tracking-widest text-red-400">Blacklist this operator</span>
+                  </label>
+                  {form.blacklisted && (
+                    <input value={form.blacklist_reason} onChange={e => setForm(f => ({ ...f, blacklist_reason: e.target.value }))}
+                      placeholder="Reason for blacklist (visible publicly)..."
+                      className="mf-input text-xs" />
+                  )}
+                </div>
+
+                <button onClick={submitReview} disabled={submitting}
+                  className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm py-2.5 rounded clip-angled-sm transition-all disabled:opacity-60">
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? "✓ Saved" : <><Star className="w-4 h-4" /> Submit Assessment</>}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

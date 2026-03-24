@@ -6,6 +6,9 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/components/auth/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import { Shield, ChevronRight, ChevronLeft, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST, COUNTRIES_LIST, LANGUAGES_LIST, BRANCH_ICONS, type Branch,
+} from "@/lib/milsimConstants";
 
 interface FormData {
   name: string;
@@ -18,35 +21,10 @@ interface FormData {
   orbat: string;
   country: string;
   language: string;
+  branch: string;
   unitType: string;
   games: string[];
 }
-
-const GAMES_LIST = [
-  "Arma 3", "Arma Reforger", "DCS World", "Squad", "Hell Let Loose",
-  "Post Scriptum", "Insurgency: Sandstorm", "GHPC", "Foxhole", "Other",
-];
-
-const UNIT_TYPES_LIST = [
-  "Infantry", "Armour", "Mechanized", "Motorized", "Special Forces",
-  "Aviation", "Artillery", "Logistics", "Reconnaissance", "Engineers",
-  "Naval", "Mixed Arms", "Other",
-];
-
-const COUNTRIES_LIST = [
-  "🇬🇧 United Kingdom", "🇺🇸 United States", "🇨🇦 Canada",
-  "🇦🇺 Australia", "🇳🇿 New Zealand", "🇩🇪 Germany", "🇫🇷 France",
-  "🇮🇹 Italy", "🇵🇱 Poland", "🇳🇱 Netherlands", "🇳🇴 Norway",
-  "🇸🇪 Sweden", "🇩🇰 Denmark", "🇧🇪 Belgium", "🇪🇸 Spain",
-  "🇵🇹 Portugal", "🇹🇷 Turkey", "🇯🇵 Japan", "🇰🇷 South Korea",
-  "🇧🇷 Brazil", "International", "Other",
-];
-
-const LANGUAGES_LIST = [
-  "English", "German", "French", "Spanish", "Italian", "Polish",
-  "Dutch", "Portuguese", "Norwegian", "Swedish", "Danish", "Turkish",
-  "Japanese", "Korean", "Other",
-];
 
 const STEPS = ["Identity", "About", "Details", "Doctrine", "Review"];
 
@@ -59,7 +37,7 @@ export default function MilsimRegister() {
   const [success, setSuccess] = useState(false);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
-    defaultValues: { name: "", tagLine: "", description: "", discordUrl: "", websiteUrl: "", logoUrl: "", sops: "", orbat: "", country: "", language: "", unitType: "", games: [] },
+    defaultValues: { name: "", tagLine: "", description: "", discordUrl: "", websiteUrl: "", logoUrl: "", sops: "", orbat: "", country: "", language: "", branch: "", unitType: "", games: [] },
   });
 
   const values = watch();
@@ -81,6 +59,7 @@ export default function MilsimRegister() {
           orbat: data.orbat || undefined,
           country: data.country || undefined,
           language: data.language || undefined,
+          branch: data.branch || undefined,
           unitType: data.unitType || undefined,
           games: data.games?.length ? data.games : undefined,
         }),
@@ -224,6 +203,37 @@ export default function MilsimRegister() {
             {step === 2 && (
               <div className="space-y-6">
                 <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-6">Unit Details</h2>
+
+                {/* Branch — pill selector */}
+                <div>
+                  <label className="block font-display font-bold uppercase tracking-wider text-xs text-foreground mb-1.5">Military Branch *</label>
+                  <p className="text-xs text-muted-foreground font-sans mb-3">What branch does your unit represent?</p>
+                  <div className="flex flex-wrap gap-2">
+                    {BRANCHES.map(b => {
+                      const sel = values.branch === b;
+                      return (
+                        <button key={b} type="button"
+                          onClick={() => { setValue("branch", b); setValue("unitType", ""); }}
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                            sel ? "bg-primary/15 border-primary/50 text-primary" : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                          }`}>
+                          {BRANCH_ICONS[b as Branch]} {b}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Unit Type — context-aware based on branch */}
+                <Field label="Unit Type" hint={values.branch ? `Unit types for ${values.branch}` : "Select a branch first to see relevant unit types"}>
+                  <select {...register("unitType")} className="input-field">
+                    <option value="">Select unit type...</option>
+                    {(values.branch ? (UNIT_TYPES_BY_BRANCH[values.branch as Branch] ?? []) : []).map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </Field>
+
                 <Field label="Primary Country / Nationality" hint="Where most of your members are based">
                   <select {...register("country")} className="input-field">
                     <option value="">Select country...</option>
@@ -234,12 +244,6 @@ export default function MilsimRegister() {
                   <select {...register("language")} className="input-field">
                     <option value="">Select language...</option>
                     {LANGUAGES_LIST.map(l => <option key={l} value={l}>{l}</option>)}
-                  </select>
-                </Field>
-                <Field label="Unit Type" hint="What kind of unit are you?">
-                  <select {...register("unitType")} className="input-field">
-                    <option value="">Select unit type...</option>
-                    {UNIT_TYPES_LIST.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </Field>
                 <div>
