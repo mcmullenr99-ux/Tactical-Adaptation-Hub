@@ -50,8 +50,8 @@ export default function SupportAdmin() {
         apiFetch<any[]>("/api/support/feedback"),
         apiFetch<any>("/api/support/stats"),
       ]);
-      setTickets(t);
-      setFeedback(f);
+      setTickets(Array.isArray(t) ? t : []);
+      setFeedback(Array.isArray(f) ? f : []);
       setStats(s);
     } catch (e: any) {
       toast({ title: "Error loading support data", description: e.message, variant: "destructive" });

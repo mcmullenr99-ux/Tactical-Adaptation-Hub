@@ -233,9 +233,21 @@ Deno.serve(async (req) => {
             try { return sum + (JSON.parse(l.new_snapshot ?? '{}').rating ?? 5); } catch { return sum + 5; }
           }, 0) / feedbackLogs.length * 10) / 10
         : 0;
+      const critical_count = tickets.filter((t: any) => t.priority === 'critical' && (t.status === 'open' || t.status === 'in_progress')).length;
+      const unreviewed_count = feedbackLogs.filter((l: any) => { try { return !JSON.parse(l.new_snapshot ?? '{}').reviewed; } catch { return true; } }).length;
       return Response.json({
-        total_tickets: tickets.length, open_count, inprog_count, resolved_count,
-        total_feedback: feedbackLogs.length, avg_rating,
+        tickets: {
+          total: tickets.length,
+          open: open_count,
+          in_progress: inprog_count,
+          resolved: resolved_count,
+          critical: critical_count,
+        },
+        feedback: {
+          total: feedbackLogs.length,
+          unreviewed: unreviewed_count,
+          avg_rating,
+        },
       });
     }
 
