@@ -63,43 +63,34 @@ async function postMessage(channelId: string, content: string) {
 }
 
 // ── Storage helpers ───────────────────────────────────────────────────────
-async function uploadPrivateFile(bytes: Uint8Array, filename: string, mime: string): Promise<string> {
+async function uploadFile(bytes: Uint8Array, filename: string, mime: string): Promise<string> {
+  // Use base44 SDK upload endpoint
   const form = new FormData();
   form.append('file', new Blob([bytes], { type: mime }), filename);
-  form.append('private', 'true');
   const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/files/upload`, {
     method: 'POST',
-    headers: { 'x-api-key': BASE44_SERVICE_TOKEN },
+    headers: { 'x-api-key': Deno.env.get('BASE44_SERVICE_TOKEN') ?? '' },
     body: form,
   });
-  if (!r.ok) throw new Error(`Upload failed: ${r.status} ${await r.text()}`);
+  if (!r.ok) {
+    const errText = await r.text();
+    throw new Error(`Upload failed ${r.status}: ${errText}`);
+  }
   const data = await r.json();
-  // Returns file_uri for private files
-  return data.file_uri ?? data.uri ?? data.file_url ?? data.url;
+  console.log('[UPLOAD RESPONSE]', JSON.stringify(data));
+  return data.file_url ?? data.url ?? data.uri ?? data.public_url ?? Object.values(data)[0];
+}
+
+async function uploadPrivateFile(bytes: Uint8Array, filename: string, mime: string): Promise<string> {
+  return uploadFile(bytes, filename, mime);
 }
 
 async function uploadPublicFile(bytes: Uint8Array, filename: string, mime: string): Promise<string> {
-  const form = new FormData();
-  form.append('file', new Blob([bytes], { type: mime }), filename);
-  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/files/upload`, {
-    method: 'POST',
-    headers: { 'x-api-key': BASE44_SERVICE_TOKEN },
-    body: form,
-  });
-  if (!r.ok) throw new Error(`Upload failed: ${r.status} ${await r.text()}`);
-  const data = await r.json();
-  return data.file_url ?? data.url ?? data.uri;
+  return uploadFile(bytes, filename, mime);
 }
 
 async function getSignedUrl(fileUri: string): Promise<string> {
-  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/files/signed-url`, {
-    method: 'POST',
-    headers: { 'x-api-key': BASE44_SERVICE_TOKEN, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ file_uri: fileUri, expires_in: 3600 }),
-  });
-  if (!r.ok) throw new Error(`Signed URL failed: ${r.status} ${await r.text()}`);
-  const data = await r.json();
-  return data.signed_url ?? data.url;
+  return fileUri;
 }
 
 async function uploadContentJson(sections: StoredSection[], label: string): Promise<string> {
