@@ -4,7 +4,7 @@ import { MainLayout } from "./MainLayout";
 import { useLocation, Link } from "wouter";
 import {
   Mail, PenTool, LayoutDashboard, ShieldCheck, Settings,
-  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert, Calendar, KeyRound, IdCard,
+  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert, Calendar, KeyRound, CreditCard,
   LifeBuoy,
 } from "lucide-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -83,7 +83,7 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     { href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "MilSim Group" },
     { href: "/portal/friends", icon: <Users className="w-4 h-4 text-primary" />, label: "Connections", badge: pendingFriends > 0 ? pendingFriends : 0 },
     { href: "/portal/profile", icon: <User className="w-4 h-4 text-primary" />, label: "My Profile" },
-    { href: "/portal/service-card", icon: <IdCard className="w-4 h-4 text-primary" />, label: "Service Card" },
+    { href: "/portal/service-card", icon: <CreditCard className="w-4 h-4 text-primary" />, label: "Service Card" },
     { href: "/portal/support", icon: <LifeBuoy className="w-4 h-4 text-primary" />, label: "Support" },
     { href: "/portal/2fa", icon: <KeyRound className="w-4 h-4 text-primary" />, label: "2FA Security" },
     { href: "/ops", icon: <Calendar className="w-4 h-4 text-primary" />, label: "Ops Calendar" },
