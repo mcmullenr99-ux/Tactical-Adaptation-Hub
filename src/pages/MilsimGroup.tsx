@@ -71,13 +71,20 @@ function getEmbedUrl(url: string): string | null {
 // ─── Branch badge — proper UI element, no emoji ───────────────────────────────
 function BranchBadge({ branch }: { branch: string }) {
   const icons: Record<string, React.ReactNode> = {
-    "Army":               <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><path d="M8 1L2 5v2h1v6h10V7h1V5L8 1zm0 1.6L13 5.5V6h-1v7H4V6H3v-.5L8 2.6z"/></svg>,
-    "Marines":            <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zm0 1a5 5 0 110 10A5 5 0 018 3zm0 2.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/></svg>,
-    "Air Force":          <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><path d="M8 2l-1 4H4l2.5 2-1 4L8 10l2.5 2-1-4L12 6H9L8 2z"/></svg>,
-    "Navy":               <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><path d="M3 9l5 4 5-4V6l-5-3-5 3v3zm5 2.8L4.2 9 4 6.9 8 4.4l4 2.5-.2 2.1L8 11.8z"/></svg>,
-    "Special Operations": <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 10l-3.7 2.5 1.4-4.3L2 5.5h4.5L8 1z"/></svg>,
-    "Multi-Branch":       <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><circle cx="8" cy="8" r="6" fillOpacity=".15" stroke="currentColor" strokeWidth="1.2" fill="none"/><path d="M8 3v10M3 8h10" strokeWidth="1.2" stroke="currentColor"/></svg>,
-    "PMC":                <svg viewBox="0 0 16 16" className="w-3 h-3 fill-current"><circle cx="8" cy="6.5" r="3.5"/><path d="M5.5 9.5c-1.5.5-2.5 1.5-2.5 2.5h10c0-1-1-2-2.5-2.5M6.5 11h3"/></svg>,
+    // Army — crossed swords
+    "Army": <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M14.5 2.5l-1 1 1 1-8 8-1-1-1 1 1 1-1.5 1.5 1.5 1.5 1.5-1.5 1 1 1-1-1-1 8-8 1 1 1-1-1-1 1.5-1.5L18 3l-1.5-1.5-1 1-1-1zM5 17l2 2-1.5 1.5-2-2L5 17z"/></svg>,
+    // Marines — globe with anchor cross
+    "Marines": <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M12 2a3 3 0 110 6 3 3 0 010-6zm0 2a1 1 0 100 2 1 1 0 000-2zM7 9h10v2h-4v7.93A5.002 5.002 0 0017 14h2a7 7 0 01-14 0h2a5 5 0 004 4.93V11H7V9z"/></svg>,
+    // Air Force — swept wing / lightning
+    "Air Force": <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M21 16l-7-2-2-7-2 7-7 2 7 2 1 4 1-4 7-2z"/></svg>,
+    // Navy — anchor
+    "Navy": <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><circle cx="12" cy="5" r="2" fill="none" stroke="currentColor" strokeWidth="2"/><path d="M12 7v10M7 10h10" stroke="currentColor" strokeWidth="2" fill="none"/><path d="M5 17c1 2 3.5 3 7 3s6-1 7-3l-2-1c-.8 1.2-2.5 2-5 2s-4.2-.8-5-2L5 17z"/></svg>,
+    // Special Operations — skull with crossbones / operator beret flash  
+    "Special Operations": <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M12 2C8.5 2 6 4.5 6 7.5c0 2 1 3.7 2.5 4.7V14h7v-1.8C17 11.2 18 9.5 18 7.5 18 4.5 15.5 2 12 2zM9 15.5h6l-.5 2H9.5L9 15.5zm.5 3h5l-.4 1.5H9.9L9.5 18.5z"/><circle cx="9.5" cy="7.5" r="1.2"/><circle cx="14.5" cy="7.5" r="1.2"/><path d="M10 10.5h4v.5h-4z"/></svg>,
+    // Multi-Branch — six-pointed star / joint badge
+    "Multi-Branch": <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 2c1.1 0 2.4.8 3.4 2.7H8.6C9.6 4.8 10.9 4 12 4zM4.2 9h15.6c.1.6.2 1.3.2 2s-.1 1.4-.2 2H4.2C4.1 12.4 4 11.7 4 11s.1-1.4.2-2zM8.6 17.3h6.8c-1 1.9-2.3 2.7-3.4 2.7s-2.4-.8-3.4-2.7z"/></svg>,
+    // PMC — diamond / mercenary shield
+    "PMC": <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current"><path d="M12 2L3 6v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V6l-9-4zm0 2.3l7 3.1V12c0 4-2.9 7.7-7 8.9C7.9 19.7 5 16 5 12V7.4l7-3.1z"/><path d="M12 8l1.5 2.5L16 11l-2 2 .5 2.5-2.5-1.3-2.5 1.3.5-2.5-2-2 2.5-.5L12 8z"/></svg>,
   };
   return (
     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/8 border border-primary/25 rounded text-[10px] font-display font-bold uppercase tracking-widest text-primary/80">
