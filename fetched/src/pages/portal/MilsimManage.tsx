@@ -9,7 +9,8 @@ import {
   Shield, Crosshair, Award, Users, FileText, BookOpen,
   Plus, Trash2, Loader2, Save, CheckCircle2, AlertCircle, ExternalLink,
   Pencil, Check, X, Radio, Star, Medal, Wifi, WifiOff,
-  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp
+  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp,
+  BarChart3, Crown, TrendingUp, Trophy
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
@@ -28,7 +29,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness";
+type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "analytics";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -86,6 +87,7 @@ export default function MilsimManage() {
     { id: "stream", label: "Stream", icon: Radio },
     { id: "sops", label: "SOPs / ORBAT", icon: BookOpen },
     { id: "questions", label: "App Questions", icon: FileText },
+    { id: "analytics", label: "⭐ Analytics", icon: BarChart3 },
   ];
 
   return (
@@ -145,6 +147,7 @@ export default function MilsimManage() {
           {tab === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
           {tab === "orgchart" && <OrgChartTab group={group} />}
           {tab === "readiness" && <ReadinessTab group={group} />}
+          {tab === "analytics" && <AnalyticsTab group={group} />}
           {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
           {tab === "sops" && <SopsTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
           {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
@@ -1554,3 +1557,282 @@ function ReadinessTab({ group }: any) {
   );
 }
 
+
+// ─── Analytics (Pro) ──────────────────────────────────────────────────────────
+const ANALYTICS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/groupAnalytics";
+const PRO_STATUS_URL_MANAGE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/getProStatus";
+
+function MiniBar({ value, max, color = "bg-primary" }: { value: number; max: number; color?: string }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs font-display font-bold text-muted-foreground w-6 text-right">{value}</span>
+    </div>
+  );
+}
+
+function SparkLine({ data, color = "#22d3ee" }: { data: number[]; color?: string }) {
+  if (!data.length) return null;
+  const max = Math.max(...data, 1);
+  const w = 120, h = 40, pad = 4;
+  const pts = data.map((v, i) => {
+    const x = pad + (i / (data.length - 1 || 1)) * (w - pad * 2);
+    const y = h - pad - ((v / max) * (h - pad * 2));
+    return `${x},${y}`;
+  }).join(" ");
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="opacity-80">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      {data.map((v, i) => {
+        const x = pad + (i / (data.length - 1 || 1)) * (w - pad * 2);
+        const y = h - pad - ((v / max) * (h - pad * 2));
+        return <circle key={i} cx={x} cy={y} r="2.5" fill={color} />;
+      })}
+    </svg>
+  );
+}
+
+function StatCard({ label, value, sub, trend, sparkData, color }: { label: string; value: string | number; sub?: string; trend?: string; sparkData?: number[]; color?: string }) {
+  return (
+    <div className="bg-card border border-border rounded-lg p-5 flex flex-col gap-2">
+      <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+      <div className="flex items-end justify-between gap-2">
+        <p className={`font-display font-black text-3xl ${color || "text-foreground"}`}>{value}</p>
+        {sparkData && <SparkLine data={sparkData} color={color === "text-yellow-400" ? "#facc15" : color === "text-green-400" ? "#4ade80" : "#22d3ee"} />}
+      </div>
+      {sub && <p className="text-xs font-sans text-muted-foreground">{sub}</p>}
+      {trend && <p className="text-xs font-sans text-primary">{trend}</p>}
+    </div>
+  );
+}
+
+function AnalyticsTab({ group }: any) {
+  const [data, setData] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Check pro first
+    fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`)
+      .then(r => r.json())
+      .then(s => {
+        setIsPro(s.is_pro);
+        if (s.is_pro) {
+          return fetch(`${ANALYTICS_URL}?group_id=${group.id}`)
+            .then(r => r.json())
+            .then(setData)
+            .catch(() => {});
+        }
+      })
+      .catch(() => setIsPro(false))
+      .finally(() => setLoading(false));
+  }, [group.id]);
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-3">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <p className="text-sm text-muted-foreground font-sans">Loading analytics...</p>
+    </div>
+  );
+
+  // Pro gate
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          Analytics is a Pro feature. Upgrade your unit to unlock full attendance tracking, ops frequency charts, roster growth, duty status breakdown, and more.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]"
+      >
+        <Crown className="w-4 h-4" /> Upgrade to Pro — £10/mo
+      </a>
+      <p className="text-xs text-muted-foreground font-sans">Cancel anytime. Instant activation.</p>
+    </div>
+  );
+
+  if (!data) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+      <AlertCircle className="w-8 h-8 text-destructive" />
+      <p className="text-muted-foreground font-sans">Failed to load analytics data.</p>
+    </div>
+  );
+
+  const { summary, charts, top_operators, top_awards } = data;
+
+  // Format month labels
+  const monthLabels = Object.keys(charts.ops_per_month).map(k => {
+    const [y, m] = k.split("-");
+    return new Date(parseInt(y), parseInt(m) - 1).toLocaleString("default", { month: "short" });
+  });
+  const opsData = Object.values(charts.ops_per_month) as number[];
+  const attendData = Object.values(charts.attendance_per_month) as number[];
+  const joinData = Object.values(charts.join_per_month) as number[];
+
+  // Outcome colors
+  const outcomeColor: Record<string, string> = { victory: "bg-green-500", defeat: "bg-red-500", draw: "bg-yellow-500", incomplete: "bg-secondary" };
+  const totalOutcomes = Object.values(charts.aar_outcomes).reduce((a: any, b: any) => a + b, 0) as number;
+
+  return (
+    <div className="space-y-8 max-w-5xl">
+
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
+          <BarChart3 className="w-4 h-4 text-yellow-400" />
+        </div>
+        <div>
+          <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Unit Analytics</h2>
+          <p className="text-xs font-sans text-muted-foreground">Live data — all time unless noted</p>
+        </div>
+        <span className="ml-auto text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
+          <Crown className="w-3 h-3" /> Pro
+        </span>
+      </div>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Active Roster" value={summary.active_roster} sub={`${summary.total_roster} total enrolled`} sparkData={joinData} color="text-foreground" />
+        <StatCard label="Ops Completed" value={summary.completed_ops} sub={`${summary.scheduled_ops} upcoming`} sparkData={opsData} color="text-primary" />
+        <StatCard label="Avg Attendance" value={summary.avg_attendance} sub="per op (from AARs)" color="text-yellow-400" />
+        <StatCard label="Op Win Rate" value={`${summary.op_win_rate}%`} sub={`${summary.total_aars} AARs filed`} color={summary.op_win_rate >= 60 ? "text-green-400" : summary.op_win_rate >= 40 ? "text-yellow-400" : "text-red-400"} />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Total Awards" value={summary.total_awards} color="text-yellow-400" />
+        <StatCard label="Active LOAs" value={summary.active_loas} color={summary.active_loas > 3 ? "text-yellow-400" : "text-muted-foreground"} />
+        <StatCard label="Briefings Filed" value={summary.total_aars} color="text-foreground" />
+        <StatCard label="Scheduled Ops" value={summary.scheduled_ops} color="text-primary" />
+      </div>
+
+      {/* Charts row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        {/* Ops per month */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Ops Completed — Last 6 Months</p>
+          <div className="flex items-end gap-2 h-24">
+            {opsData.map((v, i) => {
+              const maxV = Math.max(...opsData, 1);
+              const pct = (v / maxV) * 100;
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-display font-bold">{v}</span>
+                  <div className="w-full bg-primary/80 rounded-t transition-all" style={{ height: `${Math.max(pct * 0.7, v > 0 ? 4 : 2)}px` }} />
+                  <span className="text-[9px] text-muted-foreground">{monthLabels[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Roster growth */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">New Recruits — Last 6 Months</p>
+          <div className="flex items-end gap-2 h-24">
+            {joinData.map((v, i) => {
+              const maxV = Math.max(...joinData, 1);
+              const pct = (v / maxV) * 100;
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-display font-bold">{v}</span>
+                  <div className="w-full bg-green-500/70 rounded-t transition-all" style={{ height: `${Math.max(pct * 0.7, v > 0 ? 4 : 2)}px` }} />
+                  <span className="text-[9px] text-muted-foreground">{monthLabels[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        {/* Roster status */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Roster by Status</p>
+          <div className="space-y-2.5">
+            {Object.entries(charts.roster_by_status).map(([status, count]) => (
+              <div key={status}>
+                <div className="flex justify-between text-xs font-sans mb-1">
+                  <span className="text-foreground capitalize">{status}</span>
+                  <span className="text-muted-foreground">{count as number}</span>
+                </div>
+                <MiniBar value={count as number} max={summary.total_roster} color="bg-primary" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* AAR outcomes */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Op Outcomes</p>
+          {totalOutcomes === 0 ? (
+            <p className="text-sm text-muted-foreground font-sans py-4 text-center">No AARs filed yet</p>
+          ) : (
+            <div className="space-y-2.5">
+              {Object.entries(charts.aar_outcomes).map(([outcome, count]) => (
+                count as number > 0 ? (
+                  <div key={outcome}>
+                    <div className="flex justify-between text-xs font-sans mb-1">
+                      <span className="text-foreground capitalize">{outcome}</span>
+                      <span className="text-muted-foreground">{count as number} ({Math.round(((count as number) / totalOutcomes) * 100)}%)</span>
+                    </div>
+                    <MiniBar value={count as number} max={totalOutcomes} color={outcomeColor[outcome] || "bg-secondary"} />
+                  </div>
+                ) : null
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Top operators */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-1.5">
+            <Trophy className="w-3 h-3 text-yellow-400" /> Top Operators
+          </p>
+          {top_operators.length === 0 ? (
+            <p className="text-sm text-muted-foreground font-sans py-4 text-center">No op data yet</p>
+          ) : (
+            <div className="space-y-2">
+              {top_operators.map((op: any, i: number) => (
+                <div key={op.callsign} className="flex items-center gap-3">
+                  <span className={`text-xs font-display font-black w-4 ${i === 0 ? "text-yellow-400" : i === 1 ? "text-zinc-400" : i === 2 ? "text-orange-500" : "text-muted-foreground"}`}>
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 text-sm font-sans text-foreground truncate">{op.callsign}</span>
+                  <span className="text-xs font-display font-bold text-muted-foreground">{op.ops_count} ops</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Top awards */}
+      {top_awards.length > 0 && (
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Most Issued Awards</p>
+          <div className="flex flex-wrap gap-3">
+            {top_awards.map((a: any) => (
+              <div key={a.name} className="flex items-center gap-2 bg-secondary/50 border border-border rounded px-3 py-2">
+                <Star className="w-3.5 h-3.5 text-yellow-400" />
+                <span className="text-sm font-sans text-foreground">{a.name}</span>
+                <span className="text-xs font-display font-bold text-muted-foreground">×{a.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
