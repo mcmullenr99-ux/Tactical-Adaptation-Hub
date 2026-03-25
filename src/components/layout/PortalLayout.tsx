@@ -80,7 +80,7 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
   const navLinks = [
     { href: "/portal/dashboard", icon: <LayoutDashboard className="w-4 h-4 text-primary" />, label: "Dashboard" },
     { href: "/portal/inbox", icon: <Mail className="w-4 h-4 text-primary" />, label: "Comms", badge: unreadMsgs > 0 ? unreadMsgs : 0 },
-    { href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "MilSim Group" },
+    { href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "Unit HQ" },
     { href: "/portal/member-hq", icon: <Users className="w-4 h-4 text-primary" />, label: "Member HQ" },
     { href: "/portal/friends", icon: <Users className="w-4 h-4 text-primary" />, label: "Connections", badge: pendingFriends > 0 ? pendingFriends : 0 },
     { href: "/portal/profile", icon: <User className="w-4 h-4 text-primary" />, label: "My Profile" },

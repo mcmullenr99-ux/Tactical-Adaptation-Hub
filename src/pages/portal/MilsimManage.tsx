@@ -188,7 +188,7 @@ export default function MilsimManage() {
       items: [
         { id: "readiness", label: "Readiness", icon: Activity },
         { id: "analytics", label: "Analytics", icon: BarChart3, pro: true },
-        { id: "stream", label: "Stream", icon: Radio },
+        { id: "stream", label: "Stream", icon: Radio, pro: true },
       ],
     },
   ];

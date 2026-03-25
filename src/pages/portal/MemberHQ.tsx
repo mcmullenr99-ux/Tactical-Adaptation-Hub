@@ -33,7 +33,7 @@ const STATUS_OP: Record<string, string> = {
 /* ─── main component ──────────────────────────────────────────────────────── */
 export default function MemberHQ() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<"ops"|"briefings"|"aars"|"peer-review"|"loa"|"service-file">("ops");
+  const [tab, setTab] = useState<"ops"|"briefings"|"aars"|"peer-review"|"unit-review"|"loa"|"service-file">("ops");
   const [memberships, setMemberships] = useState<any[] | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
   const [rosterEntry, setRosterEntry] = useState<any | null>(null);
@@ -91,6 +91,7 @@ export default function MemberHQ() {
     { id: "briefings",    label: "Briefings",     icon: MapPin },
     { id: "aars",         label: "AARs",          icon: ClipboardList },
     { id: "peer-review",  label: "Peer Review",   icon: Star },
+    { id: "unit-review",   label: "Unit Review",   icon: Shield },
     { id: "loa",          label: "Request LOA",   icon: Calendar },
     { id: "service-file", label: "My Service File", icon: FileText },
   ] as const;
@@ -176,6 +177,7 @@ export default function MemberHQ() {
       {selectedGroup && tab === "aars"         && <MemberAARsTab        group={selectedGroup} showMsg={showMsg} rosterEntry={rosterEntry} />}
       {selectedGroup && tab === "peer-review"  && <MemberPeerReviewTab  group={selectedGroup} showMsg={showMsg} user={user} />}
       {selectedGroup && tab === "loa"          && <MemberLOATab         group={selectedGroup} showMsg={showMsg} user={user} rosterEntry={rosterEntry} />}
+      {selectedGroup && tab === "unit-review"   && <MemberUnitReviewTab  group={selectedGroup} showMsg={showMsg} user={user} />}
       {selectedGroup && tab === "service-file" && <MemberServiceFileTab user={user} />}
     </PortalLayout>
   );
@@ -662,6 +664,168 @@ function MemberLOATab({ group, showMsg, user, rosterEntry }: any) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+/* ─── Unit Review tab ────────────────────────────────────────────────────── */
+function MemberUnitReviewTab({ group, showMsg, user }: any) {
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState<string | null>(null);
+  const [form, setForm] = useState<Record<string, { activity: number; attitude: number; experience: number; discipline: number; notes: string; blacklisted: boolean; blacklist_reason: string }>>({});
+
+  useEffect(() => {
+    apiFetch<any>(`/api/milsim-groups/${group.id}/full`)
+      .then((g: any) => {
+        const roster = g.roster ?? [];
+        // Exclude self
+        const others = roster.filter((r: any) => r.userId !== (user as any)?.id && r.user_id !== (user as any)?.id);
+        setReviews(others);
+        // Init form state
+        const init: typeof form = {};
+        others.forEach((r: any) => {
+          init[r.id] = { activity: 3, attitude: 3, experience: 3, discipline: 3, notes: "", blacklisted: false, blacklist_reason: "" };
+        });
+        setForm(init);
+      })
+      .catch(() => setReviews([]))
+      .finally(() => setLoading(false));
+  }, [group.id]);
+
+  const submitReview = async (member: any) => {
+    const f = form[member.id];
+    if (!f) return;
+    setSubmitting(member.id);
+    try {
+      await apiFetch("/api/reputation", {
+        method: "POST",
+        body: JSON.stringify({
+          subject_id: member.userId ?? member.user_id,
+          subject_username: member.callsign,
+          group_id: group.id,
+          group_name: group.name,
+          activity: f.activity,
+          attitude: f.attitude,
+          experience: f.experience,
+          discipline: f.discipline,
+          overall_vote: Math.round((f.activity + f.attitude + f.experience + f.discipline) / 4),
+          blacklisted: f.blacklisted,
+          blacklist_reason: f.blacklisted ? f.blacklist_reason : "",
+          notes: f.notes,
+        }),
+      });
+      showMsg(true, `Review submitted for ${member.callsign}`);
+      // Mark as reviewed locally
+      setReviews(prev => prev.filter(r => r.id !== member.id));
+    } catch (e: any) {
+      showMsg(false, e.message ?? "Failed to submit review");
+    }
+    setSubmitting(null);
+  };
+
+  const setScore = (memberId: string, field: string, val: number) => {
+    setForm(prev => ({ ...prev, [memberId]: { ...prev[memberId], [field]: val } }));
+  };
+
+  const ScoreRow = ({ memberId, field, label }: { memberId: string; field: string; label: string }) => {
+    const val = form[memberId]?.[field as keyof typeof form[string]] as number ?? 3;
+    const colours = ["", "bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-blue-500", "bg-green-500"];
+    const labels = ["", "Poor", "Below Avg", "Average", "Good", "Excellent"];
+    return (
+      <div className="flex items-center gap-3">
+        <span className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground w-24 shrink-0">{label}</span>
+        <div className="flex items-center gap-1">
+          {[1,2,3,4,5].map(n => (
+            <button key={n} onClick={() => setScore(memberId, field, n)}
+              className={`w-7 h-7 rounded text-xs font-bold border transition-all ${val === n ? `${colours[n]} text-white border-transparent` : "bg-secondary border-border text-muted-foreground hover:border-border/80"}`}>
+              {n}
+            </button>
+          ))}
+        </div>
+        <span className="text-[10px] text-muted-foreground">{labels[val]}</span>
+      </div>
+    );
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      {/* Info banner */}
+      <div className="bg-secondary/40 border border-border rounded-lg p-4 text-xs font-sans text-muted-foreground leading-relaxed">
+        <p className="font-display font-bold uppercase tracking-widest text-xs text-foreground mb-1">How Unit Reviews Work</p>
+        <p>Rate your fellow operators from <strong className="text-foreground">{group.name}</strong>. Scores feed into their overall reputation across the TAG registry. Be honest — these scores matter to commanders reviewing applications.</p>
+      </div>
+
+      {reviews.length === 0 ? (
+        <div className="border border-dashed border-border rounded-lg p-10 text-center">
+          <Shield className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+          <p className="text-sm font-display uppercase tracking-widest text-muted-foreground">No members left to review</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">You've reviewed all active roster members in this unit.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {reviews.map(member => {
+            const f = form[member.id];
+            if (!f) return null;
+            const avg = Math.round((f.activity + f.attitude + f.experience + f.discipline) / 4);
+            const avgColour = avg >= 4 ? "text-green-400" : avg === 3 ? "text-yellow-400" : "text-red-400";
+            return (
+              <div key={member.id} className="border border-border bg-card rounded-xl p-4 space-y-4">
+                {/* Member header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                      <span className="text-xs font-display font-bold text-primary">{member.callsign?.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div>
+                      <p className="font-display font-bold text-sm text-foreground">{member.callsign}</p>
+                      {member.rank && <p className="text-[10px] text-muted-foreground">{member.rank}</p>}
+                    </div>
+                  </div>
+                  <div className={`text-lg font-display font-black ${avgColour}`}>{avg}<span className="text-xs text-muted-foreground font-normal">/5</span></div>
+                </div>
+
+                {/* Score rows */}
+                <div className="space-y-2.5 pl-1">
+                  <ScoreRow memberId={member.id} field="activity" label="Activity" />
+                  <ScoreRow memberId={member.id} field="attitude" label="Attitude" />
+                  <ScoreRow memberId={member.id} field="experience" label="Experience" />
+                  <ScoreRow memberId={member.id} field="discipline" label="Discipline" />
+                </div>
+
+                {/* Notes */}
+                <textarea value={f.notes} onChange={e => setForm(prev => ({ ...prev, [member.id]: { ...prev[member.id], notes: e.target.value } }))}
+                  placeholder="Optional notes for this operator (visible to commanders)..."
+                  rows={2}
+                  className="w-full bg-secondary border border-border rounded px-3 py-2 text-xs font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none" />
+
+                {/* Blacklist toggle */}
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setForm(prev => ({ ...prev, [member.id]: { ...prev[member.id], blacklisted: !prev[member.id].blacklisted } }))}
+                    className={`text-[10px] font-display font-bold uppercase tracking-wider px-2.5 py-1 rounded border transition-all ${f.blacklisted ? "bg-red-500/20 border-red-500/60 text-red-400" : "bg-secondary border-border text-muted-foreground hover:border-red-500/30 hover:text-red-400"}`}>
+                    {f.blacklisted ? "⚑ Blacklist flagged" : "Flag for Blacklist"}
+                  </button>
+                  {f.blacklisted && (
+                    <input value={f.blacklist_reason} onChange={e => setForm(prev => ({ ...prev, [member.id]: { ...prev[member.id], blacklist_reason: e.target.value } }))}
+                      placeholder="Reason (required for blacklist)"
+                      className="flex-1 bg-secondary border border-red-500/40 rounded px-2.5 py-1 text-xs font-sans text-foreground placeholder:text-muted-foreground focus:outline-none" />
+                  )}
+                </div>
+
+                {/* Submit */}
+                <button onClick={() => submitReview(member)} disabled={submitting === member.id}
+                  className="w-full flex items-center justify-center gap-2 bg-primary/20 border border-primary/40 text-primary hover:bg-primary/30 rounded py-2 font-display text-xs uppercase tracking-widest transition-all disabled:opacity-50">
+                  {submitting === member.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Star className="w-3.5 h-3.5" />}
+                  Submit Review for {member.callsign}
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
