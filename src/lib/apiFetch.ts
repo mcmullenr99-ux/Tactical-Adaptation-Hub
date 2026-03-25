@@ -3,6 +3,8 @@ export const FUNCTIONS_BASE = "https://agent-tag-lead-developer-cff87ae4.base44.
 
 // Route map: /api/<prefix> → function name
 const ROUTE_MAP: Record<string, string> = {
+  "/api/auth/verify-email":      "authVerifyEmail",
+  "/api/auth/resend-verification": "authResendVerification",
   "/api/auth/login":            "authLogin",
   "/api/auth/register":        "authRegister",
   "/api/auth/me":               "authMe",

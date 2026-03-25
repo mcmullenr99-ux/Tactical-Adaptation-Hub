@@ -3,7 +3,7 @@ import { PortalLayout } from "@/components/layout/PortalLayout";
 import { useAuth } from "@/components/auth/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Mail, Clock, ShieldCheck, PenTool, CalendarDays, User, ChevronRight,
+  Mail, Clock, ShieldCheck, PenTool, CalendarDays, User, ChevronRight, MailWarning, RefreshCw,
   Megaphone, Star, Activity, AlertTriangle, CheckCircle2, CreditCard
 } from "lucide-react";
 import { Link } from "wouter";
@@ -78,6 +78,24 @@ export default function Dashboard() {
   const anniversary = user?.created_at ? isAnniversary(user.created_at) : false;
   const currentDuty = DUTY_OPTIONS.find(d => d.value === dutyStatus) ?? DUTY_OPTIONS[0];
 
+  // Email verification banner state
+  const isUnverified = user && (user as any).email_verified === false;
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const { token } = useAuth() as any;
+
+  const handleResendVerification = async () => {
+    setResendState("sending");
+    try {
+      await apiFetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      setResendState("sent");
+    } catch {
+      setResendState("error");
+    }
+  };
+
   return (
     <PortalLayout>
       <div className="space-y-8">
@@ -98,6 +116,27 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+        {/* Email Verification Banner */}
+        {isUnverified && (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <MailWarning className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-display font-bold uppercase tracking-widest text-yellow-300 text-xs mb-0.5">Email Not Verified</p>
+              <p className="text-yellow-200/70 font-sans text-xs">Please verify your email address to unlock full access including roster applications. Check your inbox for a verification link.</p>
+            </div>
+            <div className="flex-shrink-0">
+              {resendState === "idle" && (
+                <button onClick={handleResendVerification} className="px-4 py-2 bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 font-display font-bold uppercase tracking-widest text-xs rounded hover:bg-yellow-500/30 transition-colors flex items-center gap-2">
+                  <RefreshCw className="w-3 h-3" /> Resend Link
+                </button>
+              )}
+              {resendState === "sending" && <span className="text-yellow-300 text-xs font-display uppercase tracking-widest">Sending...</span>}
+              {resendState === "sent" && <span className="text-green-400 text-xs font-display uppercase tracking-widest">✓ Email sent</span>}
+              {resendState === "error" && <span className="text-destructive text-xs font-sans">Failed — try again later</span>}
+            </div>
+          </div>
+        )}
 
         {/* Anniversary Banner */}
         {anniversary && (

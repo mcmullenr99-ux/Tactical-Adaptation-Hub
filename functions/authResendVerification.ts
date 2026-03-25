@@ -19,15 +19,24 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Must be authenticated
+    // Can be called with a Bearer token (dashboard) OR with just an email (login page pre-auth)
     const authHeader = req.headers.get('Authorization') ?? '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    if (!token) return Response.json({ error: 'Unauthorised' }, { status: 401 });
+    const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const body = await req.json().catch(() => ({}));
 
-    let payload: any;
-    try { payload = verify(token, JWT_SECRET); } catch { return Response.json({ error: 'Invalid token' }, { status: 401 }); }
+    let user: any = null;
 
-    const user = await base44.asServiceRole.entities.User.get(payload.sub);
+    if (bearerToken) {
+      let payload: any;
+      try { payload = verify(bearerToken, JWT_SECRET); } catch { return Response.json({ error: 'Invalid token' }, { status: 401 }); }
+      user = await base44.asServiceRole.entities.User.get(payload.sub);
+    } else if (body.email) {
+      const found = await base44.asServiceRole.entities.User.filter({ email: body.email.toLowerCase().trim() });
+      user = found[0] ?? null;
+    } else {
+      return Response.json({ error: 'Email or authentication token required' }, { status: 400 });
+    }
+
     if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
     if (user.email_verified) return Response.json({ error: 'Email is already verified' }, { status: 400 });
 

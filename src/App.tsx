@@ -45,6 +45,7 @@ import Friends from "@/pages/portal/Friends";
 import SecurityProtocol from "@/pages/portal/SecurityProtocol";
 import Profile from "@/pages/portal/Profile";
 import ResetPassword from "@/pages/portal/ResetPassword";
+import VerifyEmail from "@/pages/portal/VerifyEmail";
 import TwoFactorAuth from "@/pages/portal/TwoFactorAuth";
 import Support from "@/pages/portal/Support";
 import SupportAdmin from "@/pages/portal/SupportAdmin";
@@ -108,6 +109,7 @@ function Router() {
       <Route path="/portal/friends" component={Friends} />
       <Route path="/portal/security" component={SecurityProtocol} />
       <Route path="/portal/reset-password" component={ResetPassword} />
+      <Route path="/portal/verify-email" component={VerifyEmail} />
       <Route path="/portal/2fa" component={TwoFactorAuth} />
       <Route path="/portal/service-card" component={ServiceCard} />
       <Route path="/portal/support" component={Support} />

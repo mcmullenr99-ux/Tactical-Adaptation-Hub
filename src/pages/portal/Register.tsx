@@ -40,7 +40,7 @@ export default function Register() {
         email: data.email,
         password: data.password,
       });
-      setLocation("/portal/dashboard");
+      setLocation("/portal/verify-email");
     } catch (err: any) {
       setErrorMsg(err?.data?.error || "Registration failed. Please try again.");
     } finally {

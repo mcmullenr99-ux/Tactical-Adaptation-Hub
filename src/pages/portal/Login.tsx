@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, Loader2, Mail, CheckCircle, ArrowLeft } from "lucide-react";
+import { AlertCircle, Loader2, Mail, CheckCircle, ArrowLeft, ShieldAlert, RefreshCw } from "lucide-react";
 import { TagLogo } from "@/components/TagLogo";
 import { useAuth } from "@/components/auth/AuthContext";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -117,6 +117,8 @@ export default function Login() {
   const [isPending, setIsPending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showForgot, setShowForgot] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema)
@@ -124,14 +126,35 @@ export default function Login() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setErrorMsg(null);
+    setUnverifiedEmail(null);
     setIsPending(true);
     try {
       await login(data.email, data.password);
       setLocation("/portal/dashboard");
     } catch (err: any) {
-      setErrorMsg(err?.data?.error || "Invalid credentials. Please try again.");
+      if (err?.data?.requires_verification) {
+        setUnverifiedEmail(err?.data?.email ?? data.email);
+      } else {
+        setErrorMsg(err?.data?.error || "Invalid credentials. Please try again.");
+      }
     } finally {
       setIsPending(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail) return;
+    setResendState("sending");
+    try {
+      // Call resend — no auth token available here so we pass email in body
+      await apiFetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: unverifiedEmail }),
+      });
+      setResendState("sent");
+    } catch {
+      setResendState("error");
     }
   };
 
@@ -171,6 +194,34 @@ export default function Login() {
                     <div className="mb-6 p-4 bg-destructive/10 border border-destructive/30 rounded text-destructive flex items-center gap-3 text-sm font-sans">
                       <AlertCircle className="w-5 h-5 flex-shrink-0" />
                       <span>{errorMsg}</span>
+                    </div>
+                  )}
+
+                  {unverifiedEmail && (
+                    <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded space-y-3">
+                      <div className="flex items-start gap-3">
+                        <ShieldAlert className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-yellow-300 font-display font-bold uppercase tracking-widest text-xs mb-1">Email Not Verified</p>
+                          <p className="text-yellow-200/80 font-sans text-xs">You must verify your email before logging in. Check your inbox for a verification link.</p>
+                        </div>
+                      </div>
+                      {resendState === "idle" && (
+                        <button type="button" onClick={handleResendVerification} className="w-full py-2 px-4 bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 font-display font-bold uppercase tracking-widest text-xs rounded hover:bg-yellow-500/30 transition-colors flex items-center justify-center gap-2">
+                          <RefreshCw className="w-3 h-3" /> Resend Verification Email
+                        </button>
+                      )}
+                      {resendState === "sending" && (
+                        <div className="flex items-center justify-center gap-2 text-yellow-300 text-xs font-display uppercase tracking-widest">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Sending...
+                        </div>
+                      )}
+                      {resendState === "sent" && (
+                        <p className="text-green-400 font-display uppercase tracking-widest text-xs text-center">✓ Verification email sent — check your inbox</p>
+                      )}
+                      {resendState === "error" && (
+                        <p className="text-destructive font-sans text-xs text-center">Failed to resend. Please wait a few minutes and try again.</p>
+                      )}
                     </div>
                   )}
 
