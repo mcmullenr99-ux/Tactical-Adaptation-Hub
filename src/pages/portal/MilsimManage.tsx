@@ -4279,6 +4279,7 @@ function UnitLegacyTab({ group }: any) {
   const [aars, setAars] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
   const token = localStorage.getItem("tag_auth_token") ?? "";
 
   useEffect(() => {
@@ -4287,15 +4288,36 @@ function UnitLegacyTab({ group }: any) {
       apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`).catch(() => []),
       apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).catch(() => []),
       fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`, { headers }).then(r => r.json()).catch(() => []),
-    ]).then(([o, a, c]) => {
+      apiFetch<any>(`/api/milsim-groups/${group.id}/pro-status`).catch(() => ({ is_pro: false })),
+    ]).then(([o, a, c, proStatus]) => {
       setOps(Array.isArray(o) ? o : []);
       setAars(Array.isArray(a) ? a : []);
       setCampaigns(Array.isArray(c) ? c : []);
+      setIsPro(!!proStatus?.is_pro);
       setLoading(false);
     });
   }, [group.id]);
 
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center gap-4 max-w-md mx-auto">
+      <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+        <Archive className="w-6 h-6 text-primary" />
+      </div>
+      <div>
+        <h3 className="font-display font-black uppercase tracking-widest text-lg text-foreground">Unit Legacy</h3>
+        <p className="text-sm font-sans text-muted-foreground mt-2">
+          The full timeline of your unit's history — ops, campaigns, AARs, and ribbons — is a <strong className="text-foreground">Commander Pro</strong> feature.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded border border-primary/40 bg-primary/10 text-primary text-xs font-display font-bold uppercase tracking-widest hover:bg-primary/20 transition-all">
+        <Rocket className="w-3.5 h-3.5" />
+        Upgrade to Commander Pro
+      </a>
+    </div>
+  );
 
   type TimelineEntry = { date: string; type: "op" | "aar" | "campaign"; title: string; sub: string; icon: typeof Siren; color: string };
   const entries: TimelineEntry[] = [

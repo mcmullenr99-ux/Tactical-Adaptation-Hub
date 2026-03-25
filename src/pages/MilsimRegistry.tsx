@@ -163,7 +163,8 @@ export default function MilsimRegistry() {
   });
 
   const featured = filtered.filter(g => g.status === "featured");
-  const approved = filtered.filter(g => g.status === "approved");
+  const proApproved = filtered.filter(g => g.status === "approved" && g.is_pro);
+  const approved = filtered.filter(g => g.status === "approved" && !g.is_pro);
 
   return (
     <MainLayout>
@@ -267,14 +268,26 @@ export default function MilsimRegistry() {
                     </div>
                   </section>
                 )}
+                {proApproved.length > 0 && (
+                  <section className="mb-16">
+                    <div className="flex items-center gap-3 mb-6">
+                      <Rocket className="w-4 h-4 text-primary" />
+                      <h2 className="font-display font-black text-lg uppercase tracking-wider text-foreground">Commander Pro Units</h2>
+                      <span className="text-[9px] font-display font-bold uppercase tracking-widest text-primary border border-primary/30 bg-primary/10 px-2 py-0.5 rounded">Pro</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {proApproved.map((g, i) => <GroupCard key={g.id} group={g} index={i} />)}
+                    </div>
+                  </section>
+                )}
                 <section>
                   <div className="flex items-center gap-3 mb-8">
                     <Users className="w-5 h-5 text-primary" />
                     <h2 className="font-display font-black text-2xl uppercase tracking-wider text-foreground">
-                      {featured.length > 0 ? "All Registered Units" : "Registered Units"}
+                      {featured.length > 0 || proApproved.length > 0 ? "All Registered Units" : "Registered Units"}
                     </h2>
                   </div>
-                  {approved.length === 0 && featured.length === 0 ? (
+                  {approved.length === 0 && featured.length === 0 && proApproved.length === 0 ? (
                     <div className="text-center py-24 border border-dashed border-border rounded-lg">
                       <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-40" />
                       <p className="font-display font-bold uppercase tracking-wider text-muted-foreground mb-2">No Groups Yet</p>
