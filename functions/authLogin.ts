@@ -27,6 +27,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
+    if (user.status === 'pending_verification' || user.email_verified === false) {
+      return Response.json({
+        error: 'Please verify your email address before logging in. Check your inbox for a verification link.',
+        requires_verification: true,
+        email: user.email,
+      }, { status: 403 });
+    }
     if (user.status === 'suspended') {
       return Response.json({ error: 'Account suspended' }, { status: 403 });
     }

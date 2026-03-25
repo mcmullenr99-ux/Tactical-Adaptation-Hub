@@ -1,6 +1,9 @@
 {
   "type": "object",
   "properties": {
+    "role": {
+      "type": "string"
+    },
     "username": {
       "type": "string"
     },
@@ -8,56 +11,71 @@
       "type": "string"
     },
     "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "banned",
+        "pending_verification"
+      ],
+      "default": "pending_verification"
+    },
+    "ban_reason": {
       "type": "string"
     },
-    "bio": {
+    "email_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "email_verify_token": {
       "type": "string"
     },
-    "discord_tag": {
+    "email_verify_expires": {
+      "type": "string"
+    },
+    "registration_ip": {
+      "type": "string"
+    },
+    "last_login_ip": {
       "type": "string"
     },
     "nationality": {
       "type": "string"
     },
-    "totp_enabled": {
-      "type": "boolean"
-    },
-    "totp_secret": {
-      "type": "string"
-    },
-    "on_duty_status": {
+    "bio": {
       "type": "string"
     },
     "avatar_url": {
       "type": "string"
     },
-    "ban_reason": {
+    "discord_username": {
       "type": "string"
     },
     "steam_profile_url": {
       "type": "string"
     },
-    "xbox_gamertag": {
+    "two_factor_enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "two_factor_secret": {
       "type": "string"
     },
-    "psn_id": {
-      "type": "string"
-    },
-    "last_active_at": {
-      "type": "string"
-    },
-    "login_count": {
-      "type": "integer"
-    },
-    "activity_score": {
-      "type": "number"
-    },
-    "activity_dates": {
+    "two_factor_backup_codes": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "ISO date strings (YYYY-MM-DD) of days the operator was active via AAR/Op/Training participation. Deduplicated, max 90 entries."
+      }
+    },
+    "last_login": {
+      "type": "string"
+    },
+    "last_active": {
+      "type": "string"
+    },
+    "is_online": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": []

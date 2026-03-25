@@ -330,8 +330,17 @@ Deno.serve(async (req) => {
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
+      // Email verification gate: if a user_id is supplied, verify the user has confirmed their email
+      if (body.userId || body.user_id) {
+        const targetUserId = body.userId ?? body.user_id;
+        const targetUser = await base44.asServiceRole.entities.User.get(targetUserId).catch(() => null);
+        if (!targetUser) return Response.json({ error: 'User not found.' }, { status: 404 });
+        if (!targetUser.email_verified) {
+          return Response.json({ error: 'This user has not verified their email address. They must verify their email before being added to a roster.' }, { status: 403 });
+        }
+      }
       const entry = await base44.asServiceRole.entities.MilsimRoster.create({
-        group_id: parts[0], callsign: body.callsign,
+        group_id: parts[0], user_id: body.userId ?? body.user_id ?? null, callsign: body.callsign,
         rank_id: body.rankId ?? null, role_id: body.roleId ?? null, notes: body.notes ?? null,
         status: body.status ?? 'Active',
         specialisations: body.specialisations ?? [],

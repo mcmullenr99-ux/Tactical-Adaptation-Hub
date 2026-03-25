@@ -77,10 +77,15 @@ Deno.serve(async (req) => {
 
       const updated = await base44.asServiceRole.entities.MilsimApplication.update(parts[2], updates);
 
-      // If approved, add to roster
+      // If approved, check applicant has a verified email before adding to roster
       if (body.status === 'approved') {
         const app = await base44.asServiceRole.entities.MilsimApplication.get(parts[2]);
         if (app) {
+          const applicantUser = await base44.asServiceRole.entities.User.get(app.applicant_id).catch(() => null);
+          if (!applicantUser) return Response.json({ error: 'Applicant account not found.' }, { status: 404 });
+          if (!applicantUser.email_verified) {
+            return Response.json({ error: 'This applicant has not verified their email address. They must verify their email before being added to a roster.' }, { status: 403 });
+          }
           await base44.asServiceRole.entities.MilsimRoster.create({
             group_id: parts[0], user_id: app.applicant_id,
             callsign: app.applicant_username,
