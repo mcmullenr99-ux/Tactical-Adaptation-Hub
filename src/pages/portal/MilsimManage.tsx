@@ -1855,22 +1855,22 @@ function AARsTab({ group, showMsg }: any) {
           {aars.map((a: any) => (
             <div key={a.id} className="bg-card border border-border rounded-lg overflow-hidden">
               <button onClick={() => setExpandedId(expandedId === a.id ? null : a.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
-                <div className="flex items-center gap-3 flex-wrap"><span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${CL[a.classification] ?? ""}`}>{a.classification.replace("-"," ")}</span><span className="font-display font-bold text-sm text-foreground">{a.op_name}</span>{a.op_date && <span className="text-xs text-muted-foreground">{format(new Date(a.op_date + "T00:00:00"), "MMM dd, yyyy")}</span>}</div>
+                <div className="flex items-center gap-3 flex-wrap"><span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${CL[a.classification] ?? ""}`}>{(a.classification ?? "unclassified").replace("-"," ")}</span><span className="font-display font-bold text-sm text-foreground">{a.op_name}</span>{a.op_date && <span className="text-xs text-muted-foreground">{format(new Date(a.op_date + "T00:00:00"), "MMM dd, yyyy")}</span>}</div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ op_name: a.op_name, op_date: a.op_date?.split("T")[0] ?? "", summary: a.summary ?? "", objectives_hit: a.objectives_hit ?? "", objectives_missed: a.objectives_missed ?? "", casualties: a.casualties ?? "", commendations: a.commendations ?? "", recommendations: a.recommendations ?? "", classification: a.classification }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ op_name: a.op_name, op_date: a.op_date?.split("T")[0] ?? "", summary: a.summary ?? a.content ?? "", objectives_hit: a.objectives_hit ?? "", objectives_missed: a.objectives_missed ?? "", casualties: a.casualties ?? "", commendations: a.commendations ?? "", recommendations: a.recommendations ?? "", classification: a.classification }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={e => { e.stopPropagation(); remove(a.id); }} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                   {expandedId === a.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 </div>
               </button>
               {expandedId === a.id && (
                 <div className="border-t border-border p-5 space-y-4 bg-secondary/10">
-                  {a.summary && <AARField label="Summary" value={a.summary} />}
+                  {(a.summary ?? a.content) && <AARField label="Summary" value={a.summary ?? a.content} />}
                   {a.objectives_hit && <AARField label="Objectives Hit" value={a.objectives_hit} />}
                   {a.objectives_missed && <AARField label="Objectives Missed" value={a.objectives_missed} />}
                   {a.casualties && <AARField label="Casualties" value={a.casualties} />}
                   {a.commendations && <AARField label="Commendations" value={a.commendations} />}
                   {a.recommendations && <AARField label="Recommendations" value={a.recommendations} />}
-                  <p className="text-xs text-muted-foreground">Filed by {a.created_by} · {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}</p>
+                  <p className="text-xs text-muted-foreground">Filed by {a.created_by} · {formatDistanceToNow(new Date(a.created_date ?? a.created_at ?? Date.now()), { addSuffix: true })}</p>
                 </div>
               )}
             </div>
@@ -1950,7 +1950,7 @@ function BriefingsTab({ group, showMsg }: any) {
                   {b.comms_plan && <AARField label="Comms Plan" value={b.comms_plan} />}
                   {b.roe && <AARField label="ROE" value={b.roe} />}
                   {b.additional_notes && <AARField label="Additional Notes" value={b.additional_notes} />}
-                  <p className="text-xs text-muted-foreground font-sans">By {b.created_by} · {formatDistanceToNow(new Date(b.created_at), { addSuffix: true })}</p>
+                  <p className="text-xs text-muted-foreground font-sans">By {b.created_by} · {formatDistanceToNow(new Date(b.created_date ?? b.created_at ?? Date.now()), { addSuffix: true })}</p>
                 </div>
               )}
             </div>
