@@ -7,9 +7,7 @@ import { apiFetch } from "@/lib/apiFetch";
 import { useSEO } from "@/hooks/useSEO";
 import {
   Shield, Globe, Star, Plus, ExternalLink, Loader2,
-  Search, X, Filter, ChevronDown,
-} from "lucide-react",
-  Rocket,
+  Search, X, Filter, ChevronDown, Rocket,
 } from "lucide-react";
 import {
   BRANCHES, UNIT_TYPES_BY_BRANCH, ALL_UNIT_TYPES, GAMES_LIST,
