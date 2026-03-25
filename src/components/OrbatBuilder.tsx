@@ -12,45 +12,55 @@ import {
 // ─── Echelons ─────────────────────────────────────────────────────────────────
 
 export const NATO_ECHELONS = [
-  { id: "fireteam",  label: "Fire Team",  echelonCode: "11" },
-  { id: "squad",     label: "Squad",      echelonCode: "12" },
-  { id: "section",   label: "Section",    echelonCode: "13" },
-  { id: "platoon",   label: "Platoon",    echelonCode: "14" },
-  { id: "company",   label: "Company",    echelonCode: "15" },
-  { id: "battalion", label: "Battalion",  echelonCode: "16" },
-  { id: "regiment",  label: "Regiment",   echelonCode: "17" },
-  { id: "brigade",   label: "Brigade",    echelonCode: "18" },
-  { id: "division",  label: "Division",   echelonCode: "19" },
-  { id: "corps",     label: "Corps",      echelonCode: "20" },
+  { id: "fireteam",  label: "Fire Team"  },
+  { id: "squad",     label: "Squad"      },
+  { id: "section",   label: "Section"    },
+  { id: "platoon",   label: "Platoon"    },
+  { id: "company",   label: "Company"    },
+  { id: "battalion", label: "Battalion"  },
+  { id: "regiment",  label: "Regiment"   },
+  { id: "brigade",   label: "Brigade"    },
+  { id: "division",  label: "Division"   },
+  { id: "corps",     label: "Corps"      },
 ];
 
 // ─── Unit Types ───────────────────────────────────────────────────────────────
 
 export const NATO_UNIT_TYPES = [
-  { id: "hq",             label: "HQ / Command",       category: "Command",   sidc: "10031000000000000000" },
-  { id: "command_post",   label: "Command Post",        category: "Command",   sidc: "10031000160000000000" },
-  { id: "infantry",       label: "Infantry",            category: "Infantry",  sidc: "10031000100000000000" },
-  { id: "light_infantry", label: "Light Infantry",      category: "Infantry",  sidc: "10031000100000000000" },
-  { id: "mech_infantry",  label: "Mechanised Infantry", category: "Infantry",  sidc: "10031000100000000000" },
-  { id: "airborne",       label: "Airborne",            category: "Infantry",  sidc: "10031000101600000000" },
-  { id: "ranger",         label: "Ranger / Recon",      category: "Infantry",  sidc: "10031000100000000000" },
-  { id: "special_forces", label: "Special Forces",      category: "Infantry",  sidc: "10031000100000000000" },
-  { id: "armour",         label: "Armour / Tank",       category: "Armour",    sidc: "10031000300000000000" },
-  { id: "apc",            label: "APC",                 category: "Armour",    sidc: "10031000350000000000" },
-  { id: "ifv",            label: "IFV",                 category: "Armour",    sidc: "10031000350000000000" },
-  { id: "aviation",       label: "Aviation",            category: "Aviation",  sidc: "10031000110000000000" },
-  { id: "cas",            label: "Close Air Support",   category: "Aviation",  sidc: "10031000110000000000" },
-  { id: "helicopter",     label: "Helicopter",          category: "Aviation",  sidc: "10031000120000000000" },
-  { id: "uav",            label: "UAV / Drone",         category: "Aviation",  sidc: "10031000110000000000" },
-  { id: "artillery",      label: "Artillery",           category: "Support",   sidc: "10031000550000000000" },
-  { id: "mortar",         label: "Mortar",              category: "Support",   sidc: "10031000550000000000" },
-  { id: "engineers",      label: "Engineers",           category: "Support",   sidc: "10031000650000000000" },
-  { id: "logistics",      label: "Logistics / Supply",  category: "Support",   sidc: "10031000800000000000" },
-  { id: "medical",        label: "Medical",             category: "Support",   sidc: "10031000850000000000" },
-  { id: "signals",        label: "Signals / Comms",     category: "Support",   sidc: "10031000950000000000" },
-  { id: "intelligence",   label: "Intelligence",        category: "Support",   sidc: "10031001000000000000" },
-  { id: "mp",             label: "Military Police",     category: "Support",   sidc: "10031001150000000000" },
-  { id: "sof",            label: "SOF / JTAC",          category: "Support",   sidc: "10031000100000000000" },
+  // Command
+  { id: "hq",             label: "HQ / Command",        category: "Command"  },
+  { id: "command_post",   label: "Command Post",         category: "Command"  },
+  // Infantry
+  { id: "infantry",       label: "Infantry",             category: "Infantry" },
+  { id: "light_infantry", label: "Light Infantry",       category: "Infantry" },
+  { id: "mech_infantry",  label: "Mechanised Infantry",  category: "Infantry" },
+  { id: "airborne",       label: "Airborne",             category: "Infantry" },
+  { id: "ranger",         label: "Ranger / Recon",       category: "Infantry" },
+  { id: "special_forces", label: "Special Forces",       category: "Infantry" },
+  { id: "anti_armor",     label: "Anti-Armour",          category: "Infantry" },
+  // Armour
+  { id: "armour",         label: "Armour / Tank",        category: "Armour"   },
+  { id: "apc",            label: "APC",                  category: "Armour"   },
+  { id: "ifv",            label: "IFV",                  category: "Armour"   },
+  { id: "cavalry",        label: "Cavalry / Recce",      category: "Armour"   },
+  // Aviation
+  { id: "aviation",       label: "Aviation",             category: "Aviation" },
+  { id: "attack_helo",    label: "Attack Helicopter",    category: "Aviation" },
+  { id: "transport_helo", label: "Transport Helicopter", category: "Aviation" },
+  { id: "uav",            label: "UAV / Drone",          category: "Aviation" },
+  // Fires
+  { id: "artillery",      label: "Artillery",            category: "Fires"    },
+  { id: "mortar",         label: "Mortar",               category: "Fires"    },
+  // Support
+  { id: "engineers",      label: "Engineers",            category: "Support"  },
+  { id: "logistics",      label: "Logistics / Supply",   category: "Support"  },
+  { id: "medical",        label: "Medical",              category: "Support"  },
+  { id: "signals",        label: "Signals / Comms",      category: "Support"  },
+  { id: "intelligence",   label: "Intelligence",         category: "Support"  },
+  { id: "mp",             label: "Military Police",      category: "Support"  },
+  { id: "sof",            label: "SOF / JTAC",           category: "Support"  },
+  { id: "cbrn",           label: "CBRN",                 category: "Support"  },
+  { id: "maintenance",    label: "Maintenance",          category: "Support"  },
 ];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -70,249 +80,289 @@ function generateId() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-// ─── NATO Paper-Map Symbol Renderer ──────────────────────────────────────────
-// Hand-drawn authentic style: white fill, black lines, no library dependency.
-
-// Echelon marks drawn ABOVE the box
-// fireteam=· squad=·· section=··· platoon=| company=|| battalion=||| 
+// ─── Echelon marks drawn ABOVE the box ────────────────────────────────────────
+// fireteam=• squad=•• section=••• platoon=| company=|| battalion=|||
 // regiment=X brigade=XX division=XXX corps=XXXX
 
-function echelonMark(id: string, cx: number, y: number, sw: number): React.ReactNode {
-  const marks: Record<string, React.ReactNode> = {
-    fireteam:  <text x={cx} y={y} textAnchor="middle" fontSize={sw*3.5} fontFamily="serif" fill="#111">·</text>,
-    squad:     <text x={cx} y={y} textAnchor="middle" fontSize={sw*3.5} fontFamily="serif" fill="#111">··</text>,
-    section:   <text x={cx} y={y} textAnchor="middle" fontSize={sw*3.5} fontFamily="serif" fill="#111">···</text>,
-    platoon:   <line x1={cx} y1={y-sw*4} x2={cx} y2={y} stroke="#111" strokeWidth={sw} />,
-    company:   <><line x1={cx-sw*2} y1={y-sw*4} x2={cx-sw*2} y2={y} stroke="#111" strokeWidth={sw}/><line x1={cx+sw*2} y1={y-sw*4} x2={cx+sw*2} y2={y} stroke="#111" strokeWidth={sw}/></>,
-    battalion: <><line x1={cx-sw*3} y1={y-sw*4} x2={cx-sw*3} y2={y} stroke="#111" strokeWidth={sw}/><line x1={cx} y1={y-sw*4} x2={cx} y2={y} stroke="#111" strokeWidth={sw}/><line x1={cx+sw*3} y1={y-sw*4} x2={cx+sw*3} y2={y} stroke="#111" strokeWidth={sw}/></>,
-    regiment:  <text x={cx} y={y} textAnchor="middle" fontSize={sw*5} fontFamily="serif" fontWeight="bold" fill="#111">X</text>,
-    brigade:   <text x={cx} y={y} textAnchor="middle" fontSize={sw*5} fontFamily="serif" fontWeight="bold" fill="#111">XX</text>,
-    division:  <text x={cx} y={y} textAnchor="middle" fontSize={sw*5} fontFamily="serif" fontWeight="bold" fill="#111">XXX</text>,
-    corps:     <text x={cx} y={y} textAnchor="middle" fontSize={sw*5} fontFamily="serif" fontWeight="bold" fill="#111">XXXX</text>,
-  };
-  return marks[id] ?? null;
+function EchelonMark({ id, cx, topY, sw }: { id: string; cx: number; topY: number; sw: number }) {
+  const lineH = sw * 5;
+  switch (id) {
+    case "fireteam":
+      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 4} fontFamily="serif" fill="#111">•</text>;
+    case "squad":
+      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 4} fontFamily="serif" fill="#111">••</text>;
+    case "section":
+      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 4} fontFamily="serif" fill="#111">•••</text>;
+    case "platoon":
+      return <line x1={cx} y1={topY - lineH} x2={cx} y2={topY} stroke="#111" strokeWidth={sw} />;
+    case "company":
+      return <>
+        <line x1={cx - sw * 2.5} y1={topY - lineH} x2={cx - sw * 2.5} y2={topY} stroke="#111" strokeWidth={sw} />
+        <line x1={cx + sw * 2.5} y1={topY - lineH} x2={cx + sw * 2.5} y2={topY} stroke="#111" strokeWidth={sw} />
+      </>;
+    case "battalion":
+      return <>
+        <line x1={cx - sw * 4}  y1={topY - lineH} x2={cx - sw * 4}  y2={topY} stroke="#111" strokeWidth={sw} />
+        <line x1={cx}            y1={topY - lineH} x2={cx}            y2={topY} stroke="#111" strokeWidth={sw} />
+        <line x1={cx + sw * 4}  y1={topY - lineH} x2={cx + sw * 4}  y2={topY} stroke="#111" strokeWidth={sw} />
+      </>;
+    case "regiment":
+      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 5.5} fontFamily="serif" fontWeight="bold" fill="#111">X</text>;
+    case "brigade":
+      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 5.5} fontFamily="serif" fontWeight="bold" fill="#111">XX</text>;
+    case "division":
+      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 5.5} fontFamily="serif" fontWeight="bold" fill="#111">XXX</text>;
+    case "corps":
+      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 5.5} fontFamily="serif" fontWeight="bold" fill="#111">XXXX</text>;
+    default:
+      return null;
+  }
 }
 
-// Interior symbol paths/elements for each unit type
-// All drawn within a normalised 80×50 box (viewBox "0 0 80 50")
-function unitInterior(type: string, sw: number): React.ReactNode {
-  const s = sw;
+// ─── NATO APP-6 interior symbols ──────────────────────────────────────────────
+// Drawn inside a 70×44 box (x:5-75, y:3-47) centred at (40, 25)
+
+function UnitInterior({ type, sw }: { type: string; sw: number }) {
   switch (type) {
-    // ── Combat ──────────────────────────────────────────────────────────────
+
+    // ── INFANTRY (diagonal cross) ─────────────────────────────────────────────
     case "infantry":
-      // Two diagonal crosses (X) — classic NATO infantry
+    case "light_infantry":
       return <>
-        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
-        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
+        <line x1={8}  y1={6}  x2={72} y2={44} stroke="#111" strokeWidth={sw} />
+        <line x1={72} y1={6}  x2={8}  y2={44} stroke="#111" strokeWidth={sw} />
       </>;
-    case "armor":
-      // Oval / ellipse centred
-      return <ellipse cx={40} cy={25} rx={22} ry={13} fill="none" stroke="#111" strokeWidth={s}/>;
-    case "mechanized":
-      // Oval + diagonal cross
+
+    // ── MECHANISED INFANTRY (diagonal cross + oval) ───────────────────────────
+    case "mech_infantry":
+    case "ifv":
       return <>
-        <ellipse cx={40} cy={25} rx={22} ry={13} fill="none" stroke="#111" strokeWidth={s}/>
-        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
-        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
+        <line x1={8}  y1={6}  x2={72} y2={44} stroke="#111" strokeWidth={sw} />
+        <line x1={72} y1={6}  x2={8}  y2={44} stroke="#111" strokeWidth={sw} />
+        <ellipse cx={40} cy={25} rx={20} ry={11} fill="none" stroke="#111" strokeWidth={sw} />
       </>;
-    case "motorized":
-      // Single diagonal line + small circle
-      return <>
-        <line x1={15} y1={10} x2={65} y2={40} stroke="#111" strokeWidth={s}/>
-        <circle cx={40} cy={25} r={8} fill="none" stroke="#111" strokeWidth={s}/>
-      </>;
+
+    // ── AIRBORNE (diagonal cross + arc below) ────────────────────────────────
     case "airborne":
-      // Cross + arc (parachute suggestion)
       return <>
-        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
-        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
-        <path d="M 20 40 Q 40 10 60 40" fill="none" stroke="#111" strokeWidth={s}/>
+        <line x1={8}  y1={6}  x2={72} y2={44} stroke="#111" strokeWidth={sw} />
+        <line x1={72} y1={6}  x2={8}  y2={44} stroke="#111" strokeWidth={sw} />
+        <path d="M 18,42 Q 40,20 62,42" fill="none" stroke="#111" strokeWidth={sw} />
       </>;
-    case "air_assault":
-      // Cross + helicopter rotor (horizontal line at top)
-      return <>
-        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
-        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
-        <line x1={25} y1={12} x2={55} y2={12} stroke="#111" strokeWidth={s}/>
-      </>;
+
+    // ── SPECIAL FORCES (diagonal cross + diamond) ────────────────────────────
     case "special_forces":
-      // Cross + inner diamond
+    case "sof":
       return <>
-        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
-        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
-        <polygon points="40,13 55,25 40,37 25,25" fill="none" stroke="#111" strokeWidth={s}/>
+        <line x1={8}  y1={6}  x2={72} y2={44} stroke="#111" strokeWidth={sw} />
+        <line x1={72} y1={6}  x2={8}  y2={44} stroke="#111" strokeWidth={sw} />
+        <polygon points="40,10 58,25 40,40 22,25" fill="none" stroke="#111" strokeWidth={sw} />
       </>;
+
+    // ── RANGER (diagonal cross + chevron) ────────────────────────────────────
     case "ranger":
-      // Cross + small chevron top
       return <>
-        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
-        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
-        <polyline points="30,18 40,10 50,18" fill="none" stroke="#111" strokeWidth={s}/>
+        <line x1={8}  y1={6}  x2={72} y2={44} stroke="#111" strokeWidth={sw} />
+        <line x1={72} y1={6}  x2={8}  y2={44} stroke="#111" strokeWidth={sw} />
+        <polyline points="28,40 40,30 52,40" fill="none" stroke="#111" strokeWidth={sw} />
       </>;
-    case "cavalry":
-      // Diagonal line (recon slash)
-      return <line x1={15} y1={42} x2={65} y2={8} stroke="#111" strokeWidth={s+0.5}/>;
-    case "recce":
-      // Diagonal line + small eye/oval
-      return <>
-        <line x1={15} y1={42} x2={65} y2={8} stroke="#111" strokeWidth={s+0.5}/>
-        <ellipse cx={40} cy={25} rx={10} ry={6} fill="none" stroke="#111" strokeWidth={s}/>
-      </>;
-    case "sniper":
-      // Cross + dot centre
-      return <>
-        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
-        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
-        <circle cx={40} cy={25} r={4} fill="#111"/>
-      </>;
+
+    // ── ANTI-ARMOUR (arrow pointing left) ────────────────────────────────────
     case "anti_armor":
-      // Arrow pointing left (anti-tank symbol)
       return <>
-        <line x1={20} y1={25} x2={60} y2={25} stroke="#111" strokeWidth={s+0.5}/>
-        <polyline points="32,16 20,25 32,34" fill="none" stroke="#111" strokeWidth={s+0.5}/>
-        <line x1={55} y1={18} x2={65} y2={25} stroke="#111" strokeWidth={s}/>
-        <line x1={55} y1={32} x2={65} y2={25} stroke="#111" strokeWidth={s}/>
+        <line x1={18} y1={25} x2={62} y2={25} stroke="#111" strokeWidth={sw + 0.5} />
+        <polyline points="30,16 18,25 30,34" fill="none" stroke="#111" strokeWidth={sw + 0.5} />
+        <line x1={52} y1={16} x2={64} y2={25} stroke="#111" strokeWidth={sw} />
+        <line x1={52} y1={34} x2={64} y2={25} stroke="#111" strokeWidth={sw} />
       </>;
-    // ── Fires ────────────────────────────────────────────────────────────────
-    case "artillery":
-      // Solid black dot (classic field artillery)
-      return <circle cx={40} cy={25} r={11} fill="#111"/>;
-    case "rocket_artillery":
-      // Dot + upward arrow
+
+    // ── ARMOUR / TANK (oval) ──────────────────────────────────────────────────
+    case "armour":
+      return <ellipse cx={40} cy={25} rx={24} ry={14} fill="none" stroke="#111" strokeWidth={sw} />;
+
+    // ── APC (oval) ────────────────────────────────────────────────────────────
+    case "apc":
       return <>
-        <circle cx={40} cy={30} r={9} fill="#111"/>
-        <line x1={40} y1={21} x2={40} y2={9} stroke="#111" strokeWidth={s}/>
-        <polyline points="34,15 40,9 46,15" fill="none" stroke="#111" strokeWidth={s}/>
+        <ellipse cx={40} cy={25} rx={24} ry={14} fill="none" stroke="#111" strokeWidth={sw} />
+        <line x1={30} y1={25} x2={50} y2={25} stroke="#111" strokeWidth={sw} />
       </>;
-    case "mortar":
-      // Dot + vertical bar
-      return <>
-        <circle cx={40} cy={28} r={9} fill="#111"/>
-        <line x1={40} y1={8} x2={40} y2={18} stroke="#111" strokeWidth={s}/>
-      </>;
-    case "air_defense":
-      // Upward pointing arrow
-      return <>
-        <line x1={40} y1={42} x2={40} y2={10} stroke="#111" strokeWidth={s+1}/>
-        <polyline points="28,22 40,10 52,22" fill="none" stroke="#111" strokeWidth={s+1}/>
-        <line x1={28} y1={35} x2={52} y2={35} stroke="#111" strokeWidth={s}/>
-      </>;
-    // ── Aviation ─────────────────────────────────────────────────────────────
-    case "aviation":
-      // Infinity / rotor symbol
-      return <path d="M 18,25 C 18,15 32,15 40,25 C 48,35 62,35 62,25 C 62,15 48,15 40,25 C 32,35 18,35 18,25 Z" fill="none" stroke="#111" strokeWidth={s}/>;
-    case "attack_helo":
-      // Infinity + upward arrow
-      return <>
-        <path d="M 18,30 C 18,20 30,20 40,30 C 50,40 62,40 62,30 C 62,20 50,20 40,30 C 30,40 18,40 18,30 Z" fill="none" stroke="#111" strokeWidth={s}/>
-        <line x1={40} y1={20} x2={40} y2={8} stroke="#111" strokeWidth={s}/>
-        <polyline points="34,14 40,8 46,14" fill="none" stroke="#111" strokeWidth={s}/>
-      </>;
-    case "transport_helo":
-      // Infinity + horizontal bar
-      return <>
-        <path d="M 18,30 C 18,20 30,20 40,30 C 50,40 62,40 62,30 C 62,20 50,20 40,30 C 30,40 18,40 18,30 Z" fill="none" stroke="#111" strokeWidth={s}/>
-        <line x1={28} y1={13} x2={52} y2={13} stroke="#111" strokeWidth={s}/>
-      </>;
-    case "uav":
-      // Small propeller cross
-      return <>
-        <line x1={24} y1={25} x2={56} y2={25} stroke="#111" strokeWidth={s+0.5}/>
-        <line x1={40} y1={12} x2={40} y2={38} stroke="#111" strokeWidth={s+0.5}/>
-        <circle cx={40} cy={25} r={4} fill="none" stroke="#111" strokeWidth={s}/>
-      </>;
-    // ── Support ──────────────────────────────────────────────────────────────
-    case "engineer":
-      // Castle / battlement suggestion (horizontal line + 3 uprights)
-      return <>
-        <line x1={15} y1={35} x2={65} y2={35} stroke="#111" strokeWidth={s}/>
-        <line x1={20} y1={35} x2={20} y2={15} stroke="#111" strokeWidth={s}/>
-        <line x1={40} y1={35} x2={40} y2={15} stroke="#111" strokeWidth={s}/>
-        <line x1={60} y1={35} x2={60} y2={15} stroke="#111" strokeWidth={s}/>
-        <line x1={15} y1={15} x2={65} y2={15} stroke="#111" strokeWidth={s}/>
-      </>;
-    case "signal":
-      // Sine wave / lightning bolt
-      return <path d="M 12,25 Q 22,10 32,25 Q 42,40 52,25 Q 62,10 68,25" fill="none" stroke="#111" strokeWidth={s+0.5}/>;
-    case "military_police":
-      // MP text
-      return <text x={40} y={32} textAnchor="middle" fontSize={18} fontFamily="serif" fontWeight="bold" fill="#111">MP</text>;
-    case "intelligence":
-      // Eye symbol
-      return <>
-        <path d="M 14,25 Q 40,5 66,25 Q 40,45 14,25 Z" fill="none" stroke="#111" strokeWidth={s}/>
-        <circle cx={40} cy={25} r={7} fill="none" stroke="#111" strokeWidth={s}/>
-        <circle cx={40} cy={25} r={3} fill="#111"/>
-      </>;
-    case "cbrn":
-      // Circle + hazard lines
-      return <>
-        <circle cx={40} cy={25} r={14} fill="none" stroke="#111" strokeWidth={s}/>
-        <line x1={40} y1={11} x2={40} y2={39} stroke="#111" strokeWidth={s}/>
-        <line x1={26} y1={25} x2={54} y2={25} stroke="#111" strokeWidth={s}/>
-        <line x1={30} y1={15} x2={50} y2={35} stroke="#111" strokeWidth={s}/>
-        <line x1={50} y1={15} x2={30} y2={35} stroke="#111" strokeWidth={s}/>
-      </>;
-    // ── CSS ──────────────────────────────────────────────────────────────────
-    case "logistics":
-      // Open circle (general logistics)
-      return <circle cx={40} cy={25} r={13} fill="none" stroke="#111" strokeWidth={s}/>;
-    case "medical":
-      // Cross (red cross style but black)
-      return <>
-        <line x1={40} y1={10} x2={40} y2={40} stroke="#111" strokeWidth={s*3}/>
-        <line x1={24} y1={25} x2={56} y2={25} stroke="#111" strokeWidth={s*3}/>
-      </>;
-    case "maintenance":
-      // Wrench suggestion (circle + diagonal)
-      return <>
-        <circle cx={40} cy={25} r={13} fill="none" stroke="#111" strokeWidth={s}/>
-        <line x1={30} y1={15} x2={50} y2={35} stroke="#111" strokeWidth={s*2}/>
-      </>;
-    case "transport":
-      // Horizontal arrow
-      return <>
-        <line x1={15} y1={25} x2={60} y2={25} stroke="#111" strokeWidth={s+1}/>
-        <polyline points="50,17 62,25 50,33" fill="none" stroke="#111" strokeWidth={s+1}/>
-      </>;
-    // ── C2 ───────────────────────────────────────────────────────────────────
+
+    // ── CAVALRY / RECCE (diagonal slash) ─────────────────────────────────────
+    case "cavalry":
+      return <line x1={14} y1={44} x2={66} y2={6} stroke="#111" strokeWidth={sw + 0.5} />;
+
+    // ── HQ / COMMAND POST (horizontal line through centre) ───────────────────
     case "hq":
     case "command_post":
-      // HQ — single horizontal line through middle
-      return <line x1={12} y1={25} x2={68} y2={25} stroke="#111" strokeWidth={s+0.5}/>;
-    case "fac":
-      // FAC/JTAC — binoculars / two linked circles
       return <>
-        <circle cx={30} cy={25} r={10} fill="none" stroke="#111" strokeWidth={s}/>
-        <circle cx={50} cy={25} r={10} fill="none" stroke="#111" strokeWidth={s}/>
-        <line x1={36} y1={20} x2={44} y2={20} stroke="#111" strokeWidth={s}/>
+        <line x1={10} y1={25} x2={70} y2={25} stroke="#111" strokeWidth={sw + 0.5} />
+        <line x1={40} y1={10} x2={40} y2={40} stroke="#111" strokeWidth={sw + 0.5} />
       </>;
-    default:
-      // Fallback: X
+
+    // ── ARTILLERY (solid filled circle) ──────────────────────────────────────
+    case "artillery":
+      return <circle cx={40} cy={25} r={13} fill="#111" />;
+
+    // ── MORTAR (small solid circle) ──────────────────────────────────────────
+    case "mortar":
       return <>
-        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
-        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
+        <circle cx={40} cy={25} r={13} fill="none" stroke="#111" strokeWidth={sw} />
+        <circle cx={40} cy={25} r={6} fill="#111" />
+      </>;
+
+    // ── AVIATION (infinity / figure-8) ───────────────────────────────────────
+    case "aviation":
+      return <path
+        d="M 16,25 C 16,14 28,14 40,25 C 52,36 64,36 64,25 C 64,14 52,14 40,25 C 28,36 16,36 16,25 Z"
+        fill="none" stroke="#111" strokeWidth={sw}
+      />;
+
+    // ── ATTACK HELICOPTER (infinity + arrow up) ───────────────────────────────
+    case "attack_helo":
+      return <>
+        <path
+          d="M 16,28 C 16,18 28,18 40,28 C 52,38 64,38 64,28 C 64,18 52,18 40,28 C 28,38 16,38 16,28 Z"
+          fill="none" stroke="#111" strokeWidth={sw}
+        />
+        <line x1={40} y1={22} x2={40} y2={8} stroke="#111" strokeWidth={sw} />
+        <polyline points="34,14 40,8 46,14" fill="none" stroke="#111" strokeWidth={sw} />
+      </>;
+
+    // ── TRANSPORT HELICOPTER (infinity + horizontal bar top) ──────────────────
+    case "transport_helo":
+      return <>
+        <path
+          d="M 16,28 C 16,18 28,18 40,28 C 52,38 64,38 64,28 C 64,18 52,18 40,28 C 28,38 16,38 16,28 Z"
+          fill="none" stroke="#111" strokeWidth={sw}
+        />
+        <line x1={26} y1={12} x2={54} y2={12} stroke="#111" strokeWidth={sw} />
+      </>;
+
+    // ── UAV (cross + circle) ──────────────────────────────────────────────────
+    case "uav":
+      return <>
+        <line x1={22} y1={25} x2={58} y2={25} stroke="#111" strokeWidth={sw + 0.5} />
+        <line x1={40} y1={11} x2={40} y2={39} stroke="#111" strokeWidth={sw + 0.5} />
+        <circle cx={40} cy={25} r={5} fill="none" stroke="#111" strokeWidth={sw} />
+      </>;
+
+    // ── ENGINEERS (castle / battlement) ──────────────────────────────────────
+    case "engineers":
+      return <>
+        <line x1={14} y1={36} x2={66} y2={36} stroke="#111" strokeWidth={sw} />
+        <rect x={18} y={18} width={9}  height={18} fill="white" stroke="#111" strokeWidth={sw} />
+        <rect x={35} y={18} width={9}  height={18} fill="white" stroke="#111" strokeWidth={sw} />
+        <rect x={52} y={18} width={9}  height={18} fill="white" stroke="#111" strokeWidth={sw} />
+        <line x1={14} y1={18} x2={66} y2={18} stroke="#111" strokeWidth={sw} />
+      </>;
+
+    // ── LOGISTICS (open circle) ───────────────────────────────────────────────
+    case "logistics":
+      return <circle cx={40} cy={25} r={14} fill="none" stroke="#111" strokeWidth={sw} />;
+
+    // ── MEDICAL (cross — bold) ────────────────────────────────────────────────
+    case "medical":
+      return <>
+        <line x1={40} y1={9}  x2={40} y2={41} stroke="#111" strokeWidth={sw * 3.5} />
+        <line x1={22} y1={25} x2={58} y2={25} stroke="#111" strokeWidth={sw * 3.5} />
+      </>;
+
+    // ── SIGNALS (sine wave) ───────────────────────────────────────────────────
+    case "signals":
+      return <path
+        d="M 10,25 Q 20,10 30,25 Q 40,40 50,25 Q 60,10 70,25"
+        fill="none" stroke="#111" strokeWidth={sw + 0.5}
+      />;
+
+    // ── INTELLIGENCE (eye) ────────────────────────────────────────────────────
+    case "intelligence":
+      return <>
+        <path d="M 10,25 Q 40,6 70,25 Q 40,44 10,25 Z" fill="none" stroke="#111" strokeWidth={sw} />
+        <circle cx={40} cy={25} r={8} fill="none" stroke="#111" strokeWidth={sw} />
+        <circle cx={40} cy={25} r={3} fill="#111" />
+      </>;
+
+    // ── MILITARY POLICE (MP text) ─────────────────────────────────────────────
+    case "mp":
+      return <text x={40} y={33} textAnchor="middle" fontSize={18} fontFamily="serif" fontWeight="bold" fill="#111">MP</text>;
+
+    // ── CBRN (circle + hazard lines) ─────────────────────────────────────────
+    case "cbrn":
+      return <>
+        <circle cx={40} cy={25} r={14} fill="none" stroke="#111" strokeWidth={sw} />
+        <line x1={40} y1={11} x2={40} y2={39} stroke="#111" strokeWidth={sw} />
+        <line x1={26} y1={25} x2={54} y2={25} stroke="#111" strokeWidth={sw} />
+        <line x1={30} y1={15} x2={50} y2={35} stroke="#111" strokeWidth={sw} />
+        <line x1={50} y1={15} x2={30} y2={35} stroke="#111" strokeWidth={sw} />
+      </>;
+
+    // ── MAINTENANCE (wrench / circle + slash) ─────────────────────────────────
+    case "maintenance":
+      return <>
+        <circle cx={40} cy={25} r={14} fill="none" stroke="#111" strokeWidth={sw} />
+        <line x1={30} y1={15} x2={50} y2={35} stroke="#111" strokeWidth={sw * 2} />
+      </>;
+
+    // ── FALLBACK ──────────────────────────────────────────────────────────────
+    default:
+      return <>
+        <line x1={8}  y1={6}  x2={72} y2={44} stroke="#111" strokeWidth={sw} />
+        <line x1={72} y1={6}  x2={8}  y2={44} stroke="#111" strokeWidth={sw} />
       </>;
   }
 }
 
-function MilSymbol({ unitType, echelon, size = 56 }: { unitType: string; echelon: string; size?: number }) {
+// ─── MilSymbol component ──────────────────────────────────────────────────────
+
+function MilSymbol({ unitType, echelon, name, callsign, size = 60 }: {
+  unitType: string;
+  echelon: string;
+  name?: string;
+  callsign?: string;
+  size?: number;
+}) {
   const W = size;
-  const H = Math.round(size * 0.625);
-  const sw = Math.max(1.2, size / 36);          // stroke width scales with size
-  const echelonData = NATO_ECHELONS.find(e => e.id === echelon);
-  const topPad = size * 0.28;                   // space above box for echelon mark
-  const totalH  = H + topPad;
+  const H = Math.round(size * 0.625);         // box height = 62.5% of width
+  const sw = Math.max(1.2, size / 38);        // stroke width scales with size
+  const echelonSpace = size * 0.32;           // vertical space above box for echelon marks
+
+  // SVG coordinate system: 80 wide, (50 + echelonSpace_scaled) tall
+  const vbEchelon = echelonSpace * (80 / W);
+  const totalVbH = 50 + vbEchelon + 16;       // +16 for name/callsign below box
 
   return (
-    <svg width={W} height={totalH} viewBox={`0 0 80 ${50 + topPad * (80/W)}`} xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width={W}
+      height={Math.round(H + echelonSpace + (name ? size * 0.3 : 0))}
+      viewBox={`0 0 80 ${totalVbH}`}
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ overflow: "visible" }}
+    >
       {/* Echelon mark above box */}
-      <g>{echelonData && echelonMark(echelonData.id, 40, topPad * (80/W) - 2, sw)}</g>
-      {/* Main box */}
-      <g transform={`translate(0, ${topPad * (80/W)})`}>
-        <rect x={5} y={3} width={70} height={44} rx={1} fill="white" stroke="#111" strokeWidth={sw}/>
-        {unitInterior(unitType, sw)}
+      <EchelonMark id={echelon} cx={40} topY={vbEchelon} sw={sw} />
+
+      {/* Main NATO box */}
+      <g transform={`translate(0, ${vbEchelon})`}>
+        <rect x={5} y={3} width={70} height={44} rx={0} fill="white" stroke="#111" strokeWidth={sw} />
+        <UnitInterior type={unitType} sw={sw} />
       </g>
+
+      {/* Callsign above box (top-left) */}
+      {callsign && (
+        <text x={5} y={vbEchelon - 2} fontSize={sw * 3.5} fontFamily="monospace" fill="#555">{callsign}</text>
+      )}
+
+      {/* Unit name below box */}
+      {name && (
+        <text
+          x={40} y={vbEchelon + 50 + 4}
+          textAnchor="middle"
+          fontSize={sw * 3.8}
+          fontFamily="monospace"
+          fontWeight="bold"
+          fill="#111"
+        >{name}</text>
+      )}
     </svg>
   );
 }
@@ -332,11 +382,9 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
         </div>
 
         <div className="p-5 space-y-5">
-          <div className="flex justify-center py-2">
-            <div className="flex flex-col items-center gap-1">
-              <MilSymbol unitType={draft.unitType} echelon={draft.echelon} size={64} />
-              <span className="text-xs text-muted-foreground mt-1">{draft.name || "Unnamed"}</span>
-            </div>
+          {/* Live preview */}
+          <div className="flex justify-center py-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+            <MilSymbol unitType={draft.unitType} echelon={draft.echelon} name={draft.name || "Unit"} callsign={draft.callsign} size={72} />
           </div>
 
           <div>
@@ -358,11 +406,12 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
             {categories.map(cat => (
               <div key={cat} className="mb-3">
                 <div className="text-[9px] font-display font-bold uppercase tracking-widest text-muted-foreground/60 mb-1.5 px-1">{cat}</div>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {NATO_UNIT_TYPES.filter(u => u.category === cat).map(u => (
                     <button key={u.id} onClick={() => setDraft(d => ({ ...d, unitType: u.id }))}
-                      className={`px-2 py-1 text-[11px] rounded border transition-all ${draft.unitType === u.id ? "bg-primary/20 border-primary/60 text-primary font-bold" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}>
-                      {u.label}
+                      className={`flex flex-col items-center gap-1 px-2 py-1.5 rounded border transition-all ${draft.unitType === u.id ? "bg-primary/20 border-primary/60 text-primary font-bold" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}>
+                      <MilSymbol unitType={u.id} echelon="platoon" size={32} />
+                      <span className="text-[9px] whitespace-nowrap">{u.label}</span>
                     </button>
                   ))}
                 </div>
@@ -383,17 +432,18 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
           </div>
 
           <div>
-            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Slots</label>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Manning Slots</label>
             <input type="number" min={1} max={999} value={draft.slots}
-              onChange={e => setDraft(d => ({ ...d, slots: Math.max(1, parseInt(e.target.value) || 1) }))}
+              onChange={e => setDraft(d => ({ ...d, slots: parseInt(e.target.value) || 1 }))}
               className="w-full bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors" />
           </div>
         </div>
 
         <div className="flex gap-3 px-5 py-4 border-t border-border sticky bottom-0 bg-card">
-          <button onClick={onClose} className="flex-1 border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground font-display font-bold uppercase tracking-wider text-xs px-4 py-2.5 rounded transition-all">Cancel</button>
-          <button onClick={() => onSave(draft)} className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-4 py-2.5 rounded transition-all flex items-center justify-center gap-2">
-            <Save className="w-3.5 h-3.5" /> Save
+          <button onClick={onClose} className="flex-1 px-4 py-2 border border-border rounded text-sm text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+          <button onClick={() => { onSave(draft); onClose(); }}
+            className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded text-sm font-bold hover:bg-primary/90 transition-colors">
+            Save Node
           </button>
         </div>
       </div>
@@ -403,233 +453,235 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
 
 // ─── Tree Node ────────────────────────────────────────────────────────────────
 
-function OrbatTreeNode({ node, onUpdate, onDelete, onAddChild, depth = 0, isRoot = false, readOnly = false }: {
-  node: OrbatNode; onUpdate: (u: OrbatNode) => void; onDelete: () => void;
-  onAddChild: (id: string) => void; depth?: number; isRoot?: boolean; readOnly?: boolean;
+function OrbatTreeNode({
+  node, depth, onUpdate, onDelete, onAddChild, onEdit,
+}: {
+  node: OrbatNode; depth: number;
+  onUpdate: (id: string, updates: Partial<OrbatNode>) => void;
+  onDelete: (id: string) => void;
+  onAddChild: (parentId: string) => void;
+  onEdit: (node: OrbatNode) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [collapsed, setCollapsed] = useState(node.collapsed ?? false);
-  const unitType = NATO_UNIT_TYPES.find(u => u.id === node.unitType);
-  const echelon = NATO_ECHELONS.find(e => e.id === node.echelon);
-  const hasChildren = node.children.length > 0;
-
-  const handleSave = (updated: OrbatNode) => { onUpdate(updated); setEditing(false); };
-  const updateChild = (idx: number, updated: OrbatNode) => {
-    const children = [...node.children]; children[idx] = updated; onUpdate({ ...node, children });
-  };
-  const deleteChild = (idx: number) => onUpdate({ ...node, children: node.children.filter((_, i) => i !== idx) });
+  const hasChildren = node.children && node.children.length > 0;
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="relative flex flex-col items-center group">
-        <div className={`relative flex flex-col items-center select-none transition-all duration-150 ${depth === 0 ? "scale-110" : ""} ${!readOnly ? "cursor-pointer" : "cursor-default"}`}
-          onClick={() => !readOnly && setEditing(true)}>
-          <MilSymbol unitType={node.unitType} echelon={node.echelon} size={depth === 0 ? 60 : 48} />
+    <div className="select-none">
+      <div
+        className="flex items-start gap-2 group py-1 px-2 rounded hover:bg-muted/40 transition-colors cursor-pointer"
+        style={{ paddingLeft: `${depth * 24 + 8}px` }}
+      >
+        {/* Collapse toggle */}
+        <button
+          className="mt-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 w-4"
+          onClick={() => onUpdate(node.id, { collapsed: !node.collapsed })}
+        >
+          {hasChildren
+            ? (node.collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)
+            : <span className="w-3 h-3 block" />
+          }
+        </button>
+
+        {/* Symbol */}
+        <div className="flex-shrink-0 cursor-pointer" onClick={() => onEdit(node)}>
+          <MilSymbol unitType={node.unitType} echelon={node.echelon} size={48} />
         </div>
 
-        <div className="text-center mt-1 max-w-[120px]">
-          <div className="text-xs font-display font-bold text-foreground leading-tight truncate">{node.name}</div>
-          {node.callsign && <div className="text-[10px] text-primary truncate">{node.callsign}</div>}
-          <div className="text-[9px] text-muted-foreground truncate">{echelon?.label} · {unitType?.label}</div>
-          <div className="text-[9px] text-muted-foreground">{node.slots} slots</div>
-        </div>
-
-        {!readOnly && (
-          <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
-            <button onClick={e => { e.stopPropagation(); setEditing(true); }}
-              className="w-5 h-5 bg-secondary hover:bg-secondary/70 border border-border rounded flex items-center justify-center transition-colors" title="Edit">
-              <Settings className="w-3 h-3" />
-            </button>
-            <button onClick={e => { e.stopPropagation(); onAddChild(node.id); }}
-              className="w-5 h-5 bg-primary/20 hover:bg-primary/40 border border-primary/40 rounded text-primary flex items-center justify-center transition-colors" title="Add subordinate">
-              <Plus className="w-3 h-3" />
-            </button>
-            {!isRoot && (
-              <button onClick={e => { e.stopPropagation(); onDelete(); }}
-                className="w-5 h-5 bg-destructive/20 hover:bg-destructive/40 border border-destructive/40 rounded text-destructive flex items-center justify-center transition-colors" title="Delete">
-                <Trash2 className="w-3 h-3" />
-              </button>
-            )}
+        {/* Label */}
+        <div className="flex-1 min-w-0 cursor-pointer pt-2" onClick={() => onEdit(node)}>
+          <div className="text-sm font-bold truncate">{node.name || "Unnamed"}</div>
+          {node.callsign && <div className="text-[11px] text-muted-foreground font-mono">{node.callsign}</div>}
+          <div className="text-[10px] text-muted-foreground/60">
+            {NATO_UNIT_TYPES.find(u => u.id === node.unitType)?.label} · {NATO_ECHELONS.find(e => e.id === node.echelon)?.label} · {node.slots} slots
           </div>
-        )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pt-1 flex-shrink-0">
+          <button onClick={() => onAddChild(node.id)}
+            className="p-1 rounded hover:bg-primary/20 hover:text-primary transition-colors text-muted-foreground" title="Add child unit">
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => onDelete(node.id)}
+            className="p-1 rounded hover:bg-destructive/20 hover:text-destructive transition-colors text-muted-foreground" title="Delete unit">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
-      {hasChildren && (
-        <button onClick={() => setCollapsed(c => !c)} className="mt-1 text-muted-foreground hover:text-foreground transition-colors">
-          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        </button>
-      )}
-
-      {hasChildren && !collapsed && (
-        <div className="relative mt-0 pt-4">
-          <div className="absolute top-0 left-1/2 -translate-x-px w-px h-4 bg-border" />
-          {node.children.length > 1 && (
-            <div className="absolute top-4 bg-border" style={{ left: `calc(${100 / (node.children.length * 2)}%)`, right: `calc(${100 / (node.children.length * 2)}%)`, height: "1px" }} />
-          )}
-          <div className="flex gap-6 items-start">
-            {node.children.map((child, idx) => (
-              <div key={child.id} className="relative flex flex-col items-center">
-                <div className="w-px h-4 bg-border" />
-                <OrbatTreeNode node={child} onUpdate={u => updateChild(idx, u)} onDelete={() => deleteChild(idx)}
-                  onAddChild={onAddChild} depth={depth + 1} readOnly={readOnly} />
-              </div>
-            ))}
-          </div>
+      {/* Children */}
+      {!node.collapsed && hasChildren && (
+        <div className="border-l border-dashed border-border/40 ml-6">
+          {node.children.map(child => (
+            <OrbatTreeNode
+              key={child.id} node={child} depth={depth + 1}
+              onUpdate={onUpdate} onDelete={onDelete} onAddChild={onAddChild} onEdit={onEdit}
+            />
+          ))}
         </div>
       )}
-
-      {editing && !readOnly && <NodeEditor node={node} onSave={handleSave} onClose={() => setEditing(false)} />}
     </div>
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
-interface RosterMember {
-  id: string;
-  callsign: string;
-  rank?: string;
-  role?: string;
-}
+// ─── Main ORBAT Builder ───────────────────────────────────────────────────────
 
 interface OrbatBuilderProps {
-  value?: string;
-  onChange?: (json: string) => void;
+  initialData?: OrbatNode[];
+  roster?: { callsign: string; rank?: string }[];
+  onSave?: (nodes: OrbatNode[]) => void;
   readOnly?: boolean;
-  groupName?: string;
-  roster?: RosterMember[];
 }
 
-const DEFAULT_ORBAT: OrbatNode = {
-  id: generateId(),
-  name: "HQ Element",
-  callsign: "COMMAND",
-  unitType: "hq",
-  echelon: "battalion",
-  slots: 4,
-  children: [],
-};
-
-export default function OrbatBuilder({ value, onChange, readOnly = false, groupName }: OrbatBuilderProps) {
-  const parseTree = (): OrbatNode => {
-    try {
-      if (value) {
-        const parsed = JSON.parse(value);
-        if (parsed.tree) return parsed.tree;
-        if (parsed.id) return parsed;
-      }
-    } catch {}
-    return { ...DEFAULT_ORBAT, id: generateId() };
-  };
-
-  const [tree, setTree] = useState<OrbatNode>(parseTree);
+export default function OrbatBuilder({ initialData, onSave, readOnly = false }: OrbatBuilderProps) {
+  const [nodes, setNodes] = useState<OrbatNode[]>(initialData ?? []);
+  const [editingNode, setEditingNode] = useState<OrbatNode | null>(null);
   const [zoom, setZoom] = useState(1);
-  const canvasRef = useRef<HTMLDivElement>(null);
 
-  const updateTree = useCallback((updated: OrbatNode) => {
-    setTree(updated);
-    onChange?.(JSON.stringify(updated));
-  }, [onChange]);
+  // ── Helpers ──────────────────────────────────────────────────────────────
 
-  const addChildTo = (parentId: string, root: OrbatNode): OrbatNode => {
-    if (root.id === parentId) {
-      return { ...root, children: [...root.children, { id: generateId(), name: "New Unit", unitType: "infantry", echelon: "platoon", slots: 20, children: [] }] };
-    }
-    return { ...root, children: root.children.map(c => addChildTo(parentId, c)) };
-  };
+  function updateNodeById(tree: OrbatNode[], id: string, updates: Partial<OrbatNode>): OrbatNode[] {
+    return tree.map(n => {
+      if (n.id === id) return { ...n, ...updates };
+      return { ...n, children: updateNodeById(n.children, id, updates) };
+    });
+  }
 
-  const countUnits = (n: OrbatNode): number => 1 + n.children.reduce((a, c) => a + countUnits(c), 0);
-  const countSlots  = (n: OrbatNode): number => n.slots + n.children.reduce((a, c) => a + countSlots(c), 0);
+  function deleteNodeById(tree: OrbatNode[], id: string): OrbatNode[] {
+    return tree
+      .filter(n => n.id !== id)
+      .map(n => ({ ...n, children: deleteNodeById(n.children, id) }));
+  }
 
-  const exportOrbat = () => {
-    const printWindow = window.open('', '_blank', 'width=1200,height=900');
-    if (!printWindow) return;
+  function addChildById(tree: OrbatNode[], parentId: string, child: OrbatNode): OrbatNode[] {
+    return tree.map(n => {
+      if (n.id === parentId) return { ...n, children: [...n.children, child] };
+      return { ...n, children: addChildById(n.children, parentId, child) };
+    });
+  }
 
-    const canvasEl = canvasRef.current;
-    const canvasHTML = canvasEl ? canvasEl.innerHTML : '';
-    const title = groupName ?? 'Unit ORBAT';
-    const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  // ── Actions ───────────────────────────────────────────────────────────────
 
-    printWindow.document.write(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>${title} — ORBAT</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@400;600&display=swap');
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #fff; color: #1a1a1a; font-family: 'Inter', Arial, sans-serif; padding: 32px 40px; }
-    .orbat-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 3px solid #006ba6; padding-bottom: 16px; margin-bottom: 32px; }
-    .orbat-title { font-family: 'Oswald', sans-serif; font-size: 32px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #111; }
-    .orbat-subtitle { font-size: 13px; color: #666; margin-top: 4px; }
-    .orbat-meta { text-align: right; font-size: 11px; color: #888; line-height: 1.6; }
-    .orbat-meta strong { color: #444; }
-    .classification { display: inline-block; font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #fff; background: #006ba6; padding: 4px 12px; margin-bottom: 24px; border-radius: 2px; }
-    .orbat-canvas { overflow-x: auto; display: flex; justify-content: center; padding: 16px 0 40px; }
-    .orbat-canvas * { font-family: 'Inter', Arial, sans-serif !important; }
-    .orbat-footer { margin-top: 48px; padding-top: 12px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; font-size: 10px; color: #aaa; }
-    @media print { body { padding: 16px 20px; } @page { size: A3 landscape; margin: 12mm; } }
-  </style>
-</head>
-<body>
-  <div class="orbat-header">
-    <div>
-      <div class="orbat-title">${title}</div>
-      <div class="orbat-subtitle">Order of Battle</div>
-    </div>
-    <div class="orbat-meta">
-      <strong>Standard:</strong> NATO APP-6<br/>
-      <strong>Generated:</strong> ${dateStr}<br/>
-      <strong>Classification:</strong> UNCLASSIFIED
-    </div>
-  </div>
-  <div><span class="classification">UNCLASSIFIED // NATO APP-6</span></div>
-  <div class="orbat-canvas">${canvasHTML}</div>
-  <div class="orbat-footer">
-    <span>${title} — Order of Battle</span>
-    <span>UNCLASSIFIED // NATO APP-6 // ${dateStr}</span>
-  </div>
-  <script>
-    document.querySelectorAll('.group .absolute').forEach(el => el.remove());
-    window.addEventListener('load', () => setTimeout(() => window.print(), 600));
-  </script>
-</body>
-</html>`);
-    printWindow.document.close();
-  };
+  function handleUpdate(id: string, updates: Partial<OrbatNode>) {
+    setNodes(prev => updateNodeById(prev, id, updates));
+  }
+
+  function handleDelete(id: string) {
+    setNodes(prev => deleteNodeById(prev, id));
+  }
+
+  function handleAddChild(parentId: string) {
+    const child: OrbatNode = {
+      id: generateId(), name: "New Unit", unitType: "infantry",
+      echelon: "squad", slots: 4, children: [],
+    };
+    setNodes(prev => addChildById(prev, parentId, child));
+  }
+
+  function handleAddRoot() {
+    const node: OrbatNode = {
+      id: generateId(), name: "New Unit", unitType: "infantry",
+      echelon: "platoon", slots: 8, children: [],
+    };
+    setNodes(prev => [...prev, node]);
+  }
+
+  function handleSaveEdit(updated: OrbatNode) {
+    setNodes(prev => updateNodeById(prev, updated.id, updated));
+  }
+
+  function handleSave() {
+    onSave?.(nodes);
+  }
+
+  // ── Export ────────────────────────────────────────────────────────────────
+
+  function handleExport() {
+    const data = JSON.stringify(nodes, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "orbat.json"; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-secondary/20 flex-wrap gap-2">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-display font-black uppercase tracking-widest">ORBAT Builder</span>
-          <span className="text-[10px] text-muted-foreground">🌍 NATO APP-6</span>
-        </div>
+    <div className="flex flex-col h-full bg-background border border-border rounded-lg overflow-hidden">
+
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-card flex-shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-muted-foreground hidden sm:block">{countUnits(tree)} units · {countSlots(tree)} slots</span>
-          <button onClick={() => setZoom(z => Math.max(0.3, z - 0.15))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors" title="Zoom out"><ZoomOut className="w-3.5 h-3.5" /></button>
-          <span className="text-[10px] text-muted-foreground w-9 text-center">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom(z => Math.min(2, z + 0.15))} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors" title="Zoom in"><ZoomIn className="w-3.5 h-3.5" /></button>
-          <button onClick={exportOrbat} className="p-1.5 hover:bg-secondary rounded border border-transparent hover:border-border text-muted-foreground hover:text-foreground transition-colors" title="Export / Print ORBAT">
+          <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">ORBAT</span>
+          <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono">NATO APP-6</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))}
+            className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+            <ZoomOut className="w-3.5 h-3.5" />
+          </button>
+          <span className="text-xs text-muted-foreground font-mono w-10 text-center">{Math.round(zoom * 100)}%</span>
+          <button onClick={() => setZoom(z => Math.min(2, z + 0.1))}
+            className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
+          <div className="w-px h-4 bg-border mx-1" />
+          <button onClick={handleExport}
+            className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Export JSON">
             <Download className="w-3.5 h-3.5" />
           </button>
+          {!readOnly && onSave && (
+            <button onClick={handleSave}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded text-xs font-bold hover:bg-primary/90 transition-colors">
+              <Save className="w-3 h-3" /> Save
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="overflow-auto p-8 min-h-[400px] bg-background">
-        <div ref={canvasRef} data-orbat-canvas style={{ transform: `scale(${zoom})`, transformOrigin: "top center", transition: "transform 0.15s ease" }}>
-          <OrbatTreeNode node={tree} onUpdate={updateTree} onDelete={() => {}}
-            onAddChild={parentId => updateTree(addChildTo(parentId, tree))} isRoot readOnly={readOnly} />
-        </div>
-      </div>
+      {/* Tree */}
+      <div className="flex-1 overflow-auto p-4" style={{ fontSize: `${zoom}rem` }}>
+        {nodes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center gap-4 py-16">
+            <div className="opacity-30">
+              <MilSymbol unitType="infantry" echelon="battalion" size={72} />
+            </div>
+            <div className="text-muted-foreground text-sm">No units yet. Add a root unit to begin.</div>
+            {!readOnly && (
+              <button onClick={handleAddRoot}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded text-sm font-bold hover:bg-primary/90 transition-colors">
+                <Plus className="w-4 h-4" /> Add Root Unit
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-0.5">
+            {nodes.map(node => (
+              <OrbatTreeNode
+                key={node.id} node={node} depth={0}
+                onUpdate={handleUpdate} onDelete={handleDelete}
+                onAddChild={handleAddChild} onEdit={setEditingNode}
+              />
+            ))}
+          </div>
+        )}
 
-      {!readOnly && (
-        <div className="px-4 py-2 border-t border-border bg-secondary/10 flex justify-end">
-          <button onClick={() => updateTree(addChildTo(tree.id, tree))}
-            className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
-            <Plus className="w-3.5 h-3.5" /> Add Unit
+        {/* Add root button when tree has nodes */}
+        {nodes.length > 0 && !readOnly && (
+          <button onClick={handleAddRoot}
+            className="mt-4 flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-border rounded text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
+            <Plus className="w-3 h-3" /> Add Root Unit
           </button>
-        </div>
+        )}
+      </div>
+
+      {/* Node editor modal */}
+      {editingNode && (
+        <NodeEditor
+          node={editingNode}
+          onSave={handleSaveEdit}
+          onClose={() => setEditingNode(null)}
+        />
       )}
     </div>
   );
