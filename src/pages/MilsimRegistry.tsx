@@ -164,6 +164,17 @@ export default function MilsimRegistry() {
     if (filterGame) list = list.filter(g => (g.games ?? []).some(gm => gm.toLowerCase().includes(filterGame.toLowerCase())));
     if (filterCountry) list = list.filter(g => (g.country ?? "").toLowerCase().includes(filterCountry.replace(/^[^\s]+\s/, "").toLowerCase()));
     if (filterLanguage) list = list.filter(g => (g.language ?? "").toLowerCase() === filterLanguage.toLowerCase());
+    // Pro groups sort first, then by last activity
+    list.sort((a, b) => {
+      const aIsPro = (a as any).is_pro === true;
+      const bIsPro = (b as any).is_pro === true;
+      if (aIsPro && !bIsPro) return -1;
+      if (!aIsPro && bIsPro) return 1;
+      // Featured over standard
+      if (a.status === "featured" && b.status !== "featured") return -1;
+      if (a.status !== "featured" && b.status === "featured") return 1;
+      return 0;
+    });
     return list;
   }, [groups, search, filterBranch, filterUnitType, filterGame, filterCountry, filterLanguage, activeTab]);
 
@@ -309,10 +320,15 @@ function GroupCard({ group, index, featured = false }: { group: MilsimGroup; ind
     <motion.div layout
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: Math.min(index * 0.05, 0.3) }}
-      className={`group bg-card border rounded-lg overflow-hidden hover:border-primary/50 transition-all ${featured ? "border-accent/40" : "border-border"}`}
+      className={`group bg-card border rounded-lg overflow-hidden hover:border-primary/50 transition-all ${(group as any).is_pro ? "border-primary/40 ring-1 ring-primary/20" : featured ? "border-accent/40" : "border-border"}`}
     >
       <div className="relative h-32 bg-secondary/60 flex items-center justify-center overflow-hidden">
-        {featured && (
+        {(group as any).is_pro && (
+          <div className="absolute top-3 right-3 flex items-center gap-1 bg-primary/20 border border-primary/40 text-primary px-2 py-1 rounded text-[10px] font-display font-bold uppercase tracking-widest z-10">
+            <Rocket className="w-2.5 h-2.5" /> Pro
+          </div>
+        )}
+        {featured && !(group as any).is_pro && (
           <div className="absolute top-3 right-3 flex items-center gap-1 bg-accent/20 border border-accent/40 text-accent px-2 py-1 rounded text-[10px] font-display font-bold uppercase tracking-widest z-10">
             <Star className="w-2.5 h-2.5" /> Featured
           </div>

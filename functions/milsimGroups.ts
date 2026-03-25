@@ -117,9 +117,13 @@ Deno.serve(async (req) => {
     if (method === 'GET' && parts.length === 0) {
       const all = await base44.asServiceRole.entities.MilsimGroup.list();
       const visible = all.filter((g: any) => g.status === 'approved' || g.status === 'featured');
+      // Fetch all active Pro subscriptions to stamp is_pro on groups
+      const proSubs = await base44.asServiceRole.entities.CommanderPro.filter({ status: 'active' }).catch(() => []);
+      const proGroupIds = new Set(proSubs.map((p: any) => String(p.group_id)));
       // Normalise snake_case → camelCase so frontend filters work
       const normalised = visible.map((g: any) => ({
         ...g,
+        is_pro:       proGroupIds.has(String(g.id)),
         unitType:     g.unit_type     ?? g.unitType     ?? null,
         tagLine:      g.tag_line      ?? g.tagLine      ?? null,
         discordUrl:   g.discord_url   ?? g.discordUrl   ?? null,

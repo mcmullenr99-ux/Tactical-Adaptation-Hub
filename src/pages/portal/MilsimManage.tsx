@@ -1129,9 +1129,33 @@ function AwardsTab({ group, showMsg }: any) {
                       {a.awarded_at && <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(a.awarded_at), { addSuffix: true })}</p>}
                     </div>
                   </div>
-                  <button onClick={() => revokeAward(a.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors shrink-0">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={async () => {
+                        try {
+                          const token = localStorage.getItem("auth_token");
+                          const res = await fetch("https://agent-tag-lead-developer-cff87ae4.base44.app/functions/generateAwardCertificate", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                            body: JSON.stringify({ award_id: a.id, group_id: group.id }),
+                          });
+                          if (!res.ok) { const e = await res.json(); showMsg(false, e.error ?? "Failed to generate certificate"); return; }
+                          const blob = await res.blob();
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url; link.download = `certificate_${a.callsign ?? "award"}.pdf`; link.click();
+                          URL.revokeObjectURL(url);
+                        } catch { showMsg(false, "Certificate generation failed"); }
+                      }}
+                      title="Download Certificate (Pro)"
+                      className="p-1.5 text-accent hover:text-accent/80 transition-colors"
+                    >
+                      <FileDown className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => revokeAward(a.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               );
             })
@@ -2185,14 +2209,52 @@ function ReputationTab({ group }: any) {
                 )}
               </div>
 
-              {/* Existing reviews summary */}
-              {repData[selected.userId] && (
-                <div className="text-xs text-muted-foreground font-sans">
-                  {repData[selected.userId].reviews?.length ?? 0} review(s) on record —{" "}
-                  {repData[selected.userId].score?.commends ?? 0} commend(s),{" "}
-                  {repData[selected.userId].score?.flags ?? 0} flag(s)
-                </div>
-              )}
+              {/* Existing reviews summary — Pro: full detail | Free: summary only */}
+              {repData[selected.userId] && (() => {
+                const rd = repData[selected.userId];
+                const isPro = (window as any).__tagProStatus?.[group.id] === true;
+                const reviewCount = rd.reviews?.length ?? 0;
+                const commends = rd.score?.commends ?? 0;
+                const flags = rd.score?.flags ?? 0;
+                return isPro ? (
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground font-sans">
+                      {reviewCount} review(s) on record — {commends} commend(s), {flags} flag(s)
+                    </div>
+                    {rd.reviews && rd.reviews.length > 0 && (
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                        {rd.reviews.map((rev: any, i: number) => (
+                          <div key={i} className="text-[10px] bg-secondary/40 border border-border rounded px-2.5 py-1.5">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="font-display font-bold uppercase tracking-widest text-foreground">{rev.group_name ?? "Unknown Unit"}</span>
+                              <span className={`font-bold uppercase ${rev.overall_vote === "commend" ? "text-green-400" : rev.overall_vote === "flag" ? "text-red-400" : "text-muted-foreground"}`}>
+                                {rev.overall_vote === "commend" ? "✓ Commend" : rev.overall_vote === "flag" ? "⚑ Flag" : "— Neutral"}
+                              </span>
+                            </div>
+                            <div className="flex gap-3 text-muted-foreground">
+                              <span>Activity: {rev.activity}/10</span>
+                              <span>Attitude: {rev.attitude}/10</span>
+                              <span>Experience: {rev.experience}/10</span>
+                              <span>Discipline: {rev.discipline}/10</span>
+                            </div>
+                            {rev.notes && <p className="mt-0.5 text-muted-foreground italic">"{rev.notes}"</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground font-sans">
+                      {reviewCount} review(s) on record — {commends} commend(s), {flags} flag(s)
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-accent border border-accent/20 bg-accent/5 rounded px-2.5 py-1.5">
+                      <Rocket className="w-3 h-3 shrink-0" />
+                      <span className="font-sans">Full review history visible with <a href="/commander-pro" className="underline font-bold">Commander Pro</a></span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="border-t border-border pt-4 space-y-3">
                 <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Your Assessment</p>
