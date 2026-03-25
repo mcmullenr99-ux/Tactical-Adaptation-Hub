@@ -52,129 +52,124 @@ function estimateDepthScore(pageCount: number, fileSizeBytes: number, docType: s
 // Returns up to 1500 chars — enough for AI validation without burning tokens.
 async function extractTextSample(arrayBuf: ArrayBuffer, mimeType: string, fileName: string): Promise<string> {
   try {
-    // Plain text / markdown — just decode directly
+    // Plain text / markdown
     if (mimeType === 'text/plain' || mimeType === 'text/markdown' || fileName.endsWith('.md') || fileName.endsWith('.txt')) {
-      const text = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuf);
-      return text.replace(/\s+/g, ' ').trim().slice(0, 1500);
+      return new TextDecoder('utf-8', { fatal: false }).decode(arrayBuf).replace(/\s+/g, ' ').trim().slice(0, 1500);
     }
 
-    // PDF — scan for readable ASCII text streams between BT/ET markers
+    // PDF
     if (mimeType === 'application/pdf' || fileName.endsWith('.pdf')) {
-      const bytes = new Uint8Array(arrayBuf);
       const raw = new TextDecoder('latin1', { fatal: false }).decode(arrayBuf);
       const chunks: string[] = [];
 
-      // Try to decompress FlateDecode streams (most modern PDFs use this)
+      // Helper: try to decompress a byte array with a given algorithm
+      async function tryDeflate(bytes: Uint8Array, algo: string): Promise<string | null> {
+        try {
+          const ds = new DecompressionStream(algo as any);
+          const writer = ds.writable.getWriter();
+          const reader = ds.readable.getReader();
+          // Write + close in background, don't await yet
+          void writer.write(bytes).then(() => writer.close()).catch(() => {});
+          const parts: Uint8Array[] = [];
+          // eslint-disable-next-line no-constant-condition
+          while (true) {
+            let result: ReadableStreamReadResult<Uint8Array>;
+            try { result = await reader.read(); } catch { break; }
+            if (result.done) break;
+            parts.push(result.value);
+          }
+          if (parts.length === 0) return null;
+          const total = parts.reduce((s, p) => s + p.length, 0);
+          const merged = new Uint8Array(total);
+          let off = 0;
+          for (const p of parts) { merged.set(p, off); off += p.length; }
+          return new TextDecoder('latin1', { fatal: false }).decode(merged);
+        } catch { return null; }
+      }
+
+      // Extract text tokens from a decompressed PDF text stream
+      function extractTokens(text: string): string[] {
+        const result: string[] = [];
+        const btRegex = /BT[\s\S]*?ET/g;
+        let bm: RegExpExecArray | null;
+        while ((bm = btRegex.exec(text)) !== null) {
+          const strRegex = /\(([^)\\]*(?:\\.[^)\\]*)*)\)|<([0-9A-Fa-f\s]+)>/g;
+          let tm: RegExpExecArray | null;
+          while ((tm = strRegex.exec(bm[0])) !== null) {
+            if (tm[1]) {
+              const u = tm[1].replace(/\\n/g, ' ').replace(/\\r/g, ' ').replace(/\\t/g, ' ')
+                .replace(/\\\(/g, '(').replace(/\\\)/g, ')').replace(/\\\\/g, '\\')
+                .replace(/\\[0-7]{1,3}/g, ' ');
+              if (u.trim()) result.push(u);
+            } else if (tm[2]) {
+              const hex = tm[2].replace(/\s/g, '');
+              let dec = '';
+              for (let i = 0; i < hex.length - 1; i += 2) {
+                const c = parseInt(hex.slice(i, i + 2), 16);
+                if (c >= 32 && c < 127) dec += String.fromCharCode(c);
+              }
+              if (dec.trim()) result.push(dec);
+            }
+          }
+        }
+        // If no BT/ET tokens, try raw printable words
+        if (result.length === 0) {
+          const words = text.replace(/[^\x20-\x7E\n]/g, ' ').split(/\s+/).filter(w => w.length >= 3 && /[a-zA-Z]{2,}/.test(w));
+          result.push(...words.slice(0, 200));
+        }
+        return result;
+      }
+
+      // Scan each PDF stream object and try to decompress it
       const streamRegex = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
       let sm: RegExpExecArray | null;
       while ((sm = streamRegex.exec(raw)) !== null) {
         const streamRaw = sm[1];
-        // Convert latin1 string back to bytes for decompression attempt
         const streamBytes = new Uint8Array(streamRaw.length);
         for (let i = 0; i < streamRaw.length; i++) streamBytes[i] = streamRaw.charCodeAt(i) & 0xff;
-        try {
-          const ds = new DecompressionStream('deflate-raw');
-          const writer = ds.writable.getWriter();
-          const reader = ds.readable.getReader();
-          writer.write(streamBytes);
-          writer.close();
-          const decompressed: Uint8Array[] = [];
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            decompressed.push(value);
-          }
-          const merged = new Uint8Array(decompressed.reduce((a, b) => a + b.length, 0));
-          let offset = 0;
-          for (const chunk of decompressed) { merged.set(chunk, offset); offset += chunk.length; }
-          const text = new TextDecoder('latin1', { fatal: false }).decode(merged);
-          // Extract text from decompressed stream
-          const btRegex2 = /BT[\s\S]*?ET/g;
-          let bm: RegExpExecArray | null;
-          while ((bm = btRegex2.exec(text)) !== null) {
-            const strRegex2 = /\(([^)\\]*(?:\\.[^)\\]*)*)\)|<([0-9A-Fa-f\s]+)>/g;
-            let tm: RegExpExecArray | null;
-            while ((tm = strRegex2.exec(bm[0])) !== null) {
-              if (tm[1]) {
-                const unescaped = tm[1]
-                  .replace(/\\n/g, ' ').replace(/\\r/g, ' ').replace(/\\t/g, ' ')
-                  .replace(/\\\(/g, '(').replace(/\\\)/g, ')').replace(/\\\\/g, '\\')
-                  .replace(/\\[0-7]{1,3}/g, ' ');
-                if (unescaped.trim()) chunks.push(unescaped);
-              } else if (tm[2]) {
-                const hex = tm[2].replace(/\s/g, '');
-                let decoded = '';
-                for (let i = 0; i < hex.length - 1; i += 2) {
-                  const code = parseInt(hex.slice(i, i + 2), 16);
-                  if (code >= 32 && code < 127) decoded += String.fromCharCode(code);
-                }
-                if (decoded.trim()) chunks.push(decoded);
-              }
-            }
-          }
-          // Also grab raw printable text from decompressed stream
-          if (chunks.length === 0) {
-            const words2 = text.replace(/[^\x20-\x7E\n]/g, ' ').split(/\s+/).filter(w => w.length >= 3 && /[a-zA-Z]{2,}/.test(w));
-            chunks.push(...words2.slice(0, 200));
-          }
-        } catch { /* not a deflate stream — skip */ }
+
+        // Try deflate-raw (most fpdf2/reportlab), then deflate (zlib wrapper)
+        const decompressed = await tryDeflate(streamBytes, 'deflate-raw') ?? await tryDeflate(streamBytes, 'deflate');
+        if (decompressed) {
+          chunks.push(...extractTokens(decompressed));
+        }
         if (chunks.join(' ').length > 1000) break;
       }
 
-      // If decompressed extraction got us text, return it
       const combined = chunks.join(' ').replace(/\s+/g, ' ').trim();
       if (combined.length > 60) return combined.slice(0, 1500);
 
-      // Fallback: uncompressed BT/ET (older PDFs)
+      // Fallback: uncompressed BT/ET scan
       const btRegex = /BT[\s\S]*?ET/g;
       let match: RegExpExecArray | null;
       while ((match = btRegex.exec(raw)) !== null && chunks.join(' ').length < 2000) {
         const strRegex = /\(([^)\\]*(?:\\.[^)\\]*)*)\)|<([0-9A-Fa-f\s]+)>/g;
         let fm: RegExpExecArray | null;
         while ((fm = strRegex.exec(match[0])) !== null) {
-          if (fm[1]) {
-            const unescaped = fm[1]
-              .replace(/\\n/g, ' ').replace(/\\r/g, ' ').replace(/\\t/g, ' ')
-              .replace(/\\\(/g, '(').replace(/\\\)/g, ')').replace(/\\\\/g, '\\')
-              .replace(/\\[0-7]{1,3}/g, ' ');
-            chunks.push(unescaped);
-          } else if (fm[2]) {
-            const hex = fm[2].replace(/\s/g, '');
-            let decoded = '';
-            for (let i = 0; i < hex.length - 1; i += 2) {
-              const code = parseInt(hex.slice(i, i + 2), 16);
-              if (code >= 32 && code < 127) decoded += String.fromCharCode(code);
-            }
-            if (decoded.trim()) chunks.push(decoded);
-          }
+          if (fm[1]) chunks.push(fm[1].replace(/\\n/g, ' ').replace(/\\r/g, ' ').replace(/\\t/g, ' ').replace(/\\\(/g, '(').replace(/\\\)/g, ')').replace(/\\\\/g, '\\').replace(/\\[0-7]{1,3}/g, ' '));
+          else if (fm[2]) { const hex = fm[2].replace(/\s/g, ''); let d = ''; for (let i = 0; i < hex.length-1; i+=2) { const c=parseInt(hex.slice(i,i+2),16); if(c>=32&&c<127) d+=String.fromCharCode(c); } if(d.trim()) chunks.push(d); }
         }
       }
       const combined2 = chunks.join(' ').replace(/\s+/g, ' ').trim();
       if (combined2.length > 60) return combined2.slice(0, 1500);
 
-      // Last resort: raw printable ASCII scan
+      // Last resort: raw ASCII scan of entire file
       const printable = raw.replace(/[^\x20-\x7E\n]/g, ' ').replace(/\s+/g, ' ').trim();
       const words = printable.split(' ').filter(w => w.length >= 3 && /[a-zA-Z]{2,}/.test(w));
       return words.slice(0, 400).join(' ').slice(0, 1500);
     }
 
-    // DOCX — it's a zip; grab raw XML text as best effort
+    // DOCX
     if (mimeType.includes('wordprocessingml') || mimeType.includes('msword') || fileName.endsWith('.docx')) {
       const raw = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuf);
-      const xmlText = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-      const words = xmlText.split(' ').filter(w => /[a-zA-Z]{3,}/.test(w));
+      const words = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').split(' ').filter(w => /[a-zA-Z]{3,}/.test(w));
       return words.slice(0, 400).join(' ').slice(0, 1500);
     }
 
     return '';
-  } catch {
-    return '';
-  }
+  } catch { return ''; }
 }
 
-// ─── AI CONTENT VALIDATION ────────────────────────────────────────────────────
-// Returns { score: 0-100, reason: string, passed: boolean }
-// score < AI_LEGITIMACY_THRESHOLD → reject upload
 async function validateDocContent(
   textSample: string,
   docType: string,
