@@ -9,7 +9,7 @@ const REP_REVIEW_MIN_ACCOUNT_DAYS = 30;   // reviewer account must be this old t
 const OP_MIN_RSVP_COUNT           = 2;    // ops need at least 2 attending RSVPs to count
 const AAR_MIN_PARTICIPANTS        = 2;    // AARs need at least 2 participants to count
 const BULK_UPDATE_THRESHOLD       = 0.5;  // if >50% of roster updated same day → suspicious
-const TRAINING_DOC_MIN_DEPTH      = 20;   // docs scoring below this are excluded (spam filter)
+const TRAINING_DOC_MIN_DEPTH      = 35;   // docs scoring below this are excluded — raised to 35 to cut thin/junk uploads
 
 // ─── INTERFACES ───────────────────────────────────────────────────────────────
 interface ReadinessFlag {
@@ -223,28 +223,37 @@ function assessTrainingDocs(docs: any[]): TrainingAssessment {
   const qualifyingDocs    = scoredDocs.filter(d => d.computed_depth >= TRAINING_DOC_MIN_DEPTH);
   const excluded_thin_count = scoredDocs.length - qualifyingDocs.length;
 
-  const doc_count   = qualifyingDocs.length;
-  const total_pages = qualifyingDocs.reduce((s: number, d: any) => s + (d.page_count ?? 1), 0);
+  // FIX 3: Link-based docs (source_type === 'link') do NOT count toward volume score.
+  // They can contribute to breadth only if they also meet the depth threshold.
+  const uploadedDocs = qualifyingDocs.filter((d: any) => d.source_type !== 'link');
+
+  const doc_count   = uploadedDocs.length;  // volume is uploads only
+  const total_pages = uploadedDocs.reduce((s: number, d: any) => s + (d.page_count ?? 1), 0);
   const outdated_count = qualifyingDocs.filter((d: any) => {
     const ref = d.last_reviewed_at ?? d.updated_date ?? d.created_date;
     return ref && (now - new Date(ref).getTime()) > STALE_DAYS * DAY;
   }).length;
 
-  const types   = qualifyingDocs.map((d: any) => d.doc_type ?? '');
-  const has_sop   = types.some(t => t === 'SOP');
-  const has_ttp   = types.some(t => t === 'TTP');
-  const has_roe   = types.some(t => t === 'Rules of Engagement');
-  const has_drill = types.some(t => t === 'Drill');
+  // FIX 6: Breadth score requires minimum depth of 50 per doc type — can't spam
+  // thin stubs labeled as each type to game the breadth points.
+  const BREADTH_MIN_DEPTH = 50;
+  const deepDocs = qualifyingDocs.filter((d: any) => d.computed_depth >= BREADTH_MIN_DEPTH);
+  const deepTypes = deepDocs.map((d: any) => d.doc_type ?? '');
+  const has_sop   = deepTypes.some((t: string) => t === 'SOP');
+  const has_ttp   = deepTypes.some((t: string) => t === 'TTP');
+  const has_roe   = deepTypes.some((t: string) => t === 'Rules of Engagement');
+  const has_drill = deepTypes.some((t: string) => t === 'Drill');
 
+  // Depth avg is across all qualifying docs (uploads + links)
   const depthScores   = qualifyingDocs.map((d: any) => d.computed_depth);
   const avg_depth_score = depthScores.length
     ? Math.round(depthScores.reduce((a: number, b: number) => a + b, 0) / depthScores.length)
     : 0;
 
-  const volPts      = Math.min(30, doc_count * (30 / 8));
+  const volPts      = Math.min(30, doc_count * (30 / 8));   // uploads only
   const depthPts    = (avg_depth_score / 100) * 30;
   const typesPresent = [has_sop, has_ttp, has_roe, has_drill].filter(Boolean).length;
-  const breadthPts  = (typesPresent / 4) * 20;
+  const breadthPts  = (typesPresent / 4) * 20;              // requires depth >= 50 per type
   const freshRatio  = doc_count > 0 ? (doc_count - outdated_count) / doc_count : 0;
   const recencyPts  = freshRatio * 20;
 

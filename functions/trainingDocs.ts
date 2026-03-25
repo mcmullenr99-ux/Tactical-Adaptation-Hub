@@ -1,7 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 
-const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+const JWT_SECRET    = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') ?? '';
+
+// ─── ANTI-GAMING CONSTANTS ────────────────────────────────────────────────────
+const AI_LEGITIMACY_THRESHOLD = 40;   // docs scoring below this are rejected as gibberish/spam
+const MIN_CONTENT_CHARS       = 80;   // raw text must have at least this many non-whitespace chars
 
 async function getCallerUser(base44: any, req: Request) {
   const authHeader = req.headers.get('Authorization') ?? '';
@@ -13,6 +18,7 @@ async function getCallerUser(base44: any, req: Request) {
   } catch { return null; }
 }
 
+// ─── DEPTH SCORE (structural heuristic — used alongside AI check) ─────────────
 function estimateDepthScore(pageCount: number, fileSizeBytes: number, docType: string): number {
   const pageFactor =
     pageCount >= 15 ? 1.0 :
@@ -28,18 +34,200 @@ function estimateDepthScore(pageCount: number, fileSizeBytes: number, docType: s
     bpp >= 15_000  ? 0.55 : 0.4;
 
   const typeBonus =
-    docType === 'SOP'                   ? 10 :
-    docType === 'TTP'                   ? 10 :
-    docType === 'Field Manual'          ? 9  :
-    docType === 'OPORD'                 ? 8  :
-    docType === 'WARNO'                 ? 7  :
-    docType === 'FRAGO'                 ? 7  :
-    docType === 'Rules of Engagement'   ? 8  :
-    docType === 'Field Manual'                        ? 8  :
-    docType === 'Drill'                              ? 6  : 0;
+    docType === 'SOP'                 ? 10 :
+    docType === 'TTP'                 ? 10 :
+    docType === 'Field Manual'        ? 9  :
+    docType === 'OPORD'               ? 8  :
+    docType === 'WARNO'               ? 7  :
+    docType === 'FRAGO'               ? 7  :
+    docType === 'Rules of Engagement' ? 8  :
+    docType === 'Drill'               ? 6  : 0;
 
   const raw = Math.round(pageFactor * 45 + densityFactor * 45 + typeBonus);
   return Math.min(100, Math.max(10, raw));
+}
+
+// ─── TEXT EXTRACTION ──────────────────────────────────────────────────────────
+// Pulls readable text out of PDF byte streams and plain text files.
+// Returns up to 1500 chars — enough for AI validation without burning tokens.
+async function extractTextSample(arrayBuf: ArrayBuffer, mimeType: string, fileName: string): Promise<string> {
+  try {
+    // Plain text / markdown — just decode directly
+    if (mimeType === 'text/plain' || mimeType === 'text/markdown' || fileName.endsWith('.md') || fileName.endsWith('.txt')) {
+      const text = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuf);
+      return text.replace(/\s+/g, ' ').trim().slice(0, 1500);
+    }
+
+    // PDF — scan for readable ASCII text streams between BT/ET markers
+    if (mimeType === 'application/pdf' || fileName.endsWith('.pdf')) {
+      const raw = new TextDecoder('latin1', { fatal: false }).decode(arrayBuf);
+      // Extract text between BT (begin text) and ET (end text) PDF operators
+      const chunks: string[] = [];
+      const btRegex = /BT[\s\S]*?ET/g;
+      let match: RegExpExecArray | null;
+      while ((match = btRegex.exec(raw)) !== null && chunks.join(' ').length < 2000) {
+        // Extract string literals: (text) and <hex>
+        const strRegex = /\(([^)\\]*(?:\\.[^)\\]*)*)\)|<([0-9A-Fa-f\s]+)>/g;
+        let sm: RegExpExecArray | null;
+        while ((sm = strRegex.exec(match[0])) !== null) {
+          if (sm[1]) {
+            // Literal string — unescape PDF escape sequences
+            const unescaped = sm[1]
+              .replace(/\\n/g, ' ').replace(/\\r/g, ' ').replace(/\\t/g, ' ')
+              .replace(/\\\(/g, '(').replace(/\\\)/g, ')').replace(/\\\\/g, '\\')
+              .replace(/\\[0-7]{1,3}/g, ' ');
+            chunks.push(unescaped);
+          } else if (sm[2]) {
+            // Hex string — decode pairs
+            const hex = sm[2].replace(/\s/g, '');
+            let decoded = '';
+            for (let i = 0; i < hex.length - 1; i += 2) {
+              const code = parseInt(hex.slice(i, i + 2), 16);
+              if (code >= 32 && code < 127) decoded += String.fromCharCode(code);
+            }
+            if (decoded.trim()) chunks.push(decoded);
+          }
+        }
+      }
+      const combined = chunks.join(' ').replace(/\s+/g, ' ').trim();
+      if (combined.length > 60) return combined.slice(0, 1500);
+
+      // Fallback: grab any printable ASCII sequences from raw PDF bytes
+      const printable = raw.replace(/[^\x20-\x7E\n]/g, ' ').replace(/\s+/g, ' ').trim();
+      const words = printable.split(' ').filter(w => w.length >= 3 && /[a-zA-Z]{2,}/.test(w));
+      return words.slice(0, 400).join(' ').slice(0, 1500);
+    }
+
+    // DOCX — it's a zip; grab raw XML text as best effort
+    if (mimeType.includes('wordprocessingml') || mimeType.includes('msword') || fileName.endsWith('.docx')) {
+      const raw = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuf);
+      const xmlText = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      const words = xmlText.split(' ').filter(w => /[a-zA-Z]{3,}/.test(w));
+      return words.slice(0, 400).join(' ').slice(0, 1500);
+    }
+
+    return '';
+  } catch {
+    return '';
+  }
+}
+
+// ─── AI CONTENT VALIDATION ────────────────────────────────────────────────────
+// Returns { score: 0-100, reason: string, passed: boolean }
+// score < AI_LEGITIMACY_THRESHOLD → reject upload
+async function validateDocContent(
+  textSample: string,
+  docType: string,
+  title: string
+): Promise<{ score: number; reason: string; passed: boolean }> {
+  if (!OPENAI_API_KEY) {
+    // No key configured — pass through (fail open)
+    return { score: 75, reason: 'AI validation not configured', passed: true };
+  }
+
+  const nonWhitespace = textSample.replace(/\s/g, '');
+  if (nonWhitespace.length < MIN_CONTENT_CHARS) {
+    // Not enough extractable text to validate — could be image-only PDF
+    // Give benefit of the doubt but flag as low depth
+    return { score: 45, reason: 'Insufficient extractable text — document may be image-based', passed: true };
+  }
+
+  // Check for obvious gibberish before even calling AI — saves tokens
+  // Repetition ratio: if >40% of chars are the same character, it's garbage
+  const charFreq: Record<string, number> = {};
+  for (const c of nonWhitespace) charFreq[c] = (charFreq[c] ?? 0) + 1;
+  const maxFreq = Math.max(...Object.values(charFreq));
+  const repetitionRatio = maxFreq / nonWhitespace.length;
+  if (repetitionRatio > 0.4) {
+    return {
+      score: 0,
+      reason: `Document content is repetitive garbage (${Math.round(repetitionRatio * 100)}% single character). This is not valid doctrine.`,
+      passed: false,
+    };
+  }
+
+  // Check unique word ratio — lorem ipsum / random strings fail this
+  const words = textSample.toLowerCase().match(/[a-z]{3,}/g) ?? [];
+  if (words.length > 0) {
+    const uniqueRatio = new Set(words).size / words.length;
+    if (words.length > 30 && uniqueRatio < 0.15) {
+      return {
+        score: 5,
+        reason: 'Document contains highly repetitive text with very few unique words. This is not valid doctrine.',
+        passed: false,
+      };
+    }
+  }
+
+  try {
+    const prompt = `You are a military document validator for a milsim (military simulation) group management platform.
+
+Your job is to determine whether the following document excerpt represents LEGITIMATE military doctrine — i.e. actual standard operating procedures, tactics, drills, rules of engagement, field manuals, briefings, or similar military/milsim training material.
+
+Document title: "${title}"
+Document type claimed: "${docType}"
+Extracted text sample:
+---
+${textSample.slice(0, 800)}
+---
+
+Rate this document on a scale of 0–100 for DOCTRINE LEGITIMACY:
+- 0–20: Complete garbage, gibberish, random characters, lorem ipsum, copy-pasted nonsense, or clearly fake
+- 21–40: Very thin, barely relevant, padding, or a single sentence/paragraph with no real procedural content
+- 41–60: Some relevant content but shallow, incomplete, or only loosely related to military procedures
+- 61–80: Solid doctrine — clear procedures, tactics, or standards relevant to the claimed doc type
+- 81–100: Excellent — comprehensive, detailed, professionally structured military/milsim doctrine
+
+Respond with ONLY valid JSON in this exact format (no markdown, no explanation):
+{"score": <number 0-100>, "reason": "<one sentence explanation>"}`;
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 120,
+        temperature: 0.1,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error('[trainingDocs/AI] OpenAI error', res.status, await res.text());
+      // Fail open — don't block upload if AI is down
+      return { score: 70, reason: 'AI validation service unavailable', passed: true };
+    }
+
+    const json = await res.json();
+    const content = json.choices?.[0]?.message?.content?.trim() ?? '';
+
+    // Strip markdown code fences if present
+    const cleaned = content.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/,'').trim();
+    const parsed = JSON.parse(cleaned);
+    const score = Math.max(0, Math.min(100, Number(parsed.score) || 0));
+    const reason = String(parsed.reason || 'No reason provided');
+
+    return {
+      score,
+      reason,
+      passed: score >= AI_LEGITIMACY_THRESHOLD,
+    };
+  } catch (err) {
+    console.error('[trainingDocs/AI] Validation error:', err);
+    // Fail open
+    return { score: 70, reason: 'AI validation error — proceeding', passed: true };
+  }
+}
+
+// ─── SIMPLE HASH for dedup ────────────────────────────────────────────────────
+function simpleHash(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let h = 0x811c9dc5;
+  for (const b of bytes) { h ^= b; h = (h * 0x01000193) >>> 0; }
+  return h.toString(16).padStart(8, '0');
 }
 
 Deno.serve(async (req) => {
@@ -64,14 +252,14 @@ Deno.serve(async (req) => {
         // ── FILE UPLOAD ──────────────────────────────────────────────────────
         const formData = await req.formData();
         const file = formData.get('file') as File | null;
-        const groupId   = formData.get('group_id') as string ?? '';
-        const title     = formData.get('title') as string ?? '';
-        const docType   = formData.get('doc_type') as string ?? 'Other';
-        const desc      = formData.get('description') as string ?? '';
-        const reviewedAt = formData.get('last_reviewed_at') as string ?? new Date().toISOString();
-        const uploadedBy = formData.get('uploaded_by') as string ?? caller.id;
+        const groupId            = formData.get('group_id') as string ?? '';
+        const title              = formData.get('title') as string ?? '';
+        const docType            = formData.get('doc_type') as string ?? 'Other';
+        const desc               = formData.get('description') as string ?? '';
+        const uploadedBy         = formData.get('uploaded_by') as string ?? caller.id;
         const uploadedByUsername = formData.get('uploaded_by_username') as string ?? caller.username ?? caller.email;
-        const sourceType = formData.get('source_type') as string ?? 'upload';
+        const sourceType         = formData.get('source_type') as string ?? 'upload';
+        // NOTE: last_reviewed_at is intentionally NOT accepted from client on upload — set server-side only
 
         if (!file) return Response.json({ error: 'No file provided' }, { status: 400 });
         if (!groupId) return Response.json({ error: 'group_id required' }, { status: 400 });
@@ -99,6 +287,32 @@ Deno.serve(async (req) => {
         if (file.size > 20 * 1024 * 1024) return Response.json({ error: 'File too large (max 20MB)' }, { status: 400 });
 
         const arrayBuf = await file.arrayBuffer();
+
+        // ── FIX 5: DUPLICATE DETECTION ──────────────────────────────────────
+        const fileHash = simpleHash(arrayBuf);
+        const existingDocs = await base44.asServiceRole.entities.TrainingDoc.filter({ group_id: groupId });
+        const isDuplicate = (existingDocs ?? []).some((d: any) =>
+          d.file_size_bytes === file.size && d.file_name === file.name
+        );
+        if (isDuplicate) {
+          return Response.json({
+            error: 'Duplicate document detected. A file with the same name and size already exists for this group. Rename or modify the document if this is genuinely a new version.',
+          }, { status: 409 });
+        }
+
+        // ── FIX 1: AI CONTENT VALIDATION ────────────────────────────────────
+        const textSample = await extractTextSample(arrayBuf, file.type, file.name);
+        const aiResult = await validateDocContent(textSample, docType, title.trim());
+
+        if (!aiResult.passed) {
+          return Response.json({
+            error: `Document failed content validation. ${aiResult.reason} Score: ${aiResult.score}/100 (minimum required: ${AI_LEGITIMACY_THRESHOLD}/100). Upload genuine doctrine — SOPs, TTPs, drills, field manuals, or operational orders.`,
+            ai_score: aiResult.score,
+            ai_reason: aiResult.reason,
+          }, { status: 422 });
+        }
+
+        // Upload to storage
         const appId = Deno.env.get('BASE44_APP_ID') ?? '';
         const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
         const uploadForm = new FormData();
@@ -114,7 +328,11 @@ Deno.serve(async (req) => {
           : file.type.includes('word') ? Math.max(1, Math.round(file.size / 30_000))
           : Math.max(1, Math.round(file.size / 3_000));
 
-        const depthScore = estimateDepthScore(estimatedPages, file.size, docType);
+        // Blend structural depth score with AI legitimacy score
+        const structuralScore = estimateDepthScore(estimatedPages, file.size, docType);
+        // AI score is weighted 40%, structural 60% — AI penalises gibberish, structure rewards real docs
+        const blendedDepthScore = Math.round((structuralScore * 0.6) + (aiResult.score * 0.4));
+        const depthScore = Math.min(100, Math.max(10, blendedDepthScore));
 
         record = await base44.asServiceRole.entities.TrainingDoc.create({
           group_id: groupId, title: title.trim(), description: desc.trim() || null,
@@ -122,13 +340,18 @@ Deno.serve(async (req) => {
           file_url: fileUrl, file_name: file.name, file_size_bytes: file.size,
           mime_type: file.type, page_count: estimatedPages, depth_score: depthScore,
           uploaded_by: uploadedBy, uploaded_by_username: uploadedByUsername,
-          last_reviewed_at: reviewedAt, is_current: true,
+          last_reviewed_at: new Date().toISOString(), // FIX 4: always server-side
+          is_current: true,
+          ai_summary: aiResult.reason, // store AI verdict for audit trail
         });
 
       } else {
         // ── URL / LINK BASED (Google Doc, Apple Pages, Link) ─────────────────
+        // FIX 3: Links do NOT count toward volume score — capped at 25 depth
+        // and marked source_type='link' so stats engine can exclude from volPts
         const body = await req.json().catch(() => ({}));
-        const { group_id, title, doc_type, description, source_type, source_url, last_reviewed_at, uploaded_by, uploaded_by_username } = body;
+        const { group_id, title, doc_type, description, source_type, source_url, uploaded_by, uploaded_by_username } = body;
+        // NOTE: last_reviewed_at intentionally NOT accepted from client
 
         if (!group_id) return Response.json({ error: 'group_id required' }, { status: 400 });
         if (!title?.trim()) return Response.json({ error: 'Title required' }, { status: 400 });
@@ -144,12 +367,12 @@ Deno.serve(async (req) => {
 
         record = await base44.asServiceRole.entities.TrainingDoc.create({
           group_id, title: title.trim(), description: description?.trim() || null,
-          doc_type: doc_type ?? 'Other', source_type: source_type ?? 'link',
+          doc_type: doc_type ?? 'Other', source_type: 'link', // always 'link' — no spoofing
           source_url: source_url.trim(), file_url: null, is_current: true,
-          depth_score: 40, // Default depth for linked docs
+          depth_score: 25, // FIX 3: links get 25 max, NOT 40 — can't verify content
           uploaded_by: uploaded_by ?? caller.id,
           uploaded_by_username: uploaded_by_username ?? caller.username ?? caller.email,
-          last_reviewed_at: last_reviewed_at ?? new Date().toISOString(),
+          last_reviewed_at: new Date().toISOString(), // FIX 4: server-side only
         });
       }
 
@@ -164,15 +387,24 @@ Deno.serve(async (req) => {
       ));
     }
 
-    // PATCH /:groupId/:docId
+    // PATCH /:groupId/:docId — mark reviewed (server stamps the date) or update metadata
     if (method === 'PATCH' && parts.length === 2) {
       const caller = await getCallerUser(base44, req);
       if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const [, docId] = parts;
       const body = await req.json().catch(() => ({}));
-      const allowed = ['last_reviewed_at', 'description', 'title', 'doc_type', 'is_current', 'source_url'];
+
+      // FIX 4: last_reviewed_at is NEVER accepted from client — always server-stamped
+      // Allowed editable fields: description, title, doc_type, is_current, source_url
+      const allowed = ['description', 'title', 'doc_type', 'is_current', 'source_url'];
       const update: any = {};
       for (const k of allowed) { if (body[k] !== undefined) update[k] = body[k]; }
+
+      // If the client requested a review (e.g. "mark as reviewed" button), stamp now
+      if (body.mark_reviewed === true) {
+        update.last_reviewed_at = new Date().toISOString();
+      }
+
       return Response.json(await base44.asServiceRole.entities.TrainingDoc.update(docId, update));
     }
 
