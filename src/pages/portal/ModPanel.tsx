@@ -1,14 +1,18 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { PortalLayout } from "@/components/layout/PortalLayout";
-import { ShieldCheck, Check, X, Loader2 } from "lucide-react";
+import { ShieldCheck, Check, X, Loader2, Eye, Globe } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { apiFetch } from "@/lib/apiFetch";
+import { useOutsiderMode } from "@/hooks/useOutsiderMode";
 
 export default function ModPanel() {
   const [tab, setTab] = useState<'apps' | 'members'>('apps');
+  const [, navigate] = useLocation();
+  const { enter: enterOutsider } = useOutsiderMode();
   const [reviewingId, setReviewingId] = useState<number | null>(null);
   const [reviewNote, setReviewNote] = useState("");
   const { toast } = useToast();
@@ -65,10 +69,17 @@ export default function ModPanel() {
           <div className="w-12 h-12 bg-accent/20 text-accent rounded flex items-center justify-center clip-angled-sm">
             <ShieldCheck className="w-6 h-6" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-display font-bold uppercase tracking-wider text-foreground">Moderator Terminal</h1>
             <p className="text-muted-foreground font-sans">Review applications and manage personnel status.</p>
           </div>
+          <button
+            onClick={() => { enterOutsider(); navigate("/"); }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-400 hover:text-amber-300 font-display font-bold uppercase tracking-widest text-xs rounded transition-all"
+          >
+            <Globe className="w-4 h-4" />
+            View as Outsider
+          </button>
         </div>
 
         <div className="flex gap-2 border-b border-border">

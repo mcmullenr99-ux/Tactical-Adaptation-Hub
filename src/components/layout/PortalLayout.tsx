@@ -8,6 +8,8 @@ import {
   LifeBuoy, Award,
 } from "lucide-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useOutsiderMode } from "@/hooks/useOutsiderMode";
+import { OutsiderModeBanner } from "@/components/OutsiderModeBanner";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "@/lib/apiFetch";
@@ -18,6 +20,7 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
   const [loggingOut, setLoggingOut] = useState(false);
   const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { active: outsiderMode } = useOutsiderMode();
 
   const { data: notifCounts } = useQuery({
     queryKey: ["notification-counts"],
@@ -92,7 +95,7 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     ...(user.role === "member"
       ? [{ href: "/portal/apply", icon: <PenTool className="w-4 h-4 text-primary" />, label: "Staff App" }]
       : []),
-    ...(user.role === "moderator" || user.role === "admin"
+    ...(!outsiderMode && (user.role === "moderator" || user.role === "admin")
       ? [
           { href: "/portal/support-admin", icon: <LifeBuoy className="w-4 h-4 text-accent" />, label: "Support Admin" },
           { href: "/portal/mod", icon: <ShieldCheck className="w-4 h-4 text-accent" />, label: "Mod Panel", divider: true },
@@ -163,6 +166,8 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
   );
 
   return (
+    <>
+    <OutsiderModeBanner />
     <MainLayout>
       <div className="pt-20 pb-16 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -231,5 +236,6 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
         )}
       </AnimatePresence>
     </MainLayout>
+    </>
   );
 }
