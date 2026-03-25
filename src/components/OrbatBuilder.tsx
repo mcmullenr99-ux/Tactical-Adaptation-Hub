@@ -42,9 +42,13 @@ export const AFFILIATIONS = [
   { id: "05", label: "Suspect",          color: "#ffb060" },
 ];
 
-export const STATUSES = [
-  { id: "0", label: "Present / Actual" },
-  { id: "1", label: "Anticipated / Planned" },
+export const STATUSES: { id: string; label: string; color?: string; dotted?: boolean }[] = [
+  { id: "0", label: "Present",         color: undefined     },
+  { id: "1", label: "Planned",         color: undefined, dotted: true },
+  { id: "2", label: "Fully Capable",   color: "#00cc00"     },
+  { id: "3", label: "Damaged",         color: "#ffff00"     },
+  { id: "4", label: "Destroyed",       color: "#ff0000"     },
+  { id: "5", label: "Full to Capacity",color: "#00b4f0"     },
 ];
 
 export const HQ_TF_DUMMY = [
@@ -58,29 +62,29 @@ export const HQ_TF_DUMMY = [
   { id: "7", label: "HQ + TF + Dummy" },
 ];
 
-export const ECHELONS = [
-  { id: "00", label: "— Unspecified"             },
-  { id: "11", label: "• Fireteam / Crew"          },
-  { id: "12", label: "•• Squad"                   },
-  { id: "13", label: "••• Section"                },
-  { id: "14", label: "| Platoon"                  },
-  { id: "15", label: "|| Company / Battery"       },
-  { id: "16", label: "||| Battalion / Squadron"   },
-  { id: "17", label: "X Regiment / Group"         },
-  { id: "18", label: "XX Brigade"                 },
-  { id: "19", label: "XXX Division"               },
-  { id: "20", label: "XXXX Corps"                 },
-  { id: "21", label: "XXXXX Army"                 },
-  { id: "22", label: "XXXXXX Army Group"          },
-  { id: "23", label: "XXXXXXX Region"             },
-  { id: "24", label: "XXXXXXXX Command"           },
+export const ECHELONS: { id: string; label: string; mark: string }[] = [
+  { id: "00", label: "Unspecified",             mark: "—"        },
+  { id: "11", label: "Fireteam / Crew",          mark: "•"        },
+  { id: "12", label: "Squad",                    mark: "••"       },
+  { id: "13", label: "Section",                  mark: "•••"      },
+  { id: "14", label: "Platoon / Detachment",     mark: "|"        },
+  { id: "15", label: "Company / Battery / Troop",mark: "||"       },
+  { id: "16", label: "Battalion / Squadron",     mark: "|||"      },
+  { id: "17", label: "Regiment / Group",         mark: "X"        },
+  { id: "18", label: "Brigade",                  mark: "XX"       },
+  { id: "19", label: "Division",                 mark: "XXX"      },
+  { id: "20", label: "Corps",                    mark: "XXXX"     },
+  { id: "21", label: "Army",                     mark: "XXXXX"    },
+  { id: "22", label: "Army Group / Front",       mark: "XXXXXX"   },
+  { id: "23", label: "Region",                   mark: "XXXXXXX"  },
+  { id: "24", label: "Command",                  mark: "XXXXXXXX" },
 ];
 
 export const REINFORCED_REDUCED = [
-  { id: "",                   label: "None"                   },
-  { id: "reinforced",         label: "(+) Reinforced"         },
-  { id: "reduced",            label: "(−) Reduced"            },
-  { id: "reinforcedAndReduced", label: "(±) Reinforced & Reduced" },
+  { id: "",    label: "None"               },
+  { id: "(+)", label: "(+) Reinforced"     },
+  { id: "(-)", label: "(-) Reduced"        },
+  { id: "(±)", label: "(±) Both"           },
 ];
 
 // Preset fill colours for the symbol selector
@@ -447,15 +451,19 @@ function NodeEditor({ node, onSave, onClose }: {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Status</label>
-              <div className="flex gap-2">
-                {STATUSES.map(s => (
-                  <button key={s.id} onClick={() => set({ status: s.id })}
-                    className={`flex-1 px-3 py-1.5 text-xs rounded border transition-all
-                      ${draft.status === s.id ? "bg-primary/15 border-primary font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
-                    {s.label}
-                  </button>
-                ))}
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Status</label>
+              <div className="flex flex-wrap gap-3">
+                {STATUSES.map(s => {
+                  const previewNode = { ...draft, status: s.id };
+                  return (
+                    <button key={s.id} onClick={() => set({ status: s.id })}
+                      className={`flex flex-col items-center gap-1.5 p-2 rounded border transition-all min-w-[70px]
+                        ${draft.status === s.id ? "border-primary bg-primary/15" : "border-border hover:border-primary/40"}`}>
+                      <MilSymbolSvg node={previewNode} size={36} />
+                      <span className="text-[9px] font-mono text-muted-foreground text-center leading-tight">{s.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -477,9 +485,10 @@ function NodeEditor({ node, onSave, onClose }: {
               <div className="flex flex-wrap gap-1.5">
                 {ECHELONS.map(e => (
                   <button key={e.id} onClick={() => set({ echelon: e.id })}
-                    className={`px-2.5 py-1.5 text-xs rounded border font-mono transition-all
+                    className={`flex items-center gap-1 px-2.5 py-1.5 text-xs rounded border font-mono transition-all
                       ${draft.echelon === e.id ? "bg-primary/15 border-primary font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
-                    {e.label}
+                    <span className="text-primary font-bold">{e.mark}</span>
+                    <span>{e.label}</span>
                   </button>
                 ))}
               </div>
@@ -490,7 +499,7 @@ function NodeEditor({ node, onSave, onClose }: {
               <div className="flex flex-wrap gap-1.5">
                 {REINFORCED_REDUCED.map(r => (
                   <button key={r.id} onClick={() => set({ reinforcedReduced: r.id })}
-                    className={`px-3 py-1.5 text-xs rounded border transition-all
+                    className={`px-3 py-1.5 text-sm font-mono rounded border transition-all
                       ${draft.reinforcedReduced === r.id ? "bg-primary/15 border-primary font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
                     {r.label}
                   </button>
@@ -686,20 +695,26 @@ function OrgCard({
 }) {
   const { node, x, y } = ln;
   const [hovered, setHovered] = React.useState(false);
+  const hoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasChildren = node.children && node.children.length > 0;
+
+  const handleMouseEnter = () => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    setHovered(true);
+  };
+  const handleMouseLeave = () => {
+    hoverTimeout.current = setTimeout(() => setHovered(false), 300);
+  };
   const affil = AFFILIATIONS.find(a => a.id === node.affiliation);
   const echelon = ECHELONS.find(e => e.id === node.echelon);
 
-  const modBadge = node.reinforcedReduced === "reinforced" ? "(+)"
-    : node.reinforcedReduced === "reduced" ? "(−)"
-    : node.reinforcedReduced === "reinforcedAndReduced" ? "(±)"
-    : null;
+  const modBadge = node.reinforcedReduced || null;
 
   return (
     <div
       style={{ position: "absolute", left: x - NODE_W / 2, top: y, width: NODE_W }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Action toolbar above card */}
       {hovered && !readOnly && (
@@ -733,13 +748,13 @@ function OrgCard({
           <div className="text-[10px] font-bold leading-tight text-foreground line-clamp-2" title={node.label}>
             {node.label || "Unnamed"}
           </div>
-          {modBadge && <div className="text-[9px] font-mono text-muted-foreground">{modBadge}</div>}
+
           {node.hqTfDummy !== "0" && (
             <div className="text-[8px] font-mono text-yellow-400 uppercase leading-tight">
               {HQ_TF_DUMMY.find(h => h.id === node.hqTfDummy)?.label}
             </div>
           )}
-          {node.status === "1" && <div className="text-[8px] font-mono text-purple-400 uppercase">Planned</div>}
+
         </div>
       </div>
 
