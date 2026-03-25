@@ -130,8 +130,8 @@ const TIER_META: Record<string, { label: string; style: string }> = {
 function TierBadge({ tier }: { tier: string }) {
   const meta = TIER_META[tier] ?? { label: tier, style: "bg-border/30 border-border text-muted-foreground" };
   return (
-    <span className={`inline-flex items-center justify-center gap-1 w-44 shrink-0 px-2 py-1 rounded border text-[10px] font-display font-bold uppercase tracking-widest text-center leading-tight ${meta.style}`}>
-      <Target className="w-2.5 h-2.5 shrink-0" /> {meta.label}
+    <span className={`inline-flex items-center justify-center gap-1 w-40 shrink-0 px-2 py-0.5 rounded border text-[9px] font-display font-bold uppercase tracking-wider text-center leading-tight ${meta.style}`}>
+      <Target className="w-2 h-2 shrink-0" /> {meta.label}
     </span>
   );
 }
@@ -453,7 +453,7 @@ export default function MilsimGroup() {
                   {/* Capability tier explanation */}
                   <div className="bg-card border border-border rounded-lg p-5">
                     <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Operational Capability Tier</p>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       {[
                         { tier: "SOF",         label: "Special Operations Forces",    desc: "The highest attainable designation. Elite multi-domain doctrine, near-perfect AAR discipline, and an exceptional operational record. Operates at the tip of the spear." },
                         { tier: "SOC",         label: "Special Operations Capable",   desc: "Extensive op record, elite AAR discipline, and comprehensive multi-type training doctrine. Operates at special operations capable standard." },
@@ -463,7 +463,7 @@ export default function MilsimGroup() {
                         { tier: "LIMITED",     label: "Limited Capability",           desc: "Minimal operational record and insufficient training documentation to meet baseline capability standards." },
                         { tier: "POOR",        label: "Poor Capability",              desc: "No established operational record, no doctrine, and no verified activity. Unit has not demonstrated any measurable capability." },
                       ].map(t => (
-                        <div key={t.tier} className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${readiness.op_capability_tier === t.tier ? (
+                        <div key={t.tier} className={`flex items-center gap-2 p-1.5 rounded border transition-colors ${readiness.op_capability_tier === t.tier ? (
                             t.tier === "SOF"         ? "border-purple-500/40 bg-purple-600/5" :
                             t.tier === "SOC"         ? "border-blue-400/40 bg-blue-500/5" :
                             t.tier === "STRATEGIC"   ? "border-green-400/40 bg-green-500/5" :
