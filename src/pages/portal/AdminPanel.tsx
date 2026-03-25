@@ -356,6 +356,37 @@ function GroupsTab({ toast }: { toast: any }) {
     } finally { setWorking(null); }
   };
 
+  const toggleVerifyOverride = async (group: any) => {
+    const newVal = !group.verify_override;
+    setWorking(group.id);
+    try {
+      await apiFetch(`/api/admin/milsim-groups/${group.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ verify_override: newVal, is_verified: newVal, verified_at: newVal ? new Date().toISOString() : null }),
+      });
+      setGroups(prev => prev.map(g => g.id === group.id ? { ...g, verify_override: newVal, is_verified: newVal } : g));
+      toast({ title: newVal ? "✅ Verification Granted" : "Verification Removed", description: group.name });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally { setWorking(null); }
+  };
+
+  const runAutoVerify = async () => {
+    setWorking("__running__");
+    try {
+      const token = localStorage.getItem("tag_auth_token") ?? "";
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? ""}/functions/autoVerifyGroups`, {
+        method: "POST", headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      toast({ title: `Auto-Verify Complete`, description: `${data.newly_verified ?? 0} newly verified, ${data.newly_unverified ?? 0} removed. ${data.processed ?? 0} checked.` });
+      // Reload groups
+      apiFetch<any[]>("/api/admin/milsim-groups").then(d => setGroups(Array.isArray(d) ? d : []));
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally { setWorking(null); }
+  };
+
   const filtered = groups.filter(g => filter === "all" || g.status === filter);
   const pendingCount = groups.filter(g => g.status === "pending").length;
 
@@ -370,14 +401,19 @@ function GroupsTab({ toast }: { toast: any }) {
               <p className="text-xs text-muted-foreground font-sans mt-0.5">{groups.length} total · {pendingCount} pending approval</p>
             </div>
           </div>
-          <div className="flex gap-1">
+          <div className="flex items-center gap-2">
+            <button onClick={runAutoVerify} disabled={working === "__running__"}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded text-xs font-display font-bold uppercase tracking-wider transition-colors disabled:opacity-50">
+              {working === "__running__" ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />} Run Auto-Verify
+            </button>
+            <div className="flex gap-1">
             {(["pending","active","suspended","all"] as const).map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 className={`px-3 py-1.5 text-xs font-display font-bold uppercase tracking-widest rounded transition-colors ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
                 {f}{f === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
               </button>
             ))}
-          </div>
+          </div></div>
         </div>
 
         {loading ? (
@@ -404,15 +440,22 @@ function GroupsTab({ toast }: { toast: any }) {
                     {g.slug && <span className="text-xs text-muted-foreground font-mono">/{g.slug}</span>}
                   </div>
                   {g.tag_line && <p className="text-sm text-muted-foreground truncate">{g.tag_line}</p>}
-                  <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                  <div className="flex gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                     <span>Owner: {g.owner_username ?? g.owner_id}</span>
                     {g.discord_url && <a href={g.discord_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">Discord ↗</a>}
                     {g.website_url && <a href={g.website_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">Website ↗</a>}
+                    {g.is_verified && <span className="text-[10px] text-cyan-400 border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest">✓ Verified{g.verify_override ? " (override)" : ""}</span>}
+                    {!g.is_verified && g.verification_score !== undefined && <span className="text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 rounded">Score: {g.verification_score}/100</span>}
                   </div>
                 </div>
 
                 {/* Actions */}
                 <div className="flex gap-1.5 shrink-0">
+                  <button onClick={() => toggleVerifyOverride(g)} disabled={working === g.id}
+                    title={g.verify_override ? "Remove verification override" : "Force verify this group"}
+                    className={`p-1.5 rounded transition-colors disabled:opacity-50 ${g.verify_override ? "text-cyan-400 hover:text-cyan-300" : "text-muted-foreground hover:text-cyan-400"}`}>
+                    <CheckCircle2 className="w-4 h-4" />
+                  </button>
                   {g.status !== "active" && (
                     <button onClick={() => setStatus(g.id, "active")} disabled={working === g.id}
                       title="Approve" className="flex items-center gap-1.5 px-3 py-1.5 bg-green-900/40 hover:bg-green-700/40 text-green-400 border border-green-700/40 rounded text-xs font-display font-bold uppercase tracking-wider transition-colors disabled:opacity-50">

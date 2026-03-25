@@ -79,11 +79,7 @@ function getRegion(country: string | null | undefined): string {
 }
 
 function isVerified(group: MilsimGroup): boolean {
-  if (!group.is_pro) return false;
-  const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
-  const lastOp = group.last_op_date ? new Date(group.last_op_date).getTime() : 0;
-  const lastAar = group.last_aar_date ? new Date(group.last_aar_date).getTime() : 0;
-  return Math.max(lastOp, lastAar) > cutoff;
+  return !!(group as any).is_verified;
 }
 
 type LeaderboardCategory = "region" | "game" | "troop_count" | "op_success";

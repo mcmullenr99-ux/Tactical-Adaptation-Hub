@@ -99,6 +99,20 @@
     },
     "last_training_date": {
       "type": "string"
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "verified_at": {
+      "type": "string"
+    },
+    "verification_score": {
+      "type": "number"
+    },
+    "verify_override": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [],
