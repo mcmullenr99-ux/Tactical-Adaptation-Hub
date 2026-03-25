@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# PRE-COMMIT CRASH CHECK  v3
+# PRE-COMMIT CRASH CHECK  v4
 # Focused on the specific crash patterns we've actually hit.
 # ============================================================
 
@@ -28,17 +28,13 @@ for FILE in "${FILES[@]}"; do
   CONTENT=$(cat "$RESOLVED")
 
   # ── CHECK 1: @workspace imports WITHOUT a vite alias ─────────────────
-  # object-storage-web is aliased in vite.config.ts — safe.
   WS=$(echo "$CONTENT" | grep -E "from '@workspace/|from \"@workspace/" | grep -v "object-storage-web" || true)
   [ -n "$WS" ] && ISSUES+=("❌ Unknown @workspace import (no vite alias): $WS")
 
   # ── CHECK 2: Critical component imports that we know can be missing ──
-  # Only check specific components we've had bugs with
   CRITICAL_COMPONENTS=("OrbatBuilder")
   for COMP in "${CRITICAL_COMPONENTS[@]}"; do
-    # Is it used in JSX?
     if echo "$CONTENT" | grep -qE "<${COMP}[ />]|<${COMP}$"; then
-      # Is it imported? (check whole file, imports can be multi-line)
       if ! echo "$CONTENT" | grep -qE "import.*\b${COMP}\b|from.*\b${COMP}\b"; then
         ISSUES+=("❌ <$COMP> used in JSX but not imported")
       fi
@@ -69,12 +65,22 @@ for FILE in "${FILES[@]}"; do
   fi
 
   # ── CHECK 6: Calling .map() on fields that could be null ─────────────
-  # Only flag explicit null-typed fields we know about
   for NULLFIELD in "group\.orbat" "group\.sops" "group\.description" "group\.logoUrl"; do
     if echo "$CONTENT" | grep -qE "${NULLFIELD}\.map\("; then
       ISSUES+=("⚠️  ${NULLFIELD}.map() — this field is nullable, add null guard")
     fi
   done
+
+  # ── CHECK 7: Duplicate variable declarations (const/let same name) ───
+  # Extract all const/let declaration names, find duplicates
+  DECL_NAMES=$(echo "$CONTENT" | grep -oE '(const|let) [a-zA-Z_][a-zA-Z0-9_]*' | awk '{print $2}' | sort | uniq -d)
+  if [ -n "$DECL_NAMES" ]; then
+    for DUP in $DECL_NAMES; do
+      # Ignore common loop vars and legitimate re-use patterns
+      case "$DUP" in i|j|k|e|el|key|idx|ref|res|err|data|item|node|row|col|x|y|t|v|s) continue ;; esac
+      ISSUES+=("❌ Duplicate variable declaration: '$DUP' declared more than once — will cause TS/build error")
+    done
+  fi
 
   # ── Report ─────────────────────────────────────────────────────────
   if [ "${#ISSUES[@]}" -eq 0 ]; then
