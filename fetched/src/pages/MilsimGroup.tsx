@@ -5,7 +5,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import {
   Shield, Globe, ExternalLink, Loader2, Users, Award, Crosshair,
-  FileText, ChevronLeft, Star, BookOpen, Map, Radio, Medal
+  FileText, ChevronLeft, Star, BookOpen, Map, Radio, Medal, MessageSquare, ThumbsUp, ThumbsDown, Minus
 } from "lucide-react";
 
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
@@ -13,6 +13,19 @@ interface Rank { id: number; name: string; abbreviation: string | null; tier: nu
 interface RosterEntry { id: number; callsign: string; rankId: number | null; roleId: number | null; notes: string | null }
 interface AppQuestion { id: number; question: string; sortOrder: number; required: boolean }
 interface MilsimAward { id: number; title: string; description: string | null; icon: string; awarded_by: string | null; awarded_at: string; roster_entry_id: number; callsign: string | null }
+
+interface GroupReview {
+  id: string;
+  reviewer_username: string;
+  activity: number;
+  attitude: number;
+  experience: number;
+  discipline: number;
+  overall_vote: 'positive' | 'neutral' | 'negative';
+  blacklisted: boolean;
+  notes: string | null;
+  created_date: string;
+}
 
 interface GroupDetail {
   id: number; name: string; slug: string; tagLine: string | null;
@@ -23,7 +36,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply";
+type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "reviews";
 
 function getEmbedUrl(url: string): string | null {
   try {
@@ -48,6 +61,8 @@ export default function MilsimGroup() {
   const [tab, setTab] = useState<Tab>("overview");
   const [awards, setAwards] = useState<MilsimAward[]>([]);
   const [awardsLoaded, setAwardsLoaded] = useState(false);
+  const [reviews, setReviews] = useState<GroupReview[]>([]);
+  const [reviewsLoaded, setReviewsLoaded] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -56,6 +71,14 @@ export default function MilsimGroup() {
       .catch(() => setGroup(null))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  useEffect(() => {
+    if (tab === "reviews" && group && !reviewsLoaded) {
+      apiFetch<GroupReview[]>(`/api/reputation/group/${group.id}`)
+        .then(data => { setReviews(data ?? []); setReviewsLoaded(true); })
+        .catch(() => setReviewsLoaded(true));
+    }
+  }, [tab, group, reviewsLoaded]);
 
   useEffect(() => {
     if (tab === "awards" && group && !awardsLoaded) {
@@ -96,6 +119,7 @@ export default function MilsimGroup() {
     { id: "awards", label: "Commendations", icon: Medal, show: true },
     { id: "sops", label: "SOPs", icon: BookOpen, show: !!group.sops },
     { id: "orbat", label: "ORBAT", icon: Map, show: !!group.orbat },
+    { id: "reviews", label: "Reviews", icon: MessageSquare, show: true },
     { id: "apply", label: "Apply", icon: FileText, show: group.questions.length > 0 },
   ];
 
@@ -392,6 +416,97 @@ export default function MilsimGroup() {
                   Apply via Discord <ExternalLink className="w-4 h-4" />
                 </a>
               )}
+            </div>
+          )}
+
+          {tab === "reviews" && (
+            <div className="max-w-3xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground">Unit Reviews</h2>
+                <span className="text-sm text-muted-foreground font-display uppercase tracking-widest">{reviews.length} review{reviews.length !== 1 ? "s" : ""}</span>
+              </div>
+
+              {!reviewsLoaded && (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+
+              {reviewsLoaded && reviews.length === 0 && (
+                <div className="bg-card border border-border rounded-lg p-12 text-center">
+                  <MessageSquare className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="font-display font-bold uppercase tracking-widest text-muted-foreground text-sm">No reviews yet</p>
+                  <p className="text-xs text-muted-foreground mt-1 font-sans">Members who have served with this unit can leave a review from their profile.</p>
+                </div>
+              )}
+
+              {reviewsLoaded && reviews.length > 0 && (() => {
+                const pos = reviews.filter(r => r.overall_vote === "positive").length;
+                const neg = reviews.filter(r => r.overall_vote === "negative").length;
+                const neu = reviews.filter(r => r.overall_vote === "neutral").length;
+                const pct = Math.round((pos / reviews.length) * 100);
+                const avgActivity   = Math.round(reviews.reduce((s,r) => s + r.activity, 0) / reviews.length * 10) / 10;
+                const avgAttitude   = Math.round(reviews.reduce((s,r) => s + r.attitude, 0) / reviews.length * 10) / 10;
+                const avgExperience = Math.round(reviews.reduce((s,r) => s + r.experience, 0) / reviews.length * 10) / 10;
+                const avgDiscipline = Math.round(reviews.reduce((s,r) => s + r.discipline, 0) / reviews.length * 10) / 10;
+                return (
+                  <>
+                    {/* Summary bar */}
+                    <div className="bg-card border border-border rounded-lg p-6 mb-6">
+                      <div className="flex items-center gap-6 flex-wrap">
+                        <div className="text-center">
+                          <div className={`text-4xl font-display font-black ${pct >= 70 ? "text-green-400" : pct >= 40 ? "text-yellow-400" : "text-red-400"}`}>{pct}%</div>
+                          <div className="text-xs text-muted-foreground font-display uppercase tracking-widest mt-1">Positive</div>
+                        </div>
+                        <div className="flex-1 space-y-2 min-w-[200px]">
+                          <div className="flex items-center gap-2 text-xs font-display uppercase tracking-widest">
+                            <ThumbsUp className="w-3 h-3 text-green-400" /><span className="text-green-400">{pos}</span>
+                            <Minus className="w-3 h-3 text-muted-foreground ml-2" /><span className="text-muted-foreground">{neu}</span>
+                            <ThumbsDown className="w-3 h-3 text-red-400 ml-2" /><span className="text-red-400">{neg}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-1 mt-3">
+                            {[["Activity", avgActivity], ["Attitude", avgAttitude], ["Experience", avgExperience], ["Discipline", avgDiscipline]].map(([label, val]) => (
+                              <div key={label as string} className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground font-display uppercase tracking-widest">{label}</span>
+                                <span className="text-xs font-display font-bold text-foreground">{val}/10</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Individual reviews */}
+                    <div className="space-y-3">
+                      {reviews.map(r => (
+                        <div key={r.id} className="bg-card border border-border rounded-lg p-4">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="flex items-center gap-2">
+                              {r.overall_vote === "positive" && <ThumbsUp className="w-4 h-4 text-green-400 shrink-0" />}
+                              {r.overall_vote === "negative" && <ThumbsDown className="w-4 h-4 text-red-400 shrink-0" />}
+                              {r.overall_vote === "neutral" && <Minus className="w-4 h-4 text-muted-foreground shrink-0" />}
+                              <span className="font-display font-bold text-sm text-foreground">{r.reviewer_username}</span>
+                              {r.blacklisted && (
+                                <span className="text-[10px] font-display font-bold uppercase bg-red-500/15 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded">Blacklist</span>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground font-sans shrink-0">{new Date(r.created_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+                          </div>
+                          <div className="flex gap-4 mb-2">
+                            {[["ACT", r.activity], ["ATT", r.attitude], ["EXP", r.experience], ["DIS", r.discipline]].map(([lbl, val]) => (
+                              <div key={lbl as string} className="text-center">
+                                <div className="text-xs font-display font-bold text-foreground">{val}</div>
+                                <div className="text-[9px] text-muted-foreground font-display uppercase tracking-widest">{lbl}</div>
+                              </div>
+                            ))}
+                          </div>
+                          {r.notes && <p className="text-sm text-muted-foreground font-sans leading-relaxed border-t border-border pt-2 mt-2">{r.notes}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 

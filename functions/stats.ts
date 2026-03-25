@@ -219,56 +219,83 @@ function buildReadinessReport(params: {
   // ── Training assessment ───────────────────────────────────────────────────
   const training = assessTrainingDocs(trainingDocs);
 
-  // ── READINESS SCORING ─────────────────────────────────────────────────────
-  let score = 50;
+  // ── READINESS SCORING (points from zero — nothing is free) ──────────────
+  // Maximum = 100. A truly organised, active unit with full docs/ops/roster
+  // can reach 100. An empty/new group starts and stays near 0.
 
-  if (capacity_grade === 'platoon_plus')        score += 25;
-  else if (capacity_grade === 'section_force')  score += 10;
-  else if (capacity_grade === 'squad_incomplete') score -= 15;
-  else                                          score -= 25;
+  let score = 0;
 
   const activityRatio = total > 0 ? active_this_month / total : 0;
-  if (activityRatio >= 0.7)      score += 15;
+
+  // 1. MANPOWER (max 20pts) ─────────────────────────────────────────────────
+  // Platoon+ (30+): 20 | Section (9–29): 10 | Squad incomplete (4–8): 4 | <4: 0
+  if      (capacity_grade === 'platoon_plus')      score += 20;
+  else if (capacity_grade === 'section_force')     score += 10;
+  else if (capacity_grade === 'squad_incomplete')  score += 4;
+  // fireteam_incomplete = 0pts
+
+  // 2. MEMBER ACTIVITY (max 15pts) ──────────────────────────────────────────
+  // Requires >50% active last 30 days to earn meaningful points
+  if      (activityRatio >= 0.8) score += 15;
+  else if (activityRatio >= 0.6) score += 10;
   else if (activityRatio >= 0.4) score += 5;
-  else if (activityRatio >= 0.2) score -= 5;
-  else                           score -= 15;
+  else if (activityRatio >= 0.2) score += 2;
+  // <20% active = 0pts
 
-  if (has_discord) score += 8; else score -= 8;
-
-  if (totalOps >= 10)     score += 10;
-  else if (totalOps >= 5) score += 5;
-  else if (totalOps >= 1) score += 2;
-  else                    score -= 5;
-
+  // 3. OPERATIONS HISTORY (max 20pts) ───────────────────────────────────────
+  // Must actually run ops. 1 op is almost nothing.
   const aarRatio = totalOps > 0 ? aars.length / totalOps : 0;
-  if (aarRatio >= 0.8)      score += 10;
-  else if (aarRatio >= 0.4) score += 5;
-  else if (aarRatio >= 0.1) score += 2;
-  else if (totalOps > 0)    score -= 10;
+  if      (totalOps >= 20) score += 20;
+  else if (totalOps >= 10) score += 14;
+  else if (totalOps >= 5)  score += 8;
+  else if (totalOps >= 3)  score += 4;
+  else if (totalOps >= 1)  score += 2;
+  // 0 ops = 0pts
 
-  if (days_since_last_op === null) score -= 5;
-  else if (days_since_last_op <= 14)  score += 8;
-  else if (days_since_last_op <= 30)  score += 4;
-  else if (days_since_last_op <= 60)  score -= 2;
-  else                                score -= 8;
+  // 4. RECENCY OF OPERATIONS (max 10pts) ────────────────────────────────────
+  // Dead units with old ops get nothing
+  if      (days_since_last_op !== null && days_since_last_op <= 14)  score += 10;
+  else if (days_since_last_op !== null && days_since_last_op <= 30)  score += 6;
+  else if (days_since_last_op !== null && days_since_last_op <= 60)  score += 3;
+  // no ops or >60 days = 0pts
 
-  if (days_since_page_update === null) score -= 4;
-  else if (days_since_page_update <= 7)   score += 8;
-  else if (days_since_page_update <= 30)  score += 4;
-  else if (days_since_page_update <= 90)  score -= 2;
-  else                                    score -= 8;
+  // 5. AAR DISCIPLINE (max 10pts) ────────────────────────────────────────────
+  // Only awarded if ops exist. No ops = no AAR pts.
+  if (totalOps >= 1) {
+    if      (aarRatio >= 0.8) score += 10;
+    else if (aarRatio >= 0.5) score += 6;
+    else if (aarRatio >= 0.2) score += 3;
+    else if (aarRatio > 0)    score += 1;
+  }
 
-  if (avg_rep_score >= 70)      score += 6;
-  else if (avg_rep_score >= 50) score += 3;
-  else if (avg_rep_score > 0)   score -= 3;
+  // 6. TRAINING DOCTRINE (max 15pts) ────────────────────────────────────────
+  // Based on knowledge_factor from training docs engine
+  score += Math.round((training.knowledge_factor / 100) * 15);
+
+  // 7. DISCORD LINKED (max 5pts) ────────────────────────────────────────────
+  if (has_discord) score += 5;
+
+  // 8. PAGE MAINTENANCE (max 5pts) ──────────────────────────────────────────
+  // Commander is actively updating the group profile
+  if      (days_since_page_update !== null && days_since_page_update <= 14)  score += 5;
+  else if (days_since_page_update !== null && days_since_page_update <= 30)  score += 3;
+  else if (days_since_page_update !== null && days_since_page_update <= 90)  score += 1;
+
+  // 9. REPUTATION / REVIEWS (max 5pts) ──────────────────────────────────────
+  // Based on actual external peer reviews — minimum 3 reviews to earn full pts
+  if (review_count >= 3 && avg_rep_score >= 70)      score += 5;
+  else if (review_count >= 3 && avg_rep_score >= 50) score += 3;
+  else if (review_count >= 1 && avg_rep_score >= 50) score += 2;
+  else if (review_count >= 1)                        score += 1;
 
   const readiness_pct = Math.min(100, Math.max(0, Math.round(score)));
 
+  // Green requires 75+, amber 45–74, red <45
+  // Also force red if below squad strength regardless of score
   const status: ReadinessReport['status'] =
-    capacity_grade === 'fireteam_incomplete' ? 'red' :
-    capacity_grade === 'squad_incomplete'    ? 'red' :
-    readiness_pct >= 65 ? 'green' :
-    readiness_pct >= 35 ? 'amber' : 'red';
+    (capacity_grade === 'fireteam_incomplete' || capacity_grade === 'squad_incomplete') ? 'red' :
+    readiness_pct >= 75 ? 'green' :
+    readiness_pct >= 45 ? 'amber' : 'red';
 
   // ── OPERATIONAL CAPABILITY TIER ──────────────────────────────────────────
   // Now includes knowledge_factor as a 20pt input (was troop count 20pt, now 15pt)
