@@ -18,6 +18,33 @@
     },
     "notes": {
       "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Active",
+        "Reserve",
+        "AWOL",
+        "MIA",
+        "KIA",
+        "Discharged"
+      ],
+      "default": "Active"
+    },
+    "specialisations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Operator skill/specialty tags e.g. CQB, JTAC, Medic, Sniper"
+    },
+    "join_date": {
+      "type": "string",
+      "description": "Date the operator joined the unit"
+    },
+    "ops_count": {
+      "type": "number",
+      "description": "Number of operations this operator has participated in"
     }
   },
   "required": [

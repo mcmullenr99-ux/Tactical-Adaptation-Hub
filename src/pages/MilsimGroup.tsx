@@ -116,18 +116,17 @@ function ReadinessGauge({ pct, status }: { pct: number; status: string }) {
 }
 
 // ─── Capability Tier badge ─────────────────────────────────────────────────────
-const TIER_META: Record<string, { label: string; style: string }> = {
-  "T1": { label: "T1 · Elite",              style: "bg-green-500/15 border-green-400/60 text-green-300" },
-  "T2": { label: "T2 · Operational",        style: "bg-yellow-400/15 border-yellow-400/50 text-yellow-300" },
-  "T3": { label: "T3 · Capable",            style: "bg-amber-600/15 border-amber-500/50 text-amber-400" },
-  "T4": { label: "T4 · Limited Capability", style: "bg-red-500/15 border-red-500/50 text-red-400" },
-  "T5": { label: "T5 · Under Developed",    style: "bg-red-900/20 border-red-800/60 text-red-600" },
-};
 function TierBadge({ tier }: { tier: string }) {
-  const meta = TIER_META[tier] ?? { label: tier, style: "bg-border/30 border-border text-muted-foreground" };
+  const styles: Record<string, string> = {
+    "TIER I":   "bg-blue-500/15 border-blue-400/60 text-blue-300",
+    "TIER II":  "bg-yellow-500/15 border-yellow-500/50 text-yellow-400",
+    "TIER III": "bg-slate-400/15 border-slate-400/50 text-slate-300",
+    "TIER IV":  "bg-orange-700/15 border-orange-600/50 text-orange-500",
+    "FORMING":  "bg-border/30 border-border text-muted-foreground",
+  };
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded border text-[10px] font-display font-bold uppercase tracking-widest ${meta.style}`}>
-      <Target className="w-2.5 h-2.5" /> {meta.label}
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded border text-[10px] font-display font-bold uppercase tracking-widest ${styles[tier] ?? styles["FORMING"]}`}>
+      <Target className="w-2.5 h-2.5" /> {tier}
     </span>
   );
 }
@@ -451,13 +450,19 @@ export default function MilsimGroup() {
                     <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Operational Capability Tier</p>
                     <div className="space-y-2">
                       {[
-                        { tier: "T1", label: "Elite",             desc: "Extensive op record, high troop experience, strong AAR discipline, and comprehensive training documentation." },
-                        { tier: "T2", label: "Operational",       desc: "Active unit with solid reputation, consistent operational output, and documented training resources." },
-                        { tier: "T3", label: "Capable",           desc: "Building op history and troop experience. Some training doctrine in place." },
-                        { tier: "T4", label: "Limited Capability", desc: "New or low-activity unit with minimal documented record and few training resources." },
-                        { tier: "T5", label: "Under Developed",   desc: "No established operational record. Unit has not yet demonstrated capability." },
+                        { tier: "TIER I",   label: "Elite Force",        desc: "Tier I units demonstrate an extensive op record, high troop experience, strong AAR discipline, and comprehensive training documentation." },
+                        { tier: "TIER II",  label: "Operational",        desc: "Active unit with solid rep, consistent operational output, and documented training resources." },
+                        { tier: "TIER III", label: "Developing",         desc: "Building op history and troop experience. Some training doctrine in place." },
+                        { tier: "TIER IV",  label: "Limited Capability", desc: "New or low-activity unit with minimal documented record and few training resources." },
+                        { tier: "FORMING",  label: "Forming",            desc: "No established operational record yet." },
                       ].map(t => (
-                        <div key={t.tier} className={`flex items-start gap-3 p-3 rounded border transition-colors ${readiness.op_capability_tier === t.tier ? (TIER_META[t.tier]?.style.replace('bg-', 'bg-').split(' ')[0] + ' ' + (t.tier === 'T1' ? 'bg-green-500/5' : t.tier === 'T2' ? 'bg-yellow-400/5' : t.tier === 'T3' ? 'bg-amber-500/5' : t.tier === 'T4' ? 'bg-red-500/5' : 'bg-red-900/10')) : "border-transparent opacity-40"}`}>
+                        <div key={t.tier} className={`flex items-start gap-3 p-3 rounded border transition-colors ${readiness.op_capability_tier === t.tier ? (
+                            t.tier === "TIER I"   ? "border-blue-400/40 bg-blue-500/5" :
+                            t.tier === "TIER II"  ? "border-yellow-500/40 bg-yellow-500/5" :
+                            t.tier === "TIER III" ? "border-slate-400/40 bg-slate-400/5" :
+                            t.tier === "TIER IV"  ? "border-orange-500/40 bg-orange-500/5" :
+                            "border-border/60 bg-secondary/50"
+                          ) : "border-transparent opacity-40"}`}>
                           <TierBadge tier={t.tier} />
                           <div>
                             <p className="text-xs font-display font-bold uppercase tracking-wider text-foreground">{t.label}</p>

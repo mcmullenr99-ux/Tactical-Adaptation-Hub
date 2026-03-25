@@ -66,6 +66,13 @@ Deno.serve(async (req) => {
       : url.pathname.replace(/^\/functions\/reputation/, '').split('/').filter(Boolean);
     const method = req.method;
 
+    // GET /reputation/group/:groupId — all reviews for a milsim group
+    if (method === 'GET' && parts.length === 2 && parts[0] === 'group') {
+      const groupId = parts[1];
+      const reviews = await base44.asServiceRole.entities.OperatorReputation.filter({ group_id: groupId });
+      return Response.json(reviews);
+    }
+
     // GET /reputation/:userId — public reputation summary for a user
     if (method === 'GET' && parts.length === 1) {
       const userId = parts[0];

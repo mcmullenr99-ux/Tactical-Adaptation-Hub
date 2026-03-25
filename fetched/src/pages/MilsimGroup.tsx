@@ -5,14 +5,33 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import {
   Shield, Globe, ExternalLink, Loader2, Users, Award, Crosshair,
-  FileText, ChevronLeft, Star, BookOpen, Map, Radio, Medal
+  FileText, ChevronLeft, Star, BookOpen, Map, Radio, Medal, MessageSquare, ThumbsUp, ThumbsDown, Minus, GraduationCap
 } from "lucide-react";
 
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
 interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
-interface RosterEntry { id: number; callsign: string; rankId: number | null; roleId: number | null; notes: string | null }
+interface RosterQual { id: string; name: string; badge_url: string | null }
+interface RosterAward { id: string; name: string; image_url: string | null; reason: string | null }
+interface RosterEntry {
+  id: number; callsign: string; rankId: number | null; roleId: number | null; notes: string | null;
+  status: string | null; specialisations: string[] | null; join_date: string | null; ops_count: number | null;
+  qualifications: RosterQual[]; awards: RosterAward[];
+}
 interface AppQuestion { id: number; question: string; sortOrder: number; required: boolean }
 interface MilsimAward { id: number; title: string; description: string | null; icon: string; awarded_by: string | null; awarded_at: string; roster_entry_id: number; callsign: string | null }
+
+interface GroupReview {
+  id: string;
+  reviewer_username: string;
+  activity: number;
+  attitude: number;
+  experience: number;
+  discipline: number;
+  overall_vote: 'positive' | 'neutral' | 'negative';
+  blacklisted: boolean;
+  notes: string | null;
+  created_date: string;
+}
 
 interface GroupDetail {
   id: number; name: string; slug: string; tagLine: string | null;
@@ -23,7 +42,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply";
+type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "reviews";
 
 function getEmbedUrl(url: string): string | null {
   try {
@@ -48,6 +67,8 @@ export default function MilsimGroup() {
   const [tab, setTab] = useState<Tab>("overview");
   const [awards, setAwards] = useState<MilsimAward[]>([]);
   const [awardsLoaded, setAwardsLoaded] = useState(false);
+  const [reviews, setReviews] = useState<GroupReview[]>([]);
+  const [reviewsLoaded, setReviewsLoaded] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -56,6 +77,14 @@ export default function MilsimGroup() {
       .catch(() => setGroup(null))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  useEffect(() => {
+    if (tab === "reviews" && group && !reviewsLoaded) {
+      apiFetch<GroupReview[]>(`/api/reputation/group/${group.id}`)
+        .then(data => { setReviews(data ?? []); setReviewsLoaded(true); })
+        .catch(() => setReviewsLoaded(true));
+    }
+  }, [tab, group, reviewsLoaded]);
 
   useEffect(() => {
     if (tab === "awards" && group && !awardsLoaded) {
@@ -96,6 +125,7 @@ export default function MilsimGroup() {
     { id: "awards", label: "Commendations", icon: Medal, show: true },
     { id: "sops", label: "SOPs", icon: BookOpen, show: !!group.sops },
     { id: "orbat", label: "ORBAT", icon: Map, show: !!group.orbat },
+    { id: "reviews", label: "Reviews", icon: MessageSquare, show: true },
     { id: "apply", label: "Apply", icon: FileText, show: group.questions.length > 0 },
   ];
 
@@ -295,29 +325,126 @@ export default function MilsimGroup() {
             </div>
           )}
 
-          {tab === "roster" && (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    {["Callsign", "Rank", "Role", "Notes"].map((h) => (
-                      <th key={h} className="text-left py-3 px-4 font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {group.roster.map((entry) => (
-                    <tr key={entry.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                      <td className="py-3 px-4 font-display font-bold uppercase tracking-wider text-sm text-foreground">{entry.callsign}</td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground font-sans">{entry.rankId ? rankById[entry.rankId]?.name ?? "—" : "—"}</td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground font-sans">{entry.roleId ? roleById[entry.roleId]?.name ?? "—" : "—"}</td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground font-sans">{entry.notes ?? "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {tab === "roster" && (() => {
+            const statusColour = (s: string | null) =>
+              s === "Active"   ? "bg-green-500/15 text-green-400 border-green-500/30" :
+              s === "Reserve"  ? "bg-blue-500/15 text-blue-400 border-blue-500/30" :
+              s === "AWOL"     ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30" :
+              s === "MIA"      ? "bg-orange-500/15 text-orange-400 border-orange-500/30" :
+              s === "KIA"      ? "bg-red-500/15 text-red-400 border-red-500/30" :
+              s === "Discharged" ? "bg-secondary text-muted-foreground border-border" :
+              "bg-green-500/15 text-green-400 border-green-500/30";
+
+            const active = group.roster.filter(e => !e.status || e.status === "Active");
+            const other  = group.roster.filter(e => e.status && e.status !== "Active");
+
+            const OperatorCard = ({ entry }: { entry: RosterEntry }) => {
+              const rank = entry.rankId ? rankById[entry.rankId] : null;
+              const role = entry.roleId ? roleById[entry.roleId] : null;
+              return (
+                <div className="bg-card border border-border rounded-lg p-4 hover:border-primary/30 transition-colors">
+                  {/* Header row */}
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                        <span className="font-display font-black text-xs text-primary">{entry.callsign.slice(0,2).toUpperCase()}</span>
+                      </div>
+                      <div>
+                        <p className="font-display font-black uppercase tracking-widest text-sm text-foreground">{entry.callsign}</p>
+                        {rank && <p className="text-[10px] font-display font-bold uppercase tracking-widest text-primary mt-0.5">{rank.abbreviation ? `[${rank.abbreviation}]` : ""} {rank.name}</p>}
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${statusColour(entry.status)}`}>
+                      {entry.status ?? "Active"}
+                    </span>
+                  </div>
+
+                  {/* Role + ops count */}
+                  <div className="flex items-center gap-3 mb-3 flex-wrap">
+                    {role && (
+                      <span className="text-[10px] font-display font-bold uppercase tracking-widest bg-secondary border border-border px-2 py-0.5 rounded text-muted-foreground">
+                        {role.name}
+                      </span>
+                    )}
+                    {entry.ops_count != null && entry.ops_count > 0 && (
+                      <span className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                        <Crosshair className="w-3 h-3" /> {entry.ops_count} op{entry.ops_count !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                    {entry.join_date && (
+                      <span className="text-[10px] text-muted-foreground font-sans">
+                        Joined {new Date(entry.join_date).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Specialisations */}
+                  {entry.specialisations && entry.specialisations.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {entry.specialisations.map((s, i) => (
+                        <span key={i} className="text-[9px] font-display font-bold uppercase tracking-widest bg-accent/10 border border-accent/25 text-accent px-1.5 py-0.5 rounded">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Qualifications */}
+                  {entry.qualifications && entry.qualifications.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {entry.qualifications.map((q) => (
+                        <span key={q.id} className="text-[9px] font-display font-bold uppercase tracking-widest bg-blue-500/10 border border-blue-500/25 text-blue-400 px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <GraduationCap className="w-2.5 h-2.5" /> {q.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Awards strip */}
+                  {entry.awards && entry.awards.length > 0 && (
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      {entry.awards.map((a) => (
+                        <div key={a.id} title={`${a.name}${a.reason ? ` — ${a.reason}` : ""}`}
+                          className="w-6 h-6 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center">
+                          {a.image_url
+                            ? <img src={a.image_url} alt={a.name} className="w-4 h-4 object-contain" />
+                            : <Medal className="w-3 h-3 text-accent" />}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  {entry.notes && (
+                    <p className="text-xs text-muted-foreground font-sans leading-relaxed border-t border-border/50 pt-2 italic">
+                      {entry.notes}
+                    </p>
+                  )}
+                </div>
+              );
+            };
+
+            return (
+              <div>
+                {active.length > 0 && (
+                  <>
+                    <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Active Personnel — {active.length}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+                      {active.map(e => <OperatorCard key={e.id} entry={e} />)}
+                    </div>
+                  </>
+                )}
+                {other.length > 0 && (
+                  <>
+                    <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Other Status</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 opacity-60">
+                      {other.map(e => <OperatorCard key={e.id} entry={e} />)}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           {tab === "awards" && (
             <div className="max-w-2xl">
@@ -392,6 +519,97 @@ export default function MilsimGroup() {
                   Apply via Discord <ExternalLink className="w-4 h-4" />
                 </a>
               )}
+            </div>
+          )}
+
+          {tab === "reviews" && (
+            <div className="max-w-3xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground">Unit Reviews</h2>
+                <span className="text-sm text-muted-foreground font-display uppercase tracking-widest">{reviews.length} review{reviews.length !== 1 ? "s" : ""}</span>
+              </div>
+
+              {!reviewsLoaded && (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+
+              {reviewsLoaded && reviews.length === 0 && (
+                <div className="bg-card border border-border rounded-lg p-12 text-center">
+                  <MessageSquare className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="font-display font-bold uppercase tracking-widest text-muted-foreground text-sm">No reviews yet</p>
+                  <p className="text-xs text-muted-foreground mt-1 font-sans">Members who have served with this unit can leave a review from their profile.</p>
+                </div>
+              )}
+
+              {reviewsLoaded && reviews.length > 0 && (() => {
+                const pos = reviews.filter(r => r.overall_vote === "positive").length;
+                const neg = reviews.filter(r => r.overall_vote === "negative").length;
+                const neu = reviews.filter(r => r.overall_vote === "neutral").length;
+                const pct = Math.round((pos / reviews.length) * 100);
+                const avgActivity   = Math.round(reviews.reduce((s,r) => s + r.activity, 0) / reviews.length * 10) / 10;
+                const avgAttitude   = Math.round(reviews.reduce((s,r) => s + r.attitude, 0) / reviews.length * 10) / 10;
+                const avgExperience = Math.round(reviews.reduce((s,r) => s + r.experience, 0) / reviews.length * 10) / 10;
+                const avgDiscipline = Math.round(reviews.reduce((s,r) => s + r.discipline, 0) / reviews.length * 10) / 10;
+                return (
+                  <>
+                    {/* Summary bar */}
+                    <div className="bg-card border border-border rounded-lg p-6 mb-6">
+                      <div className="flex items-center gap-6 flex-wrap">
+                        <div className="text-center">
+                          <div className={`text-4xl font-display font-black ${pct >= 70 ? "text-green-400" : pct >= 40 ? "text-yellow-400" : "text-red-400"}`}>{pct}%</div>
+                          <div className="text-xs text-muted-foreground font-display uppercase tracking-widest mt-1">Positive</div>
+                        </div>
+                        <div className="flex-1 space-y-2 min-w-[200px]">
+                          <div className="flex items-center gap-2 text-xs font-display uppercase tracking-widest">
+                            <ThumbsUp className="w-3 h-3 text-green-400" /><span className="text-green-400">{pos}</span>
+                            <Minus className="w-3 h-3 text-muted-foreground ml-2" /><span className="text-muted-foreground">{neu}</span>
+                            <ThumbsDown className="w-3 h-3 text-red-400 ml-2" /><span className="text-red-400">{neg}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-1 mt-3">
+                            {[["Activity", avgActivity], ["Attitude", avgAttitude], ["Experience", avgExperience], ["Discipline", avgDiscipline]].map(([label, val]) => (
+                              <div key={label as string} className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground font-display uppercase tracking-widest">{label}</span>
+                                <span className="text-xs font-display font-bold text-foreground">{val}/10</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Individual reviews */}
+                    <div className="space-y-3">
+                      {reviews.map(r => (
+                        <div key={r.id} className="bg-card border border-border rounded-lg p-4">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="flex items-center gap-2">
+                              {r.overall_vote === "positive" && <ThumbsUp className="w-4 h-4 text-green-400 shrink-0" />}
+                              {r.overall_vote === "negative" && <ThumbsDown className="w-4 h-4 text-red-400 shrink-0" />}
+                              {r.overall_vote === "neutral" && <Minus className="w-4 h-4 text-muted-foreground shrink-0" />}
+                              <span className="font-display font-bold text-sm text-foreground">{r.reviewer_username}</span>
+                              {r.blacklisted && (
+                                <span className="text-[10px] font-display font-bold uppercase bg-red-500/15 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded">Blacklist</span>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground font-sans shrink-0">{new Date(r.created_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+                          </div>
+                          <div className="flex gap-4 mb-2">
+                            {[["ACT", r.activity], ["ATT", r.attitude], ["EXP", r.experience], ["DIS", r.discipline]].map(([lbl, val]) => (
+                              <div key={lbl as string} className="text-center">
+                                <div className="text-xs font-display font-bold text-foreground">{val}</div>
+                                <div className="text-[9px] text-muted-foreground font-display uppercase tracking-widest">{lbl}</div>
+                              </div>
+                            ))}
+                          </div>
+                          {r.notes && <p className="text-sm text-muted-foreground font-sans leading-relaxed border-t border-border pt-2 mt-2">{r.notes}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 
