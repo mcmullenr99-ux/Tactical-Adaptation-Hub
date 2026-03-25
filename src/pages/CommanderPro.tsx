@@ -83,7 +83,7 @@ export default function CommanderPro() {
   useEffect(() => {
     if (!isAuthenticated || !user) return;
     // Load the group owned by this user via mine/all endpoint
-    const token = localStorage.getItem("auth_token");
+    const token = localStorage.getItem("tag_auth_token");
     fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimGroups?path=mine/all`, {
       headers: token ? { "Authorization": `Bearer ${token}` } : {},
     })
