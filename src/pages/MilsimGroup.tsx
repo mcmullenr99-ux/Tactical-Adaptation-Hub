@@ -120,12 +120,12 @@ function ReadinessGauge({ pct, status }: { pct: number; status: string }) {
 // ─── Capability Tier badge ─────────────────────────────────────────────────────
 const TIER_META: Record<string, { label: string; style: string }> = {
   "SOF":         { label: "Special Operations Forces",  style: "bg-purple-600/15 border-purple-500/50 text-purple-300" },
-  "SOC":         { label: "Special Operations Capable", style: "bg-green-500/15 border-green-400/60 text-green-300" },
-  "STRATEGIC":   { label: "Strategically Capable",      style: "bg-emerald-600/15 border-emerald-500/50 text-emerald-400" },
-  "OPERATIONAL": { label: "Operationally Capable",      style: "bg-yellow-400/15 border-yellow-400/50 text-yellow-300" },
-  "TACTICAL":    { label: "Tactically Capable",         style: "bg-orange-500/15 border-orange-500/50 text-orange-400" },
-  "LIMITED":     { label: "Limited Capability",         style: "bg-red-500/15 border-red-500/50 text-red-400" },
-  "POOR":        { label: "Poor Capability",            style: "bg-red-950/20 border-red-900/60 text-red-700" },
+  "SOC":         { label: "Special Operations Capable", style: "bg-blue-500/15 border-blue-400/60 text-blue-300" },
+  "STRATEGIC":   { label: "Strategically Capable",      style: "bg-green-500/15 border-green-400/60 text-green-300" },
+  "OPERATIONAL": { label: "Operationally Capable",      style: "bg-emerald-600/15 border-emerald-500/50 text-emerald-400" },
+  "TACTICAL":    { label: "Tactically Capable",         style: "bg-yellow-400/15 border-yellow-400/50 text-yellow-300" },
+  "LIMITED":     { label: "Limited Capability",         style: "bg-amber-500/15 border-amber-500/50 text-amber-400" },
+  "POOR":        { label: "Poor Capability",            style: "bg-red-500/15 border-red-500/50 text-red-400" },
 };
 function TierBadge({ tier }: { tier: string }) {
   const meta = TIER_META[tier] ?? { label: tier, style: "bg-border/30 border-border text-muted-foreground" };
@@ -465,12 +465,12 @@ export default function MilsimGroup() {
                       ].map(t => (
                         <div key={t.tier} className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${readiness.op_capability_tier === t.tier ? (
                             t.tier === "SOF"         ? "border-purple-500/40 bg-purple-600/5" :
-                            t.tier === "SOC"         ? "border-green-400/40 bg-green-500/5" :
-                            t.tier === "STRATEGIC"   ? "border-emerald-500/40 bg-emerald-600/5" :
-                            t.tier === "OPERATIONAL" ? "border-yellow-400/40 bg-yellow-400/5" :
-                            t.tier === "TACTICAL"    ? "border-orange-500/40 bg-orange-500/5" :
-                            t.tier === "LIMITED"     ? "border-red-500/40 bg-red-500/5" :
-                            "border-red-900/40 bg-red-950/5"
+                            t.tier === "SOC"         ? "border-blue-400/40 bg-blue-500/5" :
+                            t.tier === "STRATEGIC"   ? "border-green-400/40 bg-green-500/5" :
+                            t.tier === "OPERATIONAL" ? "border-emerald-500/40 bg-emerald-600/5" :
+                            t.tier === "TACTICAL"    ? "border-yellow-400/40 bg-yellow-400/5" :
+                            t.tier === "LIMITED"     ? "border-amber-500/40 bg-amber-500/5" :
+                            "border-red-500/40 bg-red-500/5"
                           ) : "border-transparent opacity-40"}`}>
                           <TierBadge tier={t.tier} />
                           <p className="text-[10px] text-muted-foreground font-sans leading-relaxed">{t.desc}</p>
