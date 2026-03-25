@@ -66,6 +66,39 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ ok: true }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
+    // ── ADMIN: LIST ALL AARs ──────────────────────────────────
+    // GET /api/milsim-aars?admin=1
+    if ((path === "" || path === "/") && req.method === "GET" && url.searchParams.get("admin") === "1") {
+      const aars = await asAdmin.entities.MilsimAAR.list();
+      // Sort: flagged first, then by date desc
+      aars.sort((a: any, b: any) => {
+        if (a.lb_flagged && !b.lb_flagged) return -1;
+        if (!a.lb_flagged && b.lb_flagged) return 1;
+        return new Date(b.created_date).getTime() - new Date(a.created_date).getTime();
+      });
+      return new Response(JSON.stringify(aars), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
+    // ── ADMIN: CLEAR FLAG ─────────────────────────────────────
+    // PATCH /api/milsim-aars/:id/unflag
+    if (path.match(/^\/[^/]+\/unflag$/) && req.method === "PATCH") {
+      const id = path.split("/")[1];
+      await asAdmin.entities.MilsimAAR.update(id, { lb_flagged: false, lb_flag_reason: "" });
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
+    // ── ADMIN: CONFIRM FLAG ───────────────────────────────────
+    // PATCH /api/milsim-aars/:id/flag
+    if (path.match(/^\/[^/]+\/flag$/) && req.method === "PATCH") {
+      const id = path.split("/")[1];
+      const body = await req.json().catch(() => ({}));
+      await asAdmin.entities.MilsimAAR.update(id, {
+        lb_flagged: true,
+        lb_flag_reason: body.reason ?? "Manually flagged by admin",
+      });
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown path" }), { status: 404, headers: { ...cors, "Content-Type": "application/json" } });
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });

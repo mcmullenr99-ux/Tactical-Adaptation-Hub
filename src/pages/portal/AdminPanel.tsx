@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import {
   Settings, Shield, Radio, Send, Loader2, KeyRound, Link as LinkIcon, MessageSquare, Save, Trash2,
-  Users, CheckCircle2, XCircle, Globe, AlertTriangle, Ban,
+  Users, CheckCircle2, XCircle, Globe, AlertTriangle, Ban, Flag, RotateCcw, Eye, FileText,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +26,7 @@ export default function AdminPanel() {
   });
 
   const { toast } = useToast();
-  const [tab, setTab] = useState<"roster" | "broadcast" | "resets" | "motd" | "groups">("roster");
+  const [tab, setTab] = useState<"roster" | "broadcast" | "resets" | "motd" | "groups" | "aar_flags">("roster");
   const [bSubject, setBSubject] = useState("");
   const [bBody, setBBody] = useState("");
 
@@ -78,6 +78,7 @@ export default function AdminPanel() {
             { key: "resets",    label: "Password Resets", icon: <KeyRound className="w-4 h-4" /> },
             { key: "motd",      label: "MOTD / SITRAP",   icon: <MessageSquare className="w-4 h-4" /> },
             { key: "groups",    label: "MilSim Groups",    icon: <Globe className="w-4 h-4" /> },
+            { key: "aar_flags", label: "AAR Flags",        icon: <Flag className="w-4 h-4" /> },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key as any)}
               className={`flex items-center gap-2 px-5 py-3 font-display font-bold uppercase tracking-widest text-sm transition-colors border-b-2 ${tab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
@@ -201,6 +202,7 @@ export default function AdminPanel() {
 
         {tab === "motd" && <MotdTab toast={toast} />}
         {tab === "groups" && <GroupsTab toast={toast} />}
+        {tab === "aar_flags" && <AarFlagsTab toast={toast} />}
       </div>
     </PortalLayout>
   );
@@ -427,6 +429,217 @@ function GroupsTab({ toast }: { toast: any }) {
                     title="Delete" className="p-1.5 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 rounded">
                     <Trash2 className="w-4 h-4" />
                   </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AarFlagsTab({ toast }: { toast: any }) {
+  const [aars, setAars] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [working, setWorking] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"flagged" | "all">("flagged");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const load = () => {
+    setLoading(true);
+    apiFetch<any[]>("/api/milsim-aars?admin=1")
+      .then(data => setAars(Array.isArray(data) ? data : []))
+      .catch(() => setAars([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const clearFlag = async (aar: any) => {
+    setWorking(aar.id);
+    try {
+      await apiFetch(`/api/milsim-aars/${aar.id}/unflag`, { method: "PATCH" });
+      toast({ title: "Flag Cleared", description: `AAR "${aar.title}" cleared and will now count toward leaderboard.` });
+      load();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setWorking(null);
+    }
+  };
+
+  const confirmFlag = async (aar: any) => {
+    setWorking(aar.id);
+    try {
+      await apiFetch(`/api/milsim-aars/${aar.id}/flag`, {
+        method: "PATCH",
+        body: JSON.stringify({ reason: "Manually confirmed by admin" }),
+      });
+      toast({ title: "Flag Confirmed", description: `AAR "${aar.title}" confirmed as invalid.` });
+      load();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setWorking(null);
+    }
+  };
+
+  const displayed = filter === "flagged" ? aars.filter(a => a.lb_flagged) : aars;
+  const flaggedCount = aars.filter(a => a.lb_flagged).length;
+
+  const outcomeColor: Record<string, string> = {
+    victory: "text-green-400 border-green-500/30 bg-green-500/10",
+    defeat: "text-red-400 border-red-500/30 bg-red-500/10",
+    draw: "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
+    incomplete: "text-muted-foreground border-border bg-secondary",
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-card border border-border rounded overflow-hidden shadow-lg">
+        <div className="p-6 border-b border-border bg-secondary/30 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Flag className="w-5 h-5 text-destructive" />
+            <div>
+              <h2 className="font-display font-bold uppercase tracking-wider text-lg">AAR Integrity Review</h2>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">AARs auto-flagged by the anti-cheat system. Review and override below.</p>
+            </div>
+          </div>
+          {flaggedCount > 0 && (
+            <span className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-destructive bg-destructive/10 border border-destructive/30 px-3 py-1.5 rounded">
+              <AlertTriangle className="w-3.5 h-3.5" /> {flaggedCount} Pending Review
+            </span>
+          )}
+        </div>
+
+        {/* Anti-cheat rules reference */}
+        <div className="px-6 py-4 border-b border-border bg-secondary/10">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Anti-Cheat Rules Active</p>
+          <div className="flex flex-wrap gap-3">
+            {[
+              { icon: <Users className="w-3 h-3" />, label: "Min 3 participants per AAR" },
+              { icon: <AlertTriangle className="w-3 h-3" />, label: "Max 1 scoring AAR per group per day" },
+              { icon: <Flag className="w-3 h-3" />, label: "Max 3 victories per 7-day window" },
+              { icon: <CheckCircle2 className="w-3 h-3" />, label: "Op Success LB: Verified groups only" },
+            ].map((rule, i) => (
+              <span key={i} className="flex items-center gap-1.5 text-[10px] font-sans text-muted-foreground bg-secondary border border-border px-2.5 py-1 rounded">
+                {rule.icon} {rule.label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Filter toggle */}
+        <div className="px-6 py-3 border-b border-border flex items-center gap-3">
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Show:</span>
+          {(["flagged", "all"] as const).map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              className={`px-3 py-1 rounded text-xs font-display font-bold uppercase tracking-wider transition-colors border ${
+                filter === f ? "bg-primary/10 border-primary/40 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+              }`}>
+              {f === "flagged" ? `Flagged (${flaggedCount})` : `All AARs (${aars.length})`}
+            </button>
+          ))}
+          <button onClick={load} className="ml-auto p-1.5 border border-border rounded text-muted-foreground hover:text-foreground transition-colors">
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* List */}
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+        ) : displayed.length === 0 ? (
+          <div className="text-center py-16">
+            <CheckCircle2 className="w-10 h-10 text-green-400 mx-auto mb-3 opacity-60" />
+            <p className="font-display font-bold uppercase tracking-wider text-muted-foreground">
+              {filter === "flagged" ? "No flagged AARs — system is clean" : "No AARs filed yet"}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {displayed.map(aar => (
+              <div key={aar.id} className={`px-6 py-4 transition-colors ${aar.lb_flagged ? "bg-destructive/5" : ""}`}>
+                <div className="flex items-start gap-4 flex-wrap">
+                  {/* Status indicator */}
+                  <div className={`shrink-0 mt-0.5 w-2 h-2 rounded-full ${aar.lb_flagged ? "bg-destructive" : "bg-green-400"}`} />
+
+                  {/* Main info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="font-display font-bold text-sm text-foreground">{aar.title || "Untitled AAR"}</span>
+                      {aar.outcome && (
+                        <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ${outcomeColor[aar.outcome] ?? outcomeColor.incomplete}`}>
+                          {aar.outcome}
+                        </span>
+                      )}
+                      {aar.lb_flagged && (
+                        <span className="flex items-center gap-1 text-[9px] font-display font-bold uppercase tracking-widest text-destructive bg-destructive/10 border border-destructive/30 px-1.5 py-0.5 rounded">
+                          <Flag className="w-2.5 h-2.5" /> LB Excluded
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap text-[10px] font-sans text-muted-foreground">
+                      <span>By <strong className="text-foreground">{aar.author_username ?? "Unknown"}</strong></span>
+                      {aar.op_name && <span>Op: <strong className="text-foreground">{aar.op_name}</strong></span>}
+                      <span>{Array.isArray(aar.participants) ? aar.participants.length : 0} participants</span>
+                      {aar.created_date && <span>{format(new Date(aar.created_date), "dd MMM yyyy HH:mm")}</span>}
+                    </div>
+                    {aar.lb_flagged && aar.lb_flag_reason && (
+                      <div className="mt-2 flex items-start gap-1.5 text-[10px] font-sans text-destructive bg-destructive/10 border border-destructive/20 rounded px-2.5 py-1.5">
+                        <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                        <span><strong>Flag reason:</strong> {aar.lb_flag_reason}</span>
+                      </div>
+                    )}
+
+                    {/* Expanded content */}
+                    {expandedId === aar.id && (
+                      <div className="mt-3 space-y-2 text-xs font-sans text-muted-foreground bg-secondary/50 rounded p-3 border border-border">
+                        {aar.content && (
+                          <div>
+                            <p className="text-[10px] font-display font-bold uppercase tracking-widest text-foreground mb-1">AAR Content</p>
+                            <p className="leading-relaxed line-clamp-6">{aar.content}</p>
+                          </div>
+                        )}
+                        {Array.isArray(aar.participants) && aar.participants.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-display font-bold uppercase tracking-widest text-foreground mb-1">Participants ({aar.participants.length})</p>
+                            <p>{aar.participants.join(", ")}</p>
+                          </div>
+                        )}
+                        {aar.lessons_learned && (
+                          <div>
+                            <p className="text-[10px] font-display font-bold uppercase tracking-widest text-foreground mb-1">Lessons Learned</p>
+                            <p className="leading-relaxed">{aar.lessons_learned}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => setExpandedId(expandedId === aar.id ? null : aar.id)}
+                      className="flex items-center gap-1 text-xs font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground border border-border hover:border-primary/30 px-2.5 py-1.5 rounded transition-all">
+                      <Eye className="w-3 h-3" /> {expandedId === aar.id ? "Hide" : "View"}
+                    </button>
+                    {aar.lb_flagged ? (
+                      <button onClick={() => clearFlag(aar)} disabled={working === aar.id}
+                        className="flex items-center gap-1 text-xs font-display font-bold uppercase tracking-wider text-green-400 bg-green-500/10 border border-green-500/30 hover:bg-green-500/20 px-2.5 py-1.5 rounded transition-all disabled:opacity-50">
+                        {working === aar.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                        Clear Flag
+                      </button>
+                    ) : (
+                      <button onClick={() => confirmFlag(aar)} disabled={working === aar.id}
+                        className="flex items-center gap-1 text-xs font-display font-bold uppercase tracking-wider text-destructive bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 px-2.5 py-1.5 rounded transition-all disabled:opacity-50">
+                        {working === aar.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Flag className="w-3 h-3" />}
+                        Flag
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
