@@ -451,83 +451,244 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
   );
 }
 
-// ─── Tree Node ────────────────────────────────────────────────────────────────
+// ─── Org-chart layout engine ─────────────────────────────────────────────────
 
-function OrbatTreeNode({
-  node, depth, onUpdate, onDelete, onAddChild, onEdit,
+const NODE_W  = 110;
+const NODE_H  = 112;
+const V_GAP   = 64;
+const H_GAP   = 18;
+const TREE_SEP = 64;
+
+interface LayoutNode {
+  node: OrbatNode;
+  x: number;
+  y: number;
+  children: LayoutNode[];
+}
+
+function leafCount(node: OrbatNode): number {
+  if (node.collapsed || !node.children.length) return 1;
+  return node.children.reduce((s, c) => s + leafCount(c), 0);
+}
+
+function layoutTree(node: OrbatNode, startX: number, depth: number): LayoutNode {
+  const children: LayoutNode[] = [];
+  let usedW = 0;
+
+  if (!node.collapsed && node.children.length) {
+    for (const child of node.children) {
+      const slotW = leafCount(child) * (NODE_W + H_GAP);
+      children.push(layoutTree(child, startX + usedW, depth + 1));
+      usedW += slotW;
+    }
+  }
+
+  const myW = usedW || (NODE_W + H_GAP);
+  return {
+    node,
+    x: startX + myW / 2,
+    y: depth * (NODE_H + V_GAP),
+    children,
+  };
+}
+
+function flattenLayout(root: LayoutNode) {
+  const nodes: LayoutNode[] = [];
+  const edges: { x1: number; y1: number; x2: number; y2: number }[] = [];
+
+  function walk(ln: LayoutNode) {
+    nodes.push(ln);
+    const parentBottom = ln.y + NODE_H;
+    const midY = parentBottom + V_GAP / 2;
+    for (const child of ln.children) {
+      edges.push({ x1: ln.x,    y1: parentBottom, x2: ln.x,    y2: midY    });
+      edges.push({ x1: ln.x,    y1: midY,          x2: child.x, y2: midY    });
+      edges.push({ x1: child.x, y1: midY,          x2: child.x, y2: child.y });
+      walk(child);
+    }
+  }
+  walk(root);
+  return { nodes, edges };
+}
+
+function treeExtent(root: LayoutNode): { w: number; h: number } {
+  let maxX = 0, maxY = 0;
+  function walk(ln: LayoutNode) {
+    if (ln.x + NODE_W / 2 > maxX) maxX = ln.x + NODE_W / 2;
+    if (ln.y + NODE_H > maxY)     maxY = ln.y + NODE_H;
+    ln.children.forEach(walk);
+  }
+  walk(root);
+  return { w: maxX + H_GAP, h: maxY + 32 };
+}
+
+// ─── Org-chart card ────────────────────────────────────────────────────────────
+
+function OrgCard({
+  ln, onEdit, onAddChild, onDelete, onDuplicate, onToggle, readOnly,
 }: {
-  node: OrbatNode; depth: number;
-  onUpdate: (id: string, updates: Partial<OrbatNode>) => void;
+  ln: LayoutNode;
+  onEdit: (n: OrbatNode) => void;
+  onAddChild: (id: string) => void;
   onDelete: (id: string) => void;
-  onAddChild: (parentId: string) => void;
-  onEdit: (node: OrbatNode) => void;
+  onDuplicate: (n: OrbatNode) => void;
+  onToggle: (id: string) => void;
+  readOnly: boolean;
 }) {
+  const { node, x, y } = ln;
+  const [hovered, setHovered] = React.useState(false);
   const hasChildren = node.children && node.children.length > 0;
 
+  const modBadge = node.reinforcedReduced === "reinforced" ? "(+)"
+    : node.reinforcedReduced === "reduced" ? "(−)"
+    : node.reinforcedReduced === "reinforcedAndReduced" ? "(±)"
+    : null;
+
   return (
-    <div className="select-none">
+    <div
+      style={{ position: "absolute", left: x - NODE_W / 2, top: y, width: NODE_W }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Action toolbar above card */}
+      {hovered && !readOnly && (
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-popover border border-border rounded-md px-1 py-0.5 shadow-xl z-30 whitespace-nowrap">
+          <button onClick={e => { e.stopPropagation(); onAddChild(node.id); }}
+            className="p-1 rounded hover:bg-primary/20 hover:text-primary text-muted-foreground" title="Add child">
+            <Plus className="w-3 h-3" />
+          </button>
+          <button onClick={e => { e.stopPropagation(); onDuplicate(node); }}
+            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Duplicate">
+            <Copy className="w-3 h-3" />
+          </button>
+          <button onClick={e => { e.stopPropagation(); onDelete(node.id); }}
+            className="p-1 rounded hover:bg-destructive/20 hover:text-destructive text-muted-foreground" title="Delete">
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
+      {/* Card body */}
       <div
-        className="flex items-start gap-2 group py-1 px-2 rounded hover:bg-muted/40 transition-colors cursor-pointer"
-        style={{ paddingLeft: `${depth * 24 + 8}px` }}
+        onClick={() => onEdit(node)}
+        className={`flex flex-col items-center gap-1 p-2 rounded-lg border cursor-pointer transition-all select-none
+          ${hovered ? "border-primary/70 bg-muted/40 shadow-lg shadow-primary/10" : "border-border bg-card hover:border-border/80"}`}
+        style={{ minHeight: NODE_H - 4 }}
       >
-        {/* Collapse toggle */}
-        <button
-          className="mt-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 w-4"
-          onClick={() => onUpdate(node.id, { collapsed: !node.collapsed })}
-        >
-          {hasChildren
-            ? (node.collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)
-            : <span className="w-3 h-3 block" />
-          }
-        </button>
-
-        {/* Symbol */}
-        <div className="flex-shrink-0 cursor-pointer" onClick={() => onEdit(node)}>
-          <MilSymbol unitType={node.unitType} echelon={node.echelon} size={48} />
+        <div className="flex items-center justify-center flex-shrink-0" style={{ minHeight: 54 }}>
+          <MilSymbolSvg node={node} size={46} />
         </div>
-
-        {/* Label */}
-        <div className="flex-1 min-w-0 cursor-pointer pt-2" onClick={() => onEdit(node)}>
-          <div className="text-sm font-bold truncate">{node.name || "Unnamed"}</div>
-          {node.callsign && <div className="text-[11px] text-muted-foreground font-mono">{node.callsign}</div>}
-          <div className="text-[10px] text-muted-foreground/60">
-            {NATO_UNIT_TYPES.find(u => u.id === node.unitType)?.label} · {NATO_ECHELONS.find(e => e.id === node.echelon)?.label} · {node.slots} slots
+        <div className="text-center w-full">
+          <div className="text-[10px] font-bold leading-tight text-foreground line-clamp-2" title={node.label}>
+            {node.label || "Unnamed"}
           </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pt-1 flex-shrink-0">
-          <button onClick={() => onAddChild(node.id)}
-            className="p-1 rounded hover:bg-primary/20 hover:text-primary transition-colors text-muted-foreground" title="Add child unit">
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={() => onDelete(node.id)}
-            className="p-1 rounded hover:bg-destructive/20 hover:text-destructive transition-colors text-muted-foreground" title="Delete unit">
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          {modBadge && <div className="text-[9px] font-mono text-muted-foreground">{modBadge}</div>}
+          {node.hqTfDummy !== "0" && (
+            <div className="text-[8px] font-mono text-yellow-400 uppercase leading-tight">
+              {HQ_TF_DUMMY.find(h => h.id === node.hqTfDummy)?.label}
+            </div>
+          )}
+          {node.status === "1" && <div className="text-[8px] font-mono text-purple-400 uppercase">Planned</div>}
         </div>
       </div>
 
-      {/* Children */}
-      {!node.collapsed && hasChildren && (
-        <div className="border-l border-dashed border-border/40 ml-6">
-          {node.children.map(child => (
-            <OrbatTreeNode
-              key={child.id} node={child} depth={depth + 1}
-              onUpdate={onUpdate} onDelete={onDelete} onAddChild={onAddChild} onEdit={onEdit}
-            />
-          ))}
-        </div>
+      {/* Expand/collapse button on bottom edge */}
+      {hasChildren && (
+        <button
+          onClick={e => { e.stopPropagation(); onToggle(node.id); }}
+          title={node.collapsed ? "Expand" : "Collapse"}
+          className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10
+            w-6 h-6 rounded-full bg-card border border-border shadow
+            flex items-center justify-center hover:border-primary/60 hover:bg-muted transition-all"
+        >
+          {node.collapsed
+            ? <ChevronDown className="w-3 h-3 text-muted-foreground" />
+            : <ChevronRight className="w-3 h-3 text-muted-foreground rotate-90" />
+          }
+        </button>
       )}
     </div>
   );
 }
 
-// ─── Main ORBAT Builder ───────────────────────────────────────────────────────
+// ─── Org-chart canvas ─────────────────────────────────────────────────────────
+
+function OrgChart({
+  roots, onEdit, onAddChild, onDelete, onDuplicate, onToggle, readOnly,
+}: {
+  roots: OrbatNode[];
+  onEdit: (n: OrbatNode) => void;
+  onAddChild: (id: string) => void;
+  onDelete: (id: string) => void;
+  onDuplicate: (n: OrbatNode) => void;
+  onToggle: (id: string) => void;
+  readOnly: boolean;
+}) {
+  const layoutRoots: LayoutNode[] = [];
+  let offsetX = 0;
+
+  for (const root of roots) {
+    const lc = leafCount(root);
+    const treeW = lc * (NODE_W + H_GAP);
+    layoutRoots.push(layoutTree(root, offsetX, 0));
+    offsetX += treeW + TREE_SEP;
+  }
+
+  const allNodes: LayoutNode[] = [];
+  const allEdges: { x1: number; y1: number; x2: number; y2: number }[] = [];
+  for (const lr of layoutRoots) {
+    const { nodes, edges } = flattenLayout(lr);
+    allNodes.push(...nodes);
+    allEdges.push(...edges);
+  }
+
+  let canvasW = 0, canvasH = 0;
+  for (const lr of layoutRoots) {
+    const sz = treeExtent(lr);
+    if (sz.w > canvasW) canvasW = sz.w;
+    if (sz.h > canvasH) canvasH = sz.h;
+  }
+  canvasW = Math.max(offsetX, 300);
+  canvasH = Math.max(canvasH, 200);
+
+  return (
+    <div style={{ position: "relative", width: canvasW, height: canvasH + 48 }}>
+      {/* Connector lines */}
+      <svg
+        style={{ position: "absolute", inset: 0, overflow: "visible", pointerEvents: "none" }}
+        width={canvasW} height={canvasH + 48}
+      >
+        {allEdges.map((e, i) => (
+          <line
+            key={i}
+            x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
+            stroke="rgb(63,63,70)"
+            strokeWidth={1.5}
+          />
+        ))}
+      </svg>
+
+      {/* Node cards */}
+      {allNodes.map(ln => (
+        <OrgCard
+          key={ln.node.id}
+          ln={ln}
+          onEdit={onEdit}
+          onAddChild={onAddChild}
+          onDelete={onDelete}
+          onDuplicate={onDuplicate}
+          onToggle={onToggle}
+          readOnly={readOnly}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Main builder ─────────────────────────────────────────────────────────────
 
 interface OrbatBuilderProps {
   initialData?: OrbatNode[];
-  roster?: { callsign: string; rank?: string }[];
   onSave?: (nodes: OrbatNode[]) => void;
   readOnly?: boolean;
 }
@@ -537,101 +698,85 @@ export default function OrbatBuilder({ initialData, onSave, readOnly = false }: 
   const [editingNode, setEditingNode] = useState<OrbatNode | null>(null);
   const [zoom, setZoom] = useState(1);
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
-
-  function updateNodeById(tree: OrbatNode[], id: string, updates: Partial<OrbatNode>): OrbatNode[] {
-    return tree.map(n => {
-      if (n.id === id) return { ...n, ...updates };
-      return { ...n, children: updateNodeById(n.children, id, updates) };
-    });
+  function updateById(tree: OrbatNode[], id: string, u: Partial<OrbatNode>): OrbatNode[] {
+    return tree.map(n => n.id === id ? { ...n, ...u } : { ...n, children: updateById(n.children, id, u) });
+  }
+  function deleteById(tree: OrbatNode[], id: string): OrbatNode[] {
+    return tree.filter(n => n.id !== id).map(n => ({ ...n, children: deleteById(n.children, id) }));
+  }
+  function addChildTo(tree: OrbatNode[], pid: string, child: OrbatNode): OrbatNode[] {
+    return tree.map(n => n.id === pid
+      ? { ...n, children: [...n.children, child] }
+      : { ...n, children: addChildTo(n.children, pid, child) });
+  }
+  function replaceById(tree: OrbatNode[], id: string, updated: OrbatNode): OrbatNode[] {
+    return tree.map(n => n.id === id ? updated : { ...n, children: replaceById(n.children, id, updated) });
+  }
+  function findNode(tree: OrbatNode[], id: string): OrbatNode | undefined {
+    for (const n of tree) {
+      if (n.id === id) return n;
+      const f = findNode(n.children, id);
+      if (f) return f;
+    }
   }
 
-  function deleteNodeById(tree: OrbatNode[], id: string): OrbatNode[] {
-    return tree
-      .filter(n => n.id !== id)
-      .map(n => ({ ...n, children: deleteNodeById(n.children, id) }));
+  function handleUpdate(id: string, u: Partial<OrbatNode>) { setNodes(p => updateById(p, id, u)); }
+  function handleDelete(id: string) { setNodes(p => deleteById(p, id)); }
+  function handleToggle(id: string) {
+    setNodes(p => updateById(p, id, { collapsed: !findNode(p, id)?.collapsed }));
   }
-
-  function addChildById(tree: OrbatNode[], parentId: string, child: OrbatNode): OrbatNode[] {
-    return tree.map(n => {
-      if (n.id === parentId) return { ...n, children: [...n.children, child] };
-      return { ...n, children: addChildById(n.children, parentId, child) };
-    });
+  function handleAddChild(pid: string) {
+    const child = defaultNode({ echelon: "12" });
+    setNodes(p => addChildTo(p, pid, child));
+    setEditingNode(child);
   }
-
-  // ── Actions ───────────────────────────────────────────────────────────────
-
-  function handleUpdate(id: string, updates: Partial<OrbatNode>) {
-    setNodes(prev => updateNodeById(prev, id, updates));
-  }
-
-  function handleDelete(id: string) {
-    setNodes(prev => deleteNodeById(prev, id));
-  }
-
-  function handleAddChild(parentId: string) {
-    const child: OrbatNode = {
-      id: generateId(), name: "New Unit", unitType: "infantry",
-      echelon: "squad", slots: 4, children: [],
-    };
-    setNodes(prev => addChildById(prev, parentId, child));
-  }
-
   function handleAddRoot() {
-    const node: OrbatNode = {
-      id: generateId(), name: "New Unit", unitType: "infantry",
-      echelon: "platoon", slots: 8, children: [],
-    };
-    setNodes(prev => [...prev, node]);
+    const node = defaultNode({ echelon: "16" });
+    setNodes(p => [...p, node]);
+    setEditingNode(node);
   }
-
   function handleSaveEdit(updated: OrbatNode) {
-    setNodes(prev => updateNodeById(prev, updated.id, updated));
+    setNodes(prev => {
+      const exists = JSON.stringify(prev).includes(`"id":"${updated.id}"`);
+      return exists ? replaceById(prev, updated.id, updated) : [...prev, updated];
+    });
   }
-
-  function handleSave() {
-    onSave?.(nodes);
+  function handleDuplicate(node: OrbatNode) {
+    function deepCopy(n: OrbatNode): OrbatNode {
+      return { ...n, id: generateId(), label: n.label + " (copy)", children: n.children.map(deepCopy) };
+    }
+    setNodes(p => [...p, deepCopy(node)]);
   }
-
-  // ── Export ────────────────────────────────────────────────────────────────
-
   function handleExport() {
-    const data = JSON.stringify(nodes, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "orbat.json"; a.click();
-    URL.revokeObjectURL(url);
+    const blob = new Blob([JSON.stringify(nodes, null, 2)], { type: "application/json" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "orbat.json"; a.click();
   }
-
-  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col h-full bg-background border border-border rounded-lg overflow-hidden">
-
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-card flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">ORBAT</span>
-          <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono">NATO APP-6</span>
+          <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono border border-primary/20">APP-6D</span>
+          <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono">2525D</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))}
+          <button onClick={() => setZoom(z => Math.max(0.3, +(z - 0.1).toFixed(1)))}
             className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
           <span className="text-xs text-muted-foreground font-mono w-10 text-center">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom(z => Math.min(2, z + 0.1))}
+          <button onClick={() => setZoom(z => Math.min(2, +(z + 0.1).toFixed(1)))}
             className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
           <div className="w-px h-4 bg-border mx-1" />
-          <button onClick={handleExport}
-            className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Export JSON">
+          <button onClick={handleExport} className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Export JSON">
             <Download className="w-3.5 h-3.5" />
           </button>
           {!readOnly && onSave && (
-            <button onClick={handleSave}
+            <button onClick={() => onSave(nodes)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded text-xs font-bold hover:bg-primary/90 transition-colors">
               <Save className="w-3 h-3" /> Save
             </button>
@@ -639,14 +784,14 @@ export default function OrbatBuilder({ initialData, onSave, readOnly = false }: 
         </div>
       </div>
 
-      {/* Tree */}
-      <div className="flex-1 overflow-auto p-4" style={{ fontSize: `${zoom}rem` }}>
+      {/* Scrollable canvas */}
+      <div className="flex-1 overflow-auto p-6" style={{ cursor: "default" }}>
         {nodes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center gap-4 py-16">
-            <div className="opacity-30">
-              <MilSymbol unitType="infantry" echelon="battalion" size={72} />
+          <div className="flex flex-col items-center justify-center h-full gap-4 py-16 text-center">
+            <div className="opacity-20 pointer-events-none">
+              <MilSymbolSvg node={defaultNode({ echelon: "16", hqTfDummy: "1" })} size={80} />
             </div>
-            <div className="text-muted-foreground text-sm">No units yet. Add a root unit to begin.</div>
+            <p className="text-muted-foreground text-sm">No units yet. Build your ORBAT.</p>
             {!readOnly && (
               <button onClick={handleAddRoot}
                 className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded text-sm font-bold hover:bg-primary/90 transition-colors">
@@ -655,33 +800,32 @@ export default function OrbatBuilder({ initialData, onSave, readOnly = false }: 
             )}
           </div>
         ) : (
-          <div className="space-y-0.5">
-            {nodes.map(node => (
-              <OrbatTreeNode
-                key={node.id} node={node} depth={0}
-                onUpdate={handleUpdate} onDelete={handleDelete}
-                onAddChild={handleAddChild} onEdit={setEditingNode}
+          <div>
+            <div style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
+              <OrgChart
+                roots={nodes}
+                onEdit={setEditingNode}
+                onAddChild={handleAddChild}
+                onDelete={handleDelete}
+                onDuplicate={handleDuplicate}
+                onToggle={handleToggle}
+                readOnly={readOnly}
               />
-            ))}
+            </div>
+            {!readOnly && (
+              <div className="mt-4">
+                <button onClick={handleAddRoot}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-border rounded text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
+                  <Plus className="w-3 h-3" /> Add Root Unit
+                </button>
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Add root button when tree has nodes */}
-        {nodes.length > 0 && !readOnly && (
-          <button onClick={handleAddRoot}
-            className="mt-4 flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-border rounded text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
-            <Plus className="w-3 h-3" /> Add Root Unit
-          </button>
         )}
       </div>
 
-      {/* Node editor modal */}
       {editingNode && (
-        <NodeEditor
-          node={editingNode}
-          onSave={handleSaveEdit}
-          onClose={() => setEditingNode(null)}
-        />
+        <NodeEditor node={editingNode} onSave={handleSaveEdit} onClose={() => setEditingNode(null)} />
       )}
     </div>
   );
