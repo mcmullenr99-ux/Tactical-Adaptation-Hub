@@ -1,449 +1,598 @@
 /**
- * NATO ORBAT Builder
- * NATO APP-6 standard. One uniform system. No switcher.
+ * NATO ORBAT Builder — Full APP-6D / MIL-STD-2525D
+ * Powered by milsymbol (spatialillusions.com)
  */
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useMemo } from "react";
+import ms from "milsymbol";
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Save,
-  ZoomIn, ZoomOut, Settings, X, Download,
+  ZoomIn, ZoomOut, X, Download, Copy, Settings2, Palette,
 } from "lucide-react";
 
-// ─── Echelons ─────────────────────────────────────────────────────────────────
+// ─── SIDC builder ─────────────────────────────────────────────────────────────
 
-export const NATO_ECHELONS = [
-  { id: "fireteam",  label: "Fire Team"  },
-  { id: "squad",     label: "Squad"      },
-  { id: "section",   label: "Section"    },
-  { id: "platoon",   label: "Platoon"    },
-  { id: "company",   label: "Company"    },
-  { id: "battalion", label: "Battalion"  },
-  { id: "regiment",  label: "Regiment"   },
-  { id: "brigade",   label: "Brigade"    },
-  { id: "division",  label: "Division"   },
-  { id: "corps",     label: "Corps"      },
+export function buildSIDC({
+  affiliation = "03",
+  symbolSet = "10",
+  status = "0",
+  hqTfDummy = "0",
+  echelon = "00",
+  functionId = "121100",
+}: {
+  affiliation?: string;
+  symbolSet?: string;
+  status?: string;
+  hqTfDummy?: string;
+  echelon?: string;
+  functionId?: string;
+}) {
+  // 30-char MIL-STD-2525D SIDC
+  return `13${affiliation}${symbolSet}${status}${hqTfDummy}${echelon}${functionId}0000000000`;
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+export const AFFILIATIONS = [
+  { id: "03", label: "Friendly",         color: "#80e0ff" },
+  { id: "06", label: "Hostile",          color: "#ff8080" },
+  { id: "04", label: "Neutral",          color: "#aaffaa" },
+  { id: "01", label: "Unknown",          color: "#ffff80" },
+  { id: "02", label: "Assumed Friendly", color: "#80c0ff" },
+  { id: "05", label: "Suspect",          color: "#ffb060" },
 ];
 
-// ─── Unit Types ───────────────────────────────────────────────────────────────
-
-export const NATO_UNIT_TYPES = [
-  // Command
-  { id: "hq",             label: "HQ / Command",        category: "Command"  },
-  { id: "command_post",   label: "Command Post",         category: "Command"  },
-  // Infantry
-  { id: "infantry",       label: "Infantry",             category: "Infantry" },
-  { id: "light_infantry", label: "Light Infantry",       category: "Infantry" },
-  { id: "mech_infantry",  label: "Mechanised Infantry",  category: "Infantry" },
-  { id: "airborne",       label: "Airborne",             category: "Infantry" },
-  { id: "ranger",         label: "Ranger / Recon",       category: "Infantry" },
-  { id: "special_forces", label: "Special Forces",       category: "Infantry" },
-  { id: "anti_armor",     label: "Anti-Armour",          category: "Infantry" },
-  // Armour
-  { id: "armour",         label: "Armour / Tank",        category: "Armour"   },
-  { id: "apc",            label: "APC",                  category: "Armour"   },
-  { id: "ifv",            label: "IFV",                  category: "Armour"   },
-  { id: "cavalry",        label: "Cavalry / Recce",      category: "Armour"   },
-  // Aviation
-  { id: "aviation",       label: "Aviation",             category: "Aviation" },
-  { id: "attack_helo",    label: "Attack Helicopter",    category: "Aviation" },
-  { id: "transport_helo", label: "Transport Helicopter", category: "Aviation" },
-  { id: "uav",            label: "UAV / Drone",          category: "Aviation" },
-  // Fires
-  { id: "artillery",      label: "Artillery",            category: "Fires"    },
-  { id: "mortar",         label: "Mortar",               category: "Fires"    },
-  // Support
-  { id: "engineers",      label: "Engineers",            category: "Support"  },
-  { id: "logistics",      label: "Logistics / Supply",   category: "Support"  },
-  { id: "medical",        label: "Medical",              category: "Support"  },
-  { id: "signals",        label: "Signals / Comms",      category: "Support"  },
-  { id: "intelligence",   label: "Intelligence",         category: "Support"  },
-  { id: "mp",             label: "Military Police",      category: "Support"  },
-  { id: "sof",            label: "SOF / JTAC",           category: "Support"  },
-  { id: "cbrn",           label: "CBRN",                 category: "Support"  },
-  { id: "maintenance",    label: "Maintenance",          category: "Support"  },
+export const STATUSES = [
+  { id: "0", label: "Present / Actual" },
+  { id: "1", label: "Anticipated / Planned" },
 ];
+
+export const HQ_TF_DUMMY = [
+  { id: "0", label: "None"          },
+  { id: "1", label: "HQ"            },
+  { id: "2", label: "Task Force"    },
+  { id: "3", label: "HQ + TF"       },
+  { id: "4", label: "Dummy / Feint" },
+  { id: "5", label: "HQ + Dummy"    },
+  { id: "6", label: "TF + Dummy"    },
+  { id: "7", label: "HQ + TF + Dummy" },
+];
+
+export const ECHELONS = [
+  { id: "00", label: "— Unspecified"             },
+  { id: "11", label: "• Fireteam / Crew"          },
+  { id: "12", label: "•• Squad"                   },
+  { id: "13", label: "••• Section"                },
+  { id: "14", label: "| Platoon"                  },
+  { id: "15", label: "|| Company / Battery"       },
+  { id: "16", label: "||| Battalion / Squadron"   },
+  { id: "17", label: "X Regiment / Group"         },
+  { id: "18", label: "XX Brigade"                 },
+  { id: "19", label: "XXX Division"               },
+  { id: "20", label: "XXXX Corps"                 },
+  { id: "21", label: "XXXXX Army"                 },
+  { id: "22", label: "XXXXXX Army Group"          },
+  { id: "23", label: "XXXXXXX Region"             },
+  { id: "24", label: "XXXXXXXX Command"           },
+];
+
+export const REINFORCED_REDUCED = [
+  { id: "",                   label: "None"                   },
+  { id: "reinforced",         label: "(+) Reinforced"         },
+  { id: "reduced",            label: "(−) Reduced"            },
+  { id: "reinforcedAndReduced", label: "(±) Reinforced & Reduced" },
+];
+
+// Preset fill colours for the symbol selector
+export const FILL_COLORS = [
+  { id: "auto",    label: "Auto (NATO standard)", value: null           },
+  { id: "blue",    label: "Friendly Blue",        value: "#80e0ff"      },
+  { id: "red",     label: "Hostile Red",          value: "#ff8080"      },
+  { id: "green",   label: "Neutral Green",        value: "#aaffaa"      },
+  { id: "yellow",  label: "Unknown Yellow",       value: "#ffff80"      },
+  { id: "orange",  label: "Orange",               value: "#ffb060"      },
+  { id: "purple",  label: "Purple",               value: "#c084fc"      },
+  { id: "white",   label: "White / Uncoloured",   value: "#ffffff"      },
+  { id: "black",   label: "Black",                value: "#111111"      },
+  { id: "custom",  label: "Custom…",              value: null           },
+];
+
+// ─── CORRECTED unit type catalogue ───────────────────────────────────────────
+// All function IDs validated against milsymbol landunit.js
+
+export const UNIT_CATEGORIES: { category: string; units: { id: string; label: string; functionId: string }[] }[] = [
+  {
+    category: "Infantry",
+    units: [
+      { id: "infantry",        label: "Infantry",               functionId: "121100" },
+      { id: "inf_amphibious",  label: "Amphibious Infantry",    functionId: "121101" },
+      { id: "inf_mech",        label: "Mechanised Infantry",    functionId: "121102" },
+      { id: "inf_motor",       label: "Motorized Infantry",     functionId: "121104" },
+      { id: "inf_airborne",    label: "Airborne",               functionId: "120100" },
+      { id: "inf_air_assault", label: "Air Assault",            functionId: "120100" },
+      { id: "recce",           label: "Reconnaissance",         functionId: "121300" },
+      { id: "surveillance",    label: "Surveillance",           functionId: "121600" },
+      { id: "sniper",          label: "Sniper",                 functionId: "121500" },
+      { id: "sf",              label: "Special Forces",         functionId: "121700" },
+      { id: "sof",             label: "SOF",                    functionId: "121800" },
+      { id: "ranger",          label: "Ranger",                 functionId: "122000" },
+      { id: "seal",            label: "SEA-AIR-LAND (SEAL)",    functionId: "121400" },
+      { id: "anti_armor",      label: "Anti-Armour",            functionId: "120400" },
+      { id: "combined_arms",   label: "Combined Arms",          functionId: "121000" },
+    ],
+  },
+  {
+    category: "Armour",
+    units: [
+      { id: "armour",          label: "Armour / Tank",          functionId: "120500" },
+      { id: "armd_cav",        label: "Armoured Cavalry",       functionId: "120501" },
+      { id: "armd_amphibious", label: "Armour (Amphibious)",    functionId: "120502" },
+    ],
+  },
+  {
+    category: "Aviation",
+    units: [
+      { id: "avn_rotary",      label: "Aviation (Rotary Wing)", functionId: "120600" },
+      { id: "avn_fixed",       label: "Aviation (Fixed Wing)",  functionId: "120800" },
+      { id: "avn_composite",   label: "Aviation (Composite)",   functionId: "120700" },
+      { id: "uav",             label: "Unmanned Systems / UAV", functionId: "121900" },
+    ],
+  },
+  {
+    category: "Fires",
+    units: [
+      { id: "arty",            label: "Field Artillery",        functionId: "130300" },
+      { id: "arty_obs",        label: "Artillery Observer",     functionId: "130400" },
+      { id: "jfst",            label: "Joint Fire Support",     functionId: "130500" },
+      { id: "missile",         label: "Missile",                functionId: "130700" },
+      { id: "mortar",          label: "Mortar",                 functionId: "130800" },
+      { id: "mortar_tracked",  label: "Mortar (Tracked)",       functionId: "130801" },
+      { id: "mortar_truck",    label: "Mortar (Truck)",         functionId: "130802" },
+      { id: "mortar_towed",    label: "Mortar (Towed)",         functionId: "130803" },
+      { id: "ada",             label: "Air Defence",            functionId: "130100" },
+    ],
+  },
+  {
+    category: "Combat Support",
+    units: [
+      { id: "engineer",        label: "Engineer",               functionId: "140700" },
+      { id: "eng_mech",        label: "Engineer (Mech)",        functionId: "140701" },
+      { id: "eod",             label: "EOD / Ordnance",         functionId: "140800" },
+      { id: "cbrn",            label: "CBRN / NBC",             functionId: "140100" },
+      { id: "cbrn_armd",       label: "CBRN (Armoured)",        functionId: "140101" },
+      { id: "signal",          label: "Signal / Comms",         functionId: "111000" },
+      { id: "signal_radio",    label: "Signal (Radio)",         functionId: "111001" },
+      { id: "signal_sat",      label: "Signal (Satellite)",     functionId: "111004" },
+      { id: "mp",              label: "Military Police",        functionId: "141200" },
+      { id: "intel",           label: "Military Intelligence",  functionId: "151000" },
+      { id: "ew",              label: "Electronic Warfare",     functionId: "150500" },
+      { id: "psyops",          label: "PsyOps / Info Ops",      functionId: "110400" },
+      { id: "civil_affairs",   label: "Civil Affairs",          functionId: "110200" },
+      { id: "cimic",           label: "CIMIC",                  functionId: "110300" },
+      { id: "jtac",            label: "JTAC / TACP",            functionId: "130400" },
+    ],
+  },
+  {
+    category: "Combat Service Support",
+    units: [
+      { id: "medical",         label: "Medical",                functionId: "161300" },
+      { id: "med_hospital",    label: "Medical Treatment",      functionId: "161400" },
+      { id: "supply",          label: "Supply",                 functionId: "160200" },
+      { id: "sustainment",     label: "Sustainment",            functionId: "160000" },
+      { id: "maintenance",     label: "Maintenance",            functionId: "161100" },
+      { id: "transport",       label: "Transportation",         functionId: "163600" },
+      { id: "ammo",            label: "Ammunition",             functionId: "160400" },
+      { id: "ordnance",        label: "Ordnance",               functionId: "162300" },
+      { id: "petroleum",       label: "Petroleum / Fuel (POL)", functionId: "162500" },
+      { id: "finance",         label: "Finance",                functionId: "160700" },
+      { id: "mortuary",        label: "Mortuary Affairs",       functionId: "161600" },
+      { id: "water",           label: "Water",                  functionId: "164700" },
+      { id: "css_general",     label: "CSS (General)",          functionId: "160600" },
+    ],
+  },
+  {
+    category: "Command & Control",
+    units: [
+      { id: "c2_generic",      label: "C2 (Generic)",           functionId: "110000" },
+      { id: "special_troops",  label: "Special Troops",         functionId: "111400" },
+      { id: "multi_domain",    label: "Multi-Domain",           functionId: "111500" },
+      { id: "liaison",         label: "Liaison",                functionId: "110500" },
+    ],
+  },
+];
+
+export const ALL_UNIT_TYPES = UNIT_CATEGORIES.flatMap(c => c.units);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface OrbatNodeAmplifiers {
+  unitName?: string;
+  higherFormation?: string;
+  additionalInfo?: string;
+  staffComments?: string;
+  quantity?: string;
+  direction?: number;
+  dtg?: string;
+  location?: string;
+  type?: string;
+  combatEffectiveness?: string;
+}
+
 export interface OrbatNode {
   id: string;
-  name: string;
-  callsign?: string;
-  unitType: string;
+  label: string;
+  affiliation: string;
+  symbolSet: string;
+  status: string;
+  hqTfDummy: string;
   echelon: string;
-  slots: number;
+  functionId: string;
+  reinforcedReduced: string;
+  fillColor?: string;        // null = auto NATO colour
+  amplifiers: OrbatNodeAmplifiers;
   children: OrbatNode[];
   collapsed?: boolean;
+  slots?: number;
 }
 
 function generateId() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-// ─── Echelon marks drawn ABOVE the box ────────────────────────────────────────
-// fireteam=• squad=•• section=••• platoon=| company=|| battalion=|||
-// regiment=X brigade=XX division=XXX corps=XXXX
-
-function EchelonMark({ id, cx, topY, sw }: { id: string; cx: number; topY: number; sw: number }) {
-  const lineH = sw * 5;
-  switch (id) {
-    case "fireteam":
-      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 4} fontFamily="serif" fill="#111">•</text>;
-    case "squad":
-      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 4} fontFamily="serif" fill="#111">••</text>;
-    case "section":
-      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 4} fontFamily="serif" fill="#111">•••</text>;
-    case "platoon":
-      return <line x1={cx} y1={topY - lineH} x2={cx} y2={topY} stroke="#111" strokeWidth={sw} />;
-    case "company":
-      return <>
-        <line x1={cx - sw * 2.5} y1={topY - lineH} x2={cx - sw * 2.5} y2={topY} stroke="#111" strokeWidth={sw} />
-        <line x1={cx + sw * 2.5} y1={topY - lineH} x2={cx + sw * 2.5} y2={topY} stroke="#111" strokeWidth={sw} />
-      </>;
-    case "battalion":
-      return <>
-        <line x1={cx - sw * 4}  y1={topY - lineH} x2={cx - sw * 4}  y2={topY} stroke="#111" strokeWidth={sw} />
-        <line x1={cx}            y1={topY - lineH} x2={cx}            y2={topY} stroke="#111" strokeWidth={sw} />
-        <line x1={cx + sw * 4}  y1={topY - lineH} x2={cx + sw * 4}  y2={topY} stroke="#111" strokeWidth={sw} />
-      </>;
-    case "regiment":
-      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 5.5} fontFamily="serif" fontWeight="bold" fill="#111">X</text>;
-    case "brigade":
-      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 5.5} fontFamily="serif" fontWeight="bold" fill="#111">XX</text>;
-    case "division":
-      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 5.5} fontFamily="serif" fontWeight="bold" fill="#111">XXX</text>;
-    case "corps":
-      return <text x={cx} y={topY - 1} textAnchor="middle" fontSize={sw * 5.5} fontFamily="serif" fontWeight="bold" fill="#111">XXXX</text>;
-    default:
-      return null;
-  }
+function defaultNode(overrides: Partial<OrbatNode> = {}): OrbatNode {
+  return {
+    id: generateId(),
+    label: "New Unit",
+    affiliation: "03",
+    symbolSet: "10",
+    status: "0",
+    hqTfDummy: "0",
+    echelon: "14",
+    functionId: "121100",
+    reinforcedReduced: "",
+    fillColor: undefined,
+    amplifiers: {},
+    children: [],
+    slots: 0,
+    ...overrides,
+  };
 }
 
-// ─── NATO APP-6 interior symbols ──────────────────────────────────────────────
-// Drawn inside a 70×44 box (x:5-75, y:3-47) centred at (40, 25)
+// ─── Symbol renderer ──────────────────────────────────────────────────────────
 
-function UnitInterior({ type, sw }: { type: string; sw: number }) {
-  switch (type) {
-
-    // ── INFANTRY (diagonal cross) ─────────────────────────────────────────────
-    case "infantry":
-    case "light_infantry":
-      return <>
-        <line x1={8}  y1={6}  x2={72} y2={44} stroke="#111" strokeWidth={sw} />
-        <line x1={72} y1={6}  x2={8}  y2={44} stroke="#111" strokeWidth={sw} />
-      </>;
-
-    // ── MECHANISED INFANTRY (diagonal cross + oval) ───────────────────────────
-    case "mech_infantry":
-    case "ifv":
-      return <>
-        <line x1={8}  y1={6}  x2={72} y2={44} stroke="#111" strokeWidth={sw} />
-        <line x1={72} y1={6}  x2={8}  y2={44} stroke="#111" strokeWidth={sw} />
-        <ellipse cx={40} cy={25} rx={20} ry={11} fill="none" stroke="#111" strokeWidth={sw} />
-      </>;
-
-    // ── AIRBORNE (diagonal cross + arc below) ────────────────────────────────
-    case "airborne":
-      return <>
-        <line x1={8}  y1={6}  x2={72} y2={44} stroke="#111" strokeWidth={sw} />
-        <line x1={72} y1={6}  x2={8}  y2={44} stroke="#111" strokeWidth={sw} />
-        <path d="M 18,42 Q 40,20 62,42" fill="none" stroke="#111" strokeWidth={sw} />
-      </>;
-
-    // ── SPECIAL FORCES (diagonal cross + diamond) ────────────────────────────
-    case "special_forces":
-    case "sof":
-      return <>
-        <line x1={8}  y1={6}  x2={72} y2={44} stroke="#111" strokeWidth={sw} />
-        <line x1={72} y1={6}  x2={8}  y2={44} stroke="#111" strokeWidth={sw} />
-        <polygon points="40,10 58,25 40,40 22,25" fill="none" stroke="#111" strokeWidth={sw} />
-      </>;
-
-    // ── RANGER (diagonal cross + chevron) ────────────────────────────────────
-    case "ranger":
-      return <>
-        <line x1={8}  y1={6}  x2={72} y2={44} stroke="#111" strokeWidth={sw} />
-        <line x1={72} y1={6}  x2={8}  y2={44} stroke="#111" strokeWidth={sw} />
-        <polyline points="28,40 40,30 52,40" fill="none" stroke="#111" strokeWidth={sw} />
-      </>;
-
-    // ── ANTI-ARMOUR (arrow pointing left) ────────────────────────────────────
-    case "anti_armor":
-      return <>
-        <line x1={18} y1={25} x2={62} y2={25} stroke="#111" strokeWidth={sw + 0.5} />
-        <polyline points="30,16 18,25 30,34" fill="none" stroke="#111" strokeWidth={sw + 0.5} />
-        <line x1={52} y1={16} x2={64} y2={25} stroke="#111" strokeWidth={sw} />
-        <line x1={52} y1={34} x2={64} y2={25} stroke="#111" strokeWidth={sw} />
-      </>;
-
-    // ── ARMOUR / TANK (oval) ──────────────────────────────────────────────────
-    case "armour":
-      return <ellipse cx={40} cy={25} rx={24} ry={14} fill="none" stroke="#111" strokeWidth={sw} />;
-
-    // ── APC (oval) ────────────────────────────────────────────────────────────
-    case "apc":
-      return <>
-        <ellipse cx={40} cy={25} rx={24} ry={14} fill="none" stroke="#111" strokeWidth={sw} />
-        <line x1={30} y1={25} x2={50} y2={25} stroke="#111" strokeWidth={sw} />
-      </>;
-
-    // ── CAVALRY / RECCE (diagonal slash) ─────────────────────────────────────
-    case "cavalry":
-      return <line x1={14} y1={44} x2={66} y2={6} stroke="#111" strokeWidth={sw + 0.5} />;
-
-    // ── HQ / COMMAND POST (horizontal line through centre) ───────────────────
-    case "hq":
-    case "command_post":
-      return <>
-        <line x1={10} y1={25} x2={70} y2={25} stroke="#111" strokeWidth={sw + 0.5} />
-        <line x1={40} y1={10} x2={40} y2={40} stroke="#111" strokeWidth={sw + 0.5} />
-      </>;
-
-    // ── ARTILLERY (solid filled circle) ──────────────────────────────────────
-    case "artillery":
-      return <circle cx={40} cy={25} r={13} fill="#111" />;
-
-    // ── MORTAR (small solid circle) ──────────────────────────────────────────
-    case "mortar":
-      return <>
-        <circle cx={40} cy={25} r={13} fill="none" stroke="#111" strokeWidth={sw} />
-        <circle cx={40} cy={25} r={6} fill="#111" />
-      </>;
-
-    // ── AVIATION (infinity / figure-8) ───────────────────────────────────────
-    case "aviation":
-      return <path
-        d="M 16,25 C 16,14 28,14 40,25 C 52,36 64,36 64,25 C 64,14 52,14 40,25 C 28,36 16,36 16,25 Z"
-        fill="none" stroke="#111" strokeWidth={sw}
-      />;
-
-    // ── ATTACK HELICOPTER (infinity + arrow up) ───────────────────────────────
-    case "attack_helo":
-      return <>
-        <path
-          d="M 16,28 C 16,18 28,18 40,28 C 52,38 64,38 64,28 C 64,18 52,18 40,28 C 28,38 16,38 16,28 Z"
-          fill="none" stroke="#111" strokeWidth={sw}
-        />
-        <line x1={40} y1={22} x2={40} y2={8} stroke="#111" strokeWidth={sw} />
-        <polyline points="34,14 40,8 46,14" fill="none" stroke="#111" strokeWidth={sw} />
-      </>;
-
-    // ── TRANSPORT HELICOPTER (infinity + horizontal bar top) ──────────────────
-    case "transport_helo":
-      return <>
-        <path
-          d="M 16,28 C 16,18 28,18 40,28 C 52,38 64,38 64,28 C 64,18 52,18 40,28 C 28,38 16,38 16,28 Z"
-          fill="none" stroke="#111" strokeWidth={sw}
-        />
-        <line x1={26} y1={12} x2={54} y2={12} stroke="#111" strokeWidth={sw} />
-      </>;
-
-    // ── UAV (cross + circle) ──────────────────────────────────────────────────
-    case "uav":
-      return <>
-        <line x1={22} y1={25} x2={58} y2={25} stroke="#111" strokeWidth={sw + 0.5} />
-        <line x1={40} y1={11} x2={40} y2={39} stroke="#111" strokeWidth={sw + 0.5} />
-        <circle cx={40} cy={25} r={5} fill="none" stroke="#111" strokeWidth={sw} />
-      </>;
-
-    // ── ENGINEERS (castle / battlement) ──────────────────────────────────────
-    case "engineers":
-      return <>
-        <line x1={14} y1={36} x2={66} y2={36} stroke="#111" strokeWidth={sw} />
-        <rect x={18} y={18} width={9}  height={18} fill="white" stroke="#111" strokeWidth={sw} />
-        <rect x={35} y={18} width={9}  height={18} fill="white" stroke="#111" strokeWidth={sw} />
-        <rect x={52} y={18} width={9}  height={18} fill="white" stroke="#111" strokeWidth={sw} />
-        <line x1={14} y1={18} x2={66} y2={18} stroke="#111" strokeWidth={sw} />
-      </>;
-
-    // ── LOGISTICS (open circle) ───────────────────────────────────────────────
-    case "logistics":
-      return <circle cx={40} cy={25} r={14} fill="none" stroke="#111" strokeWidth={sw} />;
-
-    // ── MEDICAL (cross — bold) ────────────────────────────────────────────────
-    case "medical":
-      return <>
-        <line x1={40} y1={9}  x2={40} y2={41} stroke="#111" strokeWidth={sw * 3.5} />
-        <line x1={22} y1={25} x2={58} y2={25} stroke="#111" strokeWidth={sw * 3.5} />
-      </>;
-
-    // ── SIGNALS (sine wave) ───────────────────────────────────────────────────
-    case "signals":
-      return <path
-        d="M 10,25 Q 20,10 30,25 Q 40,40 50,25 Q 60,10 70,25"
-        fill="none" stroke="#111" strokeWidth={sw + 0.5}
-      />;
-
-    // ── INTELLIGENCE (eye) ────────────────────────────────────────────────────
-    case "intelligence":
-      return <>
-        <path d="M 10,25 Q 40,6 70,25 Q 40,44 10,25 Z" fill="none" stroke="#111" strokeWidth={sw} />
-        <circle cx={40} cy={25} r={8} fill="none" stroke="#111" strokeWidth={sw} />
-        <circle cx={40} cy={25} r={3} fill="#111" />
-      </>;
-
-    // ── MILITARY POLICE (MP text) ─────────────────────────────────────────────
-    case "mp":
-      return <text x={40} y={33} textAnchor="middle" fontSize={18} fontFamily="serif" fontWeight="bold" fill="#111">MP</text>;
-
-    // ── CBRN (circle + hazard lines) ─────────────────────────────────────────
-    case "cbrn":
-      return <>
-        <circle cx={40} cy={25} r={14} fill="none" stroke="#111" strokeWidth={sw} />
-        <line x1={40} y1={11} x2={40} y2={39} stroke="#111" strokeWidth={sw} />
-        <line x1={26} y1={25} x2={54} y2={25} stroke="#111" strokeWidth={sw} />
-        <line x1={30} y1={15} x2={50} y2={35} stroke="#111" strokeWidth={sw} />
-        <line x1={50} y1={15} x2={30} y2={35} stroke="#111" strokeWidth={sw} />
-      </>;
-
-    // ── MAINTENANCE (wrench / circle + slash) ─────────────────────────────────
-    case "maintenance":
-      return <>
-        <circle cx={40} cy={25} r={14} fill="none" stroke="#111" strokeWidth={sw} />
-        <line x1={30} y1={15} x2={50} y2={35} stroke="#111" strokeWidth={sw * 2} />
-      </>;
-
-    // ── FALLBACK ──────────────────────────────────────────────────────────────
-    default:
-      return <>
-        <line x1={8}  y1={6}  x2={72} y2={44} stroke="#111" strokeWidth={sw} />
-        <line x1={72} y1={6}  x2={8}  y2={44} stroke="#111" strokeWidth={sw} />
-      </>;
-  }
+function nodeToSIDC(node: OrbatNode): string {
+  return buildSIDC({
+    affiliation: node.affiliation,
+    symbolSet: node.symbolSet,
+    status: node.status,
+    hqTfDummy: node.hqTfDummy,
+    echelon: node.echelon,
+    functionId: node.functionId,
+  });
 }
 
-// ─── MilSymbol component ──────────────────────────────────────────────────────
-
-function MilSymbol({ unitType, echelon, name, callsign, size = 60 }: {
-  unitType: string;
-  echelon: string;
-  name?: string;
-  callsign?: string;
-  size?: number;
-}) {
-  const W = size;
-  const H = Math.round(size * 0.625);         // box height = 62.5% of width
-  const sw = Math.max(1.2, size / 38);        // stroke width scales with size
-  const echelonSpace = size * 0.32;           // vertical space above box for echelon marks
-
-  // SVG coordinate system: 80 wide, (50 + echelonSpace_scaled) tall
-  const vbEchelon = echelonSpace * (80 / W);
-  const totalVbH = 50 + vbEchelon + 16;       // +16 for name/callsign below box
+function MilSymbolSvg({ node, size = 60, showName = false }: { node: OrbatNode; size?: number; showName?: boolean }) {
+  const { svgString, symW, symH } = useMemo(() => {
+    try {
+      const sidc = nodeToSIDC(node);
+      const opts: Record<string, unknown> = {
+        size,
+        ...(node.reinforcedReduced ? { reinforcedReduced: node.reinforcedReduced } : {}),
+        ...(node.fillColor ? { fillColor: node.fillColor } : {}),
+        ...(node.amplifiers.unitName ? { uniqueDesignation: node.amplifiers.unitName } : {}),
+        ...(node.amplifiers.higherFormation ? { higherFormation: node.amplifiers.higherFormation } : {}),
+        ...(node.amplifiers.additionalInfo ? { additionalInformation: node.amplifiers.additionalInfo } : {}),
+        ...(node.amplifiers.quantity ? { quantity: node.amplifiers.quantity } : {}),
+        ...(node.amplifiers.direction !== undefined ? { direction: node.amplifiers.direction } : {}),
+        ...(node.amplifiers.dtg ? { dtg: node.amplifiers.dtg } : {}),
+        ...(node.amplifiers.location ? { location: node.amplifiers.location } : {}),
+        ...(node.amplifiers.type ? { type: node.amplifiers.type } : {}),
+        ...(node.amplifiers.staffComments ? { staffComments: node.amplifiers.staffComments } : {}),
+        ...(node.amplifiers.combatEffectiveness ? { combatEffectiveness: node.amplifiers.combatEffectiveness } : {}),
+      };
+      const sym = new ms.Symbol(sidc, opts);
+      const sz = sym.getSize();
+      return { svgString: sym.asSVG(), symW: sz.width, symH: sz.height };
+    } catch {
+      const sym = new ms.Symbol("130310001412110000000000000000", { size });
+      const sz = sym.getSize();
+      return { svgString: sym.asSVG(), symW: sz.width, symH: sz.height };
+    }
+  }, [node, size]);
 
   return (
-    <svg
-      width={W}
-      height={Math.round(H + echelonSpace + (name ? size * 0.3 : 0))}
-      viewBox={`0 0 80 ${totalVbH}`}
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ overflow: "visible" }}
-    >
-      {/* Echelon mark above box */}
-      <EchelonMark id={echelon} cx={40} topY={vbEchelon} sw={sw} />
-
-      {/* Main NATO box */}
-      <g transform={`translate(0, ${vbEchelon})`}>
-        <rect x={5} y={3} width={70} height={44} rx={0} fill="white" stroke="#111" strokeWidth={sw} />
-        <UnitInterior type={unitType} sw={sw} />
-      </g>
-
-      {/* Callsign above box (top-left) */}
-      {callsign && (
-        <text x={5} y={vbEchelon - 2} fontSize={sw * 3.5} fontFamily="monospace" fill="#555">{callsign}</text>
+    <div className="flex flex-col items-center gap-0.5">
+      <div style={{ width: symW, height: symH }} dangerouslySetInnerHTML={{ __html: svgString }} />
+      {showName && node.label && (
+        <span className="text-[10px] font-mono font-bold text-foreground text-center leading-tight max-w-[100px] truncate">
+          {node.label}
+        </span>
       )}
-
-      {/* Unit name below box */}
-      {name && (
-        <text
-          x={40} y={vbEchelon + 50 + 4}
-          textAnchor="middle"
-          fontSize={sw * 3.8}
-          fontFamily="monospace"
-          fontWeight="bold"
-          fill="#111"
-        >{name}</text>
-      )}
-    </svg>
+    </div>
   );
 }
 
-// ─── Node Editor ──────────────────────────────────────────────────────────────
+// ─── Colour picker panel ──────────────────────────────────────────────────────
 
-function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: OrbatNode) => void; onClose: () => void }) {
-  const [draft, setDraft] = useState<OrbatNode>({ ...node });
-  const categories = Array.from(new Set(NATO_UNIT_TYPES.map(u => u.category)));
+function ColorPicker({ value, onChange }: { value?: string; onChange: (v?: string) => void }) {
+  const [showCustom, setShowCustom] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
-      <div className="bg-card border border-border rounded-lg w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border sticky top-0 bg-card z-10">
-          <h3 className="font-display font-black uppercase tracking-wider text-sm">Edit Unit Node</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X className="w-4 h-4" /></button>
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {FILL_COLORS.map(c => {
+          const isActive = c.id === "custom"
+            ? (!!value && !FILL_COLORS.some(x => x.id !== "custom" && x.id !== "auto" && x.value === value))
+            : c.id === "auto"
+              ? !value
+              : value === c.value;
+
+          return (
+            <button
+              key={c.id}
+              onClick={() => {
+                if (c.id === "auto") { onChange(undefined); setShowCustom(false); }
+                else if (c.id === "custom") { setShowCustom(true); }
+                else { onChange(c.value ?? undefined); setShowCustom(false); }
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs transition-all
+                ${isActive ? "border-primary bg-primary/15 text-foreground font-bold" : "border-border text-muted-foreground hover:border-primary/40"}`}
+            >
+              {c.value && (
+                <span className="w-3 h-3 rounded-full border border-border/60 flex-shrink-0" style={{ background: c.value }} />
+              )}
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+      {showCustom && (
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={value || "#80e0ff"}
+            onChange={e => onChange(e.target.value)}
+            className="w-10 h-8 rounded border border-border bg-background cursor-pointer"
+          />
+          <input
+            type="text"
+            value={value || ""}
+            onChange={e => onChange(e.target.value || undefined)}
+            placeholder="#rrggbb"
+            className="w-28 bg-background border border-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:border-primary"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Node editor modal ────────────────────────────────────────────────────────
+
+function NodeEditor({ node, onSave, onClose }: {
+  node: OrbatNode;
+  onSave: (n: OrbatNode) => void;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = useState<OrbatNode>(JSON.parse(JSON.stringify(node)));
+  const [tab, setTab] = useState<"symbol" | "color" | "amplifiers">("symbol");
+
+  function set(updates: Partial<OrbatNode>) {
+    setDraft(d => ({ ...d, ...updates }));
+  }
+  function setAmp(updates: Partial<OrbatNodeAmplifiers>) {
+    setDraft(d => ({ ...d, amplifiers: { ...d.amplifiers, ...updates } }));
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-xl w-full max-w-2xl shadow-2xl max-h-[92vh] flex flex-col" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Settings2 className="w-4 h-4 text-muted-foreground" />
+            <span className="font-display font-black uppercase tracking-wider text-sm">Edit Unit</span>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        <div className="p-5 space-y-5">
-          {/* Live preview */}
-          <div className="flex justify-center py-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
-            <MilSymbol unitType={draft.unitType} echelon={draft.echelon} name={draft.name || "Unit"} callsign={draft.callsign} size={72} />
+        {/* Live preview */}
+        <div className="flex justify-center items-center gap-6 py-4 px-5 bg-zinc-900 border-b border-border flex-shrink-0 flex-wrap">
+          <MilSymbolSvg node={draft} size={64} showName />
+          <div className="text-xs text-muted-foreground font-mono space-y-0.5">
+            <div>SIDC: <span className="text-primary">{nodeToSIDC(draft)}</span></div>
+            <div>Standard: APP-6D / MIL-STD-2525D</div>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Unit Name</label>
-            <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
-              className="w-full bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors"
-              placeholder="e.g. 1st Platoon, Alpha Company" />
-          </div>
+        {/* Tabs */}
+        <div className="flex border-b border-border flex-shrink-0">
+          {(["symbol", "color", "amplifiers"] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`flex-1 px-3 py-2.5 text-xs font-display font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-1
+                ${tab === t ? "border-b-2 border-primary text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              {t === "color" && <Palette className="w-3 h-3" />}
+              {t === "symbol" ? "Symbol & Echelon" : t === "color" ? "Colour" : "Text Amplifiers"}
+            </button>
+          ))}
+        </div>
 
-          <div>
-            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Callsign</label>
-            <input value={draft.callsign || ""} onChange={e => setDraft(d => ({ ...d, callsign: e.target.value }))}
-              className="w-full bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors"
-              placeholder="e.g. BRAVO-1" />
-          </div>
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 p-5 space-y-5">
 
-          <div>
-            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Unit Type</label>
-            {categories.map(cat => (
-              <div key={cat} className="mb-3">
-                <div className="text-[9px] font-display font-bold uppercase tracking-widest text-muted-foreground/60 mb-1.5 px-1">{cat}</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {NATO_UNIT_TYPES.filter(u => u.category === cat).map(u => (
-                    <button key={u.id} onClick={() => setDraft(d => ({ ...d, unitType: u.id }))}
-                      className={`flex flex-col items-center gap-1 px-2 py-1.5 rounded border transition-all ${draft.unitType === u.id ? "bg-primary/20 border-primary/60 text-primary font-bold" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}>
-                      <MilSymbol unitType={u.id} echelon="platoon" size={32} />
-                      <span className="text-[9px] whitespace-nowrap">{u.label}</span>
-                    </button>
-                  ))}
-                </div>
+          {/* ── Symbol tab ─────────────────────────────────────────── */}
+          {tab === "symbol" && <>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Unit Label</label>
+              <input value={draft.label} onChange={e => set({ label: e.target.value })}
+                className="w-full bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                placeholder="e.g. 1 PARA, A Sqn, 3 Plt" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Affiliation</label>
+              <div className="flex flex-wrap gap-1.5">
+                {AFFILIATIONS.map(a => (
+                  <button key={a.id} onClick={() => set({ affiliation: a.id })}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded border transition-all
+                      ${draft.affiliation === a.id ? "border-primary bg-primary/15 font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: a.color }} />
+                    {a.label}
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div>
-            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Echelon</label>
-            <div className="flex flex-wrap gap-1">
-              {NATO_ECHELONS.map(e => (
-                <button key={e.id} onClick={() => setDraft(d => ({ ...d, echelon: e.id }))}
-                  className={`px-2 py-1 text-[11px] rounded border transition-all ${draft.echelon === e.id ? "bg-primary/20 border-primary/60 text-primary font-bold" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}>
-                  {e.label}
-                </button>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Status</label>
+              <div className="flex gap-2">
+                {STATUSES.map(s => (
+                  <button key={s.id} onClick={() => set({ status: s.id })}
+                    className={`flex-1 px-3 py-1.5 text-xs rounded border transition-all
+                      ${draft.status === s.id ? "bg-primary/15 border-primary font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">HQ / Task Force / Dummy</label>
+              <div className="flex flex-wrap gap-1.5">
+                {HQ_TF_DUMMY.map(h => (
+                  <button key={h.id} onClick={() => set({ hqTfDummy: h.id })}
+                    className={`px-2.5 py-1.5 text-xs rounded border transition-all
+                      ${draft.hqTfDummy === h.id ? "bg-primary/15 border-primary font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                    {h.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Echelon</label>
+              <div className="flex flex-wrap gap-1.5">
+                {ECHELONS.map(e => (
+                  <button key={e.id} onClick={() => set({ echelon: e.id })}
+                    className={`px-2.5 py-1.5 text-xs rounded border font-mono transition-all
+                      ${draft.echelon === e.id ? "bg-primary/15 border-primary font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                    {e.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Reinforced / Reduced</label>
+              <div className="flex flex-wrap gap-1.5">
+                {REINFORCED_REDUCED.map(r => (
+                  <button key={r.id} onClick={() => set({ reinforcedReduced: r.id })}
+                    className={`px-3 py-1.5 text-xs rounded border transition-all
+                      ${draft.reinforcedReduced === r.id ? "bg-primary/15 border-primary font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Unit Type</label>
+              {UNIT_CATEGORIES.map(cat => (
+                <div key={cat.category} className="mb-5">
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2 px-0.5">{cat.category}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {cat.units.map(u => {
+                      const preview = defaultNode({ functionId: u.functionId, affiliation: draft.affiliation, fillColor: draft.fillColor });
+                      return (
+                        <button key={u.id} onClick={() => set({ functionId: u.functionId })}
+                          className={`flex flex-col items-center gap-1 p-2 rounded border transition-all
+                            ${draft.functionId === u.functionId ? "bg-primary/15 border-primary/70" : "border-border hover:border-primary/40 hover:bg-muted/20"}`}>
+                          <MilSymbolSvg node={preview} size={28} />
+                          <span className="text-[8px] text-center text-muted-foreground leading-tight max-w-[60px]">{u.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Manning Slots</label>
-            <input type="number" min={1} max={999} value={draft.slots}
-              onChange={e => setDraft(d => ({ ...d, slots: parseInt(e.target.value) || 1 }))}
-              className="w-full bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary transition-colors" />
-          </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Manning / Slots</label>
+              <input type="number" min={0} max={9999} value={draft.slots ?? 0}
+                onChange={e => set({ slots: parseInt(e.target.value) || 0 })}
+                className="w-32 bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            </div>
+          </>}
+
+          {/* ── Colour tab ─────────────────────────────────────────── */}
+          {tab === "color" && <>
+            <p className="text-xs text-muted-foreground">Override the symbol fill colour. "Auto" uses the NATO standard colour for the selected affiliation.</p>
+            <ColorPicker value={draft.fillColor} onChange={v => set({ fillColor: v })} />
+
+            {/* Preview strip */}
+            <div className="mt-4">
+              <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-3">Preview</div>
+              <div className="flex flex-wrap gap-4 p-4 bg-zinc-900 rounded-lg">
+                {AFFILIATIONS.map(a => {
+                  const previewNode = { ...draft, affiliation: a.id };
+                  return (
+                    <div key={a.id} className="flex flex-col items-center gap-1">
+                      <MilSymbolSvg node={previewNode} size={40} />
+                      <span className="text-[8px] text-muted-foreground">{a.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>}
+
+          {/* ── Amplifiers tab ─────────────────────────────────────── */}
+          {tab === "amplifiers" && <>
+            <p className="text-xs text-muted-foreground">Text amplifiers appear around the symbol on the ORBAT.</p>
+            {[
+              { key: "unitName",            label: "Unit Name / Unique Designation",  placeholder: "e.g. A/1-12 INF, 2 PARA" },
+              { key: "higherFormation",     label: "Higher Formation (Parent Unit)",   placeholder: "e.g. I CORPS, 3 DIV" },
+              { key: "additionalInfo",      label: "Additional Information",           placeholder: "e.g. OPCON to 5 RIFLES" },
+              { key: "staffComments",       label: "Staff Comments",                   placeholder: "e.g. 75% strength" },
+              { key: "quantity",            label: "Quantity",                         placeholder: "e.g. 24" },
+              { key: "dtg",                 label: "Date-Time Group (DTG)",            placeholder: "e.g. 301400ZSEP97" },
+              { key: "location",            label: "Location (MGRS / Lat-Lon)",        placeholder: "e.g. 30UYC1234567890" },
+              { key: "type",                label: "Equipment Type",                   placeholder: "e.g. CHALLENGER 2" },
+              { key: "combatEffectiveness", label: "Combat Effectiveness",             placeholder: "e.g. COMBAT INEFFECTIVE" },
+            ].map(({ key, label, placeholder }) => (
+              <div key={key}>
+                <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">{label}</label>
+                <input
+                  value={(draft.amplifiers as Record<string, string>)[key] ?? ""}
+                  onChange={e => setAmp({ [key]: e.target.value })}
+                  className="w-full bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                  placeholder={placeholder}
+                />
+              </div>
+            ))}
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Direction of Movement (0–360°)</label>
+              <input type="number" min={0} max={360}
+                value={draft.amplifiers.direction ?? ""}
+                onChange={e => setAmp({ direction: e.target.value ? parseInt(e.target.value) : undefined })}
+                className="w-32 bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                placeholder="e.g. 045"
+              />
+            </div>
+          </>}
         </div>
 
-        <div className="flex gap-3 px-5 py-4 border-t border-border sticky bottom-0 bg-card">
+        {/* Footer */}
+        <div className="flex gap-3 px-5 py-4 border-t border-border flex-shrink-0 bg-card">
           <button onClick={onClose} className="flex-1 px-4 py-2 border border-border rounded text-sm text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
           <button onClick={() => { onSave(draft); onClose(); }}
             className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded text-sm font-bold hover:bg-primary/90 transition-colors">
-            Save Node
+            Save Unit
           </button>
         </div>
       </div>
@@ -538,6 +687,8 @@ function OrgCard({
   const { node, x, y } = ln;
   const [hovered, setHovered] = React.useState(false);
   const hasChildren = node.children && node.children.length > 0;
+  const affil = AFFILIATIONS.find(a => a.id === node.affiliation);
+  const echelon = ECHELONS.find(e => e.id === node.echelon);
 
   const modBadge = node.reinforcedReduced === "reinforced" ? "(+)"
     : node.reinforcedReduced === "reduced" ? "(−)"
