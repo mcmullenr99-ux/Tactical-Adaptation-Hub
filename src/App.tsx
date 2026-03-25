@@ -49,6 +49,7 @@ import VerifyEmail from "@/pages/portal/VerifyEmail";
 import TwoFactorAuth from "@/pages/portal/TwoFactorAuth";
 import Support from "@/pages/portal/Support";
 import SupportAdmin from "@/pages/portal/SupportAdmin";
+import CommanderPro from "@/pages/CommanderPro";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -114,6 +115,7 @@ function Router() {
       <Route path="/portal/service-card" component={ServiceCard} />
       <Route path="/portal/support" component={Support} />
       <Route path="/portal/support-admin" component={SupportAdmin} />
+      <Route path="/commander-pro" component={CommanderPro} />
       <Route path="/stats" component={Stats} />
       <Route component={NotFound} />
     </Switch>
