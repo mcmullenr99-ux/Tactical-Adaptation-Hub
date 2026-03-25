@@ -15,7 +15,7 @@ import { format, formatDistanceToNow } from "date-fns";
 
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
 interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
-interface RosterEntry { id: number; callsign: string; rankId: number | null; roleId: number | null; notes: string | null }
+interface RosterEntry { id: number; callsign: string; rankId: number | null; roleId: number | null; notes: string | null; status?: string; specialisations?: string[]; join_date?: string | null; ops_count?: number | null; }
 interface AppQuestion { id: number; question: string; sortOrder: number; required: boolean }
 interface MilsimAward { id: number; title: string; description: string | null; icon: string; awarded_by: string | null; awarded_at: string; roster_entry_id: number; callsign: string | null }
 
@@ -330,43 +330,54 @@ function RanksTab({ group, onUpdated, showMsg }: any) {
 
 function RosterTab({ group, onUpdated, showMsg }: any) {
   const [roster, setRoster] = useState<RosterEntry[]>(group.roster);
-  const [editId, setEditId] = useState<number | null>(null);
-  const [editData, setEditData] = useState<Partial<RosterEntry>>({});
-  const [callsign, setCallsign] = useState(""); const [rankId, setRankId] = useState(""); const [roleId, setRoleId] = useState(""); const [notes, setNotes] = useState("");
+  const [editEntry, setEditEntry] = useState<RosterEntry | null>(null);
+  const [editData, setEditData] = useState<Partial<RosterEntry & { specInput: string }>>({});
   const [adding, setAdding] = useState(false);
+  const [newCallsign, setNewCallsign] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const rankById = Object.fromEntries(group.ranks.map((r: Rank) => [r.id, r]));
-  const roleById = Object.fromEntries(group.roles.map((r: Role) => [r.id, r]));
+  const STATUSES = ["Active", "Reserve", "AWOL", "MIA", "KIA", "Discharged"];
 
-  const startEdit = (e: RosterEntry) => {
-    setEditId(e.id);
-    setEditData({ callsign: e.callsign, rankId: e.rankId ?? undefined, roleId: e.roleId ?? undefined, notes: e.notes ?? "" });
+  const openEdit = (e: RosterEntry) => {
+    setEditEntry(e);
+    setEditData({ ...e, specInput: "" });
   };
 
-  const saveEdit = async (entryId: number) => {
+  const saveEdit = async () => {
+    if (!editEntry) return;
+    setSaving(true);
     try {
-      const updated = await apiFetch<RosterEntry>(`/api/milsim-groups/${group.id}/roster/${entryId}`, {
+      const updated = await apiFetch<RosterEntry>(`/api/milsim-groups/${group.id}/roster/${editEntry.id}`, {
         method: "PATCH",
         body: JSON.stringify({
           callsign: editData.callsign,
           rankId: editData.rankId ? Number(editData.rankId) : null,
           roleId: editData.roleId ? Number(editData.roleId) : null,
-          notes: editData.notes || undefined,
+          notes: editData.notes || null,
+          status: editData.status || "Active",
+          specialisations: editData.specialisations ?? [],
+          join_date: editData.join_date || null,
+          ops_count: editData.ops_count ?? null,
         }),
       });
-      const newRoster = roster.map(r => r.id === entryId ? updated : r);
+      const newRoster = roster.map(r => r.id === editEntry.id ? { ...updated, qualifications: (editEntry as any).qualifications ?? [], awards: (editEntry as any).awards ?? [] } : r);
       setRoster(newRoster); onUpdated({ ...group, roster: newRoster });
-      setEditId(null); showMsg(true, "Member updated.");
+      setEditEntry(null); showMsg(true, "Operator record updated.");
     } catch (e: any) { showMsg(false, e.message); }
+    finally { setSaving(false); }
   };
 
-  const add = async () => {
-    if (!callsign.trim()) return;
+  const enlist = async () => {
+    if (!newCallsign.trim()) return;
     setAdding(true);
     try {
-      const entry = await apiFetch<RosterEntry>(`/api/milsim-groups/${group.id}/roster`, { method: "POST", body: JSON.stringify({ callsign, rankId: rankId ? parseInt(rankId) : null, roleId: roleId ? parseInt(roleId) : null, notes: notes || undefined }) });
-      const updated = [...roster, entry]; setRoster(updated); onUpdated({ ...group, roster: updated });
-      setCallsign(""); setRankId(""); setRoleId(""); setNotes(""); showMsg(true, "Member added.");
+      const entry = await apiFetch<RosterEntry>(`/api/milsim-groups/${group.id}/roster`, {
+        method: "POST",
+        body: JSON.stringify({ callsign: newCallsign, status: "Active" }),
+      });
+      const updated = [...roster, { ...entry, qualifications: [], awards: [] }];
+      setRoster(updated); onUpdated({ ...group, roster: updated });
+      setNewCallsign(""); showMsg(true, "Operator enlisted.");
     } catch (e: any) { showMsg(false, e.message); }
     finally { setAdding(false); }
   };
@@ -375,80 +386,180 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
     try {
       await apiFetch(`/api/milsim-groups/${group.id}/roster/${id}`, { method: "DELETE" });
       const updated = roster.filter((r) => r.id !== id); setRoster(updated); onUpdated({ ...group, roster: updated });
-      showMsg(true, "Member removed.");
+      showMsg(true, "Operator removed.");
     } catch (e: any) { showMsg(false, e.message); }
   };
 
+  const addSpec = () => {
+    const val = (editData.specInput ?? "").trim().toUpperCase();
+    if (!val) return;
+    setEditData(d => ({ ...d, specialisations: [...(d.specialisations ?? []), val], specInput: "" }));
+  };
+
+  const statusColour = (s: string) =>
+    s === "Active"     ? "bg-green-500/15 text-green-400 border-green-500/30" :
+    s === "Reserve"    ? "bg-blue-500/15 text-blue-400 border-blue-500/30" :
+    s === "AWOL"       ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30" :
+    s === "MIA"        ? "bg-orange-500/15 text-orange-400 border-orange-500/30" :
+    s === "KIA"        ? "bg-red-500/15 text-red-400 border-red-500/30" :
+    s === "Discharged" ? "bg-secondary text-muted-foreground border-border" :
+    "bg-green-500/15 text-green-400 border-green-500/30";
+
   return (
     <div className="max-w-4xl space-y-6">
-      <div className="overflow-x-auto rounded-lg border border-border">
-        {roster.length === 0 ? <p className="text-muted-foreground font-sans text-sm p-6">Roster is empty.</p> : (
-          <table className="w-full text-sm">
-            <thead className="bg-secondary/40">
-              <tr>{["Callsign","Rank","Role","Notes","Actions"].map((h) => <th key={h} className="text-left py-3 px-4 font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">{h}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {roster.map((e) => editId === e.id ? (
-                <tr key={e.id} className="bg-primary/5">
-                  <td className="px-3 py-2"><input value={editData.callsign ?? ""} onChange={ev => setEditData(d => ({...d, callsign: ev.target.value}))} className="mf-input text-xs py-1.5 w-32" /></td>
-                  <td className="px-3 py-2">
-                    <select value={editData.rankId ?? ""} onChange={ev => setEditData(d => ({...d, rankId: ev.target.value ? Number(ev.target.value) : undefined}))} className="mf-input text-xs py-1.5">
-                      <option value="">—</option>
-                      {group.ranks.map((r: Rank) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </select>
-                  </td>
-                  <td className="px-3 py-2">
-                    <select value={editData.roleId ?? ""} onChange={ev => setEditData(d => ({...d, roleId: ev.target.value ? Number(ev.target.value) : undefined}))} className="mf-input text-xs py-1.5">
-                      <option value="">—</option>
-                      {group.roles.map((r: Role) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </select>
-                  </td>
-                  <td className="px-3 py-2"><input value={editData.notes ?? ""} onChange={ev => setEditData(d => ({...d, notes: ev.target.value}))} className="mf-input text-xs py-1.5 w-32" placeholder="Notes..." /></td>
-                  <td className="px-3 py-2">
-                    <div className="flex gap-1">
-                      <button onClick={() => saveEdit(e.id)} className="p-1.5 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors"><Check className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => setEditId(null)} className="p-1.5 rounded bg-secondary text-muted-foreground hover:text-foreground transition-colors"><X className="w-3.5 h-3.5" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                <tr key={e.id} className="hover:bg-secondary/20 transition-colors">
-                  <td className="py-3 px-4 font-display font-bold uppercase tracking-wider text-sm text-foreground">{e.callsign}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{e.rankId ? rankById[e.rankId]?.name ?? "—" : "—"}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{e.roleId ? roleById[e.roleId]?.name ?? "—" : "—"}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{e.notes ?? "—"}</td>
-                  <td className="py-3 px-4">
-                    <div className="flex gap-1">
-                      <button onClick={() => startEdit(e)} className="p-1.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => remove(e.id)} className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Remove"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      {/* Roster list */}
+      <div className="space-y-2">
+        {roster.length === 0 && <p className="text-muted-foreground font-sans text-sm p-4 bg-card border border-border rounded-lg">Roster is empty. Enlist your first operator below.</p>}
+        {roster.map((e) => {
+          const rank = e.rankId ? group.ranks.find((r: any) => r.id === e.rankId) : null;
+          const role = e.roleId ? group.roles.find((r: any) => r.id === e.roleId) : null;
+          return (
+            <div key={e.id} className="flex items-center gap-3 bg-card border border-border rounded-lg px-4 py-3 hover:border-primary/20 transition-colors">
+              <div className="w-8 h-8 rounded bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                <span className="font-display font-black text-[10px] text-primary">{e.callsign.slice(0,2).toUpperCase()}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{e.callsign}</span>
+                  <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ${statusColour(e.status ?? "Active")}`}>
+                    {e.status ?? "Active"}
+                  </span>
+                  {rank && <span className="text-[9px] text-primary font-display font-bold uppercase tracking-widest">{rank.name}</span>}
+                  {role && <span className="text-[9px] text-muted-foreground font-display uppercase tracking-widest bg-secondary border border-border px-1.5 py-0.5 rounded">{role.name}</span>}
+                </div>
+                {(e.specialisations ?? []).length > 0 && (
+                  <div className="flex gap-1 mt-1 flex-wrap">
+                    {(e.specialisations ?? []).map((s, i) => (
+                      <span key={i} className="text-[8px] font-display font-bold uppercase tracking-widest bg-accent/10 border border-accent/25 text-accent px-1 py-0.5 rounded">{s}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-1 shrink-0">
+                <button onClick={() => openEdit(e)} className="p-1.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Edit Operator Record">
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => remove(e.id)} className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Remove">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
+      {/* Enlist form */}
       <div className="bg-card border border-border rounded-lg p-5 space-y-3">
-        <h3 className="font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">Enlist Member</h3>
-        <input value={callsign} onChange={(e) => setCallsign(e.target.value)} className="mf-input" placeholder="Callsign" />
-        <div className="grid grid-cols-2 gap-3">
-          <select value={rankId} onChange={(e) => setRankId(e.target.value)} className="mf-input">
-            <option value="">No Rank</option>
-            {group.ranks.map((r: Rank) => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
-          <select value={roleId} onChange={(e) => setRoleId(e.target.value)} className="mf-input">
-            <option value="">No Role</option>
-            {group.roles.map((r: Role) => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
+        <h3 className="font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">Enlist Operator</h3>
+        <div className="flex gap-3">
+          <input value={newCallsign} onChange={(e) => setNewCallsign(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") enlist(); }}
+            className="mf-input flex-1" placeholder="Callsign" />
+          <button onClick={enlist} disabled={adding || !newCallsign.trim()}
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded clip-angled-sm transition-all disabled:opacity-50">
+            {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Enlist
+          </button>
         </div>
-        <input value={notes} onChange={(e) => setNotes(e.target.value)} className="mf-input" placeholder="Notes (optional)" />
-        <button onClick={add} disabled={adding || !callsign.trim()}
-          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded clip-angled-sm transition-all disabled:opacity-50">
-          {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Enlist
-        </button>
+        <p className="text-xs text-muted-foreground font-sans">Use the edit button to set rank, role, status, specialisations, and more.</p>
       </div>
+
+      {/* Edit Modal */}
+      {editEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setEditEntry(null)}>
+          <div className="bg-card border border-border rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <h2 className="font-display font-black uppercase tracking-widest text-sm text-foreground">Operator Record — {editEntry.callsign}</h2>
+              <button onClick={() => setEditEntry(null)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-5 space-y-4">
+
+              {/* Callsign */}
+              <div>
+                <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Callsign</label>
+                <input value={editData.callsign ?? ""} onChange={e => setEditData(d => ({...d, callsign: e.target.value}))} className="mf-input w-full" />
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Duty Status</label>
+                <div className="flex flex-wrap gap-2">
+                  {STATUSES.map(s => (
+                    <button key={s} onClick={() => setEditData(d => ({...d, status: s}))}
+                      className={`text-[10px] font-display font-bold uppercase tracking-widest px-3 py-1.5 rounded border transition-colors ${editData.status === s ? statusColour(s) : "bg-secondary border-border text-muted-foreground hover:border-primary/30"}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rank + Role */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Rank</label>
+                  <select value={editData.rankId ?? ""} onChange={e => setEditData(d => ({...d, rankId: e.target.value ? Number(e.target.value) : null}))} className="mf-input w-full">
+                    <option value="">No Rank</option>
+                    {group.ranks.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Role</label>
+                  <select value={editData.roleId ?? ""} onChange={e => setEditData(d => ({...d, roleId: e.target.value ? Number(e.target.value) : null}))} className="mf-input w-full">
+                    <option value="">No Role</option>
+                    {group.roles.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Specialisations */}
+              <div>
+                <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Specialisations / MOS Tags</label>
+                <div className="flex gap-2 mb-2">
+                  <input value={editData.specInput ?? ""} onChange={e => setEditData(d => ({...d, specInput: e.target.value}))}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSpec(); } }}
+                    className="mf-input flex-1" placeholder="e.g. CQB, JTAC, Medic, Sniper, EOD..." />
+                  <button onClick={addSpec} className="px-3 py-2 bg-secondary border border-border rounded text-xs font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {(editData.specialisations ?? []).map((s, i) => (
+                    <span key={i} className="text-[10px] font-display font-bold uppercase tracking-widest bg-accent/10 border border-accent/25 text-accent px-2 py-0.5 rounded flex items-center gap-1">
+                      {s}
+                      <button onClick={() => setEditData(d => ({...d, specialisations: (d.specialisations ?? []).filter((_, j) => j !== i)}))} className="hover:text-destructive ml-0.5">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Join date + Ops count */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Date Enlisted</label>
+                  <input type="date" value={editData.join_date ?? ""} onChange={e => setEditData(d => ({...d, join_date: e.target.value || null}))} className="mf-input w-full" />
+                </div>
+                <div>
+                  <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Ops Participated</label>
+                  <input type="number" min={0} value={editData.ops_count ?? ""} onChange={e => setEditData(d => ({...d, ops_count: e.target.value ? parseInt(e.target.value) : null}))} className="mf-input w-full" placeholder="0" />
+                </div>
+              </div>
+
+              {/* Notes / biog */}
+              <div>
+                <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Commander Notes / Bio</label>
+                <textarea value={editData.notes ?? ""} onChange={e => setEditData(d => ({...d, notes: e.target.value}))}
+                  className="mf-input w-full min-h-[80px] resize-y" placeholder="Conduct record, background, notable service..." />
+              </div>
+
+              <button onClick={saveEdit} disabled={saving}
+                className="w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-3 rounded clip-angled-sm transition-all disabled:opacity-50">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Save Operator Record
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

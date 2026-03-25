@@ -32,15 +32,32 @@ async function makeUniqueSlug(base44: any, name: string): Promise<string> {
 
 async function groupFullDetail(base44: any, group: any) {
   try {
-    const [roles, ranks, roster, questions] = await Promise.all([
+    const [roles, ranks, roster, questions, qualDefs, qualGrants, awards] = await Promise.all([
       base44.asServiceRole.entities.MilsimRole.filter({ group_id: group.id }).catch(() => []),
       base44.asServiceRole.entities.MilsimRank.filter({ group_id: group.id }).catch(() => []),
       base44.asServiceRole.entities.MilsimRoster.filter({ group_id: group.id }).catch(() => []),
       base44.asServiceRole.entities.MilsimAppQuestion.filter({ group_id: group.id }).catch(() => []),
+      base44.asServiceRole.entities.Qualification.filter({ group_id: group.id }).catch(() => []),
+      base44.asServiceRole.entities.QualificationGrant.filter({ group_id: group.id }).catch(() => []),
+      base44.asServiceRole.entities.MilsimAward.filter({ group_id: group.id }).catch(() => []),
     ]);
+
+    // Enrich each roster entry with their quals and awards
+    const enrichedRoster = (roster ?? []).map((entry: any) => ({
+      ...entry,
+      qualifications: (qualGrants ?? [])
+        .filter((g: any) => g.roster_id === entry.id)
+        .map((g: any) => {
+          const def = (qualDefs ?? []).find((q: any) => q.id === g.qualification_id);
+          return { id: g.id, name: g.qualification_name ?? def?.name ?? 'Unknown', badge_url: def?.badge_url ?? null };
+        }),
+      awards: (awards ?? [])
+        .filter((a: any) => a.recipient_roster_id === entry.id)
+        .map((a: any) => ({ id: a.id, name: a.award_name, image_url: a.award_image_url ?? null, reason: a.reason ?? null })),
+    }));
+
     return {
       ...group,
-      // normalise snake_case → camelCase for frontend
       tagLine: group.tagLine ?? group.tag_line ?? null,
       discordUrl: group.discordUrl ?? group.discord_url ?? null,
       websiteUrl: group.websiteUrl ?? group.website_url ?? null,
@@ -50,7 +67,7 @@ async function groupFullDetail(base44: any, group: any) {
       branch: group.branch ?? null,
       roles: roles ?? [],
       ranks: ranks ?? [],
-      roster: roster ?? [],
+      roster: enrichedRoster,
       questions: questions ?? [],
     };
   } catch (err) {
@@ -274,6 +291,10 @@ Deno.serve(async (req) => {
       const entry = await base44.asServiceRole.entities.MilsimRoster.create({
         group_id: parts[0], callsign: body.callsign,
         rank_id: body.rankId ?? null, role_id: body.roleId ?? null, notes: body.notes ?? null,
+        status: body.status ?? 'Active',
+        specialisations: body.specialisations ?? [],
+        join_date: body.join_date ?? null,
+        ops_count: body.ops_count ?? 0,
       });
       return Response.json(entry, { status: 201 });
     }
@@ -289,6 +310,10 @@ Deno.serve(async (req) => {
       if (body.rankId !== undefined) updates.rank_id = body.rankId;
       if (body.roleId !== undefined) updates.role_id = body.roleId;
       if (body.notes !== undefined) updates.notes = body.notes;
+      if (body.status !== undefined) updates.status = body.status;
+      if (body.specialisations !== undefined) updates.specialisations = body.specialisations;
+      if (body.join_date !== undefined) updates.join_date = body.join_date;
+      if (body.ops_count !== undefined) updates.ops_count = body.ops_count;
       const updated = await base44.asServiceRole.entities.MilsimRoster.update(parts[2], updates);
       return Response.json(updated);
     }
