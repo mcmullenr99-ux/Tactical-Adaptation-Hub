@@ -1768,17 +1768,16 @@ function ReadinessTab({ group }: any) {
   const sc = readiness.status === "green" ? "text-green-400" : readiness.status === "amber" ? "text-yellow-400" : "text-red-400";
   const bc = readiness.status === "green" ? "bg-green-500" : readiness.status === "amber" ? "bg-yellow-500" : "bg-red-500";
 
-  // Colour scheme: TIER I=green, TIER II=yellow, TIER III=amber, TIER IV=red, TIER V=dark red
   const TIER_META: Record<string, { label: string; colour: string; bg: string; border: string; badge: string; desc: string }> = {
-    "TIER I":   { label: "Elite",              colour: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/40",  badge: "bg-green-500/20 text-green-300 border-green-400/50",    desc: "Extensive op record, high troop experience, strong AAR discipline, and comprehensive training documentation." },
-    "TIER II":  { label: "Operational",        colour: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/40", badge: "bg-yellow-400/20 text-yellow-300 border-yellow-400/50", desc: "Active unit with solid reputation, consistent operational output, and documented training resources." },
-    "TIER III": { label: "Capable",            colour: "text-amber-400",  bg: "bg-amber-500/10",  border: "border-amber-500/40",  badge: "bg-amber-500/20 text-amber-400 border-amber-500/40",    desc: "Building op history and troop experience. Some training doctrine in place." },
-    "TIER IV":  { label: "Limited Capability", colour: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/40",    badge: "bg-red-500/20 text-red-400 border-red-500/40",          desc: "New or low-activity unit with minimal documented record and few training resources." },
-    "TIER V":   { label: "Under Developed",    colour: "text-red-700",    bg: "bg-red-900/10",    border: "border-red-900/40",    badge: "bg-red-900/20 text-red-600 border-red-900/50",          desc: "No established operational record. Unit has not yet demonstrated capability." },
+    "ELITE":       { label: "Elite SOF / Special Operations Capable", colour: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/40",  badge: "bg-green-500/20 text-green-300 border-green-400/50",    desc: "Extensive op record, elite AAR discipline, and comprehensive multi-type training doctrine. Operates at special operations force standard." },
+    "STRATEGIC":   { label: "Strategically Capable",                  colour: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/40", badge: "bg-yellow-400/20 text-yellow-300 border-yellow-400/50", desc: "Proven unit with strong operational output, solid reputation, and well-documented training resources across multiple doctrine types." },
+    "OPERATIONAL": { label: "Operationally Capable",                  colour: "text-amber-400",  bg: "bg-amber-500/10",  border: "border-amber-500/40",  badge: "bg-amber-500/20 text-amber-400 border-amber-500/40",    desc: "Active unit with a consistent operational record and growing doctrine framework. Capable of executing standard mission types." },
+    "TACTICAL":    { label: "Tactically Capable",                     colour: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/40", badge: "bg-orange-500/20 text-orange-300 border-orange-500/40", desc: "Building op history and operator experience. Some training doctrine in place. Unit is progressing toward operational readiness." },
+    "LIMITED":     { label: "Limited",                                colour: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/40",    badge: "bg-red-500/20 text-red-400 border-red-500/40",          desc: "No established operational record. Insufficient training documentation and experience to meet baseline capability standards." },
   };
 
-  const tier = readiness.op_capability_tier ?? "TIER V";
-  const tm = TIER_META[tier] ?? TIER_META["TIER V"];
+  const tier = readiness.op_capability_tier ?? "LIMITED";
+  const tm = TIER_META[tier] ?? TIER_META["LIMITED"];
 
   // Score breakdown for transparency
   const sb = readiness.score_breakdown ?? {};
@@ -1894,7 +1893,7 @@ function ReadinessTab({ group }: any) {
         </div>
         {/* Tier ladder */}
         <div className="grid grid-cols-5 gap-1 pt-2 border-t border-border/40">
-          {(["TIER V","TIER IV","TIER III","TIER II","TIER I"] as const).map(t => {
+          {(["LIMITED","TACTICAL","OPERATIONAL","STRATEGIC","ELITE"] as const).map(t => {
             const m = TIER_META[t];
             const active = t === tier;
             return (

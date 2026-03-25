@@ -119,11 +119,11 @@ function ReadinessGauge({ pct, status }: { pct: number; status: string }) {
 
 // ─── Capability Tier badge ─────────────────────────────────────────────────────
 const TIER_META: Record<string, { label: string; style: string }> = {
-  "TIER I":   { label: "TIER I · Elite",              style: "bg-green-500/15 border-green-400/60 text-green-300" },
-  "TIER II":  { label: "TIER II · Operational",        style: "bg-yellow-400/15 border-yellow-400/50 text-yellow-300" },
-  "TIER III": { label: "TIER III · Capable",           style: "bg-amber-600/15 border-amber-500/50 text-amber-400" },
-  "TIER IV":  { label: "TIER IV · Limited Capability", style: "bg-red-500/15 border-red-500/50 text-red-400" },
-  "TIER V":   { label: "TIER V · Under Developed",     style: "bg-red-900/20 border-red-800/60 text-red-600" },
+  "ELITE":       { label: "Elite SOF Capable",          style: "bg-green-500/15 border-green-400/60 text-green-300" },
+  "STRATEGIC":   { label: "Strategically Capable",      style: "bg-yellow-400/15 border-yellow-400/50 text-yellow-300" },
+  "OPERATIONAL": { label: "Operationally Capable",      style: "bg-amber-600/15 border-amber-500/50 text-amber-400" },
+  "TACTICAL":    { label: "Tactically Capable",         style: "bg-orange-500/15 border-orange-500/50 text-orange-400" },
+  "LIMITED":     { label: "Limited",                    style: "bg-red-500/15 border-red-500/50 text-red-400" },
 };
 function TierBadge({ tier }: { tier: string }) {
   const meta = TIER_META[tier] ?? { label: tier, style: "bg-border/30 border-border text-muted-foreground" };
@@ -453,17 +453,17 @@ export default function MilsimGroup() {
                     <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Operational Capability Tier</p>
                     <div className="space-y-2">
                       {[
-                        { tier: "TIER I",   label: "Elite",              desc: "Extensive op record, high troop experience, strong AAR discipline, and comprehensive training documentation." },
-                        { tier: "TIER II",  label: "Operational",         desc: "Active unit with solid reputation, consistent operational output, and documented training resources." },
-                        { tier: "TIER III", label: "Capable",             desc: "Building op history and troop experience. Some training doctrine in place." },
-                        { tier: "TIER IV",  label: "Limited Capability",  desc: "New or low-activity unit with minimal documented record and few training resources." },
-                        { tier: "TIER V",   label: "Under Developed",     desc: "No established operational record. Unit has not yet demonstrated capability." },
+                        { tier: "ELITE",       label: "Elite SOF / Special Operations Capable", desc: "Extensive op record, elite AAR discipline, and comprehensive multi-type training doctrine. Operates at special operations force standard." },
+                        { tier: "STRATEGIC",   label: "Strategically Capable",                  desc: "Proven unit with strong operational output, solid reputation, and well-documented training resources across multiple doctrine types." },
+                        { tier: "OPERATIONAL", label: "Operationally Capable",                  desc: "Active unit with a consistent operational record and growing doctrine framework. Capable of executing standard mission types." },
+                        { tier: "TACTICAL",    label: "Tactically Capable",                     desc: "Building op history and operator experience. Some training doctrine in place. Unit is progressing toward operational readiness." },
+                        { tier: "LIMITED",     label: "Limited",                                desc: "No established operational record. Insufficient training documentation and experience to meet baseline capability standards." },
                       ].map(t => (
                         <div key={t.tier} className={`flex items-start gap-3 p-3 rounded border transition-colors ${readiness.op_capability_tier === t.tier ? (
-                            t.tier === "TIER I"   ? "border-green-400/40 bg-green-500/5" :
-                            t.tier === "TIER II"  ? "border-yellow-400/40 bg-yellow-400/5" :
-                            t.tier === "TIER III" ? "border-amber-500/40 bg-amber-500/5" :
-                            t.tier === "TIER IV"  ? "border-red-500/40 bg-red-500/5" :
+                            t.tier === "ELITE"   ? "border-green-400/40 bg-green-500/5" :
+                            t.tier === "STRATEGIC"  ? "border-yellow-400/40 bg-yellow-400/5" :
+                            t.tier === "OPERATIONAL" ? "border-amber-500/40 bg-amber-500/5" :
+                            t.tier === "TACTICAL"  ? "border-red-500/40 bg-red-500/5" :
                             "border-red-900/40 bg-red-900/5"
                           ) : "border-transparent opacity-40"}`}>
                           <TierBadge tier={t.tier} />

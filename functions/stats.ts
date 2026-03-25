@@ -236,7 +236,7 @@ function assessTrainingDocs(docs: any[]): TrainingAssessment {
 
   // FIX 6: Breadth score requires minimum depth of 50 per doc type — can't spam
   // thin stubs labeled as each type to game the breadth points.
-  const BREADTH_MIN_DEPTH = 50;
+  const BREADTH_MIN_DEPTH = TRAINING_DOC_BREADTH_MIN_DEPTH;
   const deepDocs = qualifyingDocs.filter((d: any) => d.computed_depth >= BREADTH_MIN_DEPTH);
   const deepTypes = deepDocs.map((d: any) => d.doc_type ?? '');
   const has_sop   = deepTypes.some((t: string) => t === 'SOP');
@@ -250,18 +250,32 @@ function assessTrainingDocs(docs: any[]): TrainingAssessment {
     ? Math.round(depthScores.reduce((a: number, b: number) => a + b, 0) / depthScores.length)
     : 0;
 
-  const volPts      = Math.min(30, doc_count * (30 / 8));   // uploads only
-  const depthPts    = (avg_depth_score / 100) * 30;
+  // ── VOLUME (0–20 pts): Uploads only. Strict per-doc gate. No easy padding.
+  // Req: 12+ qualifying uploads for full points. Each doc worth 20/12 ≈ 1.67pts, capped.
+  const volPts = Math.min(20, doc_count * (20 / 12));
+
+  // ── DEPTH (0–35 pts): Average depth of ALL qualifying docs must be genuinely high.
+  // Below 50 avg = 0. Between 50–100 scales linearly from 0 to 35.
+  // Hard floor forces commanders to actually write substantive docs.
+  const depthPts = avg_depth_score >= 50
+    ? Math.round(((avg_depth_score - 50) / 50) * 35)
+    : 0;
+
+  // ── BREADTH (0–30 pts): Requires deep docs (60+) per type. Each qualifying type = 7.5pts.
+  // Types: SOP, TTP, Rules of Engagement, Drill. All four = 30pts.
   const typesPresent = [has_sop, has_ttp, has_roe, has_drill].filter(Boolean).length;
-  const breadthPts  = (typesPresent / 4) * 20;              // requires depth >= 50 per type
-  const freshRatio  = doc_count > 0 ? (doc_count - outdated_count) / doc_count : 0;
-  const recencyPts  = freshRatio * 20;
+  const breadthPts = typesPresent * 7.5;
+
+  // ── RECENCY (0–15 pts): What % of qualifying docs are current (reviewed within 180 days)?
+  // All fresh = 15pts. 50%+ fresh = partial. Stale library = heavy penalty.
+  const freshRatio = doc_count > 0 ? (doc_count - outdated_count) / doc_count : 0;
+  const recencyPts = freshRatio >= 1.0 ? 15 : freshRatio >= 0.8 ? 11 : freshRatio >= 0.6 ? 7 : freshRatio >= 0.4 ? 3 : 0;
 
   const knowledge_factor = Math.round(Math.min(100, volPts + depthPts + breadthPts + recencyPts));
   const knowledge_grade: TrainingAssessment['knowledge_grade'] =
-    knowledge_factor >= 80 ? 'expert' :
-    knowledge_factor >= 60 ? 'proficient' :
-    knowledge_factor >= 35 ? 'developing' :
+    knowledge_factor >= 85 ? 'expert' :
+    knowledge_factor >= 65 ? 'proficient' :
+    knowledge_factor >= 40 ? 'developing' :
     knowledge_factor > 0   ? 'minimal' : 'none';
 
   const typeLabels = [has_sop && 'SOPs', has_ttp && 'TTPs', has_roe && 'Rules of Engagement', has_drill && 'Drills'].filter(Boolean).join(', ');
@@ -341,15 +355,16 @@ function getCapacityGrade(total: number, profile: GameCapacityProfile): Capacity
 }
 
 function manpowerScore(total: number, profile: GameCapacityProfile): number {
+  // Scaled 0–30 against game profile thresholds
   const utilisation = Math.min(total / profile.fullStrength, 1.0);
-  if (utilisation >= 1.0) return 20;
+  if (utilisation >= 1.0) return 30;
   const adequateRatio = profile.adequate / profile.fullStrength;
   const minimalRatio  = profile.minimal  / profile.fullStrength;
   if (utilisation >= adequateRatio)
-    return Math.round(10 + (utilisation - adequateRatio) / (1 - adequateRatio) * 10);
+    return Math.round(15 + (utilisation - adequateRatio) / (1 - adequateRatio) * 15);
   if (utilisation >= minimalRatio)
-    return Math.round(4  + (utilisation - minimalRatio)  / (adequateRatio - minimalRatio) * 6);
-  return Math.round(utilisation / minimalRatio * 4);
+    return Math.round(5  + (utilisation - minimalRatio)  / (adequateRatio - minimalRatio) * 10);
+  return Math.round(utilisation / minimalRatio * 5);
 }
 
 // ─── MAIN READINESS REPORT ────────────────────────────────────────────────────
@@ -437,60 +452,69 @@ function buildReadinessReport(params: {
   const training    = assessTrainingDocs(trainingDocs);
   const activityRatio = verifiedTotal > 0 ? active_this_month / verifiedTotal : 0;
 
-  // ─── SCORING (all using clean/verified data) ─────────────────────────────
+  // ─── SCORING — MAX 200 PTS ──────────────────────────────────────────────────
   let score = 0;
 
-  // Manpower (0–20): based on verified roster count
+  // Manpower (0–30)
   score += manpowerScore(verifiedTotal, gameProfile);
 
-  // Activity (0–15)
-  if      (activityRatio >= 0.8) score += 15;
-  else if (activityRatio >= 0.6) score += 10;
-  else if (activityRatio >= 0.4) score += 5;
-  else if (activityRatio >= 0.2) score += 2;
+  // Member Activity (0–20)
+  if      (activityRatio >= 0.8) score += 20;
+  else if (activityRatio >= 0.6) score += 14;
+  else if (activityRatio >= 0.4) score += 7;
+  else if (activityRatio >= 0.2) score += 3;
 
-  // Ops history (0–20): uses valid op count only
-  if      (validOpsCount >= 20) score += 20;
-  else if (validOpsCount >= 10) score += 14;
-  else if (validOpsCount >= 5)  score += 8;
-  else if (validOpsCount >= 3)  score += 4;
+  // Operations History (0–25)
+  if      (validOpsCount >= 25) score += 25;
+  else if (validOpsCount >= 15) score += 18;
+  else if (validOpsCount >= 8)  score += 12;
+  else if (validOpsCount >= 4)  score += 6;
   else if (validOpsCount >= 1)  score += 2;
 
-  // Op recency (0–10)
-  if      (days_since_last_op !== null && days_since_last_op <= 14) score += 10;
-  else if (days_since_last_op !== null && days_since_last_op <= 30) score += 6;
+  // Op Recency (0–15)
+  if      (days_since_last_op !== null && days_since_last_op <= 7)  score += 15;
+  else if (days_since_last_op !== null && days_since_last_op <= 14) score += 12;
+  else if (days_since_last_op !== null && days_since_last_op <= 30) score += 7;
   else if (days_since_last_op !== null && days_since_last_op <= 60) score += 3;
 
-  // AAR discipline (0–10): uses valid AAR / valid op ratio
+  // AAR Discipline (0–15)
   if (validOpsCount >= 1) {
-    if      (aarRatio >= 0.8) score += 10;
+    if      (aarRatio >= 0.9) score += 15;
+    else if (aarRatio >= 0.7) score += 10;
     else if (aarRatio >= 0.5) score += 6;
-    else if (aarRatio >= 0.2) score += 3;
+    else if (aarRatio >= 0.2) score += 2;
     else if (aarRatio > 0)    score += 1;
   }
 
-  // Training (0–15)
-  score += Math.round((training.knowledge_factor / 100) * 15);
+  // Training Doctrine (0–50): weighted by knowledge_factor (0–100 internal score)
+  // knowledge_factor is itself gated by depth (avg must be 50+), breadth, volume, recency
+  score += Math.round((training.knowledge_factor / 100) * 50);
 
-  // Discord (0–5)
-  if (has_discord) score += 5;
+  // Discord Linked (0–10)
+  if (has_discord) score += 10;
 
-  // Page maintenance (0–5)
-  if      (days_since_page_update !== null && days_since_page_update <= 14) score += 5;
-  else if (days_since_page_update !== null && days_since_page_update <= 30) score += 3;
-  else if (days_since_page_update !== null && days_since_page_update <= 90) score += 1;
+  // Page Maintenance (0–10)
+  if      (days_since_page_update !== null && days_since_page_update <= 14) score += 10;
+  else if (days_since_page_update !== null && days_since_page_update <= 30) score += 6;
+  else if (days_since_page_update !== null && days_since_page_update <= 60) score += 2;
 
-  // Reputation (0–5): from clean reviews only
-  if      (clean_review_count >= 3 && avg_rep_score >= 70) score += 5;
-  else if (clean_review_count >= 3 && avg_rep_score >= 50) score += 3;
-  else if (clean_review_count >= 1 && avg_rep_score >= 50) score += 2;
+  // Reputation / Reviews (0–10)
+  if      (clean_review_count >= 5 && avg_rep_score >= 75) score += 10;
+  else if (clean_review_count >= 3 && avg_rep_score >= 70) score += 7;
+  else if (clean_review_count >= 3 && avg_rep_score >= 50) score += 5;
+  else if (clean_review_count >= 1 && avg_rep_score >= 50) score += 3;
   else if (clean_review_count >= 1)                        score += 1;
 
-  const readiness_pct = Math.min(100, Math.max(0, Math.round(score)));
+  // MAX = 30+20+25+15+15+50+10+10+10 = 185 base
+  // Bonus 15pts: Doctrine Breadth Excellence — all 4 doc types present AND avg depth >= 70
+  const doctrineBonusPts = (training.has_sop && training.has_ttp && training.has_roe && training.has_drill && training.avg_depth_score >= 70) ? 15 : 0;
+  score += doctrineBonusPts;
+
+  const readiness_pct = Math.min(200, Math.max(0, Math.round(score)));
   const status: ReadinessReport['status'] =
     capacityGradeNew === 'undermanned' ? 'red' :
-    readiness_pct >= 75 ? 'green' :
-    readiness_pct >= 45 ? 'amber' : 'red';
+    readiness_pct >= 150 ? 'green' :
+    readiness_pct >= 90  ? 'amber' : 'red';
 
   const opCapScore =
     (Math.min(validOpsCount, 20) / 20) * 30 +
@@ -500,10 +524,10 @@ function buildReadinessReport(params: {
     (training.knowledge_factor / 100) * 20;
 
   const op_capability_tier =
-    opCapScore >= 80 ? 'TIER I'   :
-    opCapScore >= 60 ? 'TIER II'  :
-    opCapScore >= 40 ? 'TIER III' :
-    opCapScore >= 20 ? 'TIER IV'  : 'TIER V';
+    opCapScore >= 80 ? 'ELITE'       :
+    opCapScore >= 60 ? 'STRATEGIC'   :
+    opCapScore >= 40 ? 'OPERATIONAL' :
+    opCapScore >= 20 ? 'TACTICAL'    : 'LIMITED';
 
   // ─── FLAGS ───────────────────────────────────────────────────────────────
   const flags: ReadinessFlag[] = [];
@@ -686,14 +710,14 @@ function buildReadinessReport(params: {
 
   // Per-category scores for UI breakdown bars
   const manpowerPts   = manpowerScore(verifiedTotal, gameProfile);
-  const activityPts   = activityRatio >= 0.8 ? 15 : activityRatio >= 0.6 ? 10 : activityRatio >= 0.4 ? 5 : activityRatio >= 0.2 ? 2 : 0;
-  const opHistoryPts  = validOpsCount >= 20 ? 20 : validOpsCount >= 10 ? 14 : validOpsCount >= 5 ? 8 : validOpsCount >= 3 ? 4 : validOpsCount >= 1 ? 2 : 0;
-  const opRecencyPts  = days_since_last_op !== null && days_since_last_op <= 14 ? 10 : days_since_last_op !== null && days_since_last_op <= 30 ? 6 : days_since_last_op !== null && days_since_last_op <= 60 ? 3 : 0;
-  const aarPts        = validOpsCount >= 1 ? (aarRatio >= 0.8 ? 10 : aarRatio >= 0.5 ? 6 : aarRatio >= 0.2 ? 3 : aarRatio > 0 ? 1 : 0) : 0;
-  const trainingPts   = Math.round((training.knowledge_factor / 100) * 15);
-  const discordPts    = has_discord ? 5 : 0;
-  const pagePts       = days_since_page_update !== null && days_since_page_update <= 14 ? 5 : days_since_page_update !== null && days_since_page_update <= 30 ? 3 : days_since_page_update !== null && days_since_page_update <= 90 ? 1 : 0;
-  const repPts        = clean_review_count >= 3 && avg_rep_score >= 70 ? 5 : clean_review_count >= 3 && avg_rep_score >= 50 ? 3 : clean_review_count >= 1 && avg_rep_score >= 50 ? 2 : clean_review_count >= 1 ? 1 : 0;
+  const activityPts   = activityRatio >= 0.8 ? 20 : activityRatio >= 0.6 ? 14 : activityRatio >= 0.4 ? 7 : activityRatio >= 0.2 ? 3 : 0;
+  const opHistoryPts  = validOpsCount >= 25 ? 25 : validOpsCount >= 15 ? 18 : validOpsCount >= 8 ? 12 : validOpsCount >= 4 ? 6 : validOpsCount >= 1 ? 2 : 0;
+  const opRecencyPts  = days_since_last_op !== null && days_since_last_op <= 7 ? 15 : days_since_last_op !== null && days_since_last_op <= 14 ? 12 : days_since_last_op !== null && days_since_last_op <= 30 ? 7 : days_since_last_op !== null && days_since_last_op <= 60 ? 3 : 0;
+  const aarPts        = validOpsCount >= 1 ? (aarRatio >= 0.9 ? 15 : aarRatio >= 0.7 ? 10 : aarRatio >= 0.5 ? 6 : aarRatio >= 0.2 ? 2 : aarRatio > 0 ? 1 : 0) : 0;
+  const trainingPts   = Math.round((training.knowledge_factor / 100) * 50);
+  const discordPts    = has_discord ? 10 : 0;
+  const pagePts       = days_since_page_update !== null && days_since_page_update <= 14 ? 10 : days_since_page_update !== null && days_since_page_update <= 30 ? 6 : days_since_page_update !== null && days_since_page_update <= 60 ? 2 : 0;
+  const repPts        = clean_review_count >= 5 && avg_rep_score >= 75 ? 10 : clean_review_count >= 3 && avg_rep_score >= 70 ? 7 : clean_review_count >= 3 && avg_rep_score >= 50 ? 5 : clean_review_count >= 1 && avg_rep_score >= 50 ? 3 : clean_review_count >= 1 ? 1 : 0;
 
   return {
     status, readiness_pct, total, verified_total: verifiedTotal,
@@ -706,7 +730,7 @@ function buildReadinessReport(params: {
     has_discord, has_steam,
     op_capability_tier, op_cap_score: Math.round(opCapScore),
     training, anti_gaming: ag, flags, narrative, narrative_lines,
-    score_breakdown: { manpower: manpowerPts, activity: activityPts, ops_history: opHistoryPts, op_recency: opRecencyPts, aar_discipline: aarPts, training_doctrine: trainingPts, discord: discordPts, page_maintenance: pagePts, reputation: repPts },
+    score_breakdown: { manpower: manpowerPts, activity: activityPts, ops_history: opHistoryPts, op_recency: opRecencyPts, aar_discipline: aarPts, training_doctrine: trainingPts, discord: discordPts, page_maintenance: pagePts, reputation: repPts, doctrine_bonus: doctrineBonusPts },
   };
 }
 
