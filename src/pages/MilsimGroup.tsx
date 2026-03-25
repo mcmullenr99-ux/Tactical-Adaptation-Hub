@@ -746,6 +746,7 @@ function PublicLegacyTab({ group }: { group: any }) {
   const [aars, setAars]           = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading]     = useState(true);
+  const [filter, setFilter]       = useState<Set<string>>(new Set(["op","aar","campaign"]));
 
   useEffect(() => {
     const token = localStorage.getItem("tag_auth_token") ?? "";
@@ -762,63 +763,109 @@ function PublicLegacyTab({ group }: { group: any }) {
     });
   }, [group.id]);
 
+  const toggleFilter = (t: string) => setFilter(prev => {
+    const next = new Set(prev);
+    if (next.has(t)) { if (next.size > 1) next.delete(t); } else next.add(t);
+    return next;
+  });
+
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
+  // Build full entry list
+  type EntryType = "op" | "aar" | "campaign";
   type TimelineEntry = {
-    date: string; type: "op" | "aar" | "campaign";
-    title: string; sub: string;
-    icon: typeof Archive; color: string;
+    date: string; type: EntryType; id: string;
+    title: string; game?: string; eventType?: string; status?: string;
+    outcome?: string; author?: string; participants?: number;
+    campaignId?: string; opCount?: number;
   };
 
-  const entries: TimelineEntry[] = [
+  const allEntries: TimelineEntry[] = [
     ...ops.filter(o => o.scheduled_at).map(o => ({
-      date: o.scheduled_at, type: "op" as const,
-      title: o.name,
-      sub: `${o.game || "Unknown Game"} · ${o.event_type || "Op"} · ${o.status || ""}`,
-      icon: Siren, color: "text-primary border-primary/40 bg-primary/10",
+      date: o.scheduled_at, type: "op" as const, id: o.id,
+      title: o.name, game: o.game, eventType: o.event_type, status: o.status,
+      campaignId: (campaigns.find((c: any) => (c.op_ids || []).includes(o.id)) || {}).id,
     })),
-    ...aars.filter(a => a.created_date).map(a => ({
-      date: a.created_date, type: "aar" as const,
+    ...aars.filter(a => a.op_date || a.created_date).map(a => ({
+      date: a.op_date || a.created_date, type: "aar" as const, id: a.id,
       title: a.title || a.op_name || "After Action Report",
-      sub: `By ${a.author_username} · Outcome: ${a.outcome || "—"}`,
-      icon: ClipboardList, color: "text-green-400 border-green-500/40 bg-green-500/10",
+      outcome: a.outcome, author: a.author_username,
+      participants: Array.isArray(a.participants) ? a.participants.length : undefined,
     })),
     ...campaigns.filter(c => c.start_date).map(c => ({
-      date: c.start_date, type: "campaign" as const,
-      title: `Campaign: ${c.name}`,
-      sub: `${c.status} · ${(c.op_ids || []).length} ops`,
-      icon: Zap, color: "text-yellow-400 border-yellow-500/40 bg-yellow-500/10",
+      date: c.start_date, type: "campaign" as const, id: c.id,
+      title: c.name, outcome: c.outcome, status: c.status,
+      opCount: (c.op_ids || []).length,
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const filtered = allEntries.filter(e => filter.has(e.type));
+
+  // Group by year
+  const byYear: Record<number, TimelineEntry[]> = {};
+  filtered.forEach(e => {
+    const y = new Date(e.date).getFullYear();
+    if (!byYear[y]) byYear[y] = [];
+    byYear[y].push(e);
+  });
+  const years = Object.keys(byYear).map(Number).sort((a, b) => b - a);
 
   const firstOpDate = ops.length > 0
     ? ops.reduce((e: string | null, o) => (!e || new Date(o.scheduled_at) < new Date(e)) ? o.scheduled_at : e, null)
     : null;
-
   const victories = campaigns.filter(c => c.outcome === "victory").length;
+  const yearsActive = firstOpDate ? new Date().getFullYear() - new Date(firstOpDate).getFullYear() + 1 : 0;
+
+  const typeStyle: Record<EntryType, { dot: string; card: string; label: string; icon: typeof Archive }> = {
+    op:       { dot: "bg-primary border-primary/60",           card: "border-primary/20 bg-primary/5",        label: "text-primary",    icon: Siren        },
+    aar:      { dot: "bg-green-500 border-green-400/60",       card: "border-green-500/20 bg-green-500/5",    label: "text-green-400",  icon: ClipboardList },
+    campaign: { dot: "bg-yellow-400 border-yellow-300/60",     card: "border-yellow-500/20 bg-yellow-500/5",  label: "text-yellow-400", icon: Zap           },
+  };
+
+  const outcomeBadge = (outcome?: string) => {
+    if (!outcome) return null;
+    const map: Record<string, string> = { victory: "bg-green-500/20 text-green-400 border-green-500/30", defeat: "bg-red-500/20 text-red-400 border-red-500/30", draw: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" };
+    return map[outcome] ? <span className={`text-[9px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${map[outcome]}`}>{outcome}</span> : null;
+  };
 
   return (
-    <div className="space-y-10 max-w-4xl">
+    <div className="space-y-8 max-w-4xl">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 bg-secondary border border-border rounded flex items-center justify-center">
-          <Archive className="w-4 h-4 text-foreground" />
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-secondary border border-border rounded flex items-center justify-center">
+            <Archive className="w-4 h-4 text-foreground" />
+          </div>
+          <div>
+            <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Unit Legacy</h2>
+            <p className="text-xs font-sans text-muted-foreground">The permanent operational record of {group.name}</p>
+          </div>
         </div>
-        <div>
-          <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Unit Legacy</h2>
-          <p className="text-xs font-sans text-muted-foreground">The permanent operational record of {group.name}</p>
+        {/* Filter pills */}
+        <div className="flex items-center gap-2">
+          {(["op","aar","campaign"] as EntryType[]).map(t => {
+            const s = typeStyle[t];
+            const active = filter.has(t);
+            return (
+              <button key={t} onClick={() => toggleFilter(t)}
+                className={`text-[10px] font-display font-bold uppercase tracking-wider px-3 py-1 rounded border transition-all ${active ? `${s.card} ${s.label} border-current` : "bg-secondary border-border text-muted-foreground"}`}>
+                {t === "op" ? "Ops" : t === "aar" ? "AARs" : "Campaigns"}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: "Total Ops",   value: ops.length,        color: "text-primary"    },
-          { label: "AARs Filed",  value: aars.length,       color: "text-green-400"  },
-          { label: "Campaigns",   value: campaigns.length,  color: "text-yellow-400" },
-          { label: "Est.",        value: firstOpDate ? new Date(firstOpDate).getFullYear() : "—", color: "text-foreground" },
+          { label: "Total Ops",     value: ops.length,        color: "text-primary"    },
+          { label: "AARs Filed",    value: aars.length,       color: "text-green-400"  },
+          { label: "Campaigns",     value: campaigns.length,  color: "text-yellow-400" },
+          { label: "Victories",     value: victories,         color: "text-green-400"  },
+          { label: "Years Active",  value: yearsActive || "—", color: "text-foreground" },
         ].map(s => (
-          <div key={s.label} className="bg-card border border-border rounded-lg p-4 text-center">
+          <div key={s.label} className="bg-card border border-border rounded-lg p-3 text-center">
             <p className={`font-display font-black text-2xl ${s.color}`}>{s.value}</p>
             <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-0.5">{s.label}</p>
           </div>
@@ -828,19 +875,18 @@ function PublicLegacyTab({ group }: { group: any }) {
       {/* Campaign Ribbons */}
       {campaigns.length > 0 && (
         <div>
-          <h3 className="font-display font-bold uppercase tracking-wider text-sm text-muted-foreground mb-3">Campaign Ribbons</h3>
-          <div className="flex flex-wrap gap-3">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Campaign Ribbons</p>
+          <div className="flex flex-wrap gap-2">
             {campaigns.map((c: any) => {
               const outcome = c.outcome || "incomplete";
-              const col =
-                outcome === "victory" ? "from-green-600 to-green-800 border-green-500/40" :
-                outcome === "defeat"  ? "from-red-700 to-red-900 border-red-500/40" :
-                outcome === "draw"    ? "from-yellow-600 to-yellow-800 border-yellow-500/40" :
-                "from-zinc-700 to-zinc-900 border-zinc-500/40";
+              const col = outcome === "victory" ? "from-green-600 to-green-800 border-green-500/40" :
+                          outcome === "defeat"  ? "from-red-700 to-red-900 border-red-500/40" :
+                          outcome === "draw"    ? "from-yellow-600 to-yellow-800 border-yellow-500/40" :
+                          "from-zinc-700 to-zinc-900 border-zinc-500/40";
               return (
-                <div key={c.id} className={`bg-gradient-to-b ${col} border rounded px-4 py-2 text-center min-w-[80px]`}>
-                  <p className="text-xs font-display font-black uppercase tracking-wider text-white leading-tight">{c.name}</p>
-                  <p className="text-[9px] font-sans text-white/70 mt-0.5">{outcome.toUpperCase()}</p>
+                <div key={c.id} className={`bg-gradient-to-b ${col} border rounded px-3 py-1.5 text-center min-w-[70px]`}>
+                  <p className="text-[10px] font-display font-black uppercase tracking-wider text-white leading-tight">{c.name}</p>
+                  <p className="text-[8px] font-sans text-white/60 mt-0.5">{outcome.toUpperCase()}</p>
                 </div>
               );
             })}
@@ -848,35 +894,74 @@ function PublicLegacyTab({ group }: { group: any }) {
         </div>
       )}
 
-      {/* Full Timeline */}
-      <div>
-        <h3 className="font-display font-bold uppercase tracking-wider text-sm text-muted-foreground mb-4">Full Timeline</h3>
-        {entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-            <Archive className="w-10 h-10 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground font-sans">No ops, AARs, or campaigns on record yet.</p>
-          </div>
-        ) : (
-          <div className="relative space-y-3 pl-6 border-l border-border">
-            {entries.map((e, i) => (
-              <div key={i} className="relative">
-                <div className={`absolute -left-[25px] w-4 h-4 rounded-full border flex items-center justify-center ${e.color}`}>
-                  <e.icon className="w-2 h-2" />
-                </div>
-                <div className="bg-card border border-border rounded-lg p-3 ml-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-display font-bold text-sm text-foreground">{e.title}</p>
-                    <p className="text-[10px] font-sans text-muted-foreground shrink-0">
-                      {new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                    </p>
-                  </div>
-                  <p className="text-xs font-sans text-muted-foreground mt-0.5">{e.sub}</p>
-                </div>
+      {/* Visual Timeline */}
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+          <Archive className="w-10 h-10 text-muted-foreground/30" />
+          <p className="text-sm text-muted-foreground font-sans">No records match the current filter.</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {years.map(year => (
+            <div key={year}>
+              {/* Year band */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-px flex-1 bg-border" />
+                <span className="font-display font-black text-xs uppercase tracking-widest text-muted-foreground px-3 py-1 bg-secondary border border-border rounded">
+                  {year}
+                </span>
+                <div className="h-px flex-1 bg-border" />
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              {/* Entries for this year */}
+              <div className="relative pl-6 border-l-2 border-border space-y-3">
+                {byYear[year].map((e, i) => {
+                  const s = typeStyle[e.type];
+                  const Icon = s.icon;
+                  const d = new Date(e.date);
+                  const dateStr = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+                  return (
+                    <div key={i} className="relative">
+                      {/* Spine dot */}
+                      <div className={`absolute -left-[29px] w-4 h-4 rounded-full border-2 ${s.dot} flex items-center justify-center`}>
+                        <Icon className="w-2 h-2 text-background" />
+                      </div>
+
+                      {/* Card */}
+                      <div className={`rounded-lg border p-3 ml-1 ${s.card}`}>
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`text-[9px] font-display font-bold uppercase tracking-widest shrink-0 ${s.label}`}>
+                              {e.type === "op" ? "OP" : e.type === "aar" ? "AAR" : "CAMPAIGN"}
+                            </span>
+                            <p className="font-display font-bold text-sm text-foreground truncate">{e.title}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {outcomeBadge(e.outcome)}
+                            <span className="text-[10px] font-sans text-muted-foreground">{dateStr}</span>
+                          </div>
+                        </div>
+
+                        {/* Meta row */}
+                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                          {e.game && <span className="text-[10px] font-sans text-muted-foreground">{e.game}</span>}
+                          {e.eventType && <span className="text-[10px] font-sans text-muted-foreground">· {e.eventType}</span>}
+                          {e.status && e.type === "op" && <span className="text-[10px] font-sans text-muted-foreground">· {e.status}</span>}
+                          {e.author && <span className="text-[10px] font-sans text-muted-foreground">By {e.author}</span>}
+                          {e.participants !== undefined && <span className="text-[10px] font-sans text-muted-foreground">· {e.participants} participants</span>}
+                          {e.opCount !== undefined && <span className="text-[10px] font-sans text-muted-foreground">· {e.opCount} ops</span>}
+                          {e.campaignId && <span className="text-[9px] font-display uppercase tracking-wider text-yellow-400/70">· {(campaigns.find((c: any) => c.id === e.campaignId) || {}).name}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
