@@ -223,6 +223,20 @@ function MField({ label, children }: { label: string; children: React.ReactNode 
   );
 }
 
+const MC_COUNTRIES = [
+  "🇬🇧 United Kingdom", "🇺🇸 United States", "🇨🇦 Canada",
+  "🇦🇺 Australia", "🇳🇿 New Zealand", "🇩🇪 Germany", "🇫🇷 France",
+  "🇮🇹 Italy", "🇵🇱 Poland", "🇳🇱 Netherlands", "🇳🇴 Norway",
+  "🇸🇪 Sweden", "🇩🇰 Denmark", "🇧🇪 Belgium", "🇪🇸 Spain",
+  "🇵🇹 Portugal", "🇹🇷 Turkey", "🇯🇵 Japan", "🇰🇷 South Korea",
+  "🇧🇷 Brazil", "International", "Other",
+];
+const MC_LANGS = [
+  "English", "German", "French", "Spanish", "Italian", "Polish",
+  "Dutch", "Portuguese", "Norwegian", "Swedish", "Danish", "Turkish",
+  "Japanese", "Korean", "Other",
+];
+
 function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const { register, handleSubmit, watch, setValue } = useForm({ defaultValues: {
     name: group.name, tagLine: group.tagLine ?? "", description: group.description ?? "",
