@@ -3,20 +3,25 @@ import { verify } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
 /**
- * Compute duty status from last_active_at (mirrors authMe.ts logic).
- * - <1d  → "active"
- * - <7d  → "available"
- * - <30d → "on-leave"
- * - ≥30d → "mia"
+ * Compute duty status from activity_dates (real participation, not logins).
+ * - 5-7 days/week → "active"
+ * - 3-4 days/week → "available"
+ * - 1-2 days/week → "on-leave"
+ * - 0 days/week   → "mia"
  */
-function computeDutyStatus(lastActiveAt: string | null | undefined): string {
-  if (!lastActiveAt) return 'mia';
-  const last = new Date(lastActiveAt);
-  if (isNaN(last.getTime())) return 'mia';
-  const diffDays = (Date.now() - last.getTime()) / (1000 * 60 * 60 * 24);
-  if (diffDays < 1)  return 'active';
-  if (diffDays < 7)  return 'available';
-  if (diffDays < 30) return 'on-leave';
+function computeWeeklyActiveDays(activityDates: string[] | null | undefined): number {
+  if (!activityDates || activityDates.length === 0) return 0;
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const cutoff = sevenDaysAgo.toISOString().slice(0, 10);
+  return new Set(activityDates.filter(d => d >= cutoff)).size;
+}
+
+function computeDutyStatus(activityDates: string[] | null | undefined): string {
+  const weekly = computeWeeklyActiveDays(activityDates);
+  if (weekly >= 5) return 'active';
+  if (weekly >= 3) return 'available';
+  if (weekly >= 1) return 'on-leave';
   return 'mia';
 }
 
@@ -54,7 +59,7 @@ Deno.serve(async (req) => {
         .map((u: any) => ({
           id: u.id, username: u.username, role: u.role,
           nationality: u.nationality ?? null,
-          on_duty_status: computeDutyStatus(u.last_active_at),
+          on_duty_status: computeDutyStatus(u.activity_dates),
           createdAt: u.created_date,
         })));
     }
@@ -67,7 +72,7 @@ Deno.serve(async (req) => {
         id: user.id, username: user.username, role: user.role,
         bio: user.bio ?? null, nationality: user.nationality ?? null,
         discordTag: user.discord_tag ?? null,
-        on_duty_status: computeDutyStatus(user.last_active_at),
+        on_duty_status: computeDutyStatus(user.activity_dates),
         createdAt: user.created_date,
       });
     }

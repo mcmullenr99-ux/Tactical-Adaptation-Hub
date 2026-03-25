@@ -18,21 +18,32 @@ async function getUserFromRequest(req: Request, base44: any): Promise<any | null
 }
 
 /**
- * Derive duty status automatically from last_active_at.
- * - Within 24h  → "active"     (recently online)
- * - Within 7d   → "available"  (active this week)
- * - Within 30d  → "on-leave"   (gone quiet)
- * - Beyond 30d  → "mia"        (missing in action)
+ * Count unique active days in the last 7 days from activity_dates array.
+ * activity_dates = ["2026-03-20", "2026-03-22", ...] — deduplicated ISO date strings
+ * populated by AAR participation, Op attendance, and Training completion.
  */
-function computeDutyStatus(lastActiveAt: string | null | undefined): string {
-  if (!lastActiveAt) return 'mia';
-  const last = new Date(lastActiveAt);
-  if (isNaN(last.getTime())) return 'mia';
-  const diffMs = Date.now() - last.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  if (diffDays < 1)  return 'active';
-  if (diffDays < 7)  return 'available';
-  if (diffDays < 30) return 'on-leave';
+function computeWeeklyActiveDays(activityDates: string[] | null | undefined): number {
+  if (!activityDates || activityDates.length === 0) return 0;
+  const now = new Date();
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const cutoff = sevenDaysAgo.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const unique = new Set(activityDates.filter(d => d >= cutoff));
+  return unique.size;
+}
+
+/**
+ * Derive duty status from weekly active days (cross-referenced with real activity).
+ * - 5-7 days/week → "active"      (fully committed)
+ * - 3-4 days/week → "available"   (regularly active)
+ * - 1-2 days/week → "on-leave"    (light activity)
+ * - 0 days/week   → "mia"         (no recorded activity this week)
+ */
+function computeDutyStatus(activityDates: string[] | null | undefined): string {
+  const weekly = computeWeeklyActiveDays(activityDates);
+  if (weekly >= 5) return 'active';
+  if (weekly >= 3) return 'available';
+  if (weekly >= 1) return 'on-leave';
   return 'mia';
 }
 
@@ -50,18 +61,10 @@ Deno.serve(async (req) => {
     const user = await getUserFromRequest(req, base44);
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // GET / — return current user + update last_active_at as heartbeat
+    // GET / — return current user
     if (method === 'GET' && parts.length === 0) {
-      const now = new Date().toISOString();
-      // Heartbeat: update last_active_at on every /me call (throttled to once per 5 min to avoid noise)
-      const lastActive = user.last_active_at ? new Date(user.last_active_at) : null;
-      const msSinceLast = lastActive ? Date.now() - lastActive.getTime() : Infinity;
-      if (msSinceLast > 5 * 60 * 1000) {
-        await base44.asServiceRole.entities.User.update(user.id, { last_active_at: now });
-        user.last_active_at = now;
-      }
-
-      const dutyStatus = computeDutyStatus(user.last_active_at);
+      const weeklyActiveDays = computeWeeklyActiveDays(user.activity_dates);
+      const dutyStatus = computeDutyStatus(user.activity_dates);
 
       return Response.json({
         id: user.id,
@@ -81,6 +84,8 @@ Deno.serve(async (req) => {
         createdAt: user.created_date,
         created_at: user.created_date,
         on_duty_status: dutyStatus,
+        weekly_active_days: weeklyActiveDays,
+        activity_dates: user.activity_dates ?? [],
       });
     }
 

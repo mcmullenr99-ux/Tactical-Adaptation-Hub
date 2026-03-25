@@ -78,6 +78,7 @@ export default function ServiceCard() {
   const tier = getServiceTier(user.createdAt ?? user.created_at);
   const _createdAt = user.createdAt ?? user.created_at ?? null;
   const daysIn = _createdAt && !isNaN(new Date(_createdAt).getTime()) ? differenceInDays(new Date(), new Date(_createdAt)) : 0;
+  const weeklyActiveDays: number = (user as any).weekly_active_days ?? 0;
   const dutyStatus = (user as any).on_duty_status ?? "available";
 
   const unitDisplay = primaryUnit?.name ?? (primaryUnit === null ? "FREELANCER" : "LOADING...");
@@ -276,7 +277,7 @@ export default function ServiceCard() {
               {[
                 { label: "SERVICE NO.", value: user?.id ? `TAG-${String(user.id).replace(/-/g,"").slice(0, 8).toUpperCase()}` : "TAG-UNKNOWN" },
                 { label: "ENLISTED",    value: _createdAt && !isNaN(new Date(_createdAt).getTime()) ? format(new Date(_createdAt), "dd MMM yyyy").toUpperCase() : "UNKNOWN" },
-                { label: "DAYS ACTIVE", value: String(daysIn) },
+                { label: "DAYS/WK ACTIVE", value: `${weeklyActiveDays}/7` },
                 { label: "CLEARANCE",   value: (user.role ?? "OPERATOR").toUpperCase() },
               ].map(({ label, value }) => (
                 <div key={label}>

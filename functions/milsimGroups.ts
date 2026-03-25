@@ -12,6 +12,33 @@ async function getCallerUser(base44: any, req: Request) {
     return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
   } catch { return null; }
 }
+/**
+ * Record an activity date for a list of roster member IDs.
+ * Looks up each roster entry -> gets user_id -> stamps today's date in activity_dates.
+ * Deduplicates and keeps only last 90 days.
+ */
+async function recordActivityDateForRoster(base44: any, rosterIds: string[]): Promise<void> {
+  if (!rosterIds || rosterIds.length === 0) return;
+  const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  await Promise.allSettled(rosterIds.map(async (rosterId: string) => {
+    try {
+      const entry = await base44.asServiceRole.entities.MilsimRoster.get(rosterId);
+      if (!entry?.user_id) return;
+      const user = await base44.asServiceRole.entities.User.get(entry.user_id);
+      if (!user) return;
+      const existing: string[] = Array.isArray(user.activity_dates) ? user.activity_dates : [];
+      if (existing.includes(today)) return; // already stamped today
+      // Keep last 90 days + add today
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+      const updated = [...existing.filter(d => d >= cutoffStr), today];
+      await base44.asServiceRole.entities.User.update(entry.user_id, { activity_dates: updated });
+    } catch {}
+  }));
+}
+
+
 
 function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -587,6 +614,10 @@ Deno.serve(async (req) => {
       if (body.name !== undefined) updateData.name = body.name;
       if (body.description !== undefined) updateData.description = body.description;
       const updated = await base44.asServiceRole.entities.MilsimOp.update(parts[2], updateData);
+      // Stamp activity date for newly checked-in participants
+      if (Array.isArray(body.participants) && body.participants.length > 0) {
+        recordActivityDateForRoster(base44, body.participants).catch(() => {});
+      }
       return Response.json(updated);
     }
 
@@ -600,7 +631,7 @@ Deno.serve(async (req) => {
       const updateData: any = { status: 'completed' };
       if (Array.isArray(body.participants)) updateData.participants = body.participants;
       const updated = await base44.asServiceRole.entities.MilsimOp.update(parts[2], updateData);
-      // Update roster ops_count for each participant
+      // Update roster ops_count + stamp activity dates for each participant
       if (Array.isArray(body.participants) && body.participants.length > 0) {
         await Promise.allSettled(body.participants.map(async (rosterId: string) => {
           try {
@@ -608,6 +639,7 @@ Deno.serve(async (req) => {
             if (entry) await base44.asServiceRole.entities.MilsimRoster.update(rosterId, { ops_count: (entry.ops_count ?? 0) + 1 });
           } catch {}
         }));
+        recordActivityDateForRoster(base44, body.participants).catch(() => {});
       }
       return Response.json(updated);
     }
@@ -644,6 +676,10 @@ Deno.serve(async (req) => {
         participants: Array.isArray(body.participants) ? body.participants : [],
       });
       await base44.asServiceRole.entities.MilsimGroup.update(parts[0], { last_aar_date: new Date().toISOString() }).catch(() => {});
+      // Stamp activity dates for all participants
+      if (Array.isArray(body.participants) && body.participants.length > 0) {
+        recordActivityDateForRoster(base44, body.participants).catch(() => {});
+      }
       return Response.json(aar, { status: 201 });
     }
 
@@ -664,6 +700,10 @@ Deno.serve(async (req) => {
       if (body.classification !== undefined) updates.classification = body.classification;
       if (Array.isArray(body.participants)) updates.participants = body.participants;
       const updated = await base44.asServiceRole.entities.MilsimAAR.update(parts[2], updates);
+      // Stamp activity dates if participants updated
+      if (Array.isArray(body.participants) && body.participants.length > 0) {
+        recordActivityDateForRoster(base44, body.participants).catch(() => {});
+      }
       return Response.json(updated);
     }
 

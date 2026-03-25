@@ -11,10 +11,10 @@ import { COUNTRIES, countryFlag } from "@/lib/countries";
 import { differenceInDays, format } from "date-fns";
 
 const DUTY_OPTIONS = [
-  { value: "available", label: "Available", color: "bg-green-500/20 text-green-400 border-green-500/40" },
-  { value: "deployed", label: "Deployed", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/40" },
-  { value: "on-leave", label: "On Leave", color: "bg-blue-500/20 text-blue-400 border-blue-500/40" },
-  { value: "mia", label: "MIA", color: "bg-red-500/20 text-red-400 border-red-500/40" },
+  { value: "active",     label: "Active",     color: "bg-green-500/20 text-green-400 border-green-500/40" },
+  { value: "available",  label: "Available",  color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/40" },
+  { value: "on-leave",   label: "On Leave",   color: "bg-blue-500/20 text-blue-400 border-blue-500/40" },
+  { value: "mia",        label: "MIA",        color: "bg-red-500/20 text-red-400 border-red-500/40" },
 ];
 
 function getServiceBadge(createdAt: string | null | undefined) {
@@ -197,12 +197,26 @@ export default function Profile() {
             <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
             {currentDuty.label}
           </div>
-          <p className="text-xs text-muted-foreground font-sans">Automatically set based on your login activity. No manual override needed.</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground font-sans">Based on AAR, Op & Training participation — not logins.</p>
+            <span className="text-xs font-display font-bold text-primary">
+              {(user as any).weekly_active_days ?? 0}/7 days this week
+            </span>
+          </div>
+          {/* Weekly activity bar */}
+          <div className="flex gap-1">
+            {Array.from({ length: 7 }, (_, i) => {
+              const weekly = (user as any).weekly_active_days ?? 0;
+              return (
+                <div key={i} className={`flex-1 h-2 rounded-sm transition-colors ${i < weekly ? "bg-primary" : "bg-secondary border border-border"}`} />
+              );
+            })}
+          </div>
           <div className="text-xs text-muted-foreground font-sans space-y-1 pt-1 border-t border-border">
-            <p><span className="text-green-400 font-bold">● Active</span> — logged in within 24 hours</p>
-            <p><span className="text-green-300 font-bold">● Available</span> — active within 7 days</p>
-            <p><span className="text-blue-400 font-bold">● On Leave</span> — active within 30 days</p>
-            <p><span className="text-red-400 font-bold">● MIA</span> — inactive for 30+ days</p>
+            <p><span className="text-green-400 font-bold">● Active</span> — 5–7 days/week participation</p>
+            <p><span className="text-emerald-400 font-bold">● Available</span> — 3–4 days/week</p>
+            <p><span className="text-blue-400 font-bold">● On Leave</span> — 1–2 days/week</p>
+            <p><span className="text-red-400 font-bold">● MIA</span> — no recorded activity this week</p>
           </div>
         </div>
 

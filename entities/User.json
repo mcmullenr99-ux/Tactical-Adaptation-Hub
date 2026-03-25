@@ -8,13 +8,7 @@
       "type": "string"
     },
     "status": {
-      "type": "string",
-      "enum": [
-        "active",
-        "suspended",
-        "banned"
-      ],
-      "default": "active"
+      "type": "string"
     },
     "bio": {
       "type": "string"
@@ -26,15 +20,13 @@
       "type": "string"
     },
     "totp_enabled": {
-      "type": "boolean",
-      "default": false
+      "type": "boolean"
     },
     "totp_secret": {
       "type": "string"
     },
     "on_duty_status": {
-      "type": "string",
-      "default": "available"
+      "type": "string"
     },
     "avatar_url": {
       "type": "string"
@@ -55,12 +47,17 @@
       "type": "string"
     },
     "login_count": {
-      "type": "number",
-      "default": 0
+      "type": "integer"
     },
     "activity_score": {
-      "type": "number",
-      "default": 50
+      "type": "number"
+    },
+    "activity_dates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "ISO date strings (YYYY-MM-DD) of days the operator was active via AAR/Op/Training participation. Deduplicated, max 90 entries."
     }
   },
   "required": []
