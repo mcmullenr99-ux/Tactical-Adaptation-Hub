@@ -378,25 +378,9 @@ function LeaderboardView({ groups, category, setCategory }: { groups: MilsimGrou
         ))}
       </div>
 
-      {/* Game selector */}
+      {/* By Game — subtitle */}
       {category === "game" && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Game:</span>
-          {allGamesForLb.length === 0 ? (
-            <span className="text-xs text-muted-foreground font-sans">No games registered yet</span>
-          ) : (
-            allGamesForLb.map(game => (
-              <button key={game} onClick={() => handleGame(game)}
-                className={`px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
-                  selectedGame === game
-                    ? "bg-primary/10 border-primary/40 text-primary"
-                    : "border-border text-muted-foreground hover:text-foreground hover:border-primary/20"
-                }`}>
-                {game}
-              </button>
-            ))
-          )}
-        </div>
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Top unit in each supported game</p>
       )}
 
       {/* Description */}
@@ -473,17 +457,28 @@ function buildLeaderboardRows(
   }
 
   if (category === "game") {
-    if (!selectedGame) return { rows: [], totalRows: 0 };
-    const inGame = eligible
-      .filter(g => (g.games ?? []).includes(selectedGame))
-      .sort((a, b) => {
-        if (isVerified(b) !== isVerified(a)) return isVerified(b) ? 1 : -1;
-        if ((b.is_pro ? 1 : 0) !== (a.is_pro ? 1 : 0)) return (b.is_pro ? 1 : 0) - (a.is_pro ? 1 : 0);
-        return (b.roster_count ?? 0) - (a.roster_count ?? 0);
-      });
-    sorted = inGame.map(g => ({ group: g, score: `${g.roster_count ?? 0}`, scoreLabel: "troops" }));
-    const totalRows = sorted.length;
-    return { rows: sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), totalRows };
+    // Show top-5 per game with game dividers (same pattern as By Region)
+    const allGameNames = Array.from(
+      new Set(eligible.flatMap(g => g.games ?? []))
+    ).sort();
+    sorted = allGameNames.flatMap(game => {
+      const inGame = eligible
+        .filter(g => (g.games ?? []).includes(game))
+        .sort((a, b) => {
+          if (isVerified(b) !== isVerified(a)) return isVerified(b) ? 1 : -1;
+          if ((b.is_pro ? 1 : 0) !== (a.is_pro ? 1 : 0)) return (b.is_pro ? 1 : 0) - (a.is_pro ? 1 : 0);
+          return (b.roster_count ?? 0) - (a.roster_count ?? 0);
+        })
+        .slice(0, 5);
+      if (inGame.length === 0) return [];
+      return inGame.map((g, idx) => ({
+        group: g,
+        score: `${g.roster_count ?? 0}`,
+        scoreLabel: "troops",
+        dividerLabel: idx === 0 ? game : undefined,
+      }));
+    });
+    return { rows: sorted, totalRows: sorted.length };
   }
 
   if (category === "troop_count") {
