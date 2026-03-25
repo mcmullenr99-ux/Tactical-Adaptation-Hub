@@ -6,18 +6,64 @@ import { useForm } from "react-hook-form";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import {
-  Shield, Crosshair, Award, Users, FileText, BookOpen,
-  Plus, Trash2, Loader2, Save, CheckCircle2, AlertCircle, ExternalLink,
-  Pencil, Check, X, Radio, Star, Medal, Wifi, WifiOff,
-  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp,
-  BarChart3, Crown, TrendingUp, Trophy,
-  Rocket, Flag, Link2, Calendar, Target,
-  CalendarDays, PlaneTakeoff, Clock, RefreshCw, Ban, GraduationCap, Siren,
-  ClipboardList, MapPin, Brain
+  Activity,
+  AlertCircle,
+  AlertTriangle,
+  Award,
+  Ban,
+  BarChart3,
+  BookOpen,
+  Brain,
+  Calendar,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  ClipboardList,
+  ClipboardList,
+  Clock,
+  Crosshair,
+  Crown,
+  ExternalLink,
+  Eye,
+  FileCheck,
+  FileText,
+  Flag,
+  GitBranch,
+  GraduationCap,
+  GraduationCap,
+  Link2,
+  Loader2,
+  MapPin,
+  MapPin,
+  Medal,
+  Megaphone,
+  Pencil,
+  PlaneTakeoff,
+  Plus,
+  Radio,
+  RefreshCw,
+  Rocket,
+  Save,
+  Shield,
+  Siren,
+  Siren,
+  Star,
+  Target,
+  Trash2,
+  TrendingUp,
+  Trophy,
+  Upload,
+  Users,
+  Wifi,
+  WifiOff,
+  X
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/auth/AuthContext";
 
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
 interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
