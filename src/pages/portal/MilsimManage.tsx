@@ -1317,7 +1317,7 @@ function OpsTab({ group, showMsg }: any) {
     Completed: "text-muted-foreground bg-secondary border-border",
     Cancelled: "text-muted-foreground bg-secondary/40 border-border",
   };
-  const TYPE_COLOR: Record<string, string> = { Op:"text-red-400", Training:"text-blue-400", Meeting:"text-purple-400", Social:"text-green-400", Admin:"text-muted-foreground", Other:"text-muted-foreground" };
+  const TYPE_COLOR: Record<string, string> = { Op:"text-red-400", Training:"text-yellow-400", Meeting:"text-purple-400", Social:"text-green-400", Admin:"text-muted-foreground", Other:"text-muted-foreground" };
   const CL: Record<string, string> = { unclassified:"text-green-400 border-green-500/30", confidential:"text-blue-400 border-blue-500/30", classified:"text-yellow-400 border-yellow-500/30", "top-secret":"text-red-400 border-red-500/30" };
 
   const opAars = (opId: string) => aars.filter((a: any) => a.op_id === opId);
@@ -2732,7 +2732,7 @@ const EVENT_TYPES = ["Op", "Training", "Meeting", "Social", "Admin", "Other"] as
 
 const EV_STYLE: Record<string, string> = {
   Op:       "bg-red-500/15 border-red-500/40 text-red-300",
-  Training: "bg-blue-500/15 border-blue-500/40 text-blue-300",
+  Training: "bg-yellow-500/15 border-yellow-500/40 text-yellow-300",
   Meeting:  "bg-purple-500/15 border-purple-500/40 text-purple-300",
   Social:   "bg-green-500/15 border-green-500/40 text-green-300",
   Admin:    "bg-secondary border-border text-muted-foreground",
@@ -2991,7 +2991,7 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
           {/* Legend */}
           <div className="flex flex-wrap gap-3 text-[9px] font-display font-bold uppercase tracking-widest">
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400/60" />Op</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-400/60" />Training</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-yellow-400/60" />Training</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-400/60" />AAR</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-300/60 border border-blue-400/40" />LOA</span>
             <span className="flex items-center gap-1 text-muted-foreground">Click any day for full review</span>
