@@ -1,5 +1,6 @@
 /**
- * TAG Discord Bot Worker — scrape + plain text upload
+ * TAG Discord Bot Worker v4 — scrapes ONE channel/thread only, no bulk loops
+ * Fast enough to complete within any reasonable timeout
  */
 
 const DISCORD_BOT_TOKEN = Deno.env.get('DISCORD_BOT_TOKEN') ?? '';
@@ -21,7 +22,7 @@ async function discordGet(path: string) {
 async function patchFollowup(appId: string, token: string, content: string) {
   await fetch(`${DISCORD_API}/webhooks/${appId}/${token}/messages/@original`, {
     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content }),
-  });
+  }).catch(() => {});
 }
 
 async function postMessage(channelId: string, content: string) {
@@ -29,13 +30,13 @@ async function postMessage(channelId: string, content: string) {
     method: 'POST',
     headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ content }),
-  });
+  }).catch(() => {});
 }
 
-async function uploadFile(bytes: Uint8Array, filename: string, mime: string): Promise<string> {
+async function uploadFile(bytes: Uint8Array, filename: string): Promise<string> {
   const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
   const form = new FormData();
-  form.append('file', new Blob([bytes], { type: mime }), filename);
+  form.append('file', new Blob([bytes], { type: 'text/plain' }), filename);
   const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/files/upload`, {
     method: 'POST',
     headers: { 'x-api-key': serviceToken },
@@ -48,7 +49,7 @@ async function uploadFile(bytes: Uint8Array, filename: string, mime: string): Pr
   return url;
 }
 
-async function entityCreate(entityName: string, data: Record<string, unknown>): Promise<any> {
+async function entityCreate(entityName: string, data: Record<string, unknown>) {
   const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/entities/${entityName}`, {
     method: 'POST', headers: serviceHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(data),
   });
@@ -56,7 +57,7 @@ async function entityCreate(entityName: string, data: Record<string, unknown>): 
   return r.json();
 }
 
-async function entityGet(entityName: string, id: string): Promise<any> {
+async function entityGet(entityName: string, id: string) {
   const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
     headers: serviceHeaders(),
   });
@@ -64,7 +65,7 @@ async function entityGet(entityName: string, id: string): Promise<any> {
   return r.json();
 }
 
-async function entityUpdate(entityName: string, id: string, data: Record<string, unknown>): Promise<any> {
+async function entityUpdate(entityName: string, id: string, data: Record<string, unknown>) {
   const r = await fetch(`${BASE44_BASE}/api/apps/${BASE44_APP_ID}/entities/${entityName}/${id}`, {
     method: 'PUT', headers: serviceHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(data),
   });
@@ -72,84 +73,25 @@ async function entityUpdate(entityName: string, id: string, data: Record<string,
   return r.json();
 }
 
-// ── Scraping ──────────────────────────────────────────────────────────────
-async function getThreadMessages(threadId: string): Promise<any[]> {
-  let all: any[] = [];
-  let before: string | null = null;
-  while (all.length < 200) {  // hard cap 200 messages per thread
-    const q = before ? `?before=${before}&limit=100` : '?limit=100';
-    const msgs: any[] = await discordGet(`/channels/${threadId}/messages${q}`);
-    if (!msgs || msgs.length === 0) break;
-    all = all.concat(msgs);
-    if (msgs.length < 100) break;
-    before = msgs[msgs.length - 1].id;
-  }
-  return all.slice(0, 200).reverse();
-}
-
-async function scrapeChannel(channelId: string): Promise<{ channelName: string; text: string; sectionCount: number; messageCount: number }> {
+// Grab at most 100 messages from a channel — single API call, no loop
+async function scrapeMessages(channelId: string): Promise<{ channelName: string; lines: string[]; count: number }> {
   const channel = await discordGet(`/channels/${channelId}`);
   const channelName: string = channel.name ?? channelId;
+  const msgs: any[] = await discordGet(`/channels/${channelId}/messages?limit=100`);
+  const filtered = (msgs ?? []).filter((m: any) => (m.content ?? '').trim().length > 0).reverse();
   const lines: string[] = [];
-  let sectionCount = 0;
-  let messageCount = 0;
-
-  if (channel.type === 15) {
-    // Forum channel — scrape threads
-    const guildId = channel.guild_id;
-    const activeRes = await discordGet(`/guilds/${guildId}/threads/active`);
-    const active: any[] = (activeRes.threads ?? []).filter((t: any) => t.parent_id === channelId);
-    let archived: any[] = [];
-    let before: string | null = null;
-    while (true) {
-      const q = before ? `?before=${before}&limit=100` : '?limit=100';
-      const res = await discordGet(`/channels/${channelId}/threads/archived/public${q}`);
-      const threads: any[] = res.threads ?? [];
-      archived = archived.concat(threads);
-      if (!res.has_more || threads.length === 0) break;
-      before = threads[threads.length - 1].id;
-    }
-    const threads = [...active, ...archived].slice(0, 50); // hard cap 50 threads
-
-    for (const thread of threads) {
-      const msgs = await getThreadMessages(thread.id);
-      const filtered = msgs.filter((m: any) => (m.content ?? '').trim().length > 0);
-      if (filtered.length === 0) continue;
-      sectionCount++;
-      lines.push(`\n========================================`);
-      lines.push(`SECTION: ${thread.name}`);
-      lines.push(`========================================`);
-      for (const m of filtered) {
-        const author = m.author?.global_name ?? m.author?.username ?? 'Unknown';
-        const ts = new Date(m.timestamp).toISOString().replace('T', ' ').slice(0, 16);
-        lines.push(`\n[${author} | ${ts}]`);
-        lines.push(m.content);
-        messageCount++;
-      }
-    }
-  } else {
-    // Regular channel
-    const msgs = await getThreadMessages(channelId);
-    const filtered = msgs.filter((m: any) => (m.content ?? '').trim().length > 0);
-    sectionCount = 1;
-    lines.push(`\n========================================`);
-    lines.push(`CHANNEL: ${channelName}`);
-    lines.push(`========================================`);
-    for (const m of filtered) {
-      const author = m.author?.global_name ?? m.author?.username ?? 'Unknown';
-      const ts = new Date(m.timestamp).toISOString().replace('T', ' ').slice(0, 16);
-      lines.push(`\n[${author} | ${ts}]`);
-      lines.push(m.content);
-      messageCount++;
-    }
+  for (const m of filtered) {
+    const author = m.author?.global_name ?? m.author?.username ?? 'Unknown';
+    const ts = new Date(m.timestamp).toISOString().replace('T', ' ').slice(0, 16);
+    lines.push(`[${author} | ${ts}]`);
+    lines.push(m.content);
+    lines.push('');
   }
-
-  return { channelName, text: lines.join('\n'), sectionCount, messageCount };
+  return { channelName, lines, count: filtered.length };
 }
 
-// ── Main ──────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
-  if (req.method === 'GET') return Response.json({ ok: true, service: 'TAG Bot Worker v2 (plaintext)' });
+  if (req.method === 'GET') return Response.json({ ok: true, service: 'TAG Bot Worker v4' });
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
   let job: any;
@@ -158,85 +100,68 @@ Deno.serve(async (req) => {
   const { action, appId, token, channelId, title, author, classification, existingRecordId } = job;
 
   try {
-    if (action === 'create') {
-      await patchFollowup(appId, token, `Scraping channel...`);
-      const { channelName, text, sectionCount, messageCount } = await scrapeChannel(channelId);
-      if (!text.trim()) throw new Error('No text content found in this channel.');
+    const { channelName, lines, count } = await scrapeMessages(channelId);
 
+    if (count === 0) {
+      await patchFollowup(appId, token, `No messages found in this channel.`);
+      return Response.json({ ok: true });
+    }
+
+    const sectionBlock = [
+      `========================================`,
+      `CHANNEL: ${channelName}`,
+      `========================================`,
+      ...lines,
+    ].join('\n');
+
+    if (action === 'create') {
       const header = [
         `TACTICAL ADAPTATION GROUP`,
         `DOCUMENT: ${title}`,
         `AUTHOR: ${author}`,
         `CLASSIFICATION: ${classification}`,
-        `SOURCE CHANNEL: ${channelName}`,
         `DATE: ${new Date().toISOString().slice(0, 10)}`,
-        `SECTIONS: ${sectionCount} | MESSAGES: ${messageCount}`,
-        `========================================\n`,
+        ``,
       ].join('\n');
 
-      const fullText = header + text;
-      const bytes = new TextEncoder().encode(fullText);
-      const filename = `${title.replace(/[^a-z0-9]/gi, '_')}.txt`;
+      const fullText = header + sectionBlock;
+      const fileUrl = await uploadFile(new TextEncoder().encode(fullText), `${title.replace(/[^a-z0-9]/gi, '_')}.txt`);
 
-      await patchFollowup(appId, token, `Uploading document...`);
-      const fileUrl = await uploadFile(bytes, filename, 'text/plain');
-
-      await postMessage(channelId, `**${title}** [${classification}] -- ${sectionCount} sections, ${messageCount} messages from **${channelName}**.\nDownload: ${fileUrl}`);
-
+      await postMessage(channelId, `**${title}** [${classification}] — ${count} messages captured.\nDownload: ${fileUrl}`);
       await entityCreate('BotExportedPdf', {
         title, author, classification,
         channel_id: channelId, channel_name: channelName,
-        section_count: sectionCount, message_count: messageCount,
+        section_count: 1, message_count: count,
         file_url: fileUrl, content_json: fileUrl,
       });
-
-      await patchFollowup(appId, token, `Done! Download link posted in the channel.`);
+      await patchFollowup(appId, token, `Done! ${count} messages captured. Download link posted in channel.`);
 
     } else if (action === 'append') {
-      const existingRecord = await entityGet('BotExportedPdf', existingRecordId);
-      if (!existingRecord) throw new Error('Could not find the selected document.');
+      const existing = await entityGet('BotExportedPdf', existingRecordId);
+      if (!existing) throw new Error('Document not found.');
 
-      await patchFollowup(appId, token, `Scraping channel...`);
-      const { channelName, text, sectionCount, messageCount } = await scrapeChannel(channelId);
-      if (!text.trim()) throw new Error('No text content found in this channel.');
-
-      // Fetch existing text
       let existingText = '';
-      if (existingRecord.content_json) {
-        try {
-          const r = await fetch(existingRecord.content_json);
-          if (r.ok) existingText = await r.text();
-        } catch {}
-      }
+      try {
+        const r = await fetch(existing.content_json ?? existing.file_url);
+        if (r.ok) existingText = await r.text();
+      } catch {}
 
-      if (existingText.includes(`CHANNEL: ${channelName}`) || existingText.includes(`SOURCE CHANNEL: ${channelName}`)) {
-        await patchFollowup(appId, token, `**${channelName}** is already in this document. Skipping.`);
-        return Response.json({ ok: true });
-      }
+      const fullText = existingText + `\n\n` + sectionBlock;
+      const fileUrl = await uploadFile(new TextEncoder().encode(fullText), `${existing.title.replace(/[^a-z0-9]/gi, '_')}.txt`);
 
-      const appendHeader = `\n\n========================================\nAPPENDED CHANNEL: ${channelName}\nDATE: ${new Date().toISOString().slice(0, 10)}\n========================================`;
-      const fullText = existingText + appendHeader + text;
-      const bytes = new TextEncoder().encode(fullText);
-      const filename = `${existingRecord.title.replace(/[^a-z0-9]/gi, '_')}.txt`;
+      const totalMessages = (existing.message_count ?? 0) + count;
+      const totalSections = (existing.section_count ?? 0) + 1;
 
-      await patchFollowup(appId, token, `Uploading updated document...`);
-      const fileUrl = await uploadFile(bytes, filename, 'text/plain');
-
-      const totalSections = (existingRecord.section_count ?? 0) + sectionCount;
-      const totalMessages = (existingRecord.message_count ?? 0) + messageCount;
-
-      await postMessage(channelId, `**${existingRecord.title}** updated -- added **${channelName}** (+${sectionCount} sections, +${messageCount} messages). Total: ${totalSections} sections, ${totalMessages} messages.\nDownload: ${fileUrl}`);
-
+      await postMessage(channelId, `**${existing.title}** updated — added **${channelName}** (+${count} messages). Total: ${totalSections} sections, ${totalMessages} messages.\nDownload: ${fileUrl}`);
       await entityUpdate('BotExportedPdf', existingRecordId, {
         file_url: fileUrl, content_json: fileUrl,
         section_count: totalSections, message_count: totalMessages,
       });
-
-      await patchFollowup(appId, token, `Done! Download link posted in the channel.`);
+      await patchFollowup(appId, token, `Done! Added ${count} messages from ${channelName}. Download link posted in channel.`);
     }
 
   } catch (err: any) {
-    try { await patchFollowup(appId, token, `Failed: ${err.message}`); } catch {}
+    await patchFollowup(appId, token, `Failed: ${err.message}`).catch(() => {});
     return Response.json({ ok: false, error: err.message }, { status: 500 });
   }
 
