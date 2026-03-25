@@ -608,8 +608,8 @@ Deno.serve(async (req) => {
       const body = await req.json().catch(() => ({}));
       if (!body.name?.trim()) return Response.json({ error: 'name is required' }, { status: 400 });
       const op = await base44.asServiceRole.entities.MilsimOp.create({
-        group_id: parts[0], name: body.name, description: body.description ?? null,
-        game: body.game ?? null, status: 'active', created_by: full.id,
+        group_id: parts[0], name: body.name, description: body.description ?? '',
+        game: body.game ?? '', status: 'active', created_by: full.id,
         scheduled_at: new Date().toISOString(), participants: [],
       });
       return Response.json(op, { status: 201 });
@@ -689,15 +689,15 @@ Deno.serve(async (req) => {
       const aar = await base44.asServiceRole.entities.MilsimAAR.create({
         group_id: parts[0], op_id: body.op_id ?? null, op_name: body.op_name,
         author_id: full.id, author_username: full.username ?? full.email,
-        title: body.op_name, content: body.summary ?? null,
-        outcome: body.outcome ?? null, lessons_learned: body.recommendations ?? null,
+        title: body.op_name, content: body.summary ?? '',
+        outcome: body.outcome ?? '', lessons_learned: body.recommendations ?? '',
         participants: Array.isArray(body.participants) ? body.participants : [],
         classification: body.classification ?? 'unclassified',
-        objectives_hit: body.objectives_hit ?? null,
-        objectives_missed: body.objectives_missed ?? null,
-        casualties: body.casualties ?? null,
-        commendations: body.commendations ?? null,
-        op_date: body.op_date ?? null,
+        objectives_hit: body.objectives_hit ?? '',
+        objectives_missed: body.objectives_missed ?? '',
+        casualties: body.casualties ?? '',
+        commendations: body.commendations ?? '',
+        op_date: body.op_date ?? '',
       });
       await base44.asServiceRole.entities.MilsimGroup.update(parts[0], { last_aar_date: new Date().toISOString() }).catch(() => {});
       if (Array.isArray(body.participants) && body.participants.length > 0) {
@@ -761,11 +761,11 @@ Deno.serve(async (req) => {
       if (!body.title?.trim()) return Response.json({ error: 'title required' }, { status: 400 });
       const briefing = await base44.asServiceRole.entities.MilsimBriefing.create({
         group_id: parts[0], op_id: body.op_id ?? null, title: body.title.trim(),
-        content: body.content ?? null, classification: body.classification ?? 'unclassified',
+        content: body.content ?? '', classification: body.classification ?? 'unclassified',
         created_by: full.id, status: body.status ?? 'draft',
-        ao: body.ao ?? null, objectives: body.objectives ?? null,
-        comms_plan: body.comms_plan ?? null, roe: body.roe ?? null,
-        additional_notes: body.additional_notes ?? null, op_date: body.op_date ?? null,
+        ao: body.ao ?? '', objectives: body.objectives ?? '',
+        comms_plan: body.comms_plan ?? '', roe: body.roe ?? '',
+        additional_notes: body.additional_notes ?? '', op_date: body.op_date ?? '',
       });
       return Response.json(briefing, { status: 201 });
     }
