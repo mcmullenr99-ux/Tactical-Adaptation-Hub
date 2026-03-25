@@ -1,0 +1,44 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "group_name": {
+      "type": "string"
+    },
+    "owner_id": {
+      "type": "string"
+    },
+    "owner_username": {
+      "type": "string"
+    },
+    "stripe_customer_id": {
+      "type": "string"
+    },
+    "stripe_subscription_id": {
+      "type": "string"
+    },
+    "stripe_price_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "cancelled",
+        "past_due",
+        "trialing",
+        "inactive"
+      ]
+    },
+    "current_period_end": {
+      "type": "string"
+    },
+    "cancel_at_period_end": {
+      "type": "boolean"
+    }
+  },
+  "required": [],
+  "name": "CommanderPro"
+}
