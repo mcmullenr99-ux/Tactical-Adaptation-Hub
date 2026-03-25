@@ -20,6 +20,7 @@ import MilsimRegistry from "@/pages/MilsimRegistry";
 import MilsimGroup from "@/pages/MilsimGroup";
 import MilsimRegister from "@/pages/MilsimRegister";
 import MilsimManage from "@/pages/portal/MilsimManage";
+import MemberHQ from "@/pages/portal/MemberHQ";
 import NotFound from "@/pages/not-found";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
@@ -90,6 +91,7 @@ function Router() {
       <Route path="/milsim/register" component={MilsimRegister} />
       <Route path="/milsim/:slug" component={MilsimGroup} />
       <Route path="/portal/milsim" component={MilsimManage} />
+      <Route path="/portal/member-hq" component={MemberHQ} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
       <Route path="/ops" component={OpsCalendar} />
