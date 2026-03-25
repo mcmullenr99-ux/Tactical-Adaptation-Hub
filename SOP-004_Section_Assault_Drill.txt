@@ -1,0 +1,153 @@
+E-SQUADRON STANDARD OPERATING PROCEDURE
+SOP-004 - SECTION ASSAULT DRILL
+Version 1.2 | Classification: UNCLASSIFIED | Last Reviewed: March 2026
+
+========================================================================
+
+1. PURPOSE AND SCOPE
+
+1.1 This Standard Operating Procedure defines the tactics, techniques and
+    procedures for a two-fireteam section conducting a deliberate attack
+    on a fixed enemy position.
+
+1.2 This SOP applies to all section-level assaults conducted by E-Squadron
+    elements in combined arms and independent operations.
+
+1.3 All ranks are expected to know and execute this SOP without prompting
+    from higher command.
+
+========================================================================
+
+2. DEFINITIONS
+
+2.1 Section: Two fireteams (Alpha and Bravo) totalling 8-10 personnel under
+    a Section Commander (SC) and 2IC.
+
+2.2 Support-by-Fire (SBF): Designated fire position from which one element
+    provides suppressing fire while the other manoeuvres onto the objective.
+
+2.3 Breach Point: The designated entry point into the objective area.
+
+2.4 ERV: Emergency Rendezvous - fallback point if communications are lost
+    or the mission fails.
+
+2.5 SITREP: Situation Report - standardised report format passed to higher.
+
+2.6 MARCH Protocol: Massive haemorrhage, Airway, Respiration, Circulation,
+    Hypothermia - standard casualty assessment sequence.
+
+========================================================================
+
+3. PRE-ASSAULT ADMINISTRATION
+
+3.1 ORDERS GROUP
+    a) SC delivers full orders using the standard SMEAC format.
+    b) All element commanders confirm understanding and brief their teams.
+    c) No questions outstanding before move to line of departure.
+
+3.2 EQUIPMENT CHECKS
+    a) Personal weapon checks - cleared, loaded, safety on.
+    b) Magazines: minimum 3 full per rifleman, 4 per automatic weapon.
+    c) Grenades: 2 fragmentation, 2 smoke per fireteam minimum.
+    d) Communications: Primary and alternate nets tested and confirmed.
+    e) Medical: Individual first field dressings confirmed on person.
+
+3.3 REHEARSALS
+    a) Dry run of breach and clearance at model if time permits.
+    b) Actions on contact rehearsed by all elements.
+    c) Casevac procedure and casualty collection point (CCP) confirmed.
+
+========================================================================
+
+4. ASSAULT SEQUENCE
+
+4.1 APPROACH
+    a) Section moves tactically to FUP using bounding overwatch.
+    b) Noise and light discipline enforced throughout approach.
+    c) SC confirms final coordinates and adjusts plan if required.
+
+4.2 DEPLOYMENT FROM FUP
+    a) Alpha Fireteam deploys left flank to flanking assault position.
+    b) Bravo Fireteam moves to Support-by-Fire position with line of
+       sight to the objective.
+    c) Both elements confirm in position via radio before fire opens.
+
+4.3 FIRE AND MANOEUVRE
+    a) SC gives execute signal - two radio clicks or code word EXECUTE.
+    b) Bravo opens fire immediately, suppressing the enemy position.
+    c) Alpha initiates assault, advancing in short bounds.
+    d) Alpha confirms breach point clear before entry.
+    e) Bravo shifts fire to flanks on Alpha confirmation - code word FALCON.
+
+4.4 CLEARANCE PROCEDURE
+    a) Alpha clears room by room using standard two-man entry drill.
+    b) Callout: CLEAR or NOT CLEAR after each room or position.
+    c) No element moves past unsecured rooms or positions.
+    d) Bravo collapses inward once Alpha confirms 75 percent cleared.
+    e) Trigger discipline throughout - positive ID before engaging.
+
+========================================================================
+
+5. CONSOLIDATION
+
+5.1 IMMEDIATE ACTIONS ON OBJECTIVE SECURED
+    a) SC calls TANGO on radio - objective secure.
+    b) All elements establish 360-degree security immediately.
+    c) Casualties collected at CCP - medic moves immediately.
+    d) Weapons and ammunition check by all element commanders.
+
+5.2 REPORTING
+    a) SITREP to higher within 3 minutes of objective secured.
+    b) Format: callsign, location, status, enemy, casualties, next action.
+    c) Intelligence finds documented - not moved until cleared by SC.
+
+5.3 EXPLOITATION
+    a) Search objective for intelligence per SC direction.
+    b) Reinforce positions, redistribute ammunition.
+    c) Prepare for counterattack. Await orders for next phase.
+
+========================================================================
+
+6. ACTIONS ON CONTACT (UNPLANNED)
+
+6.1 CONTACT FRONT
+    a) Lead element returns fire and calls CONTACT FRONT immediately.
+    b) Remainder takes cover and awaits orders.
+    c) SC orders fire and movement or break contact drill.
+
+6.2 CONTACT FLANK
+    a) Element in contact returns fire and calls direction.
+    b) Opposite element bounds to envelop or SC orders break contact.
+
+6.3 CASUALTIES
+    a) Immediate first aid by buddy - MARCH protocol.
+    b) Casualty dragged to cover before further treatment.
+    c) SC informed immediately. Assault continues unless SC orders halt.
+
+6.4 COMMUNICATIONS FAILURE
+    a) Element continues mission on last known orders.
+    b) Consolidate at ERV if mission fails or casualties exceed 50 percent.
+    c) SITREP sent on alternate net or via runner.
+
+========================================================================
+
+7. COMMAND AND SIGNAL
+
+7.1 Command: SC commands the section. 2IC assumes command if SC falls.
+7.2 Primary Net: Section Command Net.
+7.3 Alternate Net: Squadron Command Net.
+7.4 Code Words:
+    - EXECUTE       Commence assault
+    - FALCON        Breach confirmed, shift fire
+    - TANGO         Objective secured
+    - RALLYING CRY  Break contact, move to ERV
+
+========================================================================
+
+8. REVIEW
+
+This SOP is reviewed quarterly or following any significant operational
+incident. Lessons learned submitted to Section Commander in writing
+within 48 hours of the incident occurring.
+
+End of Document - SOP-004 v1.2
