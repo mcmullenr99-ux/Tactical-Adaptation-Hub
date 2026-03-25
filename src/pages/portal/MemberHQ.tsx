@@ -6,7 +6,7 @@ import { format, formatDistanceToNow, differenceInCalendarDays } from "date-fns"
 import {
   Shield, Loader2, AlertTriangle, Siren, ClipboardList, MapPin, Calendar,
   Star, FileText, UserCheck, ChevronDown, ChevronUp, CheckCircle2, XCircle,
-  Award, PlusCircle, Clock, ThumbsUp, ThumbsDown, ExternalLink, Send
+  Award, PlusCircle, Clock, ThumbsUp, ThumbsDown, ExternalLink, Send, TrendingUp
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -34,6 +34,9 @@ const STATUS_OP: Record<string, string> = {
 export default function MemberHQ() {
   const { user } = useAuth();
   const [tab, setTab] = useState<"ops"|"briefings"|"aars"|"peer-review"|"unit-review"|"loa"|"service-file">("ops");
+  const [upvoteCount, setUpvoteCount] = useState<number>(0);
+  const [hasVoted, setHasVoted] = useState<boolean>(false);
+  const [upvoting, setUpvoting] = useState(false);
   const [memberships, setMemberships] = useState<any[] | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
   const [rosterEntry, setRosterEntry] = useState<any | null>(null);
@@ -64,6 +67,24 @@ export default function MemberHQ() {
       })
       .catch(() => setRosterEntry(null));
   }, [selectedGroup, user]);
+
+  useEffect(() => {
+    if (!selectedGroup) return;
+    apiFetch<{ count: number; voted: boolean }>(`/api/group-upvotes?path=/upvotes/${selectedGroup.id}`, { method: "GET" })
+      .then(d => { setUpvoteCount(d.count ?? 0); setHasVoted(d.voted ?? false); })
+      .catch(() => {});
+  }, [selectedGroup]);
+
+  const handleUpvote = async () => {
+    if (!selectedGroup || upvoting) return;
+    setUpvoting(true);
+    try {
+      const res = await apiFetch<{ count: number; voted: boolean }>(`/api/group-upvotes?path=/upvotes/${selectedGroup.id}`, { method: "POST" });
+      setUpvoteCount(res.count ?? 0);
+      setHasVoted(res.voted ?? false);
+    } catch {}
+    setUpvoting(false);
+  };
 
   if (loading) return (
     <PortalLayout>
@@ -129,6 +150,22 @@ export default function MemberHQ() {
                 <ExternalLink className="w-3.5 h-3.5" /> {selectedGroup?.name}
               </a>
             </Link>
+          )}
+          {/* Upvote button */}
+          {selectedGroup && (
+            <button
+              onClick={handleUpvote}
+              disabled={upvoting}
+              title={hasVoted ? "Click to remove your upvote" : "Upvote your unit to boost its ranking on the registry"}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                hasVoted
+                  ? "bg-primary/15 border-primary/50 text-primary"
+                  : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+              }`}>
+              {upvoting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <TrendingUp className="w-3.5 h-3.5" />}
+              <span>{upvoteCount}</span>
+              <span>{hasVoted ? "Upvoted" : "Upvote Unit"}</span>
+            </button>
           )}
         </div>
 

@@ -82,7 +82,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "recognition" | "stream" | "sops" | "orbat" | "questions" | "ops" | "aars" | "briefings" | "orgchart" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer";
+type Tab = "info" | "roles" | "ranks" | "roster" | "recognition" | "stream" | "sops" | "orbat" | "questions" | "operations" | "orgchart" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -157,9 +157,7 @@ export default function MilsimManage() {
     {
       label: "Operations",
       items: [
-        { id: "ops", label: "Live Ops", icon: Siren },
-        { id: "aars", label: "AARs", icon: ClipboardList },
-        { id: "briefings", label: "Briefings", icon: MapPin },
+        { id: "operations", label: "Operations", icon: Siren },
         { id: "calendar", label: "Activity Calendar", icon: CalendarDays },
         { id: "campaigns", label: "Campaigns", icon: Zap, pro: true },
       ],
@@ -261,9 +259,7 @@ export default function MilsimManage() {
               {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "recognition" && <RecognitionTab group={group} showMsg={showMsg} />}
-              {tab === "ops" && <OpsTab group={group} showMsg={showMsg} />}
-              {tab === "aars" && <AARsTab group={group} showMsg={showMsg} />}
-              {tab === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
+              {tab === "operations" && <OperationsTab group={group} showMsg={showMsg} />}
               {tab === "orgchart" && <OrgChartTab group={group} />}
               {tab === "readiness" && <ReadinessTab group={group} />}
               {tab === "reputation" && <ReputationTab group={group} />}
@@ -1687,6 +1683,34 @@ function QualsTab({ group, showMsg }: any) {
         <input value={desc} onChange={e => setDesc(e.target.value)} className="mf-input" placeholder="Description (optional)" />
         <button onClick={add} disabled={adding || !name.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded clip-angled-sm transition-all disabled:opacity-50">{adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add</button>
       </div>
+    </div>
+  );
+}
+
+
+// ─── Operations Tab (Live Ops + AARs + Briefings merged) ─────────────────────
+function OperationsTab({ group, showMsg }: any) {
+  const [sub, setSub] = useState<"ops" | "aars" | "briefings">("ops");
+  const SUB_TABS = [
+    { id: "ops" as const,       label: "Live Ops",  icon: Siren },
+    { id: "aars" as const,      label: "AARs",      icon: ClipboardList },
+    { id: "briefings" as const, label: "Briefings", icon: MapPin },
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 border-b border-border pb-3">
+        {SUB_TABS.map(({ id, label, icon: Icon }) => (
+          <button key={id} onClick={() => setSub(id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-display font-bold uppercase tracking-wider transition-all border ${
+              sub === id ? "bg-primary/15 border-primary/50 text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            }`}>
+            <Icon className="w-3.5 h-3.5" />{label}
+          </button>
+        ))}
+      </div>
+      {sub === "ops"       && <OpsTab       group={group} showMsg={showMsg} />}
+      {sub === "aars"      && <AARsTab      group={group} showMsg={showMsg} />}
+      {sub === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
     </div>
   );
 }

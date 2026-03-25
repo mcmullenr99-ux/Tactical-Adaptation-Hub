@@ -89,6 +89,8 @@ export default function MilsimRegistry() {
   const [groups, setGroups] = useState<MilsimGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"grid" | "leaderboard">("grid");
+  const [upvoteCounts, setUpvoteCounts] = useState<Record<string, number>>({});
+  const [sortBy, setSortBy] = useState<"default" | "upvotes">("default");
   const [search, setSearch] = useState("");
   const [filterGame, setFilterGame] = useState("");
   const [filterRegion, setFilterRegion] = useState("");
@@ -96,6 +98,9 @@ export default function MilsimRegistry() {
   const [lbCategory, setLbCategory] = useState<LeaderboardCategory>("region");
 
   useEffect(() => {
+    // Also fetch upvote counts
+    apiFetch<Record<string, number>>("/api/group-upvotes?path=/counts").then(setUpvoteCounts).catch(() => {});
+
     Promise.all([
       apiFetch<MilsimGroup[]>("/api/milsim-groups"),
       apiFetch<{ group_id: number; op_success_rate: number; total_ops: number; roster_count: number }[]>("/api/milsim-groups/leaderboard-stats").catch(() => []),
@@ -158,9 +163,12 @@ export default function MilsimRegistry() {
     return true;
   });
 
-  const featured = filtered.filter(g => g.status === "featured");
-  const proApproved = filtered.filter(g => g.status === "approved" && g.is_pro);
-  const approved = filtered.filter(g => g.status === "approved" && !g.is_pro);
+  const sortedFiltered = sortBy === "upvotes"
+    ? [...filtered].sort((a, b) => (upvoteCounts[b.id] ?? 0) - (upvoteCounts[a.id] ?? 0))
+    : filtered;
+  const featured = sortedFiltered.filter(g => g.status === "featured");
+  const proApproved = sortedFiltered.filter(g => g.status === "approved" && g.is_pro);
+  const approved = sortedFiltered.filter(g => g.status === "approved" && !g.is_pro);
 
   return (
     <MainLayout>
@@ -221,6 +229,17 @@ export default function MilsimRegistry() {
             {view === "grid" && (
               <div className="flex flex-wrap items-center gap-2 mb-10">
                 <span className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mr-1">Filter:</span>
+                {/* Sort toggle */}
+                <div className="flex items-center gap-1 border border-border rounded overflow-hidden mr-2">
+                  <button onClick={() => setSortBy("default")}
+                    className={`px-3 py-1.5 text-[10px] font-display font-bold uppercase tracking-wider transition-colors ${sortBy === "default" ? "bg-primary/20 text-primary border-r border-border" : "text-muted-foreground hover:text-foreground border-r border-border"}`}>
+                    Default
+                  </button>
+                  <button onClick={() => setSortBy("upvotes")}
+                    className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-display font-bold uppercase tracking-wider transition-colors ${sortBy === "upvotes" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                    <TrendingUp className="w-3 h-3" /> Most Supported
+                  </button>
+                </div>
                 {/* Game filter */}
                 <select value={filterGame} onChange={e => setFilterGame(e.target.value)}
                   className="bg-secondary border border-border rounded px-3 py-1.5 text-xs font-display font-bold uppercase tracking-wider text-foreground focus:outline-none focus:border-primary/50">
@@ -260,7 +279,7 @@ export default function MilsimRegistry() {
                       <h2 className="font-display font-black text-2xl uppercase tracking-wider text-foreground">Featured Units</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {featured.map((g, i) => <GroupCard key={g.id} group={g} index={i} featured />)}
+                      {featured.map((g, i) => <GroupCard key={g.id} group={g} index={i} featured upvoteCount={upvoteCounts[g.id] ?? 0} />)}
                     </div>
                   </section>
                 )}
@@ -272,7 +291,7 @@ export default function MilsimRegistry() {
                       <span className="text-[9px] font-display font-bold uppercase tracking-widest text-primary border border-primary/30 bg-primary/10 px-2 py-0.5 rounded">Pro</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {proApproved.map((g, i) => <GroupCard key={g.id} group={g} index={i} />)}
+                      {proApproved.map((g, i) => <GroupCard key={g.id} group={g} index={i} upvoteCount={upvoteCounts[g.id] ?? 0} />)}
                     </div>
                   </section>
                 )}
@@ -294,7 +313,7 @@ export default function MilsimRegistry() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {approved.map((g, i) => <GroupCard key={g.id} group={g} index={i} />)}
+                      {approved.map((g, i) => <GroupCard key={g.id} group={g} index={i} upvoteCount={upvoteCounts[g.id] ?? 0} />)}
                     </div>
                   )}
                 </section>
@@ -582,7 +601,7 @@ function LbTable({ rows, startRank }: { rows: LbRow[]; startRank: number }) {
 
 // ─── Group Card ───────────────────────────────────────────────────────────────
 
-function GroupCard({ group, index, featured = false }: { group: MilsimGroup; index: number; featured?: boolean }) {
+function GroupCard({ group, index, featured = false, upvoteCount = 0 }: { group: MilsimGroup; index: number; featured?: boolean; upvoteCount?: number }) {
   const verified = isVerified(group);
   return (
     <motion.div
@@ -634,6 +653,11 @@ function GroupCard({ group, index, featured = false }: { group: MilsimGroup; ind
           {group.op_success_rate !== null && group.op_success_rate !== undefined && (group.total_ops ?? 0) >= 3 && (
             <span className="flex items-center gap-1 text-[10px] font-sans text-muted-foreground">
               <TrendingUp className="w-3 h-3 text-green-400" /> {Math.round(group.op_success_rate)}% success
+            </span>
+          )}
+          {upvoteCount > 0 && (
+            <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-wider text-primary/80">
+              <TrendingUp className="w-3 h-3" /> {upvoteCount}
             </span>
           )}
           {group.country && (
