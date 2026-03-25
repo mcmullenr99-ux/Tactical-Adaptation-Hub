@@ -60,26 +60,86 @@ async function extractTextSample(arrayBuf: ArrayBuffer, mimeType: string, fileNa
 
     // PDF — scan for readable ASCII text streams between BT/ET markers
     if (mimeType === 'application/pdf' || fileName.endsWith('.pdf')) {
+      const bytes = new Uint8Array(arrayBuf);
       const raw = new TextDecoder('latin1', { fatal: false }).decode(arrayBuf);
-      // Extract text between BT (begin text) and ET (end text) PDF operators
       const chunks: string[] = [];
+
+      // Try to decompress FlateDecode streams (most modern PDFs use this)
+      const streamRegex = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+      let sm: RegExpExecArray | null;
+      while ((sm = streamRegex.exec(raw)) !== null) {
+        const streamRaw = sm[1];
+        // Convert latin1 string back to bytes for decompression attempt
+        const streamBytes = new Uint8Array(streamRaw.length);
+        for (let i = 0; i < streamRaw.length; i++) streamBytes[i] = streamRaw.charCodeAt(i) & 0xff;
+        try {
+          const ds = new DecompressionStream('deflate-raw');
+          const writer = ds.writable.getWriter();
+          const reader = ds.readable.getReader();
+          writer.write(streamBytes);
+          writer.close();
+          const decompressed: Uint8Array[] = [];
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            decompressed.push(value);
+          }
+          const merged = new Uint8Array(decompressed.reduce((a, b) => a + b.length, 0));
+          let offset = 0;
+          for (const chunk of decompressed) { merged.set(chunk, offset); offset += chunk.length; }
+          const text = new TextDecoder('latin1', { fatal: false }).decode(merged);
+          // Extract text from decompressed stream
+          const btRegex2 = /BT[\s\S]*?ET/g;
+          let bm: RegExpExecArray | null;
+          while ((bm = btRegex2.exec(text)) !== null) {
+            const strRegex2 = /\(([^)\\]*(?:\\.[^)\\]*)*)\)|<([0-9A-Fa-f\s]+)>/g;
+            let tm: RegExpExecArray | null;
+            while ((tm = strRegex2.exec(bm[0])) !== null) {
+              if (tm[1]) {
+                const unescaped = tm[1]
+                  .replace(/\\n/g, ' ').replace(/\\r/g, ' ').replace(/\\t/g, ' ')
+                  .replace(/\\\(/g, '(').replace(/\\\)/g, ')').replace(/\\\\/g, '\\')
+                  .replace(/\\[0-7]{1,3}/g, ' ');
+                if (unescaped.trim()) chunks.push(unescaped);
+              } else if (tm[2]) {
+                const hex = tm[2].replace(/\s/g, '');
+                let decoded = '';
+                for (let i = 0; i < hex.length - 1; i += 2) {
+                  const code = parseInt(hex.slice(i, i + 2), 16);
+                  if (code >= 32 && code < 127) decoded += String.fromCharCode(code);
+                }
+                if (decoded.trim()) chunks.push(decoded);
+              }
+            }
+          }
+          // Also grab raw printable text from decompressed stream
+          if (chunks.length === 0) {
+            const words2 = text.replace(/[^\x20-\x7E\n]/g, ' ').split(/\s+/).filter(w => w.length >= 3 && /[a-zA-Z]{2,}/.test(w));
+            chunks.push(...words2.slice(0, 200));
+          }
+        } catch { /* not a deflate stream — skip */ }
+        if (chunks.join(' ').length > 1000) break;
+      }
+
+      // If decompressed extraction got us text, return it
+      const combined = chunks.join(' ').replace(/\s+/g, ' ').trim();
+      if (combined.length > 60) return combined.slice(0, 1500);
+
+      // Fallback: uncompressed BT/ET (older PDFs)
       const btRegex = /BT[\s\S]*?ET/g;
       let match: RegExpExecArray | null;
       while ((match = btRegex.exec(raw)) !== null && chunks.join(' ').length < 2000) {
-        // Extract string literals: (text) and <hex>
         const strRegex = /\(([^)\\]*(?:\\.[^)\\]*)*)\)|<([0-9A-Fa-f\s]+)>/g;
-        let sm: RegExpExecArray | null;
-        while ((sm = strRegex.exec(match[0])) !== null) {
-          if (sm[1]) {
-            // Literal string — unescape PDF escape sequences
-            const unescaped = sm[1]
+        let fm: RegExpExecArray | null;
+        while ((fm = strRegex.exec(match[0])) !== null) {
+          if (fm[1]) {
+            const unescaped = fm[1]
               .replace(/\\n/g, ' ').replace(/\\r/g, ' ').replace(/\\t/g, ' ')
               .replace(/\\\(/g, '(').replace(/\\\)/g, ')').replace(/\\\\/g, '\\')
               .replace(/\\[0-7]{1,3}/g, ' ');
             chunks.push(unescaped);
-          } else if (sm[2]) {
-            // Hex string — decode pairs
-            const hex = sm[2].replace(/\s/g, '');
+          } else if (fm[2]) {
+            const hex = fm[2].replace(/\s/g, '');
             let decoded = '';
             for (let i = 0; i < hex.length - 1; i += 2) {
               const code = parseInt(hex.slice(i, i + 2), 16);
@@ -89,10 +149,10 @@ async function extractTextSample(arrayBuf: ArrayBuffer, mimeType: string, fileNa
           }
         }
       }
-      const combined = chunks.join(' ').replace(/\s+/g, ' ').trim();
-      if (combined.length > 60) return combined.slice(0, 1500);
+      const combined2 = chunks.join(' ').replace(/\s+/g, ' ').trim();
+      if (combined2.length > 60) return combined2.slice(0, 1500);
 
-      // Fallback: grab any printable ASCII sequences from raw PDF bytes
+      // Last resort: raw printable ASCII scan
       const printable = raw.replace(/[^\x20-\x7E\n]/g, ' ').replace(/\s+/g, ' ').trim();
       const words = printable.split(' ').filter(w => w.length >= 3 && /[a-zA-Z]{2,}/.test(w));
       return words.slice(0, 400).join(' ').slice(0, 1500);
