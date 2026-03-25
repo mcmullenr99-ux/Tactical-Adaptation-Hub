@@ -30,6 +30,12 @@
     },
     "participants": {
       "type": "array"
+    },
+    "lb_flagged": {
+      "type": "boolean"
+    },
+    "lb_flag_reason": {
+      "type": "string"
     }
   },
   "required": [],

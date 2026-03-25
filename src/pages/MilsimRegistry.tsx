@@ -275,20 +275,71 @@ export default function MilsimRegistry() {
 
 const LB_CATEGORIES: { id: LeaderboardCategory; label: string; icon: typeof Trophy; description: string }[] = [
   { id: "region",       label: "By Region",        icon: Map,       description: "Top unit in each global region" },
-  { id: "game",         label: "By Game",           icon: Gamepad2,  description: "Leading unit for each supported game" },
+  { id: "game",         label: "By Game",           icon: Gamepad2,  description: "Select a game to see the top units" },
   { id: "troop_count",  label: "Troop Count",       icon: Users,     description: "Largest active rosters on the platform" },
-  { id: "op_success",   label: "Op Success Rate",   icon: BarChart3, description: "Highest mission success rate from AARs" },
+  { id: "op_success",   label: "Op Success Rate",   icon: BarChart3, description: "Highest verified mission success rate from AARs (min 3 ops · anti-cheat enforced)" },
 ];
 
+const PAGE_SIZE = 10;
+
+function Paginator({ page, total, onPage }: { page: number; total: number; onPage: (p: number) => void }) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) return null;
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+  return (
+    <div className="flex items-center justify-center gap-1 pt-4">
+      <button onClick={() => onPage(Math.max(1, page - 1))} disabled={page === 1}
+        className="w-8 h-8 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-30 transition-all">
+        ‹
+      </button>
+      {pages.map(p => (
+        <button key={p} onClick={() => onPage(p)}
+          className={`w-8 h-8 flex items-center justify-center rounded border text-xs font-display font-bold transition-all ${
+            p === page ? "bg-primary/10 border-primary/40 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:border-primary/20"
+          }`}>
+          {p}
+        </button>
+      ))}
+      <button onClick={() => onPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}
+        className="w-8 h-8 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-30 transition-all">
+        ›
+      </button>
+    </div>
+  );
+}
+
 function LeaderboardView({ groups, category, setCategory }: { groups: MilsimGroup[]; category: LeaderboardCategory; setCategory: (c: LeaderboardCategory) => void }) {
-  const sections = useMemo(() => buildLeaderboardSections(groups, category), [groups, category]);
+  const allGamesForLb = useMemo(() => {
+    const set = new Set<string>();
+    groups.forEach(g => (g.games ?? []).forEach(game => set.add(game)));
+    return Array.from(set).sort();
+  }, [groups]);
+
+  const [selectedGame, setSelectedGame] = useState<string>("");
+  const [page, setPage] = useState(1);
+
+  // Reset page when category or game changes
+  const handleCategory = (c: LeaderboardCategory) => { setCategory(c); setPage(1); };
+  const handleGame = (g: string) => { setSelectedGame(g); setPage(1); };
+
+  // Set default game when category is "game"
+  useEffect(() => {
+    if (category === "game" && !selectedGame && allGamesForLb.length > 0) {
+      setSelectedGame(allGamesForLb[0]);
+    }
+  }, [category, allGamesForLb, selectedGame]);
+
+  const { rows, totalRows } = useMemo(
+    () => buildLeaderboardRows(groups, category, selectedGame, page),
+    [groups, category, selectedGame, page]
+  );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Category tabs */}
       <div className="flex flex-wrap gap-2">
         {LB_CATEGORIES.map(cat => (
-          <button key={cat.id} onClick={() => setCategory(cat.id)}
+          <button key={cat.id} onClick={() => handleCategory(cat.id)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
               category === cat.id
                 ? "bg-primary/10 border-primary/40 text-primary"
@@ -300,43 +351,68 @@ function LeaderboardView({ groups, category, setCategory }: { groups: MilsimGrou
         ))}
       </div>
 
+      {/* Game selector */}
+      {category === "game" && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Game:</span>
+          {allGamesForLb.length === 0 ? (
+            <span className="text-xs text-muted-foreground font-sans">No games registered yet</span>
+          ) : (
+            allGamesForLb.map(game => (
+              <button key={game} onClick={() => handleGame(game)}
+                className={`px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                  selectedGame === game
+                    ? "bg-primary/10 border-primary/40 text-primary"
+                    : "border-border text-muted-foreground hover:text-foreground hover:border-primary/20"
+                }`}>
+                {game}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+
       {/* Description */}
       <p className="text-xs text-muted-foreground font-sans">
         {LB_CATEGORIES.find(c => c.id === category)?.description}
-        {category === "op_success" && " — minimum 3 ops required to qualify."}
       </p>
 
-      {sections.length === 0 ? (
+      {rows.length === 0 ? (
         <div className="text-center py-24 border border-dashed border-border rounded-lg">
           <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-40" />
-          <p className="font-display font-bold uppercase tracking-wider text-muted-foreground">Not enough data yet</p>
-          <p className="text-xs text-muted-foreground font-sans mt-2">File AARs and log ops to appear on the leaderboard.</p>
+          <p className="font-display font-bold uppercase tracking-wider text-muted-foreground">
+            {category === "op_success" ? "No Verified units with enough ops yet" : "Not enough data yet"}
+          </p>
+          <p className="text-xs text-muted-foreground font-sans mt-2">
+            {category === "op_success"
+              ? "Units must be Verified (Pro + active) and file ≥3 AARs with participants listed to qualify."
+              : "File AARs and log ops to appear on the leaderboard."}
+          </p>
         </div>
       ) : (
-        <div className="space-y-10">
-          {sections.map(section => (
-            <div key={section.label}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-[10px] font-display font-black uppercase tracking-[0.2em] text-muted-foreground px-3 py-1 border border-border rounded">{section.label}</span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
-              <LbTable rows={section.rows} category={category} />
-            </div>
-          ))}
-        </div>
+        <>
+          <LbTable rows={rows} startRank={(page - 1) * PAGE_SIZE + 1} />
+          <Paginator page={page} total={totalRows} onPage={setPage} />
+        </>
       )}
     </div>
   );
 }
 
 interface LbRow { group: MilsimGroup; score: string; scoreLabel: string }
-interface LbSection { label: string; rows: LbRow[] }
 
-function buildLeaderboardSections(groups: MilsimGroup[], category: LeaderboardCategory): LbSection[] {
+function buildLeaderboardRows(
+  groups: MilsimGroup[],
+  category: LeaderboardCategory,
+  selectedGame: string,
+  page: number
+): { rows: LbRow[]; totalRows: number } {
   const eligible = groups.filter(g => g.status === "approved" || g.status === "featured");
 
+  let sorted: LbRow[] = [];
+
   if (category === "region") {
+    // Group by region, flatten into ranked list with dividers handled in render
     const byRegion: Record<string, MilsimGroup[]> = {};
     eligible.forEach(g => {
       const r = getRegion(g.country);
@@ -344,124 +420,112 @@ function buildLeaderboardSections(groups: MilsimGroup[], category: LeaderboardCa
       byRegion[r].push(g);
     });
     const regionOrder = ["EU", "NA", "APAC", "SA", "INTL"];
-    return regionOrder
-      .filter(r => byRegion[r]?.length)
-      .map(r => ({
-        label: r,
-        rows: byRegion[r]
-          .sort((a, b) => {
-            // Sort by: verified > pro > featured > alphabetical
-            if (isVerified(b) !== isVerified(a)) return isVerified(b) ? 1 : -1;
-            if ((b.is_pro ? 1 : 0) !== (a.is_pro ? 1 : 0)) return (b.is_pro ? 1 : 0) - (a.is_pro ? 1 : 0);
-            return a.name.localeCompare(b.name);
-          })
-          .slice(0, 5)
-          .map(g => ({ group: g, score: isVerified(g) ? "Verified" : g.is_pro ? "Pro" : "Active", scoreLabel: "status" })),
-      }));
+    // For region: we paginate per-region top 5, all regions together
+    sorted = regionOrder.flatMap(r =>
+      (byRegion[r] ?? [])
+        .sort((a, b) => {
+          if (isVerified(b) !== isVerified(a)) return isVerified(b) ? 1 : -1;
+          if ((b.is_pro ? 1 : 0) !== (a.is_pro ? 1 : 0)) return (b.is_pro ? 1 : 0) - (a.is_pro ? 1 : 0);
+          return a.name.localeCompare(b.name);
+        })
+        .slice(0, 5)
+        .map(g => ({ group: g, score: isVerified(g) ? "Verified" : g.is_pro ? "Pro" : "Active", scoreLabel: r }))
+    );
+    // Region doesn't paginate the same way — show all (max 5*5=25), no page
+    return { rows: sorted, totalRows: sorted.length };
   }
 
   if (category === "game") {
-    const byGame: Record<string, MilsimGroup[]> = {};
-    eligible.forEach(g => {
-      (g.games ?? []).forEach(game => {
-        if (!byGame[game]) byGame[game] = [];
-        byGame[game].push(g);
+    if (!selectedGame) return { rows: [], totalRows: 0 };
+    const inGame = eligible
+      .filter(g => (g.games ?? []).includes(selectedGame))
+      .sort((a, b) => {
+        if (isVerified(b) !== isVerified(a)) return isVerified(b) ? 1 : -1;
+        if ((b.is_pro ? 1 : 0) !== (a.is_pro ? 1 : 0)) return (b.is_pro ? 1 : 0) - (a.is_pro ? 1 : 0);
+        return (b.roster_count ?? 0) - (a.roster_count ?? 0);
       });
-    });
-    return Object.entries(byGame)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([game, gs]) => ({
-        label: game,
-        rows: gs
-          .sort((a, b) => {
-            if (isVerified(b) !== isVerified(a)) return isVerified(b) ? 1 : -1;
-            if ((b.is_pro ? 1 : 0) !== (a.is_pro ? 1 : 0)) return (b.is_pro ? 1 : 0) - (a.is_pro ? 1 : 0);
-            return (b.roster_count ?? 0) - (a.roster_count ?? 0);
-          })
-          .slice(0, 5)
-          .map(g => ({ group: g, score: `${g.roster_count ?? 0}`, scoreLabel: "troops" })),
-      }));
+    sorted = inGame.map(g => ({ group: g, score: `${g.roster_count ?? 0}`, scoreLabel: "troops" }));
+    const totalRows = sorted.length;
+    return { rows: sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), totalRows };
   }
 
   if (category === "troop_count") {
-    const sorted = [...eligible]
+    sorted = eligible
       .filter(g => (g.roster_count ?? 0) > 0)
       .sort((a, b) => (b.roster_count ?? 0) - (a.roster_count ?? 0))
-      .slice(0, 20)
       .map(g => ({ group: g, score: `${g.roster_count ?? 0}`, scoreLabel: "troops" }));
-    if (sorted.length === 0) return [];
-    return [{ label: "Global Ranking", rows: sorted }];
+    return { rows: sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), totalRows: sorted.length };
   }
 
   if (category === "op_success") {
-    const sorted = [...eligible]
+    sorted = eligible
       .filter(g => (g.total_ops ?? 0) >= 3 && g.op_success_rate !== null && g.op_success_rate !== undefined)
       .sort((a, b) => (b.op_success_rate ?? 0) - (a.op_success_rate ?? 0))
-      .slice(0, 20)
       .map(g => ({ group: g, score: `${Math.round(g.op_success_rate ?? 0)}%`, scoreLabel: `${g.total_ops ?? 0} ops` }));
-    if (sorted.length === 0) return [];
-    return [{ label: "Operational Success Rate", rows: sorted }];
+    return { rows: sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), totalRows: sorted.length };
   }
 
-  return [];
+  return { rows: [], totalRows: 0 };
 }
 
-function LbTable({ rows, category }: { rows: LbRow[]; category: LeaderboardCategory }) {
+function LbTable({ rows, startRank }: { rows: LbRow[]; startRank: number }) {
   if (rows.length === 0) return null;
   return (
     <div className="space-y-2">
-      {rows.map((row, i) => (
-        <motion.div key={row.group.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-          className={`flex items-center gap-4 px-4 py-3 rounded-lg border transition-all hover:border-primary/40 ${
-            i === 0 ? "border-yellow-500/40 bg-yellow-500/5" :
-            i === 1 ? "border-zinc-400/30 bg-zinc-400/5" :
-            i === 2 ? "border-amber-600/30 bg-amber-600/5" :
-            "border-border bg-card"
-          }`}>
-          {/* Rank */}
-          <span className={`w-7 text-center font-display font-black text-lg shrink-0 ${
-            i === 0 ? "text-yellow-400" : i === 1 ? "text-zinc-400" : i === 2 ? "text-amber-600" : "text-muted-foreground"
-          }`}>{i + 1}</span>
+      {rows.map((row, i) => {
+        const rank = startRank + i;
+        return (
+          <motion.div key={row.group.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+            className={`flex items-center gap-4 px-4 py-3 rounded-lg border transition-all hover:border-primary/40 ${
+              rank === 1 ? "border-yellow-500/40 bg-yellow-500/5" :
+              rank === 2 ? "border-zinc-400/30 bg-zinc-400/5" :
+              rank === 3 ? "border-amber-600/30 bg-amber-600/5" :
+              "border-border bg-card"
+            }`}>
+            {/* Rank */}
+            <span className={`w-7 text-center font-display font-black text-lg shrink-0 ${
+              rank === 1 ? "text-yellow-400" : rank === 2 ? "text-zinc-400" : rank === 3 ? "text-amber-600" : "text-muted-foreground"
+            }`}>{rank}</span>
 
-          {/* Logo */}
-          <div className="w-8 h-8 shrink-0 flex items-center justify-center">
-            {row.group.logoUrl
-              ? <img src={row.group.logoUrl} alt={row.group.name} className="w-8 h-8 object-contain rounded" />
-              : <Shield className="w-6 h-6 text-muted-foreground/30" />
-            }
-          </div>
-
-          {/* Name + badges */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-display font-bold text-sm text-foreground">{row.group.name}</span>
-              {isVerified(row.group) && (
-                <span className="flex items-center gap-0.5 text-[9px] font-display font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/30 px-1.5 py-0.5 rounded">
-                  <CheckCircle2 className="w-2.5 h-2.5" /> Verified
-                </span>
-              )}
-              {row.group.is_pro && !isVerified(row.group) && (
-                <span className="flex items-center gap-0.5 text-[9px] font-display font-bold uppercase tracking-widest text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-1.5 py-0.5 rounded">
-                  <Crown className="w-2.5 h-2.5" /> Pro
-                </span>
-              )}
+            {/* Logo */}
+            <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+              {row.group.logoUrl
+                ? <img src={row.group.logoUrl} alt={row.group.name} className="w-8 h-8 object-contain rounded" />
+                : <Shield className="w-6 h-6 text-muted-foreground/30" />
+              }
             </div>
-            <p className="text-[10px] font-sans text-muted-foreground truncate">{row.group.tagLine ?? ""}</p>
-          </div>
 
-          {/* Score */}
-          <div className="shrink-0 text-right">
-            <p className={`font-display font-black text-base ${i === 0 ? "text-yellow-400" : "text-foreground"}`}>{row.score}</p>
-            <p className="text-[9px] font-sans text-muted-foreground uppercase tracking-widest">{row.scoreLabel}</p>
-          </div>
+            {/* Name + badges */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-display font-bold text-sm text-foreground">{row.group.name}</span>
+                {isVerified(row.group) && (
+                  <span className="flex items-center gap-0.5 text-[9px] font-display font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/30 px-1.5 py-0.5 rounded">
+                    <CheckCircle2 className="w-2.5 h-2.5" /> Verified
+                  </span>
+                )}
+                {row.group.is_pro && !isVerified(row.group) && (
+                  <span className="flex items-center gap-0.5 text-[9px] font-display font-bold uppercase tracking-widest text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-1.5 py-0.5 rounded">
+                    <Crown className="w-2.5 h-2.5" /> Pro
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] font-sans text-muted-foreground">{row.scoreLabel}</p>
+            </div>
 
-          {/* Link */}
-          <Link href={`/milsim/${row.group.slug}`}
-            className="shrink-0 text-xs font-display font-bold uppercase tracking-wider text-primary hover:underline flex items-center gap-1 ml-2">
-            View <ExternalLink className="w-3 h-3" />
-          </Link>
-        </motion.div>
-      ))}
+            {/* Score */}
+            <div className="shrink-0 text-right">
+              <p className={`font-display font-black text-base ${rank === 1 ? "text-yellow-400" : "text-foreground"}`}>{row.score}</p>
+            </div>
+
+            {/* Link */}
+            <Link href={`/milsim/${row.group.slug}`}
+              className="shrink-0 text-xs font-display font-bold uppercase tracking-wider text-primary hover:underline flex items-center gap-1 ml-2">
+              View <ExternalLink className="w-3 h-3" />
+            </Link>
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
