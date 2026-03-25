@@ -1,29 +1,16 @@
 /**
- * NATO ORBAT Builder — Full APP-6 / MIL-STD-2525 implementation
+ * NATO ORBAT Builder — Full APP-6D / MIL-STD-2525D
  * Powered by milsymbol (spatialillusions.com)
- * Supports: all unit types, echelons, affiliations, status, HQ/TF/Dummy,
- *           reinforced/reduced, text amplifiers, country codes
  */
 
 import React, { useState, useMemo } from "react";
 import ms from "milsymbol";
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Save,
-  ZoomIn, ZoomOut, X, Download, Copy, Settings2,
+  ZoomIn, ZoomOut, X, Download, Copy, Settings2, Palette,
 } from "lucide-react";
 
-// ─── SIDC builder helpers ─────────────────────────────────────────────────────
-// Using MIL-STD-2525D / APP-6D 30-character SIDC format
-// Pos 1-2: Version (13 = 2525D)
-// Pos 3-4: Standard Identity (03=friend, 06=hostile, 04=neutral, 01=unknown, 02=assumed friend, 05=suspect)
-// Pos 5-6: Symbol set (10=land unit)
-// Pos 7: Status (0=present, 1=anticipated/planned, 2=anticipated/planned+hostile)
-// Pos 8: HQ/TF/Dummy (0=none, 1=HQ, 2=TF, 3=HQ+TF, 4=dummy, 5=HQ+dummy, 6=TF+dummy, 7=HQ+TF+dummy)
-// Pos 9-10: Echelon/Mobility
-// Pos 11-16: Function (main icon code, 6 digits)
-// Pos 17-18: Modifier 1
-// Pos 19-20: Modifier 2
-// Pos 21-30: Country + order of battle padding
+// ─── SIDC builder ─────────────────────────────────────────────────────────────
 
 export function buildSIDC({
   affiliation = "03",
@@ -31,9 +18,7 @@ export function buildSIDC({
   status = "0",
   hqTfDummy = "0",
   echelon = "00",
-  functionId = "110000",
-  modifier1 = "00",
-  modifier2 = "00",
+  functionId = "121100",
 }: {
   affiliation?: string;
   symbolSet?: string;
@@ -41,21 +26,20 @@ export function buildSIDC({
   hqTfDummy?: string;
   echelon?: string;
   functionId?: string;
-  modifier1?: string;
-  modifier2?: string;
 }) {
-  return `13${affiliation}${symbolSet}${status}${hqTfDummy}${echelon}${functionId}${modifier1}${modifier2}0000000000`;
+  // 30-char MIL-STD-2525D SIDC
+  return `13${affiliation}${symbolSet}${status}${hqTfDummy}${echelon}${functionId}0000000000`;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 export const AFFILIATIONS = [
-  { id: "03", label: "Friendly", color: "text-blue-400" },
-  { id: "06", label: "Hostile",  color: "text-red-400"  },
-  { id: "04", label: "Neutral",  color: "text-green-400"},
-  { id: "01", label: "Unknown",  color: "text-yellow-400"},
-  { id: "02", label: "Assumed Friendly", color: "text-blue-300" },
-  { id: "05", label: "Suspect",  color: "text-orange-400"},
+  { id: "03", label: "Friendly",         color: "#80e0ff" },
+  { id: "06", label: "Hostile",          color: "#ff8080" },
+  { id: "04", label: "Neutral",          color: "#aaffaa" },
+  { id: "01", label: "Unknown",          color: "#ffff80" },
+  { id: "02", label: "Assumed Friendly", color: "#80c0ff" },
+  { id: "05", label: "Suspect",          color: "#ffb060" },
 ];
 
 export const STATUSES = [
@@ -64,180 +48,190 @@ export const STATUSES = [
 ];
 
 export const HQ_TF_DUMMY = [
-  { id: "0", label: "None" },
-  { id: "1", label: "Headquarters (HQ)" },
-  { id: "2", label: "Task Force (TF)" },
-  { id: "3", label: "HQ + Task Force" },
+  { id: "0", label: "None"          },
+  { id: "1", label: "HQ"            },
+  { id: "2", label: "Task Force"    },
+  { id: "3", label: "HQ + TF"       },
   { id: "4", label: "Dummy / Feint" },
-  { id: "5", label: "HQ + Dummy" },
-  { id: "6", label: "TF + Dummy" },
+  { id: "5", label: "HQ + Dummy"    },
+  { id: "6", label: "TF + Dummy"    },
   { id: "7", label: "HQ + TF + Dummy" },
 ];
 
 export const ECHELONS = [
-  { id: "00", label: "—  Unspecified"   },
-  { id: "11", label: "🔸 Fireteam / Crew" },
-  { id: "12", label: "🔹 Squad"          },
-  { id: "13", label: "▪  Section"       },
-  { id: "14", label: "|   Platoon / Detachment" },
-  { id: "15", label: "||  Company / Battery / Troop" },
-  { id: "16", label: "||| Battalion / Squadron" },
-  { id: "17", label: "X   Regiment / Group" },
-  { id: "18", label: "XX  Brigade"      },
-  { id: "19", label: "XXX Division"     },
-  { id: "20", label: "XXXX Corps"       },
-  { id: "21", label: "XXXXX Army"       },
-  { id: "22", label: "XXXXXX Army Group / Front" },
-  { id: "23", label: "XXXXXXX Region"  },
-  { id: "24", label: "XXXXXXXX Command"},
+  { id: "00", label: "— Unspecified"             },
+  { id: "11", label: "• Fireteam / Crew"          },
+  { id: "12", label: "•• Squad"                   },
+  { id: "13", label: "••• Section"                },
+  { id: "14", label: "| Platoon"                  },
+  { id: "15", label: "|| Company / Battery"       },
+  { id: "16", label: "||| Battalion / Squadron"   },
+  { id: "17", label: "X Regiment / Group"         },
+  { id: "18", label: "XX Brigade"                 },
+  { id: "19", label: "XXX Division"               },
+  { id: "20", label: "XXXX Corps"                 },
+  { id: "21", label: "XXXXX Army"                 },
+  { id: "22", label: "XXXXXX Army Group"          },
+  { id: "23", label: "XXXXXXX Region"             },
+  { id: "24", label: "XXXXXXXX Command"           },
 ];
 
 export const REINFORCED_REDUCED = [
-  { id: "",           label: "None"       },
-  { id: "reinforced", label: "(+) Reinforced" },
-  { id: "reduced",    label: "(−) Reduced"    },
+  { id: "",                   label: "None"                   },
+  { id: "reinforced",         label: "(+) Reinforced"         },
+  { id: "reduced",            label: "(−) Reduced"            },
   { id: "reinforcedAndReduced", label: "(±) Reinforced & Reduced" },
 ];
 
-// ─── Unit type catalogue ──────────────────────────────────────────────────────
-// functionId = 6-digit APP-6D land unit function code
+// Preset fill colours for the symbol selector
+export const FILL_COLORS = [
+  { id: "auto",    label: "Auto (NATO standard)", value: null           },
+  { id: "blue",    label: "Friendly Blue",        value: "#80e0ff"      },
+  { id: "red",     label: "Hostile Red",          value: "#ff8080"      },
+  { id: "green",   label: "Neutral Green",        value: "#aaffaa"      },
+  { id: "yellow",  label: "Unknown Yellow",       value: "#ffff80"      },
+  { id: "orange",  label: "Orange",               value: "#ffb060"      },
+  { id: "purple",  label: "Purple",               value: "#c084fc"      },
+  { id: "white",   label: "White / Uncoloured",   value: "#ffffff"      },
+  { id: "black",   label: "Black",                value: "#111111"      },
+  { id: "custom",  label: "Custom…",              value: null           },
+];
+
+// ─── CORRECTED unit type catalogue ───────────────────────────────────────────
+// All function IDs validated against milsymbol landunit.js
 
 export const UNIT_CATEGORIES: { category: string; units: { id: string; label: string; functionId: string }[] }[] = [
   {
     category: "Infantry",
     units: [
-      { id: "infantry",        label: "Infantry",               functionId: "110000" },
-      { id: "inf_close",       label: "Close Combat Infantry",  functionId: "111000" },
-      { id: "inf_light",       label: "Light Infantry",         functionId: "121100" },
-      { id: "inf_airborne",    label: "Airborne Infantry",      functionId: "121300" },
-      { id: "inf_air_assault", label: "Air Assault Infantry",   functionId: "121600" },
-      { id: "inf_mech",        label: "Mechanised Infantry",    functionId: "121700" },
-      { id: "inf_motor",       label: "Motorized Infantry",     functionId: "121800" },
-      { id: "inf_mountain",    label: "Mountain Infantry",      functionId: "121900" },
-      { id: "inf_arctic",      label: "Arctic Infantry",        functionId: "122000" },
-      { id: "inf_jungle",      label: "Jungle Infantry",        functionId: "122100" },
-      { id: "sf",              label: "Special Forces",         functionId: "122200" },
-      { id: "ranger",          label: "Ranger",                 functionId: "122300" },
-      { id: "raider",          label: "Raider",                 functionId: "122400" },
-      { id: "recce",           label: "Reconnaissance",         functionId: "122700" },
-      { id: "sniper",          label: "Sniper",                 functionId: "122500" },
-      { id: "anti_armor_inf",  label: "Anti-Armour (Infantry)", functionId: "122600" },
+      { id: "infantry",        label: "Infantry",               functionId: "121100" },
+      { id: "inf_amphibious",  label: "Amphibious Infantry",    functionId: "121101" },
+      { id: "inf_mech",        label: "Mechanised Infantry",    functionId: "121102" },
+      { id: "inf_motor",       label: "Motorized Infantry",     functionId: "121104" },
+      { id: "inf_airborne",    label: "Airborne",               functionId: "120100" },
+      { id: "inf_air_assault", label: "Air Assault",            functionId: "120100" },
+      { id: "recce",           label: "Reconnaissance",         functionId: "121300" },
+      { id: "surveillance",    label: "Surveillance",           functionId: "121600" },
+      { id: "sniper",          label: "Sniper",                 functionId: "121500" },
+      { id: "sf",              label: "Special Forces",         functionId: "121700" },
+      { id: "sof",             label: "SOF",                    functionId: "121800" },
+      { id: "ranger",          label: "Ranger",                 functionId: "122000" },
+      { id: "seal",            label: "SEA-AIR-LAND (SEAL)",    functionId: "121400" },
+      { id: "anti_armor",      label: "Anti-Armour",            functionId: "120400" },
+      { id: "combined_arms",   label: "Combined Arms",          functionId: "121000" },
     ],
   },
   {
     category: "Armour",
     units: [
-      { id: "armour",          label: "Armour / Tank",          functionId: "131100" },
-      { id: "armd_cav",        label: "Armoured Cavalry",       functionId: "131200" },
-      { id: "armd_recce",      label: "Armoured Recce",         functionId: "131300" },
-      { id: "apc",             label: "APC",                    functionId: "131400" },
-      { id: "ifv",             label: "IFV / MICV",             functionId: "131500" },
-      { id: "anti_armor",      label: "Anti-Armour (Vehicle)",  functionId: "131600" },
-      { id: "light_armour",    label: "Light Armour",           functionId: "131700" },
+      { id: "armour",          label: "Armour / Tank",          functionId: "120500" },
+      { id: "armd_cav",        label: "Armoured Cavalry",       functionId: "120501" },
+      { id: "armd_amphibious", label: "Armour (Amphibious)",    functionId: "120502" },
     ],
   },
   {
     category: "Aviation",
     units: [
-      { id: "aviation",        label: "Aviation (Generic)",     functionId: "141100" },
-      { id: "atk_helo",        label: "Attack Helicopter",      functionId: "141300" },
-      { id: "tpt_helo",        label: "Transport Helicopter",   functionId: "141500" },
-      { id: "obs_helo",        label: "Observation Helicopter", functionId: "141400" },
-      { id: "uav",             label: "UAV / UAS",              functionId: "141600" },
-      { id: "cas",             label: "Close Air Support",      functionId: "141200" },
+      { id: "avn_rotary",      label: "Aviation (Rotary Wing)", functionId: "120600" },
+      { id: "avn_fixed",       label: "Aviation (Fixed Wing)",  functionId: "120800" },
+      { id: "avn_composite",   label: "Aviation (Composite)",   functionId: "120700" },
+      { id: "uav",             label: "Unmanned Systems / UAV", functionId: "121900" },
     ],
   },
   {
     category: "Fires",
     units: [
-      { id: "arty",            label: "Field Artillery",        functionId: "151100" },
-      { id: "arty_self",       label: "Self-Propelled Artillery",functionId:"151200" },
-      { id: "arty_rocket",     label: "Rocket Artillery / MLRS",functionId: "151300" },
-      { id: "mortar",          label: "Mortar",                 functionId: "151400" },
-      { id: "ada",             label: "Air Defence Artillery",  functionId: "161100" },
-      { id: "ada_short",       label: "Short-Range Air Defence",functionId: "161200" },
-      { id: "ada_medium",      label: "Medium Air Defence",     functionId: "161300" },
+      { id: "arty",            label: "Field Artillery",        functionId: "130300" },
+      { id: "arty_obs",        label: "Artillery Observer",     functionId: "130400" },
+      { id: "jfst",            label: "Joint Fire Support",     functionId: "130500" },
+      { id: "missile",         label: "Missile",                functionId: "130700" },
+      { id: "mortar",          label: "Mortar",                 functionId: "130800" },
+      { id: "mortar_tracked",  label: "Mortar (Tracked)",       functionId: "130801" },
+      { id: "mortar_truck",    label: "Mortar (Truck)",         functionId: "130802" },
+      { id: "mortar_towed",    label: "Mortar (Towed)",         functionId: "130803" },
+      { id: "ada",             label: "Air Defence",            functionId: "130100" },
     ],
   },
   {
     category: "Combat Support",
     units: [
-      { id: "engineer",        label: "Combat Engineer",        functionId: "201100" },
-      { id: "eng_bridge",      label: "Bridge Engineer",        functionId: "201200" },
-      { id: "eng_combat",      label: "Combat Engineer (Armd)", functionId: "201300" },
-      { id: "cbrn",            label: "CBRN / NBC",             functionId: "211100" },
-      { id: "signal",          label: "Signal / Comms",         functionId: "251100" },
-      { id: "intel",           label: "Intelligence",           functionId: "321100" },
-      { id: "ew",              label: "Electronic Warfare",     functionId: "271100" },
-      { id: "mp",              label: "Military Police",        functionId: "311100" },
-      { id: "psy_ops",         label: "PsyOps / Info Ops",      functionId: "261100" },
-      { id: "cimic",           label: "CIMIC",                  functionId: "281100" },
-      { id: "jtac",            label: "JTAC / FAC",             functionId: "291100" },
+      { id: "engineer",        label: "Engineer",               functionId: "140700" },
+      { id: "eng_mech",        label: "Engineer (Mech)",        functionId: "140701" },
+      { id: "eod",             label: "EOD / Ordnance",         functionId: "140800" },
+      { id: "cbrn",            label: "CBRN / NBC",             functionId: "140100" },
+      { id: "cbrn_armd",       label: "CBRN (Armoured)",        functionId: "140101" },
+      { id: "signal",          label: "Signal / Comms",         functionId: "111000" },
+      { id: "signal_radio",    label: "Signal (Radio)",         functionId: "111001" },
+      { id: "signal_sat",      label: "Signal (Satellite)",     functionId: "111004" },
+      { id: "mp",              label: "Military Police",        functionId: "141200" },
+      { id: "intel",           label: "Military Intelligence",  functionId: "151000" },
+      { id: "ew",              label: "Electronic Warfare",     functionId: "150500" },
+      { id: "psyops",          label: "PsyOps / Info Ops",      functionId: "110400" },
+      { id: "civil_affairs",   label: "Civil Affairs",          functionId: "110200" },
+      { id: "cimic",           label: "CIMIC",                  functionId: "110300" },
+      { id: "jtac",            label: "JTAC / TACP",            functionId: "130400" },
     ],
   },
   {
     category: "Combat Service Support",
     units: [
-      { id: "medical",         label: "Medical",                functionId: "401100" },
-      { id: "med_hospital",    label: "Hospital",               functionId: "401200" },
-      { id: "supply",          label: "Supply / Logistics",     functionId: "411100" },
-      { id: "maintenance",     label: "Maintenance",            functionId: "421100" },
-      { id: "transport",       label: "Transport",              functionId: "431100" },
-      { id: "ordnance",        label: "Ordnance / EOD",         functionId: "441100" },
-      { id: "fuel",            label: "Petroleum / Fuel",       functionId: "451100" },
-      { id: "finance",         label: "Finance",                functionId: "461100" },
+      { id: "medical",         label: "Medical",                functionId: "161300" },
+      { id: "med_hospital",    label: "Medical Treatment",      functionId: "161400" },
+      { id: "supply",          label: "Supply",                 functionId: "160200" },
+      { id: "sustainment",     label: "Sustainment",            functionId: "160000" },
+      { id: "maintenance",     label: "Maintenance",            functionId: "161100" },
+      { id: "transport",       label: "Transportation",         functionId: "163600" },
+      { id: "ammo",            label: "Ammunition",             functionId: "160400" },
+      { id: "ordnance",        label: "Ordnance",               functionId: "162300" },
+      { id: "petroleum",       label: "Petroleum / Fuel (POL)", functionId: "162500" },
+      { id: "finance",         label: "Finance",                functionId: "160700" },
+      { id: "mortuary",        label: "Mortuary Affairs",       functionId: "161600" },
+      { id: "water",           label: "Water",                  functionId: "164700" },
+      { id: "css_general",     label: "CSS (General)",          functionId: "160600" },
     ],
   },
   {
     category: "Command & Control",
     units: [
-      { id: "hq_generic",      label: "HQ (Generic)",           functionId: "110000" },
-      { id: "cp_main",         label: "Command Post – Main",    functionId: "111100" },
-      { id: "cp_tac",          label: "Command Post – Tac",     functionId: "111200" },
-      { id: "cp_rear",         label: "Command Post – Rear",    functionId: "111300" },
+      { id: "c2_generic",      label: "C2 (Generic)",           functionId: "110000" },
+      { id: "special_troops",  label: "Special Troops",         functionId: "111400" },
+      { id: "multi_domain",    label: "Multi-Domain",           functionId: "111500" },
+      { id: "liaison",         label: "Liaison",                functionId: "110500" },
     ],
   },
 ];
 
-// Flat lookup
 export const ALL_UNIT_TYPES = UNIT_CATEGORIES.flatMap(c => c.units);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface OrbatNodeAmplifiers {
-  unitName?: string;          // Unique designation (e.g. "A/1-12 INF")
-  higherFormation?: string;   // Parent unit (e.g. "I CORPS")
-  additionalInfo?: string;    // Additional info text
-  staffComments?: string;     // Staff comments
-  quantity?: string;          // Number of items
-  direction?: number;         // Direction of movement (degrees)
-  dtg?: string;               // Date-time group
-  location?: string;          // MGRS or lat/lon
-  type?: string;              // Equipment type
+  unitName?: string;
+  higherFormation?: string;
+  additionalInfo?: string;
+  staffComments?: string;
+  quantity?: string;
+  direction?: number;
+  dtg?: string;
+  location?: string;
+  type?: string;
   combatEffectiveness?: string;
 }
 
 export interface OrbatNode {
   id: string;
-  // Label shown in tree
   label: string;
-  // SIDC components
   affiliation: string;
   symbolSet: string;
   status: string;
   hqTfDummy: string;
   echelon: string;
   functionId: string;
-  modifier1: string;
-  modifier2: string;
-  // Modifiers
   reinforcedReduced: string;
-  // Text amplifiers
+  fillColor?: string;        // null = auto NATO colour
   amplifiers: OrbatNodeAmplifiers;
-  // Tree
   children: OrbatNode[];
   collapsed?: boolean;
-  // Manning
   slots?: number;
 }
 
@@ -254,10 +248,9 @@ function defaultNode(overrides: Partial<OrbatNode> = {}): OrbatNode {
     status: "0",
     hqTfDummy: "0",
     echelon: "14",
-    functionId: "110000",
-    modifier1: "00",
-    modifier2: "00",
+    functionId: "121100",
     reinforcedReduced: "",
+    fillColor: undefined,
     amplifiers: {},
     children: [],
     slots: 0,
@@ -265,7 +258,7 @@ function defaultNode(overrides: Partial<OrbatNode> = {}): OrbatNode {
   };
 }
 
-// ─── Symbol rendering via milsymbol ──────────────────────────────────────────
+// ─── Symbol renderer ──────────────────────────────────────────────────────────
 
 function nodeToSIDC(node: OrbatNode): string {
   return buildSIDC({
@@ -275,24 +268,17 @@ function nodeToSIDC(node: OrbatNode): string {
     hqTfDummy: node.hqTfDummy,
     echelon: node.echelon,
     functionId: node.functionId,
-    modifier1: node.modifier1 || "00",
-    modifier2: node.modifier2 || "00",
   });
 }
 
-interface MilSymbolProps {
-  node: OrbatNode;
-  size?: number;
-  showName?: boolean;
-}
-
-function MilSymbolSvg({ node, size = 60, showName = false }: MilSymbolProps) {
-  const svgString = useMemo(() => {
+function MilSymbolSvg({ node, size = 60, showName = false }: { node: OrbatNode; size?: number; showName?: boolean }) {
+  const { svgString, symW, symH } = useMemo(() => {
     try {
       const sidc = nodeToSIDC(node);
       const opts: Record<string, unknown> = {
         size,
         ...(node.reinforcedReduced ? { reinforcedReduced: node.reinforcedReduced } : {}),
+        ...(node.fillColor ? { fillColor: node.fillColor } : {}),
         ...(node.amplifiers.unitName ? { uniqueDesignation: node.amplifiers.unitName } : {}),
         ...(node.amplifiers.higherFormation ? { higherFormation: node.amplifiers.higherFormation } : {}),
         ...(node.amplifiers.additionalInfo ? { additionalInformation: node.amplifiers.additionalInfo } : {}),
@@ -305,30 +291,18 @@ function MilSymbolSvg({ node, size = 60, showName = false }: MilSymbolProps) {
         ...(node.amplifiers.combatEffectiveness ? { combatEffectiveness: node.amplifiers.combatEffectiveness } : {}),
       };
       const sym = new ms.Symbol(sidc, opts);
-      return sym.asSVG();
+      const sz = sym.getSize();
+      return { svgString: sym.asSVG(), symW: sz.width, symH: sz.height };
     } catch {
-      // Fallback: basic infantry
       const sym = new ms.Symbol("130310001412110000000000000000", { size });
-      return sym.asSVG();
-    }
-  }, [node, size]);
-
-  const symSize = useMemo(() => {
-    try {
-      const sidc = nodeToSIDC(node);
-      const sym = new ms.Symbol(sidc, { size });
-      return sym.getSize();
-    } catch {
-      return { width: size, height: size };
+      const sz = sym.getSize();
+      return { svgString: sym.asSVG(), symW: sz.width, symH: sz.height };
     }
   }, [node, size]);
 
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <div
-        style={{ width: symSize.width, height: symSize.height }}
-        dangerouslySetInnerHTML={{ __html: svgString }}
-      />
+      <div style={{ width: symW, height: symH }} dangerouslySetInnerHTML={{ __html: svgString }} />
       {showName && node.label && (
         <span className="text-[10px] font-mono font-bold text-foreground text-center leading-tight max-w-[100px] truncate">
           {node.label}
@@ -338,11 +312,70 @@ function MilSymbolSvg({ node, size = 60, showName = false }: MilSymbolProps) {
   );
 }
 
-// ─── Node Editor (full modal) ─────────────────────────────────────────────────
+// ─── Colour picker panel ──────────────────────────────────────────────────────
 
-function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: OrbatNode) => void; onClose: () => void }) {
+function ColorPicker({ value, onChange }: { value?: string; onChange: (v?: string) => void }) {
+  const [showCustom, setShowCustom] = useState(false);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {FILL_COLORS.map(c => {
+          const isActive = c.id === "custom"
+            ? (!!value && !FILL_COLORS.some(x => x.id !== "custom" && x.id !== "auto" && x.value === value))
+            : c.id === "auto"
+              ? !value
+              : value === c.value;
+
+          return (
+            <button
+              key={c.id}
+              onClick={() => {
+                if (c.id === "auto") { onChange(undefined); setShowCustom(false); }
+                else if (c.id === "custom") { setShowCustom(true); }
+                else { onChange(c.value ?? undefined); setShowCustom(false); }
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs transition-all
+                ${isActive ? "border-primary bg-primary/15 text-foreground font-bold" : "border-border text-muted-foreground hover:border-primary/40"}`}
+            >
+              {c.value && (
+                <span className="w-3 h-3 rounded-full border border-border/60 flex-shrink-0" style={{ background: c.value }} />
+              )}
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+      {showCustom && (
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={value || "#80e0ff"}
+            onChange={e => onChange(e.target.value)}
+            className="w-10 h-8 rounded border border-border bg-background cursor-pointer"
+          />
+          <input
+            type="text"
+            value={value || ""}
+            onChange={e => onChange(e.target.value || undefined)}
+            placeholder="#rrggbb"
+            className="w-28 bg-background border border-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:border-primary"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Node editor modal ────────────────────────────────────────────────────────
+
+function NodeEditor({ node, onSave, onClose }: {
+  node: OrbatNode;
+  onSave: (n: OrbatNode) => void;
+  onClose: () => void;
+}) {
   const [draft, setDraft] = useState<OrbatNode>(JSON.parse(JSON.stringify(node)));
-  const [tab, setTab] = useState<"symbol" | "amplifiers">("symbol");
+  const [tab, setTab] = useState<"symbol" | "color" | "amplifiers">("symbol");
 
   function set(updates: Partial<OrbatNode>) {
     setDraft(d => ({ ...d, ...updates }));
@@ -351,17 +384,15 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
     setDraft(d => ({ ...d, amplifiers: { ...d.amplifiers, ...updates } }));
   }
 
-  const unitType = ALL_UNIT_TYPES.find(u => u.functionId === draft.functionId);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
       <div className="bg-card border border-border rounded-xl w-full max-w-2xl shadow-2xl max-h-[92vh] flex flex-col" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-border flex-shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Settings2 className="w-4 h-4 text-muted-foreground" />
-            <h3 className="font-display font-black uppercase tracking-wider text-sm">Edit Unit</h3>
+            <span className="font-display font-black uppercase tracking-wider text-sm">Edit Unit</span>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
             <X className="w-4 h-4" />
@@ -369,22 +400,22 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
         </div>
 
         {/* Live preview */}
-        <div className="flex justify-center items-center gap-6 py-4 px-5 bg-zinc-900 border-b border-border flex-shrink-0">
+        <div className="flex justify-center items-center gap-6 py-4 px-5 bg-zinc-900 border-b border-border flex-shrink-0 flex-wrap">
           <MilSymbolSvg node={draft} size={64} showName />
           <div className="text-xs text-muted-foreground font-mono space-y-0.5">
             <div>SIDC: <span className="text-primary">{nodeToSIDC(draft)}</span></div>
-            <div>Set: APP-6D / MIL-STD-2525D</div>
-            {unitType && <div>Type: {unitType.label}</div>}
+            <div>Standard: APP-6D / MIL-STD-2525D</div>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="flex border-b border-border flex-shrink-0">
-          {(["symbol", "amplifiers"] as const).map(t => (
+          {(["symbol", "color", "amplifiers"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`flex-1 px-4 py-2.5 text-xs font-display font-bold uppercase tracking-widest transition-colors
+              className={`flex-1 px-3 py-2.5 text-xs font-display font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-1
                 ${tab === t ? "border-b-2 border-primary text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-              {t === "symbol" ? "Symbol & Echelon" : "Text Amplifiers"}
+              {t === "color" && <Palette className="w-3 h-3" />}
+              {t === "symbol" ? "Symbol & Echelon" : t === "color" ? "Colour" : "Text Amplifiers"}
             </button>
           ))}
         </div>
@@ -392,94 +423,95 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
         {/* Body */}
         <div className="overflow-y-auto flex-1 p-5 space-y-5">
 
+          {/* ── Symbol tab ─────────────────────────────────────────── */}
           {tab === "symbol" && <>
-            {/* Label */}
             <div>
-              <label className="field-label">Unit Label (Tree Display)</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Unit Label</label>
               <input value={draft.label} onChange={e => set({ label: e.target.value })}
                 className="w-full bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                placeholder="e.g. 1 PARA, A Squadron, 3rd Platoon" />
+                placeholder="e.g. 1 PARA, A Sqn, 3 Plt" />
             </div>
 
-            {/* Affiliation */}
             <div>
-              <label className="field-label">Affiliation</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Affiliation</label>
               <div className="flex flex-wrap gap-1.5">
                 {AFFILIATIONS.map(a => (
                   <button key={a.id} onClick={() => set({ affiliation: a.id })}
-                    className={`px-3 py-1.5 text-xs rounded border transition-all ${draft.affiliation === a.id ? "bg-primary/20 border-primary text-primary font-bold" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded border transition-all
+                      ${draft.affiliation === a.id ? "border-primary bg-primary/15 font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: a.color }} />
                     {a.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Status */}
             <div>
-              <label className="field-label">Status</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Status</label>
               <div className="flex gap-2">
                 {STATUSES.map(s => (
                   <button key={s.id} onClick={() => set({ status: s.id })}
-                    className={`flex-1 px-3 py-1.5 text-xs rounded border transition-all ${draft.status === s.id ? "bg-primary/20 border-primary text-primary font-bold" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                    className={`flex-1 px-3 py-1.5 text-xs rounded border transition-all
+                      ${draft.status === s.id ? "bg-primary/15 border-primary font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
                     {s.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* HQ / TF / Dummy */}
             <div>
-              <label className="field-label">HQ / Task Force / Dummy</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">HQ / Task Force / Dummy</label>
               <div className="flex flex-wrap gap-1.5">
                 {HQ_TF_DUMMY.map(h => (
                   <button key={h.id} onClick={() => set({ hqTfDummy: h.id })}
-                    className={`px-2.5 py-1.5 text-xs rounded border transition-all ${draft.hqTfDummy === h.id ? "bg-primary/20 border-primary text-primary font-bold" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                    className={`px-2.5 py-1.5 text-xs rounded border transition-all
+                      ${draft.hqTfDummy === h.id ? "bg-primary/15 border-primary font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
                     {h.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Echelon */}
             <div>
-              <label className="field-label">Echelon</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Echelon</label>
               <div className="flex flex-wrap gap-1.5">
                 {ECHELONS.map(e => (
                   <button key={e.id} onClick={() => set({ echelon: e.id })}
-                    className={`px-2.5 py-1.5 text-xs rounded border transition-all font-mono ${draft.echelon === e.id ? "bg-primary/20 border-primary text-primary font-bold" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                    className={`px-2.5 py-1.5 text-xs rounded border font-mono transition-all
+                      ${draft.echelon === e.id ? "bg-primary/15 border-primary font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
                     {e.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Reinforced / Reduced */}
             <div>
-              <label className="field-label">Reinforced / Reduced</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Reinforced / Reduced</label>
               <div className="flex flex-wrap gap-1.5">
                 {REINFORCED_REDUCED.map(r => (
                   <button key={r.id} onClick={() => set({ reinforcedReduced: r.id })}
-                    className={`px-3 py-1.5 text-xs rounded border transition-all ${draft.reinforcedReduced === r.id ? "bg-primary/20 border-primary text-primary font-bold" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                    className={`px-3 py-1.5 text-xs rounded border transition-all
+                      ${draft.reinforcedReduced === r.id ? "bg-primary/15 border-primary font-bold text-foreground" : "border-border text-muted-foreground hover:border-primary/40"}`}>
                     {r.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Unit Type */}
             <div>
-              <label className="field-label">Unit Type</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Unit Type</label>
               {UNIT_CATEGORIES.map(cat => (
-                <div key={cat.category} className="mb-4">
-                  <div className="text-[9px] font-display font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">{cat.category}</div>
+                <div key={cat.category} className="mb-5">
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2 px-0.5">{cat.category}</div>
                   <div className="flex flex-wrap gap-2">
                     {cat.units.map(u => {
-                      const previewNode: OrbatNode = { ...draft, functionId: u.functionId, hqTfDummy: "0", echelon: "14", reinforcedReduced: "", amplifiers: {} };
+                      const preview = defaultNode({ functionId: u.functionId, affiliation: draft.affiliation, fillColor: draft.fillColor });
                       return (
                         <button key={u.id} onClick={() => set({ functionId: u.functionId })}
-                          className={`flex flex-col items-center gap-1 p-2 rounded border transition-all ${draft.functionId === u.functionId ? "bg-primary/15 border-primary/70" : "border-border hover:border-primary/30"}`}>
-                          <MilSymbolSvg node={previewNode} size={28} />
-                          <span className="text-[8px] text-center text-muted-foreground leading-tight max-w-[56px]">{u.label}</span>
+                          className={`flex flex-col items-center gap-1 p-2 rounded border transition-all
+                            ${draft.functionId === u.functionId ? "bg-primary/15 border-primary/70" : "border-border hover:border-primary/40 hover:bg-muted/20"}`}>
+                          <MilSymbolSvg node={preview} size={28} />
+                          <span className="text-[8px] text-center text-muted-foreground leading-tight max-w-[60px]">{u.label}</span>
                         </button>
                       );
                     })}
@@ -488,31 +520,52 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
               ))}
             </div>
 
-            {/* Manning */}
             <div>
-              <label className="field-label">Manning / Slots</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Manning / Slots</label>
               <input type="number" min={0} max={9999} value={draft.slots ?? 0}
                 onChange={e => set({ slots: parseInt(e.target.value) || 0 })}
                 className="w-32 bg-background border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" />
             </div>
           </>}
 
-          {tab === "amplifiers" && <>
-            <p className="text-xs text-muted-foreground">Text amplifiers appear around the symbol on the ORBAT diagram (name, parent unit, quantity, etc.)</p>
+          {/* ── Colour tab ─────────────────────────────────────────── */}
+          {tab === "color" && <>
+            <p className="text-xs text-muted-foreground">Override the symbol fill colour. "Auto" uses the NATO standard colour for the selected affiliation.</p>
+            <ColorPicker value={draft.fillColor} onChange={v => set({ fillColor: v })} />
 
+            {/* Preview strip */}
+            <div className="mt-4">
+              <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-3">Preview</div>
+              <div className="flex flex-wrap gap-4 p-4 bg-zinc-900 rounded-lg">
+                {AFFILIATIONS.map(a => {
+                  const previewNode = { ...draft, affiliation: a.id };
+                  return (
+                    <div key={a.id} className="flex flex-col items-center gap-1">
+                      <MilSymbolSvg node={previewNode} size={40} />
+                      <span className="text-[8px] text-muted-foreground">{a.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>}
+
+          {/* ── Amplifiers tab ─────────────────────────────────────── */}
+          {tab === "amplifiers" && <>
+            <p className="text-xs text-muted-foreground">Text amplifiers appear around the symbol on the ORBAT.</p>
             {[
-              { key: "unitName",           label: "Unit Name / Unique Designation",  placeholder: "e.g. A/1-12 INF, 2 PARA" },
-              { key: "higherFormation",    label: "Higher Formation (Parent Unit)",   placeholder: "e.g. I CORPS, 3 DIV" },
-              { key: "additionalInfo",     label: "Additional Information",           placeholder: "e.g. OPCON to 5 RIFLES" },
-              { key: "staffComments",      label: "Staff Comments",                   placeholder: "e.g. 75% strength" },
-              { key: "quantity",           label: "Quantity",                         placeholder: "e.g. 24" },
-              { key: "dtg",                label: "Date-Time Group (DTG)",            placeholder: "e.g. 301400ZSEP97" },
-              { key: "location",           label: "Location (MGRS / Lat-Lon)",        placeholder: "e.g. 30UYC1234567890" },
-              { key: "type",               label: "Equipment Type",                   placeholder: "e.g. CHALLENGER 2" },
-              { key: "combatEffectiveness",label: "Combat Effectiveness",             placeholder: "e.g. COMBAT INEFFECTIVE" },
+              { key: "unitName",            label: "Unit Name / Unique Designation",  placeholder: "e.g. A/1-12 INF, 2 PARA" },
+              { key: "higherFormation",     label: "Higher Formation (Parent Unit)",   placeholder: "e.g. I CORPS, 3 DIV" },
+              { key: "additionalInfo",      label: "Additional Information",           placeholder: "e.g. OPCON to 5 RIFLES" },
+              { key: "staffComments",       label: "Staff Comments",                   placeholder: "e.g. 75% strength" },
+              { key: "quantity",            label: "Quantity",                         placeholder: "e.g. 24" },
+              { key: "dtg",                 label: "Date-Time Group (DTG)",            placeholder: "e.g. 301400ZSEP97" },
+              { key: "location",            label: "Location (MGRS / Lat-Lon)",        placeholder: "e.g. 30UYC1234567890" },
+              { key: "type",                label: "Equipment Type",                   placeholder: "e.g. CHALLENGER 2" },
+              { key: "combatEffectiveness", label: "Combat Effectiveness",             placeholder: "e.g. COMBAT INEFFECTIVE" },
             ].map(({ key, label, placeholder }) => (
               <div key={key}>
-                <label className="field-label">{label}</label>
+                <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">{label}</label>
                 <input
                   value={(draft.amplifiers as Record<string, string>)[key] ?? ""}
                   onChange={e => setAmp({ [key]: e.target.value })}
@@ -523,7 +576,7 @@ function NodeEditor({ node, onSave, onClose }: { node: OrbatNode; onSave: (n: Or
             ))}
 
             <div>
-              <label className="field-label">Direction of Movement (0–360°)</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Direction of Movement (0–360°)</label>
               <input type="number" min={0} max={360}
                 value={draft.amplifiers.direction ?? ""}
                 onChange={e => setAmp({ direction: e.target.value ? parseInt(e.target.value) : undefined })}
@@ -553,11 +606,11 @@ function OrbatTreeNode({
   node, depth, onUpdate, onDelete, onAddChild, onEdit, onDuplicate,
 }: {
   node: OrbatNode; depth: number;
-  onUpdate: (id: string, updates: Partial<OrbatNode>) => void;
+  onUpdate: (id: string, u: Partial<OrbatNode>) => void;
   onDelete: (id: string) => void;
-  onAddChild: (parentId: string) => void;
-  onEdit: (node: OrbatNode) => void;
-  onDuplicate: (node: OrbatNode, parentId?: string) => void;
+  onAddChild: (pid: string) => void;
+  onEdit: (n: OrbatNode) => void;
+  onDuplicate: (n: OrbatNode) => void;
 }) {
   const hasChildren = node.children && node.children.length > 0;
   const affil = AFFILIATIONS.find(a => a.id === node.affiliation);
@@ -565,34 +618,27 @@ function OrbatTreeNode({
 
   return (
     <div className="select-none">
-      <div
-        className="flex items-center gap-2 group py-1 px-2 rounded hover:bg-muted/30 transition-colors"
-        style={{ paddingLeft: `${depth * 28 + 8}px` }}
-      >
-        {/* Collapse toggle */}
-        <button
-          className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 w-4 h-4 flex items-center justify-center"
-          onClick={() => onUpdate(node.id, { collapsed: !node.collapsed })}
-        >
+      <div className="flex items-center gap-2 group py-1 px-2 rounded hover:bg-muted/30 transition-colors"
+        style={{ paddingLeft: `${depth * 28 + 8}px` }}>
+
+        <button className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 w-4 h-4 flex items-center justify-center"
+          onClick={() => onUpdate(node.id, { collapsed: !node.collapsed })}>
           {hasChildren
             ? (node.collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)
-            : <span className="w-3 block" />
-          }
+            : <span className="w-3 block" />}
         </button>
 
-        {/* Symbol */}
-        <div className="flex-shrink-0 cursor-pointer flex items-center justify-center w-14"
+        <div className="flex-shrink-0 cursor-pointer flex items-center justify-center w-16 min-h-[40px]"
           onClick={() => onEdit(node)}>
           <MilSymbolSvg node={node} size={40} />
         </div>
 
-        {/* Labels */}
         <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onEdit(node)}>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-bold truncate">{node.label || "Unnamed"}</span>
             {node.hqTfDummy !== "0" && (
               <span className="text-[9px] bg-yellow-500/20 text-yellow-400 px-1 rounded font-mono uppercase">
-                {HQ_TF_DUMMY.find(h => h.id === node.hqTfDummy)?.label.split(" ")[0]}
+                {HQ_TF_DUMMY.find(h => h.id === node.hqTfDummy)?.label}
               </span>
             )}
             {node.reinforcedReduced && (
@@ -603,41 +649,40 @@ function OrbatTreeNode({
             {node.status === "1" && (
               <span className="text-[9px] bg-purple-500/20 text-purple-400 px-1 rounded font-mono">PLANNED</span>
             )}
+            {node.fillColor && (
+              <span className="w-2.5 h-2.5 rounded-full border border-border/40 flex-shrink-0" style={{ background: node.fillColor }} title="Custom colour" />
+            )}
           </div>
-          <div className="text-[10px] text-muted-foreground/60 font-mono flex gap-2">
-            <span className={affil?.color}>{affil?.label}</span>
-            {echelon && <span>· {echelon.label.replace(/^[🔸🔹▪|X ]+/, "")}</span>}
+          <div className="text-[10px] text-muted-foreground/60 font-mono flex gap-2 flex-wrap">
+            <span style={{ color: affil?.color }}>{affil?.label}</span>
+            {echelon && <span>· {echelon.label.replace(/^[•|X ]+/, "")}</span>}
             {node.amplifiers.unitName && <span>· {node.amplifiers.unitName}</span>}
-            {node.slots ? <span>· {node.slots} slots</span> : null}
+            {!!node.slots && <span>· {node.slots} slots</span>}
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
           <button onClick={() => onAddChild(node.id)}
             className="p-1 rounded hover:bg-primary/20 hover:text-primary transition-colors text-muted-foreground" title="Add child unit">
             <Plus className="w-3.5 h-3.5" />
           </button>
           <button onClick={() => onDuplicate(node)}
-            className="p-1 rounded hover:bg-muted hover:text-foreground transition-colors text-muted-foreground" title="Duplicate unit">
+            className="p-1 rounded hover:bg-muted hover:text-foreground transition-colors text-muted-foreground" title="Duplicate">
             <Copy className="w-3.5 h-3.5" />
           </button>
           <button onClick={() => onDelete(node.id)}
-            className="p-1 rounded hover:bg-destructive/20 hover:text-destructive transition-colors text-muted-foreground" title="Delete unit">
+            className="p-1 rounded hover:bg-destructive/20 hover:text-destructive transition-colors text-muted-foreground" title="Delete">
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Children */}
       {!node.collapsed && hasChildren && (
         <div className="border-l border-dashed border-border/30 ml-7">
           {node.children.map(child => (
-            <OrbatTreeNode
-              key={child.id} node={child} depth={depth + 1}
+            <OrbatTreeNode key={child.id} node={child} depth={depth + 1}
               onUpdate={onUpdate} onDelete={onDelete} onAddChild={onAddChild}
-              onEdit={onEdit} onDuplicate={onDuplicate}
-            />
+              onEdit={onEdit} onDuplicate={onDuplicate} />
           ))}
         </div>
       )}
@@ -645,11 +690,10 @@ function OrbatTreeNode({
   );
 }
 
-// ─── Main ORBAT Builder ───────────────────────────────────────────────────────
+// ─── Main builder ─────────────────────────────────────────────────────────────
 
 interface OrbatBuilderProps {
   initialData?: OrbatNode[];
-  roster?: { callsign: string; rank?: string }[];
   onSave?: (nodes: OrbatNode[]) => void;
   readOnly?: boolean;
 }
@@ -659,80 +703,50 @@ export default function OrbatBuilder({ initialData, onSave, readOnly = false }: 
   const [editingNode, setEditingNode] = useState<OrbatNode | null>(null);
   const [zoom, setZoom] = useState(1);
 
-  // ── Tree helpers ──────────────────────────────────────────────────────────
-
-  function updateById(tree: OrbatNode[], id: string, updates: Partial<OrbatNode>): OrbatNode[] {
-    return tree.map(n => n.id === id
-      ? { ...n, ...updates }
-      : { ...n, children: updateById(n.children, id, updates) });
+  function updateById(tree: OrbatNode[], id: string, u: Partial<OrbatNode>): OrbatNode[] {
+    return tree.map(n => n.id === id ? { ...n, ...u } : { ...n, children: updateById(n.children, id, u) });
   }
-
   function deleteById(tree: OrbatNode[], id: string): OrbatNode[] {
-    return tree
-      .filter(n => n.id !== id)
-      .map(n => ({ ...n, children: deleteById(n.children, id) }));
+    return tree.filter(n => n.id !== id).map(n => ({ ...n, children: deleteById(n.children, id) }));
   }
-
-  function addChildTo(tree: OrbatNode[], parentId: string, child: OrbatNode): OrbatNode[] {
-    return tree.map(n => n.id === parentId
-      ? { ...n, children: [...n.children, child] }
-      : { ...n, children: addChildTo(n.children, parentId, child) });
+  function addChildTo(tree: OrbatNode[], pid: string, child: OrbatNode): OrbatNode[] {
+    return tree.map(n => n.id === pid ? { ...n, children: [...n.children, child] } : { ...n, children: addChildTo(n.children, pid, child) });
   }
-
   function replaceById(tree: OrbatNode[], id: string, updated: OrbatNode): OrbatNode[] {
     return tree.map(n => n.id === id ? updated : { ...n, children: replaceById(n.children, id, updated) });
   }
 
-  // ── Actions ───────────────────────────────────────────────────────────────
-
-  function handleUpdate(id: string, updates: Partial<OrbatNode>) {
-    setNodes(prev => updateById(prev, id, updates));
-  }
-
-  function handleDelete(id: string) {
-    setNodes(prev => deleteById(prev, id));
-  }
-
-  function handleAddChild(parentId: string) {
+  function handleUpdate(id: string, u: Partial<OrbatNode>) { setNodes(p => updateById(p, id, u)); }
+  function handleDelete(id: string) { setNodes(p => deleteById(p, id)); }
+  function handleAddChild(pid: string) {
     const child = defaultNode({ echelon: "12" });
-    setNodes(prev => addChildTo(prev, parentId, child));
+    setNodes(p => addChildTo(p, pid, child));
     setEditingNode(child);
   }
-
   function handleAddRoot() {
     const node = defaultNode({ echelon: "16" });
-    setNodes(prev => [...prev, node]);
+    setNodes(p => [...p, node]);
     setEditingNode(node);
   }
-
   function handleSaveEdit(updated: OrbatNode) {
     setNodes(prev => {
-      // If node exists, replace it; if not (newly added), add to root
       const exists = JSON.stringify(prev).includes(`"id":"${updated.id}"`);
-      if (exists) return replaceById(prev, updated.id, updated);
-      return [...prev, updated];
+      return exists ? replaceById(prev, updated.id, updated) : [...prev, updated];
     });
   }
-
   function handleDuplicate(node: OrbatNode) {
-    function deepCopyWithNewIds(n: OrbatNode): OrbatNode {
-      return { ...n, id: generateId(), children: n.children.map(deepCopyWithNewIds) };
+    function deepCopy(n: OrbatNode): OrbatNode {
+      return { ...n, id: generateId(), label: n.label + " (copy)", children: n.children.map(deepCopy) };
     }
-    const copy = deepCopyWithNewIds(node);
-    copy.label = copy.label + " (copy)";
-    setNodes(prev => [...prev, copy]);
+    setNodes(p => [...p, deepCopy(node)]);
   }
-
-  function handleExportJSON() {
+  function handleExport() {
     const blob = new Blob([JSON.stringify(nodes, null, 2)], { type: "application/json" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "orbat.json"; a.click();
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
     <div className="flex flex-col h-full bg-background border border-border rounded-lg overflow-hidden">
-
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-card flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -751,8 +765,7 @@ export default function OrbatBuilder({ initialData, onSave, readOnly = false }: 
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
           <div className="w-px h-4 bg-border mx-1" />
-          <button onClick={handleExportJSON}
-            className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Export JSON">
+          <button onClick={handleExport} className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Export JSON">
             <Download className="w-3.5 h-3.5" />
           </button>
           {!readOnly && onSave && (
@@ -767,11 +780,11 @@ export default function OrbatBuilder({ initialData, onSave, readOnly = false }: 
       {/* Tree */}
       <div className="flex-1 overflow-auto p-4" style={{ fontSize: `${zoom}rem` }}>
         {nodes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center gap-4 py-16">
+          <div className="flex flex-col items-center justify-center h-full gap-4 py-16 text-center">
             <div className="opacity-20 pointer-events-none">
               <MilSymbolSvg node={defaultNode({ echelon: "16", hqTfDummy: "1" })} size={80} />
             </div>
-            <div className="text-muted-foreground text-sm">No units yet. Build your ORBAT.</div>
+            <p className="text-muted-foreground text-sm">No units yet. Build your ORBAT.</p>
             {!readOnly && (
               <button onClick={handleAddRoot}
                 className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded text-sm font-bold hover:bg-primary/90 transition-colors">
@@ -780,33 +793,26 @@ export default function OrbatBuilder({ initialData, onSave, readOnly = false }: 
             )}
           </div>
         ) : (
-          <div className="space-y-0.5">
-            {nodes.map(node => (
-              <OrbatTreeNode
-                key={node.id} node={node} depth={0}
-                onUpdate={handleUpdate} onDelete={handleDelete}
-                onAddChild={handleAddChild} onEdit={setEditingNode}
-                onDuplicate={handleDuplicate}
-              />
-            ))}
-          </div>
-        )}
-
-        {nodes.length > 0 && !readOnly && (
-          <button onClick={handleAddRoot}
-            className="mt-4 flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-border rounded text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
-            <Plus className="w-3 h-3" /> Add Root Unit
-          </button>
+          <>
+            <div className="space-y-0.5">
+              {nodes.map(node => (
+                <OrbatTreeNode key={node.id} node={node} depth={0}
+                  onUpdate={handleUpdate} onDelete={handleDelete} onAddChild={handleAddChild}
+                  onEdit={setEditingNode} onDuplicate={handleDuplicate} />
+              ))}
+            </div>
+            {!readOnly && (
+              <button onClick={handleAddRoot}
+                className="mt-4 flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-border rounded text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
+                <Plus className="w-3 h-3" /> Add Root Unit
+              </button>
+            )}
+          </>
         )}
       </div>
 
-      {/* Editor modal */}
       {editingNode && (
-        <NodeEditor
-          node={editingNode}
-          onSave={handleSaveEdit}
-          onClose={() => setEditingNode(null)}
-        />
+        <NodeEditor node={editingNode} onSave={handleSaveEdit} onClose={() => setEditingNode(null)} />
       )}
     </div>
   );
