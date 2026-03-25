@@ -120,8 +120,8 @@ function ReadinessGauge({ pct, status }: { pct: number; status: string }) {
 // ─── Capability Tier badge ─────────────────────────────────────────────────────
 const TIER_META: Record<string, { label: string; style: string }> = {
   "ELITE":       { label: "Elite SOF Capable",          style: "bg-green-500/15 border-green-400/60 text-green-300" },
-  "STRATEGIC":   { label: "Strategically Capable",      style: "bg-yellow-400/15 border-yellow-400/50 text-yellow-300" },
-  "OPERATIONAL": { label: "Operationally Capable",      style: "bg-amber-600/15 border-amber-500/50 text-amber-400" },
+  "STRATEGIC":   { label: "Strategically Capable",      style: "bg-emerald-600/15 border-emerald-500/50 text-emerald-400" },
+  "OPERATIONAL": { label: "Operationally Capable",      style: "bg-yellow-400/15 border-yellow-400/50 text-yellow-300" },
   "TACTICAL":    { label: "Tactically Capable",         style: "bg-orange-500/15 border-orange-500/50 text-orange-400" },
   "LIMITED":     { label: "Limited",                    style: "bg-red-500/15 border-red-500/50 text-red-400" },
 };
@@ -461,8 +461,8 @@ export default function MilsimGroup() {
                       ].map(t => (
                         <div key={t.tier} className={`flex items-start gap-3 p-3 rounded border transition-colors ${readiness.op_capability_tier === t.tier ? (
                             t.tier === "ELITE"   ? "border-green-400/40 bg-green-500/5" :
-                            t.tier === "STRATEGIC"  ? "border-yellow-400/40 bg-yellow-400/5" :
-                            t.tier === "OPERATIONAL" ? "border-amber-500/40 bg-amber-500/5" :
+                            t.tier === "STRATEGIC"  ? "border-emerald-500/40 bg-emerald-600/5" :
+                            t.tier === "OPERATIONAL" ? "border-yellow-400/40 bg-yellow-400/5" :
                             t.tier === "TACTICAL"  ? "border-red-500/40 bg-red-500/5" :
                             "border-red-900/40 bg-red-900/5"
                           ) : "border-transparent opacity-40"}`}>
