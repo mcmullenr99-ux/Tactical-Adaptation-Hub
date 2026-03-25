@@ -526,9 +526,11 @@ Deno.serve(async (req) => {
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
+      if (!body.name?.trim()) return Response.json({ error: 'name is required' }, { status: 400 });
       const op = await base44.asServiceRole.entities.MilsimOp.create({
         group_id: parts[0], name: body.name, description: body.description ?? null,
         game: body.game ?? null, status: 'active', created_by: full.id,
+        scheduled_at: new Date().toISOString(), participants: [],
       });
       return Response.json(op, { status: 201 });
     }
@@ -539,7 +541,19 @@ Deno.serve(async (req) => {
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
-      const updated = await base44.asServiceRole.entities.MilsimOp.update(parts[2], { status: 'completed' });
+      const body = await req.json().catch(() => ({}));
+      const updateData: any = { status: 'completed' };
+      if (Array.isArray(body.participants)) updateData.participants = body.participants;
+      const updated = await base44.asServiceRole.entities.MilsimOp.update(parts[2], updateData);
+      // Update roster ops_count for each participant
+      if (Array.isArray(body.participants) && body.participants.length > 0) {
+        await Promise.allSettled(body.participants.map(async (rosterId: string) => {
+          try {
+            const entry = await base44.asServiceRole.entities.MilsimRoster.get(rosterId);
+            if (entry) await base44.asServiceRole.entities.MilsimRoster.update(rosterId, { ops_count: (entry.ops_count ?? 0) + 1 });
+          } catch {}
+        }));
+      }
       return Response.json(updated);
     }
 

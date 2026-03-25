@@ -13,11 +13,11 @@
     "doc_type": {
       "type": "string",
       "enum": [
-        "SOP",
-        "TTP",
+        "Standard Operating Procedure",
+        "Tactics Techniques and Procedures",
+        "Field Manual",
         "Drill",
         "Reference",
-        "Rules of Engagement",
         "Other"
       ]
     },
@@ -46,7 +46,8 @@
       "type": "string"
     },
     "last_reviewed_at": {
-      "type": "string"
+      "type": "string",
+      "format": "date"
     },
     "is_current": {
       "type": "boolean",
@@ -57,8 +58,25 @@
     },
     "ai_summary": {
       "type": "string"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "upload",
+        "google_doc",
+        "apple_pages",
+        "link"
+      ],
+      "default": "upload"
+    },
+    "source_url": {
+      "type": "string",
+      "description": "URL for Google Doc or external link sources"
     }
   },
-  "required": [],
+  "required": [
+    "group_id",
+    "title"
+  ],
   "name": "TrainingDoc"
 }

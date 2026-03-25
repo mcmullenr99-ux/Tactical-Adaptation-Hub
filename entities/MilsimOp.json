@@ -22,12 +22,20 @@
       "enum": [
         "planned",
         "active",
+        "completed",
         "ended"
       ],
       "default": "planned"
     },
     "created_by": {
       "type": "string"
+    },
+    "participants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of roster entry IDs who participated"
     }
   },
   "required": [

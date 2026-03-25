@@ -25,21 +25,26 @@
     "outcome": {
       "type": "string",
       "enum": [
-        "victory",
-        "defeat",
-        "draw",
-        "training"
+        "Victory",
+        "Defeat",
+        "Partial Success",
+        "Inconclusive"
       ]
     },
     "lessons_learned": {
       "type": "string"
+    },
+    "participants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of roster entry IDs who participated"
     }
   },
   "required": [
     "group_id",
-    "author_id",
-    "title",
-    "content"
+    "title"
   ],
   "name": "MilsimAAR"
 }

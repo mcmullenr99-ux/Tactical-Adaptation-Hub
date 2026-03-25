@@ -279,53 +279,92 @@ function buildReadinessReport(params: {
     (aars.length > 0 ? Math.min(aarRatio, 1) : 0) * 10 +    // AAR culture (10pts)
     (training.knowledge_factor / 100) * 20;                  // training docs (20pts)
 
-  // Tier colour system: TIER I (platinum) > TIER II (gold) > TIER III (silver) > TIER IV (bronze) > FORMING
+  // T1=Elite(green) > T2=Operational(yellow) > T3=Capable(amber) > T4=Limited(red) > T5=Under Developed(dark red)
   const op_capability_tier =
-    opCapScore >= 80 ? 'TIER I'   :
-    opCapScore >= 60 ? 'TIER II'  :
-    opCapScore >= 40 ? 'TIER III' :
-    opCapScore >= 20 ? 'TIER IV'  : 'FORMING';
+    opCapScore >= 80 ? 'T1' :
+    opCapScore >= 60 ? 'T2' :
+    opCapScore >= 40 ? 'T3' :
+    opCapScore >= 20 ? 'T4' : 'T5';
 
   // ── FLAGS ─────────────────────────────────────────────────────────────────
   const flags: ReadinessFlag[] = [];
 
+  // Manpower
   if (capacity_grade === 'fireteam_incomplete') {
-    flags.push({ severity: 'red', code: 'CRITICAL_UNDERMANNED', label: 'Critical — Below Fireteam Strength', detail: `This unit has only ${total} member${total !== 1 ? 's' : ''}. A minimum fireteam requires 4 personnel.` });
+    flags.push({ severity: 'red', code: 'CRITICAL_UNDERMANNED', label: 'Critical — Below Fireteam Strength',
+      detail: 'Unit does not have enough personnel to form a minimum fireteam. No meaningful operation can be fielded at this strength.' });
   } else if (capacity_grade === 'squad_incomplete') {
-    flags.push({ severity: 'red', code: 'UNDERMANNED', label: 'Below Squad Strength', detail: `This unit has ${total} members — insufficient to form a complete squad (9+). Operational capacity is severely limited.` });
+    flags.push({ severity: 'red', code: 'UNDERMANNED', label: 'Below Squad Strength',
+      detail: 'Unit does not have enough personnel to form a complete squad. Operational capacity is severely limited.' });
   } else if (capacity_grade === 'section_force') {
-    flags.push({ severity: 'amber', code: 'LIMITED_STRENGTH', label: 'Section-Level Force Only', detail: `This unit fields ${total} members — above squad strength but below platoon size (30+). Adequate for small-scale operations.` });
+    flags.push({ severity: 'amber', code: 'LIMITED_STRENGTH', label: 'Section-Level Force Only',
+      detail: 'Unit is above squad strength but has not yet reached platoon size. Suitable for small-scale section operations only.' });
   }
 
+  // Discord
   if (!has_discord) {
-    flags.push({ severity: 'red', code: 'NO_DISCORD', label: 'No Discord Server Linked', detail: 'No Discord server linked. Discord activity is a primary indicator of organisational cohesion.' });
+    flags.push({ severity: 'red', code: 'NO_DISCORD', label: 'No Discord Server Linked',
+      detail: 'No Discord server is linked to this group. Discord is the primary coordination and communication hub for milsim units.' });
   }
 
+  // Activity
   if (activityRatio < 0.3 && total > 0) {
-    flags.push({ severity: 'red', code: 'HIGH_INACTIVITY', label: 'High Member Inactivity', detail: `Only ${active_this_month} of ${total} roster members (${Math.round(activityRatio * 100)}%) showed activity in the last 30 days.` });
+    flags.push({ severity: 'red', code: 'HIGH_INACTIVITY', label: 'High Member Inactivity',
+      detail: 'The majority of this unit's roster has shown no recent activity. This suggests roster bloat, unit stagnation, or unreported departures.' });
   } else if (activityRatio < 0.5 && total > 0) {
-    flags.push({ severity: 'amber', code: 'MODERATE_INACTIVITY', label: 'Moderate Inactivity', detail: `${active_this_month} of ${total} members (${Math.round(activityRatio * 100)}%) were active in the last 30 days.` });
+    flags.push({ severity: 'amber', code: 'MODERATE_INACTIVITY', label: 'Moderate Member Inactivity',
+      detail: 'Fewer than half of this unit's roster members have been recently active. Activity levels are below what is expected of an operational unit.' });
   }
 
+  // Page maintenance
   if (days_since_page_update !== null && days_since_page_update > 60) {
-    flags.push({ severity: 'amber', code: 'STALE_PAGE', label: 'Commander Not Maintaining Page', detail: `Group page has not been updated in ${days_since_page_update} days. Inactive command posture.` });
+    flags.push({ severity: 'amber', code: 'STALE_PAGE', label: 'Commander Not Maintaining Page',
+      detail: 'This group profile has not been updated in over 60 days. A stale page signals an absent command posture.' });
+  } else if (days_since_page_update !== null && days_since_page_update > 30) {
+    flags.push({ severity: 'amber', code: 'PAGE_AGEING', label: 'Group Page Ageing',
+      detail: 'This group profile has not been updated in over 30 days. Commanders should keep their unit page current.' });
   }
 
+  // Operations
   if (totalOps === 0) {
-    flags.push({ severity: 'amber', code: 'NO_OPS_HISTORY', label: 'No Operations Logged', detail: 'This unit has not logged any operations. Without an operational record there is no basis for assessing real combat readiness.' });
-  } else if (aarRatio < 0.2 && totalOps >= 3) {
-    flags.push({ severity: 'amber', code: 'POOR_AAR_DISCIPLINE', label: 'Low AAR Discipline', detail: `Only ${aars.length} AAR${aars.length !== 1 ? 's' : ''} filed for ${totalOps} operations — ${Math.round(aarRatio * 100)}% coverage. Units that don't document lessons learned fail to grow.` });
+    flags.push({ severity: 'amber', code: 'NO_OPS_HISTORY', label: 'No Operations Logged',
+      detail: 'This unit has no logged operations. Without an operational record there is no basis for assessing real combat readiness.' });
+  } else {
+    if (aarRatio < 0.2 && totalOps >= 3) {
+      flags.push({ severity: 'amber', code: 'POOR_AAR_DISCIPLINE', label: 'Low AAR Discipline',
+        detail: 'The majority of this unit's operations have no After Action Report. AAR discipline demonstrates that commanders learn from each engagement.' });
+    } else if (aarRatio < 0.5 && totalOps >= 2) {
+      flags.push({ severity: 'amber', code: 'WEAK_AAR_DISCIPLINE', label: 'Inconsistent AAR Discipline',
+        detail: 'Fewer than half of this unit's operations have an After Action Report filed. Consistent post-op documentation is expected of professional units.' });
+    }
+    if (days_since_last_op !== null && days_since_last_op > 45) {
+      flags.push({ severity: 'amber', code: 'OPS_DORMANT', label: 'No Recent Operations',
+        detail: 'This unit has not logged an operation in over 45 days. Extended inactivity suggests the unit may be dormant.' });
+    } else if (days_since_last_op !== null && days_since_last_op > 30) {
+      flags.push({ severity: 'amber', code: 'OPS_SLOWING', label: 'Operational Tempo Slowing',
+        detail: 'This unit has not logged an operation in over 30 days. Active units are expected to maintain regular operational tempo.' });
+    }
   }
 
-  if (days_since_last_op !== null && days_since_last_op > 45) {
-    flags.push({ severity: 'amber', code: 'OPS_DORMANT', label: 'No Recent Operations', detail: `Last operation was ${days_since_last_op} days ago. Active units should be running regular ops.` });
-  }
-
-  // Training-specific flags
+  // Training docs
   if (training.knowledge_grade === 'none') {
-    flags.push({ severity: 'amber', code: 'NO_TRAINING_DOCS', label: 'No Training Documentation Filed', detail: 'This unit has uploaded no training resources. SOPs, TTPs, and drill docs are key indicators of doctrinal knowledge.' });
+    flags.push({ severity: 'amber', code: 'NO_TRAINING_DOCS', label: 'No Training Documentation Filed',
+      detail: 'This unit has no training resources on file. Standard Operating Procedures, Tactics Techniques and Procedures, and drill documents are the primary evidence of a unit's knowledge base.' });
+  } else if (training.knowledge_grade === 'minimal') {
+    flags.push({ severity: 'amber', code: 'MINIMAL_TRAINING_DOCS', label: 'Training Documentation Insufficient',
+      detail: 'This unit has minimal training documentation. The knowledge base is insufficient to demonstrate credible doctrine.' });
   } else if (training.outdated_count > 0) {
-    flags.push({ severity: 'amber', code: 'STALE_TRAINING_DOCS', label: `${training.outdated_count} Training Doc${training.outdated_count !== 1 ? 's' : ''} Outdated`, detail: `${training.outdated_count} document${training.outdated_count !== 1 ? 's are' : ' is'} over 6 months since last review. Outdated doctrine can be worse than no doctrine.` });
+    flags.push({ severity: 'amber', code: 'STALE_TRAINING_DOCS', label: `${training.outdated_count} Training Doc${training.outdated_count !== 1 ? 's' : ''} Outdated`,
+      detail: 'Some of this unit's training documents have not been reviewed in over 6 months. Outdated doctrine reflects procedures that may no longer be current.' });
+  }
+
+  // Reputation
+  if (review_count === 0) {
+    flags.push({ severity: 'amber', code: 'NO_REPUTATION_DATA', label: 'No Peer Reputation Reviews',
+      detail: 'This unit has no peer reputation reviews. Without external validation from other commanders there is no basis for assessing peer standing.' });
+  } else if (review_count < 3) {
+    flags.push({ severity: 'amber', code: 'INSUFFICIENT_REPUTATION_DATA', label: 'Insufficient Reputation Sample',
+      detail: `Only ${review_count} peer reputation review${review_count !== 1 ? 's' : ''} on file. A minimum of 3 reviews is needed to properly assess this unit's community standing.` });
   }
 
   // ── NARRATIVE ─────────────────────────────────────────────────────────────
