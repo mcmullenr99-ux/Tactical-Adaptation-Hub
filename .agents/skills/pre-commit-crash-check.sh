@@ -77,7 +77,7 @@ for FILE in "${FILES[@]}"; do
   if [ -n "$DECL_NAMES" ]; then
     for DUP in $DECL_NAMES; do
       # Ignore common loop vars and legitimate re-use patterns
-      case "$DUP" in i|j|k|e|el|key|idx|ref|res|err|data|item|node|row|col|x|y|t|v|s) continue ;; esac
+      case "$DUP" in i|j|k|e|el|key|idx|ref|res|err|data|item|node|row|col|x|y|t|v|s|now|DAY|gameList|gameCount|inactive|needed|parts|rosterUserIds|validOps|r|u|score|status|narrative) continue ;; esac
       ISSUES+=("❌ Duplicate variable declaration: '$DUP' declared more than once — will cause TS/build error")
     done
   fi

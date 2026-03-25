@@ -79,6 +79,7 @@ interface ReadinessReport {
   flags: ReadinessFlag[];
   narrative: string;
   narrative_lines: string[];
+  narrative_items: { label: string; text: string; severity: 'green' | 'amber' | 'red' | 'neutral' }[];
 }
 
 // ─── ANTI-GAMING ENGINE ───────────────────────────────────────────────────────
@@ -664,62 +665,75 @@ function buildReadinessReport(params: {
       detail: `Only ${clean_review_count} independent reputation review${clean_review_count !== 1 ? 's' : ''} on file. Minimum 3 required for full points.` });
   }
 
-  const narrative_lines: string[] = [];
+  type NarrativeItem = { label: string; text: string; severity: 'green' | 'amber' | 'red' | 'neutral' };
+  const narrative_items: NarrativeItem[] = [];
 
   // Manpower line
   if (verifiedTotal === 0) {
-    narrative_lines.push(`${group.name ?? 'This unit'} has no verified roster members on record. Readiness cannot be assessed until personnel are added.`);
+    narrative_items.push({ label: 'Manpower', text: `${group.name ?? 'This unit'} has no verified roster members on record. Readiness cannot be assessed until personnel are added.`, severity: 'red' });
   } else {
-    const utilLabel = capacityGradeNew === 'full' ? 'at full strength' : capacityGradeNew === 'adequate' ? 'at adequate strength' : capacityGradeNew === 'minimal' ? 'below adequate strength' : 'critically undermanned';
-    narrative_lines.push(`${group.name ?? 'This unit'} is operating at ${utilPct}% of full strength for ${gameName} (${verifiedTotal}/${gameProfile.fullStrength} personnel).`);
+    const manpowerSev: NarrativeItem['severity'] = capacityGradeNew === 'full_strength' ? 'green' : capacityGradeNew === 'adequate' ? 'amber' : 'red';
+    narrative_items.push({ label: 'Manpower', text: `Operating at ${utilPct}% of full strength for ${gameName} (${verifiedTotal}/${gameProfile.fullStrength} personnel).`, severity: manpowerSev });
   }
 
   // Ops line
   if (validOpsCount === 0) {
-    narrative_lines.push('No verified operations on record.');
+    narrative_items.push({ label: 'Operations', text: 'No verified operations on record.', severity: 'red' });
   } else {
     const recencyNote = days_since_last_op !== null
       ? (days_since_last_op <= 14 ? `Most recent op ${days_since_last_op}d ago.` : days_since_last_op <= 30 ? `Last op ${days_since_last_op}d ago — tempo slowing.` : `Last op ${days_since_last_op}d ago — operationally dormant.`)
       : '';
     const aarNote = aarRatio >= 0.8 ? 'Excellent AAR discipline.' : aarRatio >= 0.5 ? `Inconsistent AAR coverage (${Math.round(aarRatio * 100)}%).` : `Poor AAR discipline — only ${Math.round(aarRatio * 100)}% of ops documented.`;
-    narrative_lines.push(`${validOpsCount} verified operation${validOpsCount !== 1 ? 's' : ''} on record. ${recencyNote} ${aarNote}`.trim());
+    const opsSev: NarrativeItem['severity'] = validOpsCount >= 8 && aarRatio >= 0.7 ? 'green' : validOpsCount >= 4 || aarRatio >= 0.5 ? 'amber' : 'red';
+    narrative_items.push({ label: 'Operations', text: `${validOpsCount} verified operation${validOpsCount !== 1 ? 's' : ''} on record. ${recencyNote} ${aarNote}`.trim(), severity: opsSev });
   }
 
   // Activity line (only if roster exists)
   if (verifiedTotal > 0) {
-    const actNote = activityRatio >= 0.8
+    const actSev: NarrativeItem['severity'] = activityRatio >= 0.6 ? 'green' : activityRatio >= 0.3 ? 'amber' : 'red';
+    const actText = activityRatio >= 0.8
       ? `High member activity — ${active_this_month}/${verifiedTotal} active in the last 30 days.`
       : activityRatio >= 0.5
       ? `Moderate activity — ${active_this_month}/${verifiedTotal} members active in the last 30 days.`
       : activityRatio >= 0.2
       ? `Low activity — only ${active_this_month}/${verifiedTotal} members active in the last 30 days.`
       : `Critical inactivity — ${active_this_month}/${verifiedTotal} members active in the last 30 days.`;
-    narrative_lines.push(actNote);
+    narrative_items.push({ label: 'Activity', text: actText, severity: actSev });
   }
 
   // Training line
-  narrative_lines.push(
-    training.knowledge_grade === 'none'
-      ? 'No training documentation on file.'
-      : `${training.doc_count} training resource${training.doc_count !== 1 ? 's' : ''} on file.` +
-        (training.excluded_thin_count > 0 ? ` (${training.excluded_thin_count} excluded as too thin.)` : '') +
-        ` Knowledge factor: ${training.knowledge_factor}/100. ${training.knowledge_detail}`
-  );
+  const trainingSev: NarrativeItem['severity'] = training.knowledge_grade === 'none' ? 'red' : training.knowledge_factor >= 60 ? 'green' : training.knowledge_factor >= 30 ? 'amber' : 'red';
+  const trainingText = training.knowledge_grade === 'none'
+    ? 'No training documentation on file.'
+    : `${training.doc_count} training resource${training.doc_count !== 1 ? 's' : ''} on file.` +
+      (training.excluded_thin_count > 0 ? ` (${training.excluded_thin_count} excluded as too thin.)` : '') +
+      ` Knowledge factor: ${training.knowledge_factor}/100. ${training.knowledge_detail}`;
+  narrative_items.push({ label: 'Training', text: trainingText, severity: trainingSev });
+
+  // Game breadth line
+  const gameBreadthSev: NarrativeItem['severity'] = gameCount >= 3 ? 'green' : gameCount >= 2 ? 'amber' : gameCount >= 1 ? 'neutral' : 'red';
+  const gameBreadthText = gameCount === 0
+    ? 'No games listed. Platform breadth cannot be assessed.'
+    : gameCount === 1
+    ? `Operates on 1 platform. Single-game unit.`
+    : `Operates across ${gameCount} platforms — mixed-force capability demonstrated.`;
+  narrative_items.push({ label: 'Platform Breadth', text: gameBreadthText, severity: gameBreadthSev });
 
   // Integrity line (only if not clean)
   if (ag.integrity_grade !== 'clean') {
-    narrative_lines.push(`Data integrity: ${ag.integrity_grade} (score ${ag.integrity_score}/100). Readiness figures should be interpreted with caution.`);
+    narrative_items.push({ label: 'Data Integrity', text: `Data integrity: ${ag.integrity_grade} (score ${ag.integrity_score}/100). Readiness figures should be interpreted with caution.`, severity: 'amber' });
   }
 
   // Overall verdict
-  if (status === 'green') {
-    narrative_lines.push('Overall assessment: READY. This unit meets the threshold for operational readiness.');
-  } else if (status === 'amber') {
-    narrative_lines.push(`Overall assessment: MARGINAL. Composite score ${readiness_pct}/100 — address flagged issues to reach GREEN status.`);
-  } else {
-    narrative_lines.push(`Overall assessment: NOT READY. Composite score ${readiness_pct}/100 — critical deficiencies must be resolved before this unit can be considered operational.`);
-  }
+  const verdictSev: NarrativeItem['severity'] = status === 'green' ? 'green' : status === 'amber' ? 'amber' : 'red';
+  const verdictText = status === 'green'
+    ? 'Overall assessment: READY. This unit meets the threshold for operational readiness.'
+    : status === 'amber'
+    ? `Overall assessment: MARGINAL. Composite score ${readiness_pct}/100 — address flagged issues to reach GREEN status.`
+    : `Overall assessment: NOT READY. Composite score ${readiness_pct}/100 — critical deficiencies must be resolved before this unit can be considered operational.`;
+  narrative_items.push({ label: 'Verdict', text: verdictText, severity: verdictSev });
 
+  const narrative_lines = narrative_items.map(n => n.text);
   const narrative = narrative_lines.join(' ');
 
   // Per-category scores for UI breakdown bars
@@ -743,7 +757,7 @@ function buildReadinessReport(params: {
     avg_rep_score, avg_experience, review_count: clean_review_count,
     has_discord, has_steam,
     op_capability_tier, op_cap_score: Math.round(opCapScore),
-    training, anti_gaming: ag, flags, narrative, narrative_lines,
+    training, anti_gaming: ag, flags, narrative, narrative_lines, narrative_items,
     score_breakdown: { manpower: manpowerPts, activity: activityPts, ops_history: opHistoryPts, op_recency: opRecencyPts, aar_discipline: aarPts, training_doctrine: trainingPts, game_breadth: gameBreadthPts, discord: discordPts, page_maintenance: pagePts, reputation: repPts, doctrine_bonus: doctrineBonusPts },
   };
 }
