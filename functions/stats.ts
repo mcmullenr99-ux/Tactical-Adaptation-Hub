@@ -505,7 +505,19 @@ function buildReadinessReport(params: {
   else if (clean_review_count >= 1 && avg_rep_score >= 50) score += 3;
   else if (clean_review_count >= 1)                        score += 1;
 
-  // MAX = 30+20+25+15+15+50+10+10+10 = 185 base
+  // Game Breadth (0–15): units that can field operators across multiple games demonstrate
+  // wider skillset flexibility and mixed-force capability.
+  const gameList = Array.isArray(group.games) ? group.games as string[] : group.games ? [group.games as string] : [];
+  const gameCount = gameList.length;
+  let gameBreadthPts = 0;
+  if      (gameCount >= 5) gameBreadthPts = 15;
+  else if (gameCount >= 4) gameBreadthPts = 12;
+  else if (gameCount >= 3) gameBreadthPts = 8;
+  else if (gameCount >= 2) gameBreadthPts = 4;
+  else if (gameCount >= 1) gameBreadthPts = 1;
+  score += gameBreadthPts;
+
+  // MAX = 30+20+25+15+15+50+10+10+10+15 = 200 base
   // Bonus 15pts: Doctrine Breadth Excellence — all 4 doc types present AND avg depth >= 70
   const doctrineBonusPts = (training.has_sop && training.has_ttp && training.has_roe && training.has_drill && training.avg_depth_score >= 70) ? 15 : 0;
   score += doctrineBonusPts;
@@ -711,6 +723,8 @@ function buildReadinessReport(params: {
   const narrative = narrative_lines.join(' ');
 
   // Per-category scores for UI breakdown bars
+  const gameListDisp   = Array.isArray(group.games) ? group.games as string[] : group.games ? [group.games as string] : [];
+  const gameBreadthPts = gameListDisp.length >= 5 ? 15 : gameListDisp.length >= 4 ? 12 : gameListDisp.length >= 3 ? 8 : gameListDisp.length >= 2 ? 4 : gameListDisp.length >= 1 ? 1 : 0;
   const manpowerPts   = manpowerScore(verifiedTotal, gameProfile);
   const activityPts   = activityRatio >= 0.8 ? 20 : activityRatio >= 0.6 ? 14 : activityRatio >= 0.4 ? 7 : activityRatio >= 0.2 ? 3 : 0;
   const opHistoryPts  = validOpsCount >= 25 ? 25 : validOpsCount >= 15 ? 18 : validOpsCount >= 8 ? 12 : validOpsCount >= 4 ? 6 : validOpsCount >= 1 ? 2 : 0;
@@ -732,7 +746,7 @@ function buildReadinessReport(params: {
     has_discord, has_steam,
     op_capability_tier, op_cap_score: Math.round(opCapScore),
     training, anti_gaming: ag, flags, narrative, narrative_lines,
-    score_breakdown: { manpower: manpowerPts, activity: activityPts, ops_history: opHistoryPts, op_recency: opRecencyPts, aar_discipline: aarPts, training_doctrine: trainingPts, discord: discordPts, page_maintenance: pagePts, reputation: repPts, doctrine_bonus: doctrineBonusPts },
+    score_breakdown: { manpower: manpowerPts, activity: activityPts, ops_history: opHistoryPts, op_recency: opRecencyPts, aar_discipline: aarPts, training_doctrine: trainingPts, game_breadth: gameBreadthPts, discord: discordPts, page_maintenance: pagePts, reputation: repPts, doctrine_bonus: doctrineBonusPts },
   };
 }
 

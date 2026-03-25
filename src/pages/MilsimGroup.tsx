@@ -119,8 +119,8 @@ function ReadinessGauge({ pct, status }: { pct: number; status: string }) {
 
 // ─── Capability Tier badge ─────────────────────────────────────────────────────
 const TIER_META: Record<string, { label: string; style: string }> = {
-  "SOF":         { label: "Special Operations Forces — SOF", style: "bg-purple-600/15 border-purple-500/50 text-purple-300" },
-  "SOC":         { label: "Special Operations Capable — SOC", style: "bg-green-500/15 border-green-400/60 text-green-300" },
+  "SOF":         { label: "Special Operations Forces",  style: "bg-purple-600/15 border-purple-500/50 text-purple-300" },
+  "SOC":         { label: "Special Operations Capable", style: "bg-green-500/15 border-green-400/60 text-green-300" },
   "STRATEGIC":   { label: "Strategically Capable",      style: "bg-emerald-600/15 border-emerald-500/50 text-emerald-400" },
   "OPERATIONAL": { label: "Operationally Capable",      style: "bg-yellow-400/15 border-yellow-400/50 text-yellow-300" },
   "TACTICAL":    { label: "Tactically Capable",         style: "bg-orange-500/15 border-orange-500/50 text-orange-400" },
@@ -130,8 +130,8 @@ const TIER_META: Record<string, { label: string; style: string }> = {
 function TierBadge({ tier }: { tier: string }) {
   const meta = TIER_META[tier] ?? { label: tier, style: "bg-border/30 border-border text-muted-foreground" };
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded border text-[10px] font-display font-bold uppercase tracking-widest ${meta.style}`}>
-      <Target className="w-2.5 h-2.5" /> {meta.label}
+    <span className={`inline-flex items-center justify-center gap-1 w-44 shrink-0 px-2 py-1 rounded border text-[10px] font-display font-bold uppercase tracking-widest text-center leading-tight ${meta.style}`}>
+      <Target className="w-2.5 h-2.5 shrink-0" /> {meta.label}
     </span>
   );
 }
@@ -453,35 +453,32 @@ export default function MilsimGroup() {
                   {/* Capability tier explanation */}
                   <div className="bg-card border border-border rounded-lg p-5">
                     <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Operational Capability Tier</p>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {[
-                        { tier: "SOF",         label: "Special Operations Forces — SOF",         desc: "The highest attainable designation. Elite multi-domain doctrine, near-perfect AAR discipline, and an exceptional operational record. Operates at the tip of the spear." },
-                        { tier: "SOC",         label: "Special Operations Capable — SOC",         desc: "Extensive op record, elite AAR discipline, and comprehensive multi-type training doctrine. Operates at special operations capable standard." },
-                        { tier: "STRATEGIC",   label: "Strategically Capable",                   desc: "Proven unit with strong operational output, solid reputation, and well-documented training resources across multiple doctrine types." },
-                        { tier: "OPERATIONAL", label: "Operationally Capable",                  desc: "Active unit with a consistent operational record and growing doctrine framework. Capable of executing standard mission types." },
-                        { tier: "TACTICAL",    label: "Tactically Capable",                     desc: "Building op history and operator experience. Some training doctrine in place. Unit is progressing toward operational readiness." },
-                        { tier: "LIMITED",     label: "Limited Capability",                     desc: "Minimal operational record and insufficient training documentation to meet baseline capability standards." },
-                        { tier: "POOR",        label: "Poor Capability",                         desc: "No established operational record, no doctrine, and no verified activity. Unit has not demonstrated any measurable capability." },
+                        { tier: "SOF",         label: "Special Operations Forces",    desc: "The highest attainable designation. Elite multi-domain doctrine, near-perfect AAR discipline, and an exceptional operational record. Operates at the tip of the spear." },
+                        { tier: "SOC",         label: "Special Operations Capable",   desc: "Extensive op record, elite AAR discipline, and comprehensive multi-type training doctrine. Operates at special operations capable standard." },
+                        { tier: "STRATEGIC",   label: "Strategically Capable",        desc: "Proven unit with strong operational output, solid reputation, and well-documented training resources across multiple doctrine types." },
+                        { tier: "OPERATIONAL", label: "Operationally Capable",        desc: "Active unit with a consistent operational record and growing doctrine framework. Capable of executing standard mission types." },
+                        { tier: "TACTICAL",    label: "Tactically Capable",           desc: "Building op history and operator experience. Some training doctrine in place. Unit is progressing toward operational readiness." },
+                        { tier: "LIMITED",     label: "Limited Capability",           desc: "Minimal operational record and insufficient training documentation to meet baseline capability standards." },
+                        { tier: "POOR",        label: "Poor Capability",              desc: "No established operational record, no doctrine, and no verified activity. Unit has not demonstrated any measurable capability." },
                       ].map(t => (
-                        <div key={t.tier} className={`flex items-start gap-3 p-3 rounded border transition-colors ${readiness.op_capability_tier === t.tier ? (
-                            t.tier === "SOF"     ? "border-purple-500/40 bg-purple-600/5" :
-                            t.tier === "SOC"     ? "border-green-400/40 bg-green-500/5" :
-                            t.tier === "STRATEGIC"  ? "border-emerald-500/40 bg-emerald-600/5" :
+                        <div key={t.tier} className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${readiness.op_capability_tier === t.tier ? (
+                            t.tier === "SOF"         ? "border-purple-500/40 bg-purple-600/5" :
+                            t.tier === "SOC"         ? "border-green-400/40 bg-green-500/5" :
+                            t.tier === "STRATEGIC"   ? "border-emerald-500/40 bg-emerald-600/5" :
                             t.tier === "OPERATIONAL" ? "border-yellow-400/40 bg-yellow-400/5" :
-                            t.tier === "TACTICAL"  ? "border-orange-500/40 bg-orange-500/5" :
-                            t.tier === "LIMITED"   ? "border-red-500/40 bg-red-500/5" :
+                            t.tier === "TACTICAL"    ? "border-orange-500/40 bg-orange-500/5" :
+                            t.tier === "LIMITED"     ? "border-red-500/40 bg-red-500/5" :
                             "border-red-900/40 bg-red-950/5"
                           ) : "border-transparent opacity-40"}`}>
                           <TierBadge tier={t.tier} />
-                          <div>
-                            <p className="text-xs font-display font-bold uppercase tracking-wider text-foreground">{t.label}</p>
-                            <p className="text-[10px] text-muted-foreground font-sans">{t.desc}</p>
-                          </div>
+                          <p className="text-[10px] text-muted-foreground font-sans leading-relaxed">{t.desc}</p>
                         </div>
                       ))}
                     </div>
                     <p className="text-[10px] text-muted-foreground font-sans mt-4 pt-3 border-t border-border">
-                      Tier is computed from operations logged, AAR discipline, average troop experience, troop utilisation (measured against the realistic full strength for your game), and training documentation depth. Win rate is not used — we can only assess what commanders actually log.
+                      Tier is computed from operations logged, AAR discipline, average troop experience, troop utilisation, training documentation depth, and game breadth — units that operate across multiple titles demonstrate wider mixed-force skillsets. Win rate is not used — we can only assess what commanders actually log.
                     </p>
                   </div>
                 </>
