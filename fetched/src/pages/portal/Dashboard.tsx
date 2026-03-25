@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { useAuth } from "@/components/auth/AuthContext";
-import { useGetInbox } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail, Clock, ShieldCheck, PenTool, CalendarDays, User, ChevronRight,
-  Megaphone, Star, Activity, AlertTriangle, CheckCircle2, CreditCard
+  Megaphone, Star, Activity, AlertTriangle, CheckCircle2, CreditCard, Crown
 } from "lucide-react";
 import { Link } from "wouter";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
@@ -53,7 +52,11 @@ function isAnniversary(createdAt: string) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { data: inbox } = useGetInbox();
+  const { data: inbox } = useQuery({
+    queryKey: ["inbox-unread"],
+    queryFn: () => apiFetch<any[]>("/api/messages/inbox").catch(() => []),
+    staleTime: 60_000,
+  });
   const qc = useQueryClient();
   const [dutyStatus, setDutyStatus] = useState((user as any)?.on_duty_status ?? "available");
   const [showDutyMenu, setShowDutyMenu] = useState(false);
@@ -350,6 +353,16 @@ export default function Dashboard() {
               <div>
                 <h3 className="font-display font-bold uppercase tracking-wider text-sm">Profile</h3>
                 <p className="text-xs font-sans text-muted-foreground">Edit your record</p>
+              </div>
+            </Link>
+
+            <Link href="/commander-pro" className="group bg-card border border-yellow-500/30 p-5 rounded clip-angled-sm hover:border-yellow-500/60 transition-colors flex items-center gap-4">
+              <div className="w-11 h-11 bg-yellow-500/10 flex items-center justify-center rounded group-hover:bg-yellow-500/20 text-yellow-400 transition-colors shrink-0">
+                <Crown className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-display font-bold uppercase tracking-wider text-sm text-yellow-400">Commander Pro</h3>
+                <p className="text-xs font-sans text-muted-foreground">Premium unit tools</p>
               </div>
             </Link>
 

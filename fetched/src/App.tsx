@@ -28,6 +28,7 @@ import UserPublicProfile from "@/pages/UserPublicProfile";
 // New Pages
 import ServiceCard from "@/pages/portal/ServiceCard";
 import Stats from "@/pages/Stats";
+import CommanderPro from "@/pages/CommanderPro";
 
 // Portal Pages
 import Login from "@/pages/portal/Login";
@@ -84,6 +85,7 @@ function Router() {
       <Route path="/portal/2fa" component={TwoFactorAuth} />
       <Route path="/portal/service-card" component={ServiceCard} />
       <Route path="/stats" component={Stats} />
+      <Route path="/commander-pro" component={CommanderPro} />
       <Route component={NotFound} />
     </Switch>
   );
