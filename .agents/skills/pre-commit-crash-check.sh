@@ -50,7 +50,7 @@ for FILE in "${FILES[@]}"; do
   done
 
   # CHECK 4: Lucide icons missing in v0.400
-  for ICON in IdCard CircleUser UserRoundCog SquareTerminal; do
+  for ICON in IdCard CircleUser UserRoundCog SquareTerminal Rocket; do
     if echo "$CONTENT" | grep -qE "import.*\b${ICON}\b.*lucide-react"; then
       ISSUES+=("❌ lucide icon '$ICON' missing in v0.400")
     fi
