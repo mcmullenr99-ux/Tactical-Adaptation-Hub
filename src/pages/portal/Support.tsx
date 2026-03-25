@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { LifeBuoy, MessageSquare, Plus, Star, ChevronRight, Clock, CheckCircle2, Loader2, Send } from "lucide-react";
+import { LifeBuoy, MessageSquare, Plus, Star, ChevronRight, Clock, CheckCircle2, Loader2, Send, Bug } from "lucide-react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -170,6 +170,9 @@ export default function Support() {
           <Button onClick={() => setShowFeedback(true)} variant="outline" size="sm" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800">
             <MessageSquare className="w-4 h-4 mr-1" /> Feedback
           </Button>
+          <Button onClick={() => { setNewTicket(p => ({ ...p, category: "bug", priority: "high" })); setShowNewTicket(true); }} size="sm" variant="outline" className="border-orange-700/50 text-orange-400 hover:bg-orange-900/20">
+            <Bug className="w-4 h-4 mr-1" /> Report Bug
+          </Button>
           <Button onClick={() => setShowNewTicket(true)} size="sm" className="bg-green-600 hover:bg-green-500">
             <Plus className="w-4 h-4 mr-1" /> New Ticket
           </Button>
@@ -194,7 +197,7 @@ export default function Support() {
                   <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${STATUS_COLORS[t.status]}`}>{t.status.replace("_", " ")}</span>
                   <span className={`text-xs px-2 py-0.5 rounded shrink-0 ${PRIORITY_COLORS[t.priority]}`}>{t.priority}</span>
                 </div>
-                <p className="text-xs text-zinc-500">{t.ticket_number} · {t.category} · {new Date(t.created_date).toLocaleDateString()}</p>
+                <p className="text-xs text-zinc-500">{t.ticket_number} · {t.category === "bug" ? <span className="text-orange-400">🐛 bug</span> : t.category} · {new Date(t.created_date).toLocaleDateString()}</p>
               </div>
               <ChevronRight className="w-4 h-4 text-zinc-600 shrink-0" />
             </div>

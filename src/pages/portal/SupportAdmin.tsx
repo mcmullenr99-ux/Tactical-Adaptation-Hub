@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import {
   LifeBuoy, MessageSquare, ChevronRight, Loader2, Send, Star,
-  CheckCircle2, Clock, AlertTriangle, BarChart3, Trash2, Eye
+  CheckCircle2, Clock, AlertTriangle, BarChart3, Trash2, Eye, Bug
 } from "lucide-react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 
@@ -182,6 +182,7 @@ export default function SupportAdmin() {
             { label: "In Progress", value: stats.tickets.in_progress, icon: <Loader2 className="w-4 h-4" />, color: "text-yellow-400" },
             { label: "Critical", value: stats.tickets.critical, icon: <AlertTriangle className="w-4 h-4" />, color: "text-red-400" },
             { label: "Unread FB", value: stats.feedback.unreviewed, icon: <Star className="w-4 h-4" />, color: "text-yellow-400" },
+            { label: "Bug Reports", value: tickets.filter(t => t.category === "bug").length, icon: <Bug className="w-4 h-4" />, color: "text-orange-400" },
           ].map(s => (
             <Card key={s.label} className="bg-zinc-900 border-zinc-800">
               <CardContent className="p-3 flex items-center gap-3">
@@ -196,11 +197,59 @@ export default function SupportAdmin() {
         </div>
       )}
 
-      <Tabs defaultValue="tickets">
+      <Tabs defaultValue="bugs">
         <TabsList className="bg-zinc-800 border-zinc-700">
-          <TabsTrigger value="tickets" className="data-[state=active]:bg-zinc-700">Tickets ({tickets.length})</TabsTrigger>
+          <TabsTrigger value="bugs" className="data-[state=active]:bg-zinc-700">
+            <Bug className="w-3.5 h-3.5 mr-1.5 text-orange-400" /> Bug Reports ({tickets.filter(t => t.category === "bug").length})
+          </TabsTrigger>
+          <TabsTrigger value="tickets" className="data-[state=active]:bg-zinc-700">All Tickets ({tickets.length})</TabsTrigger>
           <TabsTrigger value="feedback" className="data-[state=active]:bg-zinc-700">Feedback ({feedback.length})</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="bugs" className="space-y-3 mt-4">
+          {loading ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-zinc-500" /></div>
+          : tickets.filter(t => t.category === "bug").length === 0
+          ? (
+            <div className="text-center py-16 text-zinc-500">
+              <Bug className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">No bug reports yet</p>
+              <p className="text-sm mt-1">When users report bugs they'll appear here</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {tickets
+                .filter(t => t.category === "bug")
+                .sort((a: any, b: any) => {
+                  const pri: Record<string,number> = { critical: 0, high: 1, medium: 2, low: 3 };
+                  const sta: Record<string,number> = { open: 0, in_progress: 1, resolved: 2, closed: 3 };
+                  return (pri[a.priority] ?? 4) - (pri[b.priority] ?? 4) || (sta[a.status] ?? 4) - (sta[b.status] ?? 4);
+                })
+                .map((t: any) => (
+                  <div key={t.id} onClick={() => openTicket(t)}
+                    className={`flex items-center gap-4 p-4 rounded-lg cursor-pointer transition-all border ${
+                      t.priority === "critical" ? "bg-red-900/10 border-red-700/40 hover:border-red-500/60" :
+                      t.priority === "high" ? "bg-orange-900/10 border-orange-700/30 hover:border-orange-500/50" :
+                      "bg-zinc-900 border-zinc-800 hover:border-zinc-600"
+                    }`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        {t.priority === "critical" && <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded animate-pulse">🔴 CRITICAL</span>}
+                        {t.priority === "high" && <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded">🟠 HIGH</span>}
+                        {t.priority === "medium" && <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded">🔵 MEDIUM</span>}
+                        {t.priority === "low" && <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-zinc-500/20 text-zinc-400 border border-zinc-500/30 rounded">⚪ LOW</span>}
+                        <p className="font-medium text-white text-sm truncate">{t.subject}</p>
+                        <span className={`text-xs px-2 py-0.5 rounded border shrink-0 ${STATUS_COLORS[t.status]}`}>{t.status.replace("_"," ")}</span>
+                      </div>
+                      <p className="text-xs text-zinc-500">{t.ticket_number} · {t.username} · opened {new Date(t.created_date).toLocaleDateString()}</p>
+                      {t.description && <p className="text-xs text-zinc-400 mt-1 truncate">{t.description}</p>}
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-zinc-600 shrink-0" />
+                  </div>
+                ))
+              }
+            </div>
+          )}
+        </TabsContent>
 
         <TabsContent value="tickets" className="space-y-3 mt-4">
           <div className="flex gap-2">
