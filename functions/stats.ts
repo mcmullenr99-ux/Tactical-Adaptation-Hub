@@ -44,6 +44,8 @@ interface ReadinessReport {
   active_this_week: number;
   active_this_month: number;
   capacity_grade: 'fireteam_incomplete' | 'squad_incomplete' | 'section_force' | 'platoon_plus';
+  capacity_utilisation_pct: number;
+  game_profile: { game: string; fullStrength: number; adequate: number; minimal: number; label: string; category: string };
   total_ops: number;
   completed_ops: number;
   days_since_last_op: number | null;
@@ -164,6 +166,85 @@ function assessTrainingDocs(docs: any[]): TrainingAssessment {
   };
 }
 
+
+// ─── Game-aware capacity profiles ─────────────────────────────────────────────
+// For each game we define realistic max squad/unit sizes and the thresholds that
+// define "full", "adequate", and "undermanned" for that game's context.
+// This replaces fixed NATO echelon thresholds (which only make sense for large-format games).
+
+interface GameCapacityProfile {
+  game: string;
+  maxSquadSize: number;    // realistic max operating unit size for this game
+  fullStrength: number;    // members needed to be considered "full strength" (100%)
+  adequate: number;        // minimum for meaningful ops — "adequate" grade
+  minimal: number;         // bare minimum — "minimal" grade (below = undermanned)
+  label: string;           // what "full strength" looks like in this game's context
+  category: 'large_format' | 'squad_tactical' | 'small_unit' | 'solo_coop';
+}
+
+const GAME_CAPACITY_PROFILES: Record<string, GameCapacityProfile> = {
+  // Large-format: platoon/company level ops, 30-50 players
+  "Arma 3":              { game: "Arma 3",              maxSquadSize: 50, fullStrength: 30, adequate: 15, minimal: 6,  label: "Platoon Strength (30+)",    category: 'large_format'   },
+  "Arma Reforger":       { game: "Arma Reforger",        maxSquadSize: 40, fullStrength: 25, adequate: 12, minimal: 6,  label: "Platoon Strength (25+)",    category: 'large_format'   },
+  "Hell Let Loose":      { game: "Hell Let Loose",       maxSquadSize: 50, fullStrength: 30, adequate: 15, minimal: 6,  label: "Platoon Strength (30+)",    category: 'large_format'   },
+  "Post Scriptum":       { game: "Post Scriptum",        maxSquadSize: 40, fullStrength: 25, adequate: 12, minimal: 6,  label: "Platoon Strength (25+)",    category: 'large_format'   },
+  "Foxhole":             { game: "Foxhole",              maxSquadSize: 80, fullStrength: 40, adequate: 20, minimal: 8,  label: "Company Strength (40+)",    category: 'large_format'   },
+
+  // Squad-tactical: team/section level, 9-25 players
+  "Squad":               { game: "Squad",                maxSquadSize: 50, fullStrength: 18, adequate: 9,  minimal: 4,  label: "Section Strength (18+)",    category: 'squad_tactical' },
+  "Insurgency: Sandstorm":{ game: "Insurgency: Sandstorm",maxSquadSize: 20, fullStrength: 12, adequate: 6,  minimal: 3,  label: "Squad Strength (12+)",      category: 'squad_tactical' },
+  "Ground Branch":       { game: "Ground Branch",        maxSquadSize: 10, fullStrength: 8,  adequate: 4,  minimal: 2,  label: "Team Strength (8+)",        category: 'squad_tactical' },
+  "GHPC":                { game: "GHPC",                 maxSquadSize: 16, fullStrength: 8,  adequate: 4,  minimal: 2,  label: "Crew/Section Strength (8+)",category: 'squad_tactical' },
+  "DCS World":           { game: "DCS World",            maxSquadSize: 16, fullStrength: 8,  adequate: 4,  minimal: 2,  label: "Flight/Element Strength (8+)", category: 'squad_tactical' },
+
+  // Small-unit: fireteam/buddy level, 2-8 players
+  "Ready or Not":        { game: "Ready or Not",         maxSquadSize: 5,  fullStrength: 5,  adequate: 3,  minimal: 2,  label: "Full Team (5)",             category: 'small_unit'    },
+  "Escape from Tarkov":  { game: "Escape from Tarkov",   maxSquadSize: 5,  fullStrength: 5,  adequate: 3,  minimal: 2,  label: "Full Squad (5)",            category: 'small_unit'    },
+
+  // Fallback for "Other" or unrecognised games — use mild thresholds
+  "Other":               { game: "Other",                maxSquadSize: 20, fullStrength: 12, adequate: 6,  minimal: 3,  label: "Squad Strength (12+)",      category: 'squad_tactical' },
+};
+
+const DEFAULT_PROFILE = GAME_CAPACITY_PROFILES["Other"];
+
+function getCapacityProfile(games: string[] | string | undefined): GameCapacityProfile {
+  if (!games) return DEFAULT_PROFILE;
+  const gameList = Array.isArray(games) ? games : [games];
+  if (gameList.length === 0) return DEFAULT_PROFILE;
+
+  // If multiple games: pick the one with the highest fullStrength (most demanding standard)
+  // This prevents a group from gaming the system by listing a small-unit game alongside a large one
+  let best: GameCapacityProfile | null = null;
+  for (const g of gameList) {
+    const profile = GAME_CAPACITY_PROFILES[g];
+    if (profile && (!best || profile.fullStrength > best.fullStrength)) {
+      best = profile;
+    }
+  }
+  return best ?? DEFAULT_PROFILE;
+}
+
+// Capacity grade relative to game profile
+type CapacityGrade = 'full_strength' | 'adequate' | 'minimal' | 'undermanned';
+
+function getCapacityGrade(total: number, profile: GameCapacityProfile): CapacityGrade {
+  if (total >= profile.fullStrength) return 'full_strength';
+  if (total >= profile.adequate)     return 'adequate';
+  if (total >= profile.minimal)      return 'minimal';
+  return 'undermanned';
+}
+
+// Manpower score 0–20 based on % utilisation of game-appropriate full strength
+function manpowerScore(total: number, profile: GameCapacityProfile): number {
+  const utilisation = Math.min(total / profile.fullStrength, 1.0);
+  // Full utilisation = 20pts, scaling smoothly
+  // Also give partial credit at adequate/minimal thresholds
+  if (utilisation >= 1.0) return 20;
+  if (utilisation >= (profile.adequate / profile.fullStrength)) return Math.round(10 + (utilisation - (profile.adequate / profile.fullStrength)) / (1 - (profile.adequate / profile.fullStrength)) * 10);
+  if (utilisation >= (profile.minimal / profile.fullStrength)) return Math.round(4 + (utilisation - (profile.minimal / profile.fullStrength)) / ((profile.adequate / profile.fullStrength) - (profile.minimal / profile.fullStrength)) * 6);
+  return Math.round(utilisation / (profile.minimal / profile.fullStrength) * 4);
+}
+
 function buildReadinessReport(params: {
   roster: any[]; ops: any[]; aars: any[];
   repReviews: any[]; group: any; trainingDocs: any[];
@@ -176,11 +257,17 @@ function buildReadinessReport(params: {
   const active_this_week  = roster.filter((r: any) => r.updated_date && (now - new Date(r.updated_date).getTime()) < 7 * DAY).length;
   const active_this_month = roster.filter((r: any) => r.updated_date && (now - new Date(r.updated_date).getTime()) < 30 * DAY).length;
 
+  // ── Game-aware capacity ────────────────────────────────────────────────────
+  const gameProfile = getCapacityProfile(group.games ?? group.game);
+  const capacityGradeNew = getCapacityGrade(total, gameProfile);
+  const utilPct = Math.round(Math.min(total / gameProfile.fullStrength, 1.0) * 100);
+
+  // Keep legacy capacity_grade for backward compat with front-end display
   const capacity_grade: ReadinessReport['capacity_grade'] =
-    total < 4  ? 'fireteam_incomplete' :
-    total < 9  ? 'squad_incomplete'    :
-    total < 30 ? 'section_force'       :
-                 'platoon_plus';
+    capacityGradeNew === 'full_strength' ? 'platoon_plus' :
+    capacityGradeNew === 'adequate'      ? 'section_force' :
+    capacityGradeNew === 'minimal'       ? 'squad_incomplete' :
+                                           'fireteam_incomplete';
 
   const totalOps     = ops.length;
   const completedOps = ops.filter((o: any) => o.status === 'completed').length;
@@ -227,12 +314,9 @@ function buildReadinessReport(params: {
 
   const activityRatio = total > 0 ? active_this_month / total : 0;
 
-  // 1. MANPOWER (max 20pts) ─────────────────────────────────────────────────
-  // Platoon+ (30+): 20 | Section (9–29): 10 | Squad incomplete (4–8): 4 | <4: 0
-  if      (capacity_grade === 'platoon_plus')      score += 20;
-  else if (capacity_grade === 'section_force')     score += 10;
-  else if (capacity_grade === 'squad_incomplete')  score += 4;
-  // fireteam_incomplete = 0pts
+  // 1. MANPOWER (max 20pts) — game-aware, based on % utilisation of game's full strength
+  // A 5-man Tarkov team scores the same as a 30-man Arma platoon IF both are at full strength.
+  score += manpowerScore(total, gameProfile);
 
   // 2. MEMBER ACTIVITY (max 15pts) ──────────────────────────────────────────
   // Requires >50% active last 30 days to earn meaningful points
@@ -291,9 +375,9 @@ function buildReadinessReport(params: {
   const readiness_pct = Math.min(100, Math.max(0, Math.round(score)));
 
   // Green requires 75+, amber 45–74, red <45
-  // Also force red if below squad strength regardless of score
+  // Force red if undermanned for the game context (not absolute fireteam threshold)
   const status: ReadinessReport['status'] =
-    (capacity_grade === 'fireteam_incomplete' || capacity_grade === 'squad_incomplete') ? 'red' :
+    capacityGradeNew === 'undermanned' ? 'red' :
     readiness_pct >= 75 ? 'green' :
     readiness_pct >= 45 ? 'amber' : 'red';
 
@@ -302,7 +386,7 @@ function buildReadinessReport(params: {
   const opCapScore =
     (Math.min(totalOps, 20) / 20) * 30 +                    // op history (30pts)
     (avg_experience / 10) * 25 +                             // avg troop experience (25pts)
-    (Math.min(total, 50) / 50) * 15 +                        // troop count (15pts)
+    (Math.min(utilPct, 100) / 100) * 15 +                    // troop utilisation vs game standard (15pts)
     (aars.length > 0 ? Math.min(aarRatio, 1) : 0) * 10 +    // AAR culture (10pts)
     (training.knowledge_factor / 100) * 20;                  // training docs (20pts)
 
@@ -316,19 +400,24 @@ function buildReadinessReport(params: {
   // ── FLAGS ─────────────────────────────────────────────────────────────────
   const flags: ReadinessFlag[] = [];
 
-  // 1. Manpower
-  if (capacity_grade === 'fireteam_incomplete') {
-    const needed = 4 - total;
-    flags.push({ severity: 'red', code: 'CRITICAL_UNDERMANNED', label: 'Critical — Below Fireteam Strength',
-      detail: `This unit has only ${total} member${total !== 1 ? 's' : ''} on roster — ${needed} short of a minimum fireteam (4). No meaningful operation can be assessed at this strength. Scoring 0/20 on manpower, directly capping composite readiness.` });
-  } else if (capacity_grade === 'squad_incomplete') {
-    const needed = 9 - total;
-    flags.push({ severity: 'red', code: 'UNDERMANNED', label: 'Below Squad Strength',
-      detail: `This unit has ${total} roster members — ${needed} short of a full squad (9). Below squad strength forces Red status regardless of all other scores, and earns only 4/20 manpower points. Operational capacity is limited to individual-level tasks only.` });
-  } else if (capacity_grade === 'section_force') {
-    const needed = 30 - total;
-    flags.push({ severity: 'amber', code: 'LIMITED_STRENGTH', label: 'Section-Level Force Only',
-      detail: `This unit fields ${total} members — ${needed} short of platoon size (30+). Earning 10/20 manpower points. Adequate for small-scale section operations but lacking the depth for sustained platoon-level engagements. Recruiting ${needed} more members would unlock the full 20 manpower points.` });
+  // 1. Manpower — game-context-aware flags
+  {
+    const gameName = Array.isArray(group.games) ? (group.games as string[]).join(', ') : (group.games ?? 'your game');
+    const mPts = manpowerScore(total, gameProfile);
+    if (capacityGradeNew === 'undermanned') {
+      const needed = gameProfile.minimal - total;
+      flags.push({ severity: 'red', code: 'CRITICAL_UNDERMANNED', label: `Undermanned for ${gameName}`,
+        detail: `This unit has only ${total} member${total !== 1 ? 's' : ''} on roster. For ${gameName}, the minimum for meaningful ops is ${gameProfile.minimal} — ${needed} short. No meaningful operation can be assessed at this strength. Scoring ${mPts}/20 on manpower.` });
+    } else if (capacityGradeNew === 'minimal') {
+      const needed = gameProfile.adequate - total;
+      flags.push({ severity: 'red', code: 'UNDERMANNED', label: `Below Adequate Strength for ${gameName}`,
+        detail: `This unit has ${total} roster member${total !== 1 ? 's' : ''} — ${needed} short of adequate strength for ${gameName} (${gameProfile.adequate}+). Earning ${mPts}/20 on manpower. Operational capacity is limited. Recruit ${needed} more to reach the adequate threshold.` });
+    } else if (capacityGradeNew === 'adequate') {
+      const needed = gameProfile.fullStrength - total;
+      flags.push({ severity: 'amber', code: 'LIMITED_STRENGTH', label: `Adequate but Below Full Strength for ${gameName}`,
+        detail: `This unit fields ${total} member${total !== 1 ? 's' : ''} — ${needed} short of full strength for ${gameName} (${gameProfile.fullStrength}). Earning ${mPts}/20 on manpower (${utilPct}% utilisation). ${gameProfile.label} would unlock the full 20 manpower points.` });
+    }
+    // full_strength = no flag
   }
 
   // 2. Discord
@@ -418,6 +507,8 @@ function buildReadinessReport(params: {
 
   return {
     status, readiness_pct, total, active_this_week, active_this_month, capacity_grade,
+    capacity_utilisation_pct: utilPct,
+    game_profile: { game: gameProfile.game, fullStrength: gameProfile.fullStrength, adequate: gameProfile.adequate, minimal: gameProfile.minimal, label: gameProfile.label, category: gameProfile.category },
     total_ops: totalOps, completed_ops: completedOps,
     days_since_last_op, days_since_last_aar, days_since_last_training, days_since_page_update,
     avg_rep_score, avg_experience, review_count,

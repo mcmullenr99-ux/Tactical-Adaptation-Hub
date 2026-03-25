@@ -40,6 +40,8 @@ interface ReadinessData {
   readiness_pct: number; status: string;
   total_ops: number; completed_ops: number;
   capacity_grade: string;
+  capacity_utilisation_pct: number;
+  game_profile: { game: string; fullStrength: number; adequate: number; minimal: number; label: string; category: string };
   days_since_last_op: number | null;
   days_since_last_aar: number | null;
   days_since_page_update: number | null;
@@ -396,7 +398,7 @@ export default function MilsimGroup() {
                   {/* Stat grid — no win rate (removed per design spec) */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {[
-                      { label: "Troop Strength",    value: readiness.total,                                              icon: Users,     sub: `${readiness.active_this_month} active 30d` },
+                      { label: "Troop Strength",    value: `${readiness.total}${ readiness.game_profile ? ` / ${readiness.game_profile.fullStrength}` : ''}`,    icon: Users,     sub: readiness.game_profile ? `${readiness.capacity_utilisation_pct}% utilisation · ${readiness.active_this_month} active 30d` : `${readiness.active_this_month} active 30d` },
                       { label: "Ops Logged",         value: readiness.total_ops,                                          icon: Crosshair, sub: `${readiness.completed_ops} completed` },
                       { label: "Last Op",            value: readiness.days_since_last_op !== null ? `${readiness.days_since_last_op}d ago` : "Never", icon: Target,    sub: "days since last operation" },
                       { label: "Avg Rep Score",      value: readiness.avg_rep_score > 0 ? readiness.avg_rep_score : "—", icon: Star,      sub: `${readiness.review_count} review${readiness.review_count !== 1 ? "s" : ""}` },
@@ -473,7 +475,7 @@ export default function MilsimGroup() {
                       ))}
                     </div>
                     <p className="text-[10px] text-muted-foreground font-sans mt-4 pt-3 border-t border-border">
-                      Tier is computed from operations logged, AAR discipline, average troop experience, member count, and training documentation depth. Win rate is not used — we can only assess what commanders actually log.
+                      Tier is computed from operations logged, AAR discipline, average troop experience, troop utilisation (measured against the realistic full strength for your game), and training documentation depth. Win rate is not used — we can only assess what commanders actually log.
                     </p>
                   </div>
                 </>
