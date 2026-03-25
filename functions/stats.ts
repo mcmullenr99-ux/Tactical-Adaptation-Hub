@@ -627,9 +627,61 @@ function buildReadinessReport(params: {
   }
 
   const narrative_lines: string[] = [];
-  if (status === 'green') narrative_lines.push('Overall this unit demonstrates solid readiness indicators. Active, organised, and maintaining a verified operational record.');
-  else narrative_lines.push('Based on available data, this unit does not currently meet the threshold for operational readiness.');
-  if (training.knowledge_grade !== 'none') narrative_lines.push(training.knowledge_detail);
+
+  // Manpower line
+  if (verifiedTotal === 0) {
+    narrative_lines.push(`${group.name ?? 'This unit'} has no verified roster members on record. Readiness cannot be assessed until personnel are added.`);
+  } else {
+    const utilLabel = capacityGradeNew === 'full' ? 'at full strength' : capacityGradeNew === 'adequate' ? 'at adequate strength' : capacityGradeNew === 'minimal' ? 'below adequate strength' : 'critically undermanned';
+    narrative_lines.push(`${group.name ?? 'This unit'} is operating at ${utilPct}% of full strength for ${gameName} (${verifiedTotal}/${gameProfile.fullStrength} personnel).`);
+  }
+
+  // Ops line
+  if (validOpsCount === 0) {
+    narrative_lines.push('No verified operations on record.');
+  } else {
+    const recencyNote = days_since_last_op !== null
+      ? (days_since_last_op <= 14 ? `Most recent op ${days_since_last_op}d ago.` : days_since_last_op <= 30 ? `Last op ${days_since_last_op}d ago — tempo slowing.` : `Last op ${days_since_last_op}d ago — operationally dormant.`)
+      : '';
+    const aarNote = aarRatio >= 0.8 ? 'Excellent AAR discipline.' : aarRatio >= 0.5 ? `Inconsistent AAR coverage (${Math.round(aarRatio * 100)}%).` : `Poor AAR discipline — only ${Math.round(aarRatio * 100)}% of ops documented.`;
+    narrative_lines.push(`${validOpsCount} verified operation${validOpsCount !== 1 ? 's' : ''} on record. ${recencyNote} ${aarNote}`.trim());
+  }
+
+  // Activity line (only if roster exists)
+  if (verifiedTotal > 0) {
+    const actNote = activityRatio >= 0.8
+      ? `High member activity — ${active_this_month}/${verifiedTotal} active in the last 30 days.`
+      : activityRatio >= 0.5
+      ? `Moderate activity — ${active_this_month}/${verifiedTotal} members active in the last 30 days.`
+      : activityRatio >= 0.2
+      ? `Low activity — only ${active_this_month}/${verifiedTotal} members active in the last 30 days.`
+      : `Critical inactivity — ${active_this_month}/${verifiedTotal} members active in the last 30 days.`;
+    narrative_lines.push(actNote);
+  }
+
+  // Training line
+  narrative_lines.push(
+    training.knowledge_grade === 'none'
+      ? 'No training documentation on file.'
+      : `${training.doc_count} training resource${training.doc_count !== 1 ? 's' : ''} on file.` +
+        (training.excluded_thin_count > 0 ? ` (${training.excluded_thin_count} excluded as too thin.)` : '') +
+        ` Knowledge factor: ${training.knowledge_factor}/100. ${training.knowledge_detail}`
+  );
+
+  // Integrity line (only if not clean)
+  if (ag.integrity_grade !== 'clean') {
+    narrative_lines.push(`Data integrity: ${ag.integrity_grade} (score ${ag.integrity_score}/100). Readiness figures should be interpreted with caution.`);
+  }
+
+  // Overall verdict
+  if (status === 'green') {
+    narrative_lines.push('Overall assessment: READY. This unit meets the threshold for operational readiness.');
+  } else if (status === 'amber') {
+    narrative_lines.push(`Overall assessment: MARGINAL. Composite score ${readiness_pct}/100 — address flagged issues to reach GREEN status.`);
+  } else {
+    narrative_lines.push(`Overall assessment: NOT READY. Composite score ${readiness_pct}/100 — critical deficiencies must be resolved before this unit can be considered operational.`);
+  }
+
   const narrative = narrative_lines.join(' ');
 
   // Per-category scores for UI breakdown bars
