@@ -1479,7 +1479,7 @@ function BriefingsTab({ group, showMsg }: any) {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const emptyForm = { title: "", op_date: "", ao: "", objectives: "", comms_plan: "", roe: "", additional_notes: "", status: "draft" };
+  const emptyForm = { title: "", op_date: "", ao: "", objectives: "", comms_plan: "", additional_notes: "", status: "draft" };
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);

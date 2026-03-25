@@ -72,7 +72,22 @@ Deno.serve(async (req) => {
     // GET / — list approved groups
     if (method === 'GET' && parts.length === 0) {
       const all = await base44.asServiceRole.entities.MilsimGroup.list();
-      return Response.json(all.filter((g: any) => g.status === 'approved' || g.status === 'featured'));
+      const visible = all.filter((g: any) => g.status === 'approved' || g.status === 'featured');
+      // Normalise snake_case → camelCase so frontend filters work
+      const normalised = visible.map((g: any) => ({
+        ...g,
+        unitType:     g.unit_type     ?? g.unitType     ?? null,
+        tagLine:      g.tag_line      ?? g.tagLine      ?? null,
+        discordUrl:   g.discord_url   ?? g.discordUrl   ?? null,
+        websiteUrl:   g.website_url   ?? g.websiteUrl   ?? null,
+        steamGroupUrl:g.steam_group_url ?? g.steamGroupUrl ?? null,
+        logoUrl:      g.logo_url      ?? g.logoUrl      ?? null,
+        streamUrl:    g.stream_url    ?? g.streamUrl    ?? null,
+        lastPageUpdate: g.last_page_update ?? g.lastPageUpdate ?? null,
+        lastOpDate:   g.last_op_date  ?? g.lastOpDate   ?? null,
+        lastAarDate:  g.last_aar_date ?? g.lastAarDate  ?? null,
+      }));
+      return Response.json(normalised);
     }
 
     // GET /mine/own
@@ -580,12 +595,15 @@ Deno.serve(async (req) => {
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
+      if (!body.op_name?.trim()) return Response.json({ error: 'op_name required' }, { status: 400 });
       const aar = await base44.asServiceRole.entities.MilsimAAR.create({
-        group_id: parts[0], op_id: body.opId ?? null, op_name: body.opName ?? null,
-        author_id: full.id, author_username: full.username,
-        title: body.title, content: body.content,
-        outcome: body.outcome ?? null, lessons_learned: body.lessonsLearned ?? null,
+        group_id: parts[0], op_id: body.op_id ?? null, op_name: body.op_name,
+        author_id: full.id, author_username: full.username ?? full.email,
+        title: body.op_name, content: body.summary ?? null,
+        outcome: body.outcome ?? null, lessons_learned: body.recommendations ?? null,
+        participants: Array.isArray(body.participants) ? body.participants : [],
       });
+      await base44.asServiceRole.entities.MilsimGroup.update(parts[0], { last_aar_date: new Date().toISOString() }).catch(() => {});
       return Response.json(aar, { status: 201 });
     }
 
@@ -596,10 +614,15 @@ Deno.serve(async (req) => {
       if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
       const updates: Record<string, any> = {};
-      if (body.title !== undefined) updates.title = body.title;
-      if (body.content !== undefined) updates.content = body.content;
-      if (body.outcome !== undefined) updates.outcome = body.outcome;
-      if (body.lessonsLearned !== undefined) updates.lessons_learned = body.lessonsLearned;
+      if (body.op_name !== undefined) updates.op_name = body.op_name;
+      if (body.summary !== undefined) updates.content = body.summary;
+      if (body.objectives_hit !== undefined) updates.objectives_hit = body.objectives_hit;
+      if (body.objectives_missed !== undefined) updates.objectives_missed = body.objectives_missed;
+      if (body.casualties !== undefined) updates.casualties = body.casualties;
+      if (body.commendations !== undefined) updates.commendations = body.commendations;
+      if (body.recommendations !== undefined) updates.lessons_learned = body.recommendations;
+      if (body.classification !== undefined) updates.classification = body.classification;
+      if (Array.isArray(body.participants)) updates.participants = body.participants;
       const updated = await base44.asServiceRole.entities.MilsimAAR.update(parts[2], updates);
       return Response.json(updated);
     }
@@ -628,9 +651,22 @@ Deno.serve(async (req) => {
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
+      if (!body.title?.trim()) return Response.json({ error: 'title required' }, { status: 400 });
+      // Build structured content from form fields
+      const contentParts: string[] = [];
+      if (body.ao) contentParts.push(`**Area of Operations:** ${body.ao}`);
+      if (body.objectives) contentParts.push(`**Objectives:**
+${body.objectives}`);
+      if (body.comms_plan) contentParts.push(`**Comms Plan:**
+${body.comms_plan}`);
+      if (body.additional_notes) contentParts.push(`**Additional Notes:**
+${body.additional_notes}`);
+      const content = body.content ?? contentParts.join('
+
+');
       const briefing = await base44.asServiceRole.entities.MilsimBriefing.create({
-        group_id: parts[0], op_id: body.opId ?? null, title: body.title, content: body.content,
-        classification: body.classification ?? 'unclassified', created_by: full.id,
+        group_id: parts[0], op_id: body.op_id ?? null, title: body.title.trim(),
+        content, classification: body.classification ?? 'unclassified', created_by: full.id,
       });
       return Response.json(briefing, { status: 201 });
     }
@@ -643,8 +679,23 @@ Deno.serve(async (req) => {
       const body = await req.json().catch(() => ({}));
       const updates: Record<string, any> = {};
       if (body.title !== undefined) updates.title = body.title;
-      if (body.content !== undefined) updates.content = body.content;
       if (body.classification !== undefined) updates.classification = body.classification;
+      // Rebuild content from fields if present
+      if (body.content !== undefined) {
+        updates.content = body.content;
+      } else {
+        const contentParts: string[] = [];
+        if (body.ao) contentParts.push(`**Area of Operations:** ${body.ao}`);
+        if (body.objectives) contentParts.push(`**Objectives:**
+${body.objectives}`);
+        if (body.comms_plan) contentParts.push(`**Comms Plan:**
+${body.comms_plan}`);
+        if (body.additional_notes) contentParts.push(`**Additional Notes:**
+${body.additional_notes}`);
+        if (contentParts.length > 0) updates.content = contentParts.join('
+
+');
+      }
       const updated = await base44.asServiceRole.entities.MilsimBriefing.update(parts[2], updates);
       return Response.json(updated);
     }

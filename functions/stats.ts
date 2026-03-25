@@ -28,7 +28,7 @@ interface TrainingAssessment {
   avg_depth_score: number;
   has_sop: boolean;
   has_ttp: boolean;
-  has_roe: boolean;
+  has_fm: boolean;
   has_drill: boolean;
   outdated_count: number;
   knowledge_factor: number;        // 0–100 composite
@@ -72,7 +72,7 @@ function assessTrainingDocs(docs: any[]): TrainingAssessment {
   if (!docs || docs.length === 0) {
     return {
       doc_count: 0, total_pages: 0, avg_depth_score: 0,
-      has_sop: false, has_ttp: false, has_roe: false, has_drill: false,
+      has_sop: false, has_ttp: false, has_fm: false, has_drill: false,
       outdated_count: 0, knowledge_factor: 0,
       knowledge_grade: 'none',
       knowledge_label: 'No Training Documentation',
@@ -89,9 +89,9 @@ function assessTrainingDocs(docs: any[]): TrainingAssessment {
   }).length;
 
   const types = activeDocs.map((d: any) => d.doc_type ?? '');
-  const has_sop   = types.some(t => t === 'SOP');
-  const has_ttp   = types.some(t => t === 'TTP');
-  const has_roe   = types.some(t => t === 'Rules of Engagement');
+  const has_sop   = types.some(t => t === 'Standard Operating Procedure' || t === 'SOP');
+  const has_ttp   = types.some(t => t === 'Tactics Techniques and Procedures' || t === 'TTP');
+  const has_fm    = types.some(t => t === 'Field Manual' || t === 'FM');
   const has_drill = types.some(t => t === 'Drill');
 
   // Compute per-doc depth scores and average
@@ -122,7 +122,7 @@ function assessTrainingDocs(docs: any[]): TrainingAssessment {
   const depthPts = (avg_depth_score / 100) * 30;
 
   // Breadth (20pts): variety of doc types covered
-  const typesPresent = [has_sop, has_ttp, has_roe, has_drill].filter(Boolean).length;
+  const typesPresent = [has_sop, has_ttp, has_fm, has_drill].filter(Boolean).length;
   const breadthPts = (typesPresent / 4) * 20;
 
   // Recency (20pts): penalise outdated docs
@@ -138,7 +138,7 @@ function assessTrainingDocs(docs: any[]): TrainingAssessment {
     knowledge_factor > 0   ? 'minimal' : 'none';
 
   // System narrative
-  const typeLabels = [has_sop && 'SOPs', has_ttp && 'TTPs', has_roe && 'Rules of Engagement', has_drill && 'Drills'].filter(Boolean).join(', ');
+  const typeLabels = [has_sop && 'Standard Operating Procedures', has_ttp && 'Tactics Techniques and Procedures', has_fm && 'Field Manuals', has_drill && 'Drills'].filter(Boolean).join(', ');
   let knowledge_label = '';
   let knowledge_detail = '';
 
@@ -158,7 +158,7 @@ function assessTrainingDocs(docs: any[]): TrainingAssessment {
 
   return {
     doc_count, total_pages, avg_depth_score,
-    has_sop, has_ttp, has_roe, has_drill,
+    has_sop, has_ttp, has_fm, has_drill,
     outdated_count, knowledge_factor,
     knowledge_grade, knowledge_label, knowledge_detail,
   };
