@@ -6,8 +6,7 @@ import { useForm } from "react-hook-form";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import {
-  BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST as MC_GAMES, COUNTRIES_LIST as MC_COUNTRIES,
-  LANGUAGES_LIST as MC_LANGS, type Branch,
+  BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST as MC_GAMES, type Branch,
 } from "@/lib/milsimConstants";
 import {
   Shield, Crosshair, Award, Users, FileText, BookOpen,
