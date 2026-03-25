@@ -81,7 +81,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy";
+type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -123,35 +123,68 @@ export default function MilsimManage() {
     setTimeout(() => setSaveMsg(null), 3500);
   };
 
-  const TABS: { id: Tab; label: string; icon: typeof Shield }[] = [
-    { id: "info", label: "Info", icon: Shield },
-    { id: "roles", label: "Roles", icon: Crosshair },
-    { id: "ranks", label: "Ranks", icon: Award },
-    { id: "roster", label: "Roster", icon: Users },
-    { id: "awards", label: "Awards", icon: Medal },
-    { id: "commendations", label: "Commendations", icon: Megaphone },
-    { id: "quals", label: "Qualifications", icon: GraduationCap },
-    { id: "ops", label: "Live Ops", icon: Siren },
-    { id: "aars", label: "AARs", icon: ClipboardList },
-    { id: "briefings", label: "Briefings", icon: MapPin },
-    { id: "orgchart", label: "Org Chart", icon: GitBranch },
-    { id: "readiness", label: "Readiness", icon: Activity },
-    { id: "stream", label: "Stream", icon: Radio },
-    { id: "sops", label: "SOPs / ORBAT", icon: BookOpen },
-    { id: "questions", label: "App Questions", icon: FileText },
-    { id: "reputation", label: "Reputation", icon: Siren },
-    { id: "training", label: "Training Docs", icon: Brain },
-    { id: "loa", label: "LOA Manager", icon: PlaneTakeoff },
-    { id: "calendar", label: "Activity Calendar", icon: CalendarDays },
-    { id: "campaigns", label: "⭐ Campaigns", icon: Rocket },
-    { id: "analytics", label: "⭐ Analytics", icon: BarChart3 },
-    { id: "pipeline", label: "⭐ Pipeline", icon: UserCheck },
-    { id: "legacy", label: "Unit Legacy", icon: Archive },
+  // Sidebar nav groups
+  const NAV_GROUPS: { label: string; items: { id: Tab; label: string; icon: typeof Shield; pro?: boolean; star?: boolean }[] }[] = [
+    {
+      label: "Setup",
+      items: [
+        { id: "info", label: "Info", icon: Shield },
+        { id: "roles", label: "Roles", icon: Crosshair },
+        { id: "ranks", label: "Ranks", icon: Award },
+        { id: "questions", label: "App Questions", icon: FileText },
+      ],
+    },
+    {
+      label: "Personnel",
+      items: [
+        { id: "roster", label: "Roster", icon: Users },
+        { id: "pipeline", label: "Pipeline", icon: UserCheck, pro: true },
+        { id: "loa", label: "LOA Manager", icon: PlaneTakeoff },
+        { id: "reputation", label: "Reputation", icon: Star },
+      ],
+    },
+    {
+      label: "Operations",
+      items: [
+        { id: "ops", label: "Live Ops", icon: Siren },
+        { id: "aars", label: "AARs", icon: ClipboardList },
+        { id: "briefings", label: "Briefings", icon: MapPin },
+        { id: "calendar", label: "Activity Calendar", icon: CalendarDays },
+        { id: "campaigns", label: "Campaigns", icon: Rocket, pro: true },
+      ],
+    },
+    {
+      label: "Recognition",
+      items: [
+        { id: "awards", label: "Awards", icon: Medal },
+        { id: "commendations", label: "Commendations", icon: Megaphone },
+        { id: "quals", label: "Qualifications", icon: GraduationCap },
+        { id: "legacy", label: "Unit Legacy", icon: Archive, pro: true },
+      ],
+    },
+    {
+      label: "Doctrine",
+      items: [
+        { id: "sops", label: "SOPs", icon: BookOpen },
+        { id: "orbat", label: "ORBAT Builder", icon: GitBranch, pro: true },
+        { id: "training", label: "Training Docs", icon: Brain },
+        { id: "orgchart", label: "Org Chart", icon: GitBranch },
+      ],
+    },
+    {
+      label: "Command",
+      items: [
+        { id: "readiness", label: "Readiness", icon: Activity },
+        { id: "analytics", label: "Analytics", icon: BarChart3, pro: true },
+        { id: "stream", label: "Stream", icon: Radio },
+      ],
+    },
   ];
 
   return (
     <PortalLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
+        {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-3 mb-1">
@@ -182,42 +215,64 @@ export default function MilsimManage() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-1 border-b border-border">
-          {TABS.map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 font-display font-bold uppercase tracking-wider text-xs rounded-t border-b-2 transition-all ${
-                tab === t.id ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}>
-              <t.icon className="w-3.5 h-3.5" />{t.label}
-            </button>
-          ))}
-        </div>
+        {/* Sidebar + Content layout */}
+        <div className="flex gap-6 min-h-[600px]">
+          {/* Sidebar */}
+          <nav className="w-52 shrink-0 space-y-5">
+            {NAV_GROUPS.map((group_nav) => (
+              <div key={group_nav.label}>
+                <p className="text-[9px] font-display font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-3 mb-1.5">{group_nav.label}</p>
+                <div className="space-y-0.5">
+                  {group_nav.items.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setTab(item.id)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-left text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                        tab === item.id
+                          ? "bg-primary/10 text-primary border border-primary/20"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/60 border border-transparent"
+                      }`}
+                    >
+                      <item.icon className="w-3.5 h-3.5 shrink-0" />
+                      <span className="flex-1">{item.label}</span>
+                      {item.pro && <Crown className="w-3 h-3 text-yellow-400 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </nav>
 
-        <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-          {tab === "info" && <InfoTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
-          {tab === "roles" && <RolesTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-          {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-          {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-          {tab === "awards" && <AwardsTab group={group} showMsg={showMsg} />}
-          {tab === "commendations" && <CommendationsTab group={group} />}
-          {tab === "quals" && <QualsTab group={group} showMsg={showMsg} />}
-          {tab === "ops" && <OpsTab group={group} showMsg={showMsg} />}
-          {tab === "aars" && <AARsTab group={group} showMsg={showMsg} />}
-          {tab === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
-          {tab === "orgchart" && <OrgChartTab group={group} />}
-          {tab === "readiness" && <ReadinessTab group={group} />}
-          {tab === "reputation" && <ReputationTab group={group} />}
-          {tab === "training" && <TrainingDocsTab group={group} showMsg={showMsg} />}
-          {tab === "loa" && <LOATab group={group} showMsg={showMsg} />}
-          {tab === "calendar" && <ActivityCalendarTab group={group} showMsg={showMsg} />}
-          {tab === "analytics" && <AnalyticsTab group={group} />}
-          {tab === "campaigns" && <CampaignsTab group={group} />}
-          {tab === "pipeline" && <RecruitPipelineTab group={group} showMsg={showMsg} />}
-          {tab === "legacy" && <UnitLegacyTab group={group} />}
-          {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-          {tab === "sops" && <SopsTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
-          {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-        </motion.div>
+          {/* Main content */}
+          <div className="flex-1 min-w-0">
+            <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
+              {tab === "info" && <InfoTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+              {tab === "roles" && <RolesTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+              {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+              {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+              {tab === "awards" && <AwardsTab group={group} showMsg={showMsg} />}
+              {tab === "commendations" && <CommendationsTab group={group} />}
+              {tab === "quals" && <QualsTab group={group} showMsg={showMsg} />}
+              {tab === "ops" && <OpsTab group={group} showMsg={showMsg} />}
+              {tab === "aars" && <AARsTab group={group} showMsg={showMsg} />}
+              {tab === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
+              {tab === "orgchart" && <OrgChartTab group={group} />}
+              {tab === "readiness" && <ReadinessTab group={group} />}
+              {tab === "reputation" && <ReputationTab group={group} />}
+              {tab === "training" && <TrainingDocsTab group={group} showMsg={showMsg} />}
+              {tab === "loa" && <LOATab group={group} showMsg={showMsg} />}
+              {tab === "calendar" && <ActivityCalendarTab group={group} showMsg={showMsg} />}
+              {tab === "analytics" && <AnalyticsTab group={group} />}
+              {tab === "campaigns" && <CampaignsTab group={group} />}
+              {tab === "pipeline" && <RecruitPipelineTab group={group} showMsg={showMsg} />}
+              {tab === "legacy" && <UnitLegacyTab group={group} />}
+              {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+              {tab === "sops" && <SopsOnlyTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+              {tab === "orbat" && <OrbatOnlyTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+              {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+            </motion.div>
+          </div>
+        </div>
       </div>
     </PortalLayout>
   );
@@ -355,10 +410,8 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
 // Forward ref so OrbatProGate can use it (full const defined near AnalyticsTab)
 const _PRO_STATUS_URL_MANAGE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/getProStatus";
 
-function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
-  const [subTab, setSubTab] = useState<"sops" | "orbat">("sops");
+function SopsOnlyTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const [sopsText, setSopsText] = useState(group.sops ?? "");
-  const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
 
   const saveSops = async () => {
     setSaving(true);
@@ -369,6 +422,28 @@ function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
     } catch (e: any) { showMsg(false, e.message); }
     finally { setSaving(false); }
   };
+
+  return (
+    <div className="space-y-4 max-w-3xl">
+      <div className="flex items-center gap-3 mb-2">
+        <BookOpen className="w-5 h-5 text-primary" />
+        <h2 className="font-display font-black text-lg uppercase tracking-wider text-foreground">Standard Operating Procedures</h2>
+      </div>
+      <MField label="SOPs">
+        <textarea value={sopsText} onChange={e => setSopsText(e.target.value)} rows={20}
+          className="mf-input resize-y font-mono text-sm"
+          placeholder="1. Comms discipline — PTT only when necessary&#10;2. Movement protocols..." />
+      </MField>
+      <button onClick={saveSops} disabled={saving}
+        className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save SOPs
+      </button>
+    </div>
+  );
+}
+
+function OrbatOnlyTab({ group, onSaved, setSaving, saving, showMsg }: any) {
+  const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
 
   const saveOrbat = async () => {
     setSaving(true);
@@ -382,35 +457,14 @@ function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
 
   return (
     <div className="space-y-4">
-      {/* Sub-tab switcher */}
-      <div className="flex gap-1 border-b border-border">
-        <button onClick={() => setSubTab("sops")}
-          className={`px-4 py-2 text-xs font-display font-bold uppercase tracking-widest transition-colors border-b-2 -mb-px ${subTab === "sops" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-          SOPs
-        </button>
-        <button onClick={() => setSubTab("orbat")}
-          className={`flex items-center gap-1.5 px-4 py-2 text-xs font-display font-bold uppercase tracking-widest transition-colors border-b-2 -mb-px ${subTab === "orbat" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-          ORBAT Builder <Crown className="w-3 h-3 text-yellow-400" />
-        </button>
+      <div className="flex items-center gap-3 mb-2">
+        <GitBranch className="w-5 h-5 text-primary" />
+        <h2 className="font-display font-black text-lg uppercase tracking-wider text-foreground">ORBAT Builder</h2>
+        <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30">
+          <Crown className="w-2.5 h-2.5" /> Pro
+        </span>
       </div>
-
-      {subTab === "sops" && (
-        <div className="space-y-4 max-w-3xl">
-          <MField label="Standard Operating Procedures (SOPs)">
-            <textarea value={sopsText} onChange={e => setSopsText(e.target.value)} rows={16}
-              className="mf-input resize-y font-mono text-sm"
-              placeholder="1. Comms discipline — PTT only when necessary&#10;2. Movement protocols..." />
-          </MField>
-          <button onClick={saveSops} disabled={saving}
-            className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save SOPs
-          </button>
-        </div>
-      )}
-
-      {subTab === "orbat" && (
-        <OrbatProGate group={group} orbatJson={orbatJson} setOrbatJson={setOrbatJson} saveOrbat={saveOrbat} saving={saving} />
-      )}
+      <OrbatProGate group={group} orbatJson={orbatJson} setOrbatJson={setOrbatJson} saveOrbat={saveOrbat} saving={saving} />
     </div>
   );
 }
