@@ -60,6 +60,7 @@ import {
   Archive,
   Bell,
   ChevronRight,
+  Download,
   Zap
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
@@ -2388,15 +2389,31 @@ function ReputationTab({ group }: any) {
                         ))}
                       </div>
                     )}
+                    {rd.reviews && rd.reviews.length > 0 && (
+                      <button
+                        onClick={() => {
+                          const rows = [["Unit","Vote","Activity","Attitude","Experience","Discipline","Notes"]];
+                          rd.reviews.forEach((rev: any) => rows.push([rev.group_name ?? "", rev.overall_vote, rev.activity, rev.attitude, rev.experience, rev.discipline, rev.notes ?? ""]));
+                          const csv = rows.map(r => r.map((v: any) => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+                          const blob = new Blob([csv], { type: "text/csv" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a"); a.href = url; a.download = `${selected.callsign ?? "operator"}-reputation.csv`; a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="text-[10px] font-display font-bold uppercase tracking-widest text-primary border border-primary/30 bg-primary/5 hover:bg-primary/10 px-2.5 py-1 rounded transition-all flex items-center gap-1"
+                      >
+                        <Download className="w-3 h-3" /> Export CSV
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-1">
                     <div className="text-xs text-muted-foreground font-sans">
                       {reviewCount} review(s) on record — {commends} commend(s), {flags} flag(s)
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-accent border border-accent/20 bg-accent/5 rounded px-2.5 py-1.5">
-                      <Zap className="w-3 h-3 shrink-0" />
-                      <span className="font-sans">Full review history visible with <a href="/commander-pro" className="underline font-bold">Commander Pro</a></span>
+                    <div className="flex items-center gap-1.5 text-xs text-yellow-400 border border-yellow-500/30 bg-yellow-500/5 rounded px-2.5 py-1.5">
+                      <Crown className="w-3 h-3 shrink-0" />
+                      <span className="font-sans">Full review history + export available with <a href="/commander-pro" className="underline font-bold">Commander Pro</a></span>
                     </div>
                   </div>
                 );
@@ -2906,8 +2923,48 @@ function LOATab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "succ
 
   const myLOA = loas.find(l => l.user_id === user?.id && l.status === "Active");
 
+  // Smart LOA Alerts — find LOAs expiring within 48 hours
+  const now = new Date();
+  const expiringSoon = loas.filter(l => {
+    if (l.status !== "Active") return false;
+    const end = new Date(l.end_date);
+    const diffHours = (end.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return diffHours >= 0 && diffHours <= 48;
+  });
+  const overdueActive = loas.filter(l => {
+    if (l.status !== "Active") return false;
+    return new Date(l.end_date) < now;
+  });
+
   return (
     <div className="space-y-6">
+      {/* Smart LOA Alerts */}
+      {(expiringSoon.length > 0 || overdueActive.length > 0) && (
+        <div className="space-y-2">
+          {overdueActive.map(l => (
+            <div key={l.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-red-500/40 bg-red-500/10">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-display font-bold uppercase tracking-wider text-red-400">LOA Overdue — {l.callsign}</p>
+                <p className="text-[10px] font-sans text-muted-foreground">Ended {new Date(l.end_date).toLocaleDateString("en-GB")} · Status not yet updated. Run calendar sync or revoke manually.</p>
+              </div>
+            </div>
+          ))}
+          {expiringSoon.map(l => {
+            const hoursLeft = Math.round((new Date(l.end_date).getTime() - now.getTime()) / (1000 * 60 * 60));
+            return (
+              <div key={l.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-amber-500/40 bg-amber-500/10">
+                <Bell className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-display font-bold uppercase tracking-wider text-amber-400">LOA Expiring Soon — {l.callsign}</p>
+                  <p className="text-[10px] font-sans text-muted-foreground">Expires in ~{hoursLeft}h on {new Date(l.end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · {l.reason_category}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display font-bold text-lg uppercase tracking-widest">Leave of Absence Manager</h2>
@@ -4129,6 +4186,9 @@ function RecruitPipelineTab({ group, showMsg }: any) {
   const [isPro, setIsPro] = useState<boolean | null>(null);
   const [selected, setSelected] = useState<any | null>(null);
   const [moving, setMoving] = useState(false);
+  const [reviewNote, setReviewNote] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   useEffect(() => {
     fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`)
@@ -4151,18 +4211,20 @@ function RecruitPipelineTab({ group, showMsg }: any) {
       .catch(() => setLoading(false));
   };
 
-  const moveApp = async (app: any, newStatus: string) => {
+  const moveApp = async (app: any, newStatus: string, note?: string) => {
     setMoving(true);
     const token = localStorage.getItem("tag_auth_token") ?? "";
     try {
       await fetch(`${PIPELINE_URL}?path=${encodeURIComponent(`/${app.id}/review`)}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus, review_note: "" }),
+        body: JSON.stringify({ status: newStatus, review_note: note ?? reviewNote }),
       });
-      setApps(prev => prev.map(a => a.id === app.id ? { ...a, status: newStatus } : a));
-      if (selected?.id === app.id) setSelected({ ...selected, status: newStatus });
-      showMsg(true, `Moved ${app.applicant_username} to ${newStatus}`);
+      const updated = { ...app, status: newStatus, review_note: note ?? reviewNote };
+      setApps(prev => prev.map(a => a.id === app.id ? updated : a));
+      if (selected?.id === app.id) setSelected(updated);
+      showMsg(true, `${app.applicant_username} moved to ${PIPELINE_COLUMNS.find(c => c.id === newStatus)?.label ?? newStatus}`);
+      setReviewNote("");
     } catch { showMsg(false, "Failed to update status"); }
     setMoving(false);
   };
@@ -4191,8 +4253,17 @@ function RecruitPipelineTab({ group, showMsg }: any) {
   const total = apps.length;
   const pending = byStatus("pending").length;
 
+  const filteredApps = apps.filter(a => {
+    const matchSearch = !searchQuery || a.applicant_username?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchStatus = filterStatus === "all" || a.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
+
+  const conversionRate = total > 0 ? Math.round((byStatus("approved").length / total) * 100) : 0;
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
@@ -4200,7 +4271,7 @@ function RecruitPipelineTab({ group, showMsg }: any) {
           </div>
           <div>
             <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Recruitment Pipeline</h2>
-            <p className="text-xs font-sans text-muted-foreground">{total} applicant{total !== 1 ? "s" : ""} total{pending > 0 ? ` · ${pending} awaiting review` : ""}</p>
+            <p className="text-xs font-sans text-muted-foreground">{total} applicant{total !== 1 ? "s" : ""} · {conversionRate}% acceptance rate{pending > 0 ? ` · ${pending} awaiting review` : ""}</p>
           </div>
           <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
             <Crown className="w-3 h-3" /> Pro
@@ -4213,6 +4284,22 @@ function RecruitPipelineTab({ group, showMsg }: any) {
         )}
       </div>
 
+      {/* Search + filter bar */}
+      {total > 0 && (
+        <div className="flex items-center gap-3 flex-wrap">
+          <input
+            value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search applicants..."
+            className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 w-48"
+          />
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+            className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-sans text-foreground focus:outline-none focus:border-primary/50">
+            <option value="all">All Stages</option>
+            {PIPELINE_COLUMNS.map(c => <option key={c.id} value={c.id}>{c.label} ({byStatus(c.id).length})</option>)}
+          </select>
+        </div>
+      )}
+
       {total === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
           <UserCheck className="w-12 h-12 text-muted-foreground/30" />
@@ -4224,23 +4311,23 @@ function RecruitPipelineTab({ group, showMsg }: any) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
           {PIPELINE_COLUMNS.map(col => {
-            const colApps = byStatus(col.id);
+            const colApps = filteredApps.filter(a => a.status === col.id);
             return (
               <div key={col.id} className={`rounded-lg border p-3 ${col.color} min-h-[200px]`}>
                 <div className="flex items-center gap-2 mb-3">
                   <span className={`w-2 h-2 rounded-full ${col.dot}`} />
                   <span className="font-display font-bold uppercase tracking-wider text-xs text-foreground">{col.label}</span>
-                  <span className="ml-auto text-xs font-display font-bold text-muted-foreground">{colApps.length}</span>
+                  <span className="ml-auto text-xs font-display font-bold text-muted-foreground">{byStatus(col.id).length}</span>
                 </div>
                 <div className="space-y-2">
                   {colApps.map(app => (
-                    <button key={app.id} onClick={() => setSelected(app)}
+                    <button key={app.id} onClick={() => { setSelected(app); setReviewNote(app.review_note ?? ""); }}
                       className="w-full text-left bg-card border border-border rounded p-3 hover:border-primary/50 transition-all group">
                       <p className="font-display font-bold text-sm text-foreground">{app.applicant_username}</p>
                       <p className="text-[10px] font-sans text-muted-foreground mt-0.5 flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {app.created_date ? new Date(app.created_date).toLocaleDateString() : "—"}
+                        <Clock className="w-3 h-3" /> {app.created_date ? new Date(app.created_date).toLocaleDateString("en-GB") : "—"}
                       </p>
-                      <ChevronRight className="w-3 h-3 text-muted-foreground mt-1 group-hover:text-primary transition-colors" />
+                      {app.review_note && <p className="text-[10px] font-sans text-muted-foreground mt-1 truncate italic">"{app.review_note}"</p>}
                     </button>
                   ))}
                 </div>
@@ -4250,31 +4337,68 @@ function RecruitPipelineTab({ group, showMsg }: any) {
         </div>
       )}
 
+      {/* Applicant detail modal */}
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setSelected(null)}>
-          <div className="bg-card border border-border rounded-xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6 space-y-5" onClick={e => e.stopPropagation()}>
+          <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 space-y-5" onClick={e => e.stopPropagation()}>
+            {/* Modal header */}
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="font-display font-black text-xl uppercase tracking-wider text-foreground">{selected.applicant_username}</h3>
-                <p className="text-xs font-sans text-muted-foreground">Applied {selected.created_date ? new Date(selected.created_date).toLocaleDateString() : "—"}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-[9px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                    PIPELINE_COLUMNS.find(c => c.id === selected.status)?.color ?? "border-border"
+                  } ${PIPELINE_COLUMNS.find(c => c.id === selected.status)?.dot.replace("bg-","text-") ?? "text-muted-foreground"}`}>
+                    {PIPELINE_COLUMNS.find(c => c.id === selected.status)?.label ?? selected.status}
+                  </span>
+                  <p className="text-xs font-sans text-muted-foreground">Applied {selected.created_date ? new Date(selected.created_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "—"}</p>
+                </div>
               </div>
               <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
             </div>
-            <div className="space-y-3">
-              {selected.answers && Object.entries(selected.answers).map(([q, a]: any) => (
-                <div key={q} className="bg-secondary/30 rounded p-3">
-                  <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-1">{q}</p>
-                  <p className="text-sm font-sans text-foreground">{a}</p>
-                </div>
-              ))}
+
+            {/* Answers */}
+            {selected.answers && Object.keys(selected.answers).length > 0 && (
+              <div className="space-y-3">
+                <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Application Answers</p>
+                {Object.entries(selected.answers).map(([q, a]: any) => (
+                  <div key={q} className="bg-secondary/30 rounded p-3 border border-border">
+                    <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-1">{q}</p>
+                    <p className="text-sm font-sans text-foreground leading-relaxed">{a}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Review note */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Internal Review Note</p>
+              <textarea
+                value={reviewNote}
+                onChange={e => setReviewNote(e.target.value)}
+                placeholder="Add internal notes about this applicant (not visible to them)..."
+                rows={3}
+                className="w-full bg-secondary border border-border rounded px-3 py-2 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none"
+              />
             </div>
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-              {PIPELINE_COLUMNS.filter(c => c.id !== selected.status).map(col => (
-                <button key={col.id} disabled={moving} onClick={() => moveApp(selected, col.id)}
-                  className="text-xs font-display font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-all disabled:opacity-50">
-                  → {col.label}
+
+            {/* Stage actions */}
+            <div className="space-y-2 pt-2 border-t border-border">
+              <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Move to Stage</p>
+              <div className="flex flex-wrap gap-2">
+                {PIPELINE_COLUMNS.filter(c => c.id !== selected.status).map(col => (
+                  <button key={col.id} disabled={moving} onClick={() => moveApp(selected, col.id)}
+                    className={`text-xs font-display font-bold uppercase tracking-wider px-3 py-1.5 rounded border transition-all disabled:opacity-50 ${col.color} ${col.dot.replace("bg-","text-")}`}>
+                    → {col.label}
+                  </button>
+                ))}
+              </div>
+              {reviewNote !== (selected.review_note ?? "") && (
+                <button disabled={moving} onClick={() => moveApp(selected, selected.status, reviewNote)}
+                  className="text-xs font-display font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-primary/50 text-primary bg-primary/10 hover:bg-primary/20 transition-all disabled:opacity-50">
+                  Save Note Only
                 </button>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -4329,26 +4453,56 @@ function UnitLegacyTab({ group }: any) {
     </div>
   );
 
-  type TimelineEntry = { date: string; type: "op" | "aar" | "campaign"; title: string; sub: string; icon: typeof Siren; color: string };
-  const entries: TimelineEntry[] = [
+  type LegacyEntryType = "op" | "aar" | "campaign";
+  type LegacyEntry = {
+    date: string; type: LegacyEntryType; id: string;
+    title: string; game?: string; eventType?: string; status?: string;
+    outcome?: string; author?: string; participants?: number;
+    campaignId?: string; opCount?: number;
+  };
+
+  const allEntries: LegacyEntry[] = [
     ...ops.filter(o => o.scheduled_at).map(o => ({
-      date: o.scheduled_at, type: "op" as const,
-      title: o.name, sub: `${o.game || "Unknown Game"} · ${o.event_type || "Op"} · ${o.status || ""}`,
-      icon: Siren, color: "text-primary border-primary/40 bg-primary/10"
+      date: o.scheduled_at, type: "op" as const, id: o.id,
+      title: o.name, game: o.game, eventType: o.event_type, status: o.status,
+      campaignId: (campaigns.find((c: any) => (c.op_ids || []).includes(o.id)) || {}).id,
     })),
-    ...aars.filter(a => a.created_date).map(a => ({
-      date: a.created_date, type: "aar" as const,
-      title: a.title || a.op_name || "AAR", sub: `By ${a.author_username} · Outcome: ${a.outcome || "—"}`,
-      icon: ClipboardList, color: "text-green-400 border-green-500/40 bg-green-500/10"
+    ...aars.filter(a => a.op_date || a.created_date).map(a => ({
+      date: a.op_date || a.created_date, type: "aar" as const, id: a.id,
+      title: a.title || a.op_name || "AAR",
+      outcome: a.outcome, author: a.author_username,
+      participants: Array.isArray(a.participants) ? a.participants.length : undefined,
     })),
     ...campaigns.filter(c => c.start_date).map(c => ({
-      date: c.start_date, type: "campaign" as const,
-      title: `Campaign: ${c.name}`, sub: `${c.status} · ${(c.op_ids || []).length} ops`,
-      icon: Zap, color: "text-yellow-400 border-yellow-500/40 bg-yellow-500/10"
+      date: c.start_date, type: "campaign" as const, id: c.id,
+      title: c.name, outcome: c.outcome, status: c.status,
+      opCount: (c.op_ids || []).length,
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  const legacyTypeStyle: Record<LegacyEntryType, { dot: string; card: string; label: string; icon: typeof Archive }> = {
+    op:       { dot: "bg-primary border-primary/60",        card: "border-primary/20 bg-primary/5",       label: "text-primary",    icon: Siren        },
+    aar:      { dot: "bg-green-500 border-green-400/60",    card: "border-green-500/20 bg-green-500/5",   label: "text-green-400",  icon: ClipboardList },
+    campaign: { dot: "bg-yellow-400 border-yellow-300/60",  card: "border-yellow-500/20 bg-yellow-500/5", label: "text-yellow-400", icon: Zap           },
+  };
+
+  const legacyByYear: Record<number, LegacyEntry[]> = {};
+  allEntries.forEach(e => {
+    const y = new Date(e.date).getFullYear();
+    if (!legacyByYear[y]) legacyByYear[y] = [];
+    legacyByYear[y].push(e);
+  });
+  const legacyYears = Object.keys(legacyByYear).map(Number).sort((a, b) => b - a);
+
   const firstOpDate = ops.length > 0 ? ops.reduce((e: string | null, o) => (!e || new Date(o.scheduled_at) < new Date(e)) ? o.scheduled_at : e, null) : null;
+  const victories = campaigns.filter(c => c.outcome === "victory").length;
+  const yearsActive = firstOpDate ? new Date().getFullYear() - new Date(firstOpDate).getFullYear() + 1 : 0;
+
+  const legacyOutcomeBadge = (outcome?: string) => {
+    if (!outcome) return null;
+    const map: Record<string, string> = { victory: "bg-green-500/20 text-green-400 border-green-500/30", defeat: "bg-red-500/20 text-red-400 border-red-500/30", draw: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" };
+    return map[outcome] ? <span className={`text-[9px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${map[outcome]}`}>{outcome}</span> : null;
+  };
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -4362,14 +4516,15 @@ function UnitLegacyTab({ group }: any) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: "Total Ops", value: ops.length, color: "text-primary" },
-          { label: "AARs Filed", value: aars.length, color: "text-green-400" },
-          { label: "Campaigns", value: campaigns.length, color: "text-yellow-400" },
-          { label: "Since", value: firstOpDate ? new Date(firstOpDate).getFullYear() : "—", color: "text-foreground" },
+          { label: "Total Ops",    value: ops.length,         color: "text-primary"    },
+          { label: "AARs Filed",   value: aars.length,        color: "text-green-400"  },
+          { label: "Campaigns",    value: campaigns.length,   color: "text-yellow-400" },
+          { label: "Victories",    value: victories,          color: "text-green-400"  },
+          { label: "Years Active", value: yearsActive || "—", color: "text-foreground" },
         ].map(s => (
-          <div key={s.label} className="bg-card border border-border rounded-lg p-4 text-center">
+          <div key={s.label} className="bg-card border border-border rounded-lg p-3 text-center">
             <p className={`font-display font-black text-2xl ${s.color}`}>{s.value}</p>
             <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-0.5">{s.label}</p>
           </div>
@@ -4378,8 +4533,8 @@ function UnitLegacyTab({ group }: any) {
 
       {campaigns.length > 0 && (
         <div>
-          <h3 className="font-display font-bold uppercase tracking-wider text-sm text-muted-foreground mb-3">Campaign Ribbons</h3>
-          <div className="flex flex-wrap gap-3">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Campaign Ribbons</p>
+          <div className="flex flex-wrap gap-2">
             {campaigns.map((c: any) => {
               const outcome = c.outcome || "incomplete";
               const col = outcome === "victory" ? "from-green-600 to-green-800 border-green-500/40" :
@@ -4387,9 +4542,9 @@ function UnitLegacyTab({ group }: any) {
                           outcome === "draw" ? "from-yellow-600 to-yellow-800 border-yellow-500/40" :
                           "from-zinc-700 to-zinc-900 border-zinc-500/40";
               return (
-                <div key={c.id} className={`bg-gradient-to-b ${col} border rounded px-4 py-2 text-center min-w-[80px]`}>
-                  <p className="text-xs font-display font-black uppercase tracking-wider text-white leading-tight">{c.name}</p>
-                  <p className="text-[9px] font-sans text-white/70 mt-0.5">{outcome.toUpperCase()}</p>
+                <div key={c.id} className={`bg-gradient-to-b ${col} border rounded px-3 py-1.5 text-center min-w-[70px]`}>
+                  <p className="text-[10px] font-display font-black uppercase tracking-wider text-white leading-tight">{c.name}</p>
+                  <p className="text-[8px] font-sans text-white/60 mt-0.5">{outcome.toUpperCase()}</p>
                 </div>
               );
             })}
@@ -4397,34 +4552,60 @@ function UnitLegacyTab({ group }: any) {
         </div>
       )}
 
-      <div>
-        <h3 className="font-display font-bold uppercase tracking-wider text-sm text-muted-foreground mb-4">Full Timeline</h3>
-        {entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-            <Archive className="w-10 h-10 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground font-sans">No ops, AARs, or campaigns logged yet.</p>
-          </div>
-        ) : (
-          <div className="relative space-y-3 pl-6 border-l border-border">
-            {entries.map((e, i) => (
-              <div key={i} className="relative">
-                <div className={`absolute -left-[25px] w-4 h-4 rounded-full border flex items-center justify-center ${e.color}`}>
-                  <e.icon className="w-2 h-2" />
-                </div>
-                <div className="bg-card border border-border rounded-lg p-3 ml-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-display font-bold text-sm text-foreground">{e.title}</p>
-                    <p className="text-[10px] font-sans text-muted-foreground shrink-0">
-                      {new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                    </p>
-                  </div>
-                  <p className="text-xs font-sans text-muted-foreground mt-0.5">{e.sub}</p>
-                </div>
+      {allEntries.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+          <Archive className="w-10 h-10 text-muted-foreground/30" />
+          <p className="text-sm text-muted-foreground font-sans">No ops, AARs, or campaigns logged yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {legacyYears.map(year => (
+            <div key={year}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-px flex-1 bg-border" />
+                <span className="font-display font-black text-xs uppercase tracking-widest text-muted-foreground px-3 py-1 bg-secondary border border-border rounded">{year}</span>
+                <div className="h-px flex-1 bg-border" />
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <div className="relative pl-6 border-l-2 border-border space-y-3">
+                {legacyByYear[year].map((e, i) => {
+                  const s = legacyTypeStyle[e.type];
+                  const Icon = s.icon;
+                  const dateStr = new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+                  return (
+                    <div key={i} className="relative">
+                      <div className={`absolute -left-[29px] w-4 h-4 rounded-full border-2 ${s.dot} flex items-center justify-center`}>
+                        <Icon className="w-2 h-2 text-background" />
+                      </div>
+                      <div className={`rounded-lg border p-3 ml-1 ${s.card}`}>
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`text-[9px] font-display font-bold uppercase tracking-widest shrink-0 ${s.label}`}>
+                              {e.type === "op" ? "OP" : e.type === "aar" ? "AAR" : "CAMPAIGN"}
+                            </span>
+                            <p className="font-display font-bold text-sm text-foreground truncate">{e.title}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {legacyOutcomeBadge(e.outcome)}
+                            <span className="text-[10px] font-sans text-muted-foreground">{dateStr}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                          {e.game && <span className="text-[10px] font-sans text-muted-foreground">{e.game}</span>}
+                          {e.eventType && <span className="text-[10px] font-sans text-muted-foreground">· {e.eventType}</span>}
+                          {e.author && <span className="text-[10px] font-sans text-muted-foreground">By {e.author}</span>}
+                          {e.participants !== undefined && <span className="text-[10px] font-sans text-muted-foreground">· {e.participants} participants</span>}
+                          {e.opCount !== undefined && <span className="text-[10px] font-sans text-muted-foreground">· {e.opCount} ops</span>}
+                          {e.campaignId && <span className="text-[9px] font-display uppercase tracking-wider text-yellow-400/70">· {(campaigns.find((c: any) => c.id === e.campaignId) || {}).name}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
