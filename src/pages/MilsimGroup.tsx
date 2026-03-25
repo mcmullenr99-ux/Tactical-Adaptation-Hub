@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useRoute, Link } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -9,7 +9,7 @@ import {
   FileText, ChevronLeft, Star, BookOpen, Map, Radio, Medal,
   Zap, Target, TrendingUp, Activity,
 } from "lucide-react";
-import OrbatBuilder from "@/components/OrbatBuilder";
+const OrbatBuilder = lazy(() => import("@/components/OrbatBuilder"));
 import { formatDistanceToNow } from "date-fns";
 
 interface Role    { id: string; name: string; description: string | null; sortOrder: number }
@@ -659,19 +659,21 @@ export default function MilsimGroup() {
                 return <EmptyState icon={Map} message="No ORBAT published yet" sub="The unit commander hasn't set up an ORBAT for this group." />;
               }
               return (
-                <div className="w-full">
-                  <OrbatBuilder
-                    value={group.orbat ?? undefined}
-                    groupName={group.name}
-                    readOnly
-                    roster={roster.map(r => ({
-                      id: r.id,
-                      callsign: r.callsign,
-                      rank: ranks.find(rk => rk.id === r.rankId)?.name ?? undefined,
-                      role: roles.find(ro => ro.id === r.roleId)?.name ?? undefined,
-                    }))}
-                  />
-                </div>
+                <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
+                  <div className="w-full">
+                    <OrbatBuilder
+                      value={group.orbat ?? undefined}
+                      groupName={group.name}
+                      readOnly
+                      roster={roster.map(r => ({
+                        id: r.id,
+                        callsign: r.callsign,
+                        rank: ranks.find(rk => rk.id === r.rankId)?.name ?? undefined,
+                        role: roles.find(ro => ro.id === r.roleId)?.name ?? undefined,
+                      }))}
+                    />
+                  </div>
+                </Suspense>
               );
             })()
           )}
