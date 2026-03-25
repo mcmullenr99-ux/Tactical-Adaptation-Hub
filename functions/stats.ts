@@ -524,7 +524,8 @@ function buildReadinessReport(params: {
     (training.knowledge_factor / 100) * 20;
 
   const op_capability_tier =
-    opCapScore >= 80 ? 'ELITE'       :
+    opCapScore >= 90 ? 'SOF'         :
+    opCapScore >= 80 ? 'SOC'         :
     opCapScore >= 60 ? 'STRATEGIC'   :
     opCapScore >= 40 ? 'OPERATIONAL' :
     opCapScore >= 20 ? 'TACTICAL'    :

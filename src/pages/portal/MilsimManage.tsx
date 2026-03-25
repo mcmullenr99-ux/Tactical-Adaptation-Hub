@@ -1769,8 +1769,9 @@ function ReadinessTab({ group }: any) {
   const bc = readiness.status === "green" ? "bg-green-500" : readiness.status === "amber" ? "bg-yellow-500" : "bg-red-500";
 
   const TIER_META: Record<string, { label: string; colour: string; bg: string; border: string; badge: string; desc: string }> = {
-    "ELITE":       { label: "Elite SOF / Special Operations Capable", colour: "text-green-400",      bg: "bg-green-500/10",    border: "border-green-500/40",    badge: "bg-green-500/20 text-green-300 border-green-400/50",       desc: "Extensive op record, elite AAR discipline, and comprehensive multi-type training doctrine. Operates at special operations force standard." },
-    "STRATEGIC":   { label: "Strategically Capable",                  colour: "text-emerald-500",   bg: "bg-emerald-600/10",  border: "border-emerald-600/40",  badge: "bg-emerald-600/20 text-emerald-400 border-emerald-500/40", desc: "Proven unit with strong operational output, solid reputation, and well-documented training resources across multiple doctrine types." },
+    "SOF":         { label: "Special Operations Forces — SOF",          colour: "text-purple-400",    bg: "bg-purple-600/10",   border: "border-purple-500/40",   badge: "bg-purple-600/20 text-purple-300 border-purple-500/40",    desc: "The highest attainable designation. Elite multi-domain doctrine, near-perfect AAR discipline, and an exceptional operational record. This unit operates at the tip of the spear." },
+    "SOC":         { label: "Special Operations Capable — SOC",         colour: "text-green-400",      bg: "bg-green-500/10",    border: "border-green-500/40",    badge: "bg-green-500/20 text-green-300 border-green-400/50",       desc: "Extensive op record, elite AAR discipline, and comprehensive multi-type training doctrine. Operates at special operations capable standard." },
+    "STRATEGIC":   { label: "Strategically Capable",                   colour: "text-emerald-500",   bg: "bg-emerald-600/10",  border: "border-emerald-600/40",  badge: "bg-emerald-600/20 text-emerald-400 border-emerald-500/40", desc: "Proven unit with strong operational output, solid reputation, and well-documented training resources across multiple doctrine types." },
     "OPERATIONAL": { label: "Operationally Capable",                  colour: "text-yellow-400",    bg: "bg-yellow-400/10",   border: "border-yellow-400/40",   badge: "bg-yellow-400/20 text-yellow-300 border-yellow-400/50",    desc: "Active unit with a consistent operational record and growing doctrine framework. Capable of executing standard mission types." },
     "TACTICAL":    { label: "Tactically Capable",                     colour: "text-orange-400",    bg: "bg-orange-500/10",   border: "border-orange-500/40",   badge: "bg-orange-500/20 text-orange-300 border-orange-500/40",    desc: "Building op history and operator experience. Some training doctrine in place. Unit is progressing toward operational readiness." },
     "LIMITED":     { label: "Limited Capability",                        colour: "text-red-400",       bg: "bg-red-500/10",      border: "border-red-500/40",      badge: "bg-red-500/20 text-red-400 border-red-500/40",             desc: "Minimal operational record and insufficient training documentation to meet baseline capability standards." },
@@ -1894,7 +1895,7 @@ function ReadinessTab({ group }: any) {
         </div>
         {/* Tier ladder */}
         <div className="grid grid-cols-5 gap-1 pt-2 border-t border-border/40">
-          {(["POOR","LIMITED","TACTICAL","OPERATIONAL","STRATEGIC","ELITE"] as const).map(t => {
+          {(["POOR","LIMITED","TACTICAL","OPERATIONAL","STRATEGIC","SOC","SOF"] as const).map(t => {
             const m = TIER_META[t];
             const active = t === tier;
             return (
