@@ -1773,11 +1773,12 @@ function ReadinessTab({ group }: any) {
     "STRATEGIC":   { label: "Strategically Capable",                  colour: "text-emerald-500",   bg: "bg-emerald-600/10",  border: "border-emerald-600/40",  badge: "bg-emerald-600/20 text-emerald-400 border-emerald-500/40", desc: "Proven unit with strong operational output, solid reputation, and well-documented training resources across multiple doctrine types." },
     "OPERATIONAL": { label: "Operationally Capable",                  colour: "text-yellow-400",    bg: "bg-yellow-400/10",   border: "border-yellow-400/40",   badge: "bg-yellow-400/20 text-yellow-300 border-yellow-400/50",    desc: "Active unit with a consistent operational record and growing doctrine framework. Capable of executing standard mission types." },
     "TACTICAL":    { label: "Tactically Capable",                     colour: "text-orange-400",    bg: "bg-orange-500/10",   border: "border-orange-500/40",   badge: "bg-orange-500/20 text-orange-300 border-orange-500/40",    desc: "Building op history and operator experience. Some training doctrine in place. Unit is progressing toward operational readiness." },
-    "LIMITED":     { label: "Limited",                                colour: "text-red-400",       bg: "bg-red-500/10",      border: "border-red-500/40",      badge: "bg-red-500/20 text-red-400 border-red-500/40",             desc: "No established operational record. Insufficient training documentation and experience to meet baseline capability standards." },
+    "LIMITED":     { label: "Limited Capability",                        colour: "text-red-400",       bg: "bg-red-500/10",      border: "border-red-500/40",      badge: "bg-red-500/20 text-red-400 border-red-500/40",             desc: "Minimal operational record and insufficient training documentation to meet baseline capability standards." },
+    "POOR":        { label: "Poor Capability",                            colour: "text-red-700",       bg: "bg-red-950/20",      border: "border-red-900/50",      badge: "bg-red-950/30 text-red-700 border-red-900/60",             desc: "No established operational record, no doctrine, and no verified activity. Unit has not demonstrated any measurable capability." },
   };
 
-  const tier = readiness.op_capability_tier ?? "LIMITED";
-  const tm = TIER_META[tier] ?? TIER_META["LIMITED"];
+  const tier = readiness.op_capability_tier ?? "POOR";
+  const tm = TIER_META[tier] ?? TIER_META["POOR"];
 
   // Score breakdown for transparency
   const sb = readiness.score_breakdown ?? {};
@@ -1893,7 +1894,7 @@ function ReadinessTab({ group }: any) {
         </div>
         {/* Tier ladder */}
         <div className="grid grid-cols-5 gap-1 pt-2 border-t border-border/40">
-          {(["LIMITED","TACTICAL","OPERATIONAL","STRATEGIC","ELITE"] as const).map(t => {
+          {(["POOR","LIMITED","TACTICAL","OPERATIONAL","STRATEGIC","ELITE"] as const).map(t => {
             const m = TIER_META[t];
             const active = t === tier;
             return (

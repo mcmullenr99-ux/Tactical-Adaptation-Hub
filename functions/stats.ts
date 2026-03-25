@@ -527,7 +527,8 @@ function buildReadinessReport(params: {
     opCapScore >= 80 ? 'ELITE'       :
     opCapScore >= 60 ? 'STRATEGIC'   :
     opCapScore >= 40 ? 'OPERATIONAL' :
-    opCapScore >= 20 ? 'TACTICAL'    : 'LIMITED';
+    opCapScore >= 20 ? 'TACTICAL'    :
+    opCapScore >= 10 ? 'LIMITED'     : 'POOR';
 
   // ─── FLAGS ───────────────────────────────────────────────────────────────
   const flags: ReadinessFlag[] = [];

@@ -123,7 +123,8 @@ const TIER_META: Record<string, { label: string; style: string }> = {
   "STRATEGIC":   { label: "Strategically Capable",      style: "bg-emerald-600/15 border-emerald-500/50 text-emerald-400" },
   "OPERATIONAL": { label: "Operationally Capable",      style: "bg-yellow-400/15 border-yellow-400/50 text-yellow-300" },
   "TACTICAL":    { label: "Tactically Capable",         style: "bg-orange-500/15 border-orange-500/50 text-orange-400" },
-  "LIMITED":     { label: "Limited",                    style: "bg-red-500/15 border-red-500/50 text-red-400" },
+  "LIMITED":     { label: "Limited Capability",         style: "bg-red-500/15 border-red-500/50 text-red-400" },
+  "POOR":        { label: "Poor Capability",            style: "bg-red-950/20 border-red-900/60 text-red-700" },
 };
 function TierBadge({ tier }: { tier: string }) {
   const meta = TIER_META[tier] ?? { label: tier, style: "bg-border/30 border-border text-muted-foreground" };
@@ -457,14 +458,16 @@ export default function MilsimGroup() {
                         { tier: "STRATEGIC",   label: "Strategically Capable",                  desc: "Proven unit with strong operational output, solid reputation, and well-documented training resources across multiple doctrine types." },
                         { tier: "OPERATIONAL", label: "Operationally Capable",                  desc: "Active unit with a consistent operational record and growing doctrine framework. Capable of executing standard mission types." },
                         { tier: "TACTICAL",    label: "Tactically Capable",                     desc: "Building op history and operator experience. Some training doctrine in place. Unit is progressing toward operational readiness." },
-                        { tier: "LIMITED",     label: "Limited",                                desc: "No established operational record. Insufficient training documentation and experience to meet baseline capability standards." },
+                        { tier: "LIMITED",     label: "Limited Capability",                     desc: "Minimal operational record and insufficient training documentation to meet baseline capability standards." },
+                        { tier: "POOR",        label: "Poor Capability",                         desc: "No established operational record, no doctrine, and no verified activity. Unit has not demonstrated any measurable capability." },
                       ].map(t => (
                         <div key={t.tier} className={`flex items-start gap-3 p-3 rounded border transition-colors ${readiness.op_capability_tier === t.tier ? (
                             t.tier === "ELITE"   ? "border-green-400/40 bg-green-500/5" :
                             t.tier === "STRATEGIC"  ? "border-emerald-500/40 bg-emerald-600/5" :
                             t.tier === "OPERATIONAL" ? "border-yellow-400/40 bg-yellow-400/5" :
-                            t.tier === "TACTICAL"  ? "border-red-500/40 bg-red-500/5" :
-                            "border-red-900/40 bg-red-900/5"
+                            t.tier === "TACTICAL"  ? "border-orange-500/40 bg-orange-500/5" :
+                            t.tier === "LIMITED"   ? "border-red-500/40 bg-red-500/5" :
+                            "border-red-900/40 bg-red-950/5"
                           ) : "border-transparent opacity-40"}`}>
                           <TierBadge tier={t.tier} />
                           <div>
