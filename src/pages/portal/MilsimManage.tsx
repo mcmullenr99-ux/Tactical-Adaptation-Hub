@@ -82,7 +82,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy";
+type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -277,6 +277,7 @@ export default function MilsimManage() {
               {tab === "campaigns" && <CampaignsTab group={group} />}
               {tab === "pipeline" && <RecruitPipelineTab group={group} showMsg={showMsg} />}
               {tab === "legacy" && <UnitLegacyTab group={group} />}
+              {tab === "developer" && <DeveloperTab group={group} showMsg={showMsg} />}
               {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "sops" && <SopsOnlyTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
               {tab === "orbat" && <OrbatOnlyTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
