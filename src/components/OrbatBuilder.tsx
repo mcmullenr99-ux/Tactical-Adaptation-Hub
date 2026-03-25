@@ -456,11 +456,19 @@ function OrbatTreeNode({ node, onUpdate, onDelete, onAddChild, depth = 0, isRoot
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+interface RosterMember {
+  id: string;
+  callsign: string;
+  rank?: string;
+  role?: string;
+}
+
 interface OrbatBuilderProps {
   value?: string;
   onChange?: (json: string) => void;
   readOnly?: boolean;
   groupName?: string;
+  roster?: RosterMember[];
 }
 
 const DEFAULT_ORBAT: OrbatNode = {
