@@ -1225,139 +1225,63 @@ function QualsTab({ group, showMsg }: any) {
   );
 }
 
-// ─── Live Ops ─────────────────────────────────────────────────────────────────
+// ─── Live Ops / Check-In ──────────────────────────────────────────────────────
 function OpsTab({ group, showMsg }: any) {
   const [activeOp, setActiveOp] = useState<any | null>(undefined);
   const [history, setHistory] = useState<any[]>([]);
-  const [roster, setRoster] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [opName, setOpName] = useState("");
-  const [opDesc, setOpDesc] = useState("");
-  const [starting, setStarting] = useState(false);
-  const [expandedOp, setExpandedOp] = useState<string | null>(null);
-  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
-
+  const [opName, setOpName] = useState(""); const [opDesc, setOpDesc] = useState(""); const [starting, setStarting] = useState(false);
+  const [expandedOp, setExpandedOp] = useState<number | null>(null);
   const load = () => {
     setLoading(true);
-    Promise.all([
-      apiFetch<any>(`/api/milsim-groups/${group.id}/ops/active`),
-      apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`),
-      apiFetch<any[]>(`/api/milsim-groups/${group.id}/roster`),
-    ])
-      .then(([active, all, ros]) => {
-        setActiveOp(active ?? null);
-        setHistory((all ?? []).filter((o: any) => o.status !== "active").sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime()));
-        setRoster(ros ?? []);
-        if (active) setSelectedParticipants(active.participants ?? []);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([apiFetch<any>(`/api/milsim-groups/${group.id}/ops/active`), apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`)])
+      .then(([active, all]) => { setActiveOp(active ?? null); setHistory(all.filter((o: any) => o.status !== "active")); }).catch(() => {}).finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, [group.id]);
-
   const startOp = async () => {
-    if (!opName.trim()) return;
-    setStarting(true);
-    try {
-      await apiFetch(`/api/milsim-groups/${group.id}/ops`, { method: "POST", body: JSON.stringify({ name: opName, description: opDesc || undefined }) });
-      setOpName(""); setOpDesc(""); showMsg(true, "Op started."); load();
-    } catch (e: any) { showMsg(false, e.message); } finally { setStarting(false); }
+    if (!opName.trim()) return; setStarting(true);
+    try { await apiFetch(`/api/milsim-groups/${group.id}/ops`, { method: "POST", body: JSON.stringify({ name: opName, description: opDesc || undefined }) }); setOpName(""); setOpDesc(""); showMsg(true, "Op started."); load(); }
+    catch (e: any) { showMsg(false, e.message); } finally { setStarting(false); }
   };
-
-  const endOp = async (opId: string) => {
-    try {
-      await apiFetch(`/api/milsim-groups/${group.id}/ops/${opId}/end`, { method: "PATCH", body: JSON.stringify({ participants: selectedParticipants }) });
-      showMsg(true, "Op ended. Participants logged."); load();
-    } catch (e: any) { showMsg(false, e.message); }
+  const endOp = async (opId: number) => {
+    try { await apiFetch(`/api/milsim-groups/${group.id}/ops/${opId}/end`, { method: "PATCH" }); showMsg(true, "Op ended."); load(); }
+    catch (e: any) { showMsg(false, e.message); }
   };
-
-  const toggleParticipant = (rosterId: string) => {
-    setSelectedParticipants(prev => prev.includes(rosterId) ? prev.filter(id => id !== rosterId) : [...prev, rosterId]);
-  };
-
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   return (
     <div className="max-w-3xl space-y-6">
       {activeOp ? (
-        <div className="bg-red-500/5 border border-red-500/30 rounded-lg p-5 space-y-5">
+        <div className="bg-red-500/5 border border-red-500/30 rounded-lg p-5 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-widest text-red-400 px-2 py-1 bg-red-500/20 border border-red-500/30 rounded animate-pulse">
-                <span className="w-1.5 h-1.5 bg-red-400 rounded-full" /> ACTIVE
-              </span>
-              <h3 className="font-display font-bold text-foreground">{activeOp.name}</h3>
-            </div>
+            <div className="flex items-center gap-3"><span className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-widest text-red-400 px-2 py-1 bg-red-500/20 border border-red-500/30 rounded animate-pulse"><span className="w-1.5 h-1.5 bg-red-400 rounded-full" /> ACTIVE</span><h3 className="font-display font-bold text-foreground">{activeOp.name}</h3></div>
+            <button onClick={() => endOp(activeOp.id)} className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-white font-display font-bold uppercase tracking-widest text-xs rounded transition-all">End Op</button>
           </div>
           {activeOp.description && <p className="text-sm text-muted-foreground">{activeOp.description}</p>}
-
-          {/* Participant selection */}
           <div>
-            <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">
-              Mark Participants — {selectedParticipants.length} selected
-            </p>
-            {roster.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No roster members found. Add members in the Roster tab first.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {roster.map((r: any) => {
-                  const selected = selectedParticipants.includes(r.id);
-                  return (
-                    <button key={r.id} onClick={() => toggleParticipant(r.id)}
-                      className={`text-xs font-display font-bold uppercase tracking-widest px-3 py-1.5 rounded border transition-all ${selected ? "bg-primary/20 border-primary/50 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                      {selected ? "✓ " : ""}{r.callsign ?? r.username ?? r.id}
-                    </button>
-                  );
-                })}
-              </div>
+            <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Checked In ({activeOp.checkins?.length ?? 0})</p>
+            {activeOp.checkins?.length === 0 ? <p className="text-sm text-muted-foreground">No check-ins yet.</p> : (
+              <div className="flex flex-wrap gap-2">{activeOp.checkins?.map((c: any) => (<span key={c.id} className="text-xs font-display font-bold uppercase tracking-widest px-2.5 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded">{c.callsign}</span>))}</div>
             )}
           </div>
-
-          <button onClick={() => endOp(activeOp.id)} className="px-5 py-2.5 bg-destructive hover:bg-destructive/90 text-white font-display font-bold uppercase tracking-widest text-xs rounded transition-all">
-            End Op & Log Participants
-          </button>
         </div>
       ) : (
         <div className="bg-card border border-border rounded-lg p-5 space-y-3">
           <h3 className="font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">Start New Op</h3>
-          <input value={opName} onChange={e => setOpName(e.target.value)} className="mf-input w-full" placeholder="Op name (e.g. Operation Iron Fist)" />
-          <textarea value={opDesc} onChange={e => setOpDesc(e.target.value)} rows={2} className="mf-input w-full resize-none" placeholder="Brief description (optional)" />
-          <button onClick={startOp} disabled={starting || !opName.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded clip-angled-sm transition-all disabled:opacity-50">
-            {starting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Siren className="w-3.5 h-3.5" />} Start Op
-          </button>
+          <input value={opName} onChange={e => setOpName(e.target.value)} className="mf-input" placeholder="Op name (e.g. Operation Iron Fist)" />
+          <input value={opDesc} onChange={e => setOpDesc(e.target.value)} className="mf-input" placeholder="Brief description (optional)" />
+          <button onClick={startOp} disabled={starting || !opName.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded clip-angled-sm transition-all disabled:opacity-50">{starting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Siren className="w-3.5 h-3.5" />} Start Op</button>
         </div>
       )}
-
       {history.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-display font-bold uppercase tracking-widest text-xs text-muted-foreground">Op History</h3>
           {history.map((op: any) => (
             <div key={op.id} className="bg-card border border-border rounded-lg overflow-hidden">
               <button onClick={() => setExpandedOp(expandedOp === op.id ? null : op.id)} className="w-full flex items-center justify-between px-5 py-3 hover:bg-secondary/20 transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground px-2 py-0.5 bg-secondary border border-border rounded">Completed</span>
-                  <span className="font-display font-bold text-sm text-foreground">{op.name}</span>
-                </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span>{(op.participants ?? []).length} participant{(op.participants ?? []).length !== 1 ? "s" : ""}</span>
-                  {expandedOp === op.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </div>
+                <div className="flex items-center gap-3"><span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground px-2 py-0.5 bg-secondary border border-border rounded">Ended</span><span className="font-display font-bold text-sm text-foreground">{op.name}</span></div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground"><span>{op.checkin_count} checked in</span>{expandedOp === op.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</div>
               </button>
-              {expandedOp === op.id && (
-                <div className="border-t border-border px-5 py-3 bg-secondary/10 space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    {op.created_date && !isNaN(new Date(op.created_date).getTime()) ? format(new Date(op.created_date), "dd MMM yyyy") : "—"}
-                  </p>
-                  {(op.participants ?? []).length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {(op.participants ?? []).map((pid: string) => {
-                        const member = roster.find((r: any) => r.id === pid);
-                        return <span key={pid} className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/20 text-primary rounded">{member?.callsign ?? pid}</span>;
-                      })}
-                    </div>
-                  )}
-                  {op.description && <p className="text-xs text-muted-foreground">{op.description}</p>}
-                </div>
-              )}
+              {expandedOp === op.id && <div className="border-t border-border px-5 py-3 bg-secondary/10 text-xs text-muted-foreground">Started: {op.started_at && !isNaN(new Date(op.started_at).getTime()) ? format(new Date(op.started_at), "PPpp") : "—"}{op.ended_at && !isNaN(new Date(op.ended_at).getTime()) && <> · Ended: {format(new Date(op.ended_at), "PPpp")}</>}</div>}
             </div>
           ))}
         </div>
@@ -1373,22 +1297,15 @@ function AARField({ label, value }: { label: string; value: string }) {
 
 function AARsTab({ group, showMsg }: any) {
   const [aars, setAars] = useState<any[]>([]);
-  const [roster, setRoster] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const emptyForm = { op_name: "", op_date: "", summary: "", objectives_hit: "", objectives_missed: "", casualties: "", commendations: "", recommendations: "", classification: "unclassified", participants: [] as string[] };
+  const [editId, setEditId] = useState<number | null>(null);
+  const emptyForm = { op_name: "", op_date: "", summary: "", objectives_hit: "", objectives_missed: "", casualties: "", commendations: "", recommendations: "", classification: "unclassified" };
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const load = () => {
-    Promise.all([
-      apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`),
-      apiFetch<any[]>(`/api/milsim-groups/${group.id}/roster`),
-    ]).then(([a, r]) => { setAars(a ?? []); setRoster(r ?? []); }).catch(() => {}).finally(() => setLoading(false));
-  };
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).then(setAars).catch(() => {}).finally(() => setLoading(false)); };
   useEffect(() => { load(); }, [group.id]);
-  const toggleParticipant = (id: string) => setForm((f: any) => ({ ...f, participants: f.participants.includes(id) ? f.participants.filter((p: string) => p !== id) : [...f.participants, id] }));
   const submit = async () => {
     if (!form.op_name.trim()) return; setSaving(true);
     try {
@@ -1419,17 +1336,6 @@ function AARsTab({ group, showMsg }: any) {
           <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Objectives Hit</label><textarea rows={3} value={form.objectives_hit} onChange={setF("objectives_hit")} className="mf-input resize-none" /></div><div><label className="mf-label">Objectives Missed</label><textarea rows={3} value={form.objectives_missed} onChange={setF("objectives_missed")} className="mf-input resize-none" /></div></div>
           <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Casualties</label><textarea rows={2} value={form.casualties} onChange={setF("casualties")} className="mf-input resize-none" /></div><div><label className="mf-label">Commendations</label><textarea rows={2} value={form.commendations} onChange={setF("commendations")} className="mf-input resize-none" /></div></div>
           <div><label className="mf-label">Recommendations</label><textarea rows={3} value={form.recommendations} onChange={setF("recommendations")} className="mf-input resize-none" /></div>
-          {roster.length > 0 && (
-            <div>
-              <label className="mf-label">Participants — {form.participants.length} selected</label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {roster.map((r: any) => {
-                  const sel = form.participants.includes(r.id);
-                  return <button key={r.id} type="button" onClick={() => toggleParticipant(r.id)} className={`text-xs font-display font-bold uppercase tracking-widest px-3 py-1.5 rounded border transition-all ${sel ? "bg-primary/20 border-primary/50 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>{sel ? "✓ " : ""}{r.callsign ?? r.id}</button>;
-                })}
-              </div>
-            </div>
-          )}
           <div className="flex gap-2">
             <button onClick={submit} disabled={saving || !form.op_name.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editId ? "Update" : "File AAR"}</button>
             <button onClick={() => { setCreating(false); setEditId(null); setForm(emptyForm); }} className="px-4 py-2 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground">Cancel</button>
@@ -1445,24 +1351,20 @@ function AARsTab({ group, showMsg }: any) {
               <button onClick={() => setExpandedId(expandedId === a.id ? null : a.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
                 <div className="flex items-center gap-3 flex-wrap"><span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${CL[a.classification] ?? ""}`}>{a.classification.replace("-"," ")}</span><span className="font-display font-bold text-sm text-foreground">{a.op_name}</span>{a.op_date && <span className="text-xs text-muted-foreground">{format(new Date(a.op_date + "T00:00:00"), "MMM dd, yyyy")}</span>}</div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ op_name: a.op_name, op_date: a.op_date?.split("T")[0] ?? "", summary: a.summary ?? "", objectives_hit: a.objectives_hit ?? "", objectives_missed: a.objectives_missed ?? "", casualties: a.casualties ?? "", commendations: a.commendations ?? "", recommendations: a.recommendations ?? "", classification: a.classification, participants: a.participants ?? [] }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ op_name: a.op_name, op_date: a.op_date?.split("T")[0] ?? "", summary: a.summary ?? "", objectives_hit: a.objectives_hit ?? "", objectives_missed: a.objectives_missed ?? "", casualties: a.casualties ?? "", commendations: a.commendations ?? "", recommendations: a.recommendations ?? "", classification: a.classification }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={e => { e.stopPropagation(); remove(a.id); }} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                   {expandedId === a.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 </div>
               </button>
               {expandedId === a.id && (
                 <div className="border-t border-border p-5 space-y-4 bg-secondary/10">
-                  {(a.participants ?? []).length > 0 && (
-                    <div><p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Participants ({a.participants.length})</p>
-                    <div className="flex flex-wrap gap-1.5">{(a.participants ?? []).map((pid: string) => { const m = roster.find((r: any) => r.id === pid); return <span key={pid} className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/20 text-primary rounded">{m?.callsign ?? pid}</span>; })}</div></div>
-                  )}
                   {a.summary && <AARField label="Summary" value={a.summary} />}
                   {a.objectives_hit && <AARField label="Objectives Hit" value={a.objectives_hit} />}
                   {a.objectives_missed && <AARField label="Objectives Missed" value={a.objectives_missed} />}
                   {a.casualties && <AARField label="Casualties" value={a.casualties} />}
                   {a.commendations && <AARField label="Commendations" value={a.commendations} />}
                   {a.recommendations && <AARField label="Recommendations" value={a.recommendations} />}
-                  <p className="text-xs text-muted-foreground">Filed: {a.created_date ? format(new Date(a.created_date), "dd MMM yyyy") : "—"}</p>
+                  <p className="text-xs text-muted-foreground">Filed by {a.created_by} · {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}</p>
                 </div>
               )}
             </div>
@@ -1513,7 +1415,7 @@ function BriefingsTab({ group, showMsg }: any) {
           <div><label className="mf-label">Status</label><select value={form.status} onChange={setF("status")} className="mf-input"><option value="draft">Draft</option><option value="published">Published (visible to all members)</option><option value="archived">Archived</option></select></div>
           <div><label className="mf-label">Area of Operations (AO)</label><input value={form.ao} onChange={setF("ao")} className="mf-input" placeholder="Grid reference, map name..." /></div>
           <div><label className="mf-label">Objectives</label><textarea rows={4} value={form.objectives} onChange={setF("objectives")} className="mf-input resize-none" placeholder="1. Secure FOB Alpha&#10;2. Eliminate HVT Bravo..." /></div>
-          <div><label className="mf-label">Comms Plan</label><textarea rows={3} value={form.comms_plan} onChange={setF("comms_plan")} className="mf-input w-full resize-none" placeholder="Primary: CH1&#10;Secondary: CH2..." /></div>
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Comms Plan</label><textarea rows={3} value={form.comms_plan} onChange={setF("comms_plan")} className="mf-input resize-none" placeholder="Primary: CH1&#10;Secondary: CH2..." /></div></div>
           <div><label className="mf-label">Additional Notes</label><textarea rows={3} value={form.additional_notes} onChange={setF("additional_notes")} className="mf-input resize-none" /></div>
           <div className="flex gap-2">
             <button onClick={submit} disabled={saving || !form.title.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editId ? "Update" : "Create"}</button>
@@ -1530,7 +1432,7 @@ function BriefingsTab({ group, showMsg }: any) {
               <button onClick={() => setExpandedId(expandedId === b.id ? null : b.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
                 <div className="flex items-center gap-3 flex-wrap"><span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${SC[b.status] ?? ""}`}>{b.status}</span><span className="font-display font-bold text-sm text-foreground">{b.title}</span>{b.op_date && <span className="text-xs text-muted-foreground">{format(new Date(b.op_date), "MMM dd, yyyy HH:mm")}</span>}</div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={e => { e.stopPropagation(); setEditId(b.id); setForm({ title: b.title, op_date: b.op_date ? b.op_date.slice(0,16) : "", ao: b.ao ?? "", objectives: b.objectives ?? "", comms_plan: b.comms_plan ?? "", roe: b.roe ?? "", additional_notes: b.additional_notes ?? "", status: b.status }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={e => { e.stopPropagation(); setEditId(b.id); setForm({ title: b.title, op_date: b.op_date ? b.op_date.slice(0,16) : "", ao: b.ao ?? "", objectives: b.objectives ?? "", comms_plan: b.comms_plan ?? "", additional_notes: b.additional_notes ?? "", status: b.status }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={e => { e.stopPropagation(); remove(b.id); }} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                   {expandedId === b.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 </div>
@@ -1601,12 +1503,14 @@ function ReadinessTab({ group }: any) {
   const [readiness, setReadiness] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
   useEffect(() => {
     apiFetch<any>(`/api/stats/readiness/${group.id}`)
       .then(data => { setReadiness(data); })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [group.id]);
+
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   if (error || !readiness) return (
     <div className="text-center py-16 border border-dashed border-border rounded-lg text-muted-foreground">
@@ -1615,39 +1519,64 @@ function ReadinessTab({ group }: any) {
       <p className="text-xs mt-2">Add roster members and log operations to generate readiness data.</p>
     </div>
   );
+
   const sc = readiness.status === "green" ? "text-green-400" : readiness.status === "amber" ? "text-yellow-400" : "text-red-400";
   const bc = readiness.status === "green" ? "bg-green-500" : readiness.status === "amber" ? "bg-yellow-500" : "bg-red-500";
-  const tierStyles: Record<string, string> = {
-    "T1":   "text-slate-200", "T2":  "text-yellow-400",
-    "T3": "text-blue-300",  "T4": "text-orange-500", "T5": "text-muted-foreground",
+
+  // Colour scheme: TIER I = blue (platinum), TIER II = gold, TIER III = silver/slate, TIER IV = bronze/orange, FORMING = muted
+  const TIER_META: Record<string, { label: string; colour: string; bg: string; border: string; badge: string; desc: string }> = {
+    "TIER I":   { label: "Elite Force",        colour: "text-blue-400",        bg: "bg-blue-500/10",   border: "border-blue-500/40",   badge: "bg-blue-500/20 text-blue-300 border-blue-400/50",       desc: "Tier I units demonstrate an extensive op record, high troop experience, strong AAR discipline, and comprehensive training documentation." },
+    "TIER II":  { label: "Operational",        colour: "text-yellow-400",      bg: "bg-yellow-500/10", border: "border-yellow-500/40", badge: "bg-yellow-500/20 text-yellow-300 border-yellow-400/50",  desc: "Active unit with solid rep, consistent operational output, and documented training resources." },
+    "TIER III": { label: "Developing",         colour: "text-slate-300",       bg: "bg-slate-400/10",  border: "border-slate-400/30",  badge: "bg-slate-400/20 text-slate-300 border-slate-400/40",    desc: "Building op history and troop experience. Some training doctrine in place." },
+    "TIER IV":  { label: "Limited Capability", colour: "text-orange-500",      bg: "bg-orange-500/10", border: "border-orange-500/30", badge: "bg-orange-500/20 text-orange-400 border-orange-500/40", desc: "New or low-activity unit with minimal documented record and few training resources." },
+    "FORMING":  { label: "Forming",            colour: "text-muted-foreground", bg: "bg-secondary",    border: "border-border",        badge: "bg-secondary text-muted-foreground border-border",       desc: "No established operational record yet." },
   };
+
+  const tier = readiness.op_capability_tier ?? "FORMING";
+  const tm = TIER_META[tier] ?? TIER_META["FORMING"];
+
+  // Score breakdown for transparency
+  const scoreBreakdown = [
+    { label: "Manpower",            max: 20, note: `${readiness.total} roster members` },
+    { label: "Member Activity",     max: 15, note: `${readiness.active_this_month}/${readiness.total} active (30d)` },
+    { label: "Operations History",  max: 20, note: `${readiness.total_ops ?? 0} ops logged` },
+    { label: "Op Recency",          max: 10, note: readiness.days_since_last_op != null ? `Last op ${readiness.days_since_last_op}d ago` : "No ops" },
+    { label: "AAR Discipline",      max: 10, note: `${readiness.completed_ops ?? 0} AARs for ${readiness.total_ops ?? 0} ops` },
+    { label: "Training Doctrine",   max: 15, note: `Knowledge factor ${readiness.training?.knowledge_factor ?? 0}/100` },
+    { label: "Discord Linked",      max: 5,  note: readiness.has_discord ? "Linked" : "Not linked" },
+    { label: "Page Maintenance",    max: 5,  note: readiness.days_since_page_update != null ? `Updated ${readiness.days_since_page_update}d ago` : "Never updated" },
+    { label: "Reputation / Reviews",max: 5,  note: `${readiness.review_count} review${readiness.review_count !== 1 ? "s" : ""}, avg ${readiness.avg_rep_score || "—"}` },
+  ];
+
   return (
     <div className="max-w-2xl space-y-5">
-      {/* Readiness header */}
+
+      {/* ── Readiness header ──────────────────────────────────────────────── */}
       <div className="bg-card border border-border rounded-lg p-6 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-display font-bold uppercase tracking-widest">Unit Readiness</h3>
           <div className="flex items-center gap-3">
             <span className={`font-display font-black text-xl uppercase ${sc}`}>{readiness.status.toUpperCase()}</span>
-            <span className={`text-xs font-display font-bold uppercase tracking-widest px-2 py-1 rounded border border-current/30 bg-current/10 ${tierStyles[readiness.op_capability_tier] ?? "text-muted-foreground"}`}>
-              {readiness.op_capability_tier}
+            <span className={`text-xs font-display font-bold uppercase tracking-widest px-2.5 py-1 rounded border ${tm.badge}`}>
+              ⊕ {tier}
             </span>
           </div>
         </div>
         <div className="space-y-1">
           <div className="flex justify-between text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">
-            <span>Composite Readiness</span><span>{readiness.readiness_pct}%</span>
+            <span>Composite Readiness Score</span><span>{readiness.readiness_pct} / 100</span>
           </div>
           <div className="h-3 bg-secondary rounded-full overflow-hidden">
             <div className={`h-full rounded-full transition-all ${bc}`} style={{ width: `${readiness.readiness_pct}%` }} />
           </div>
+          <p className={`text-right text-xs font-display font-bold ${sc}`}>{readiness.readiness_pct}% COMPOSITE</p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-border text-center">
           {[
             { label: "Total", value: readiness.total, col: "" },
             { label: "Active 7d", value: readiness.active_this_week, col: "text-green-400" },
             { label: "Active 30d", value: readiness.active_this_month, col: "text-blue-400" },
-            { label: "Win Rate", value: `${readiness.win_rate}%`, col: "text-primary" },
+            { label: "Ops Logged", value: readiness.total_ops ?? 0, col: "text-primary" },
           ].map(s => (
             <div key={s.label}>
               <p className={`text-xl font-display font-bold ${s.col || "text-foreground"}`}>{s.value}</p>
@@ -1656,7 +1585,85 @@ function ReadinessTab({ group }: any) {
           ))}
         </div>
       </div>
-      {/* Rep stats */}
+
+      {/* ── Readiness Flags ───────────────────────────────────────────────── */}
+      {readiness.flags && readiness.flags.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Readiness Flags</p>
+          {readiness.flags.map((flag: any) => (
+            <div key={flag.code} className={`rounded-lg border px-4 py-3 flex gap-3 ${
+              flag.severity === "red" ? "border-red-500/40 bg-red-500/5" : "border-yellow-500/30 bg-yellow-500/5"
+            }`}>
+              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${flag.severity === "red" ? "bg-red-500" : "bg-yellow-400"}`} />
+              <div>
+                <p className={`font-display font-bold uppercase tracking-widest text-xs ${flag.severity === "red" ? "text-red-400" : "text-yellow-400"}`}>
+                  {flag.label}
+                </p>
+                <p className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">{flag.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Score Breakdown ───────────────────────────────────────────────── */}
+      <div className="bg-card border border-border rounded-lg p-5 space-y-3">
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Score Breakdown — How Your {readiness.readiness_pct}pts Were Calculated</p>
+        <div className="space-y-2">
+          {scoreBreakdown.map(row => (
+            <div key={row.label} className="flex items-center gap-3 text-xs">
+              <span className="w-40 shrink-0 font-display font-bold uppercase tracking-widest text-muted-foreground text-[10px]">{row.label}</span>
+              <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                <div className="h-full bg-primary/40 rounded-full" style={{ width: `${Math.min(100, (row.max / 100) * 100)}%` }} />
+              </div>
+              <span className="text-[10px] text-muted-foreground font-display shrink-0 w-8 text-right">/{row.max}</span>
+              <span className="text-[10px] text-muted-foreground font-sans shrink-0 hidden sm:block">{row.note}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-muted-foreground font-sans pt-1 border-t border-border/50">
+          Max score = 100pts. Green ≥75 · Amber 45–74 · Red &lt;45. Units below squad strength (9 members) are forced Red regardless of score.
+        </p>
+      </div>
+
+      {/* ── Operational Capability Tier ───────────────────────────────────── */}
+      <div className={`rounded-lg border p-5 space-y-3 ${tm.bg} ${tm.border}`}>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Operational Capability Tier</p>
+          <span className={`text-xs font-display font-bold uppercase tracking-widest px-2.5 py-1 rounded border ${tm.badge}`}>
+            ⊕ {tier} — {tm.label}
+          </span>
+        </div>
+        <p className={`text-sm font-sans leading-relaxed ${tm.colour}`}>{tm.desc}</p>
+        <div className="space-y-1">
+          <div className="flex justify-between text-[10px] font-display uppercase tracking-widest text-muted-foreground">
+            <span>Op Capability Score</span><span>{readiness.op_cap_score ?? 0} / 100</span>
+          </div>
+          <div className="h-2 bg-secondary/60 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full ${tm.badge.includes("blue") ? "bg-blue-500" : tm.badge.includes("yellow") ? "bg-yellow-400" : tm.badge.includes("slate") ? "bg-slate-400" : tm.badge.includes("orange") ? "bg-orange-500" : "bg-muted-foreground"}`}
+              style={{ width: `${Math.min(100, readiness.op_cap_score ?? 0)}%` }} />
+          </div>
+        </div>
+        {/* Tier ladder */}
+        <div className="grid grid-cols-5 gap-1 pt-2 border-t border-border/40">
+          {(["FORMING","TIER IV","TIER III","TIER II","TIER I"] as const).map(t => {
+            const m = TIER_META[t];
+            const active = t === tier;
+            return (
+              <div key={t} className={`rounded p-1.5 text-center transition-all ${active ? `${m.bg} ${m.border} border` : "opacity-30"}`}>
+                <p className={`text-[9px] font-display font-bold uppercase tracking-widest ${active ? m.colour : "text-muted-foreground"}`}>{t === "FORMING" ? "FORMING" : t}</p>
+                <p className={`text-[8px] font-sans mt-0.5 ${active ? m.colour : "text-muted-foreground"} hidden sm:block`}>{m.label}</p>
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-[10px] text-muted-foreground font-sans">
+          Tier is calculated from: ops logged (30pts) · troop experience (25pts) · roster size (15pts) · AAR culture (10pts) · training doctrine (20pts).
+          <br/>Blue = Platinum (Tier I) · Gold (Tier II) · Silver (Tier III) · Bronze (Tier IV) · Forming.
+        </p>
+      </div>
+
+      {/* ── Rep stats ─────────────────────────────────────────────────────── */}
       <div className="bg-card border border-border rounded-lg p-5 grid grid-cols-2 gap-4">
         <div>
           <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Avg Rep Score</p>
@@ -1669,12 +1676,13 @@ function ReadinessTab({ group }: any) {
           <p className="text-[10px] text-muted-foreground">from troop ratings</p>
         </div>
       </div>
-      {/* Training Knowledge Assessment */}
+
+      {/* ── Training Knowledge Assessment ─────────────────────────────────── */}
       {readiness.training && readiness.training.knowledge_grade !== 'none' && (
         <div className={`border rounded-lg p-5 space-y-2 ${
-          readiness.training.knowledge_grade === 'expert'     ? 'border-slate-300/40 bg-slate-200/5' :
+          readiness.training.knowledge_grade === 'expert'     ? 'border-blue-400/40 bg-blue-400/5' :
           readiness.training.knowledge_grade === 'proficient' ? 'border-yellow-500/40 bg-yellow-500/5' :
-          readiness.training.knowledge_grade === 'developing' ? 'border-blue-300/40 bg-blue-300/5' :
+          readiness.training.knowledge_grade === 'developing' ? 'border-slate-400/40 bg-slate-400/5' :
           'border-orange-500/30 bg-orange-500/5'
         }`}>
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1682,9 +1690,9 @@ function ReadinessTab({ group }: any) {
               <Brain className="w-4 h-4" /> Training Knowledge
             </span>
             <span className={`text-xs font-display font-bold px-2 py-0.5 rounded border ${
-              readiness.training.knowledge_grade === 'expert' ? 'text-slate-200 border-slate-300/40' :
+              readiness.training.knowledge_grade === 'expert'     ? 'text-blue-300 border-blue-400/40' :
               readiness.training.knowledge_grade === 'proficient' ? 'text-yellow-400 border-yellow-500/40' :
-              readiness.training.knowledge_grade === 'developing' ? 'text-blue-300 border-blue-300/40' :
+              readiness.training.knowledge_grade === 'developing' ? 'text-slate-300 border-slate-400/40' :
               'text-orange-500 border-orange-600/40'
             }`}>{readiness.training.knowledge_label}</span>
           </div>
@@ -1697,12 +1705,10 @@ function ReadinessTab({ group }: any) {
       {readiness.training && readiness.training.knowledge_grade === 'none' && (
         <div className="border border-dashed border-orange-500/30 bg-orange-500/5 rounded-lg p-4 text-xs text-orange-400 font-sans flex items-start gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>No training documents filed. Upload Standard Operating Procedures, Tactics Techniques and Procedures, and drills in the <strong>Training Docs</strong> tab to improve your capability tier score.</span>
+          <span>No training documents filed. Upload SOPs, TTPs, and drills in the <strong>Training Docs</strong> tab to improve your capability tier score.</span>
         </div>
       )}
-      <p className="text-xs text-muted-foreground font-sans">
-        Capability tier now includes training documentation depth (20pt weight). Tier = ops logged, troop experience, roster size, AAR discipline, and training knowledge. Platinum/Gold/Silver/Bronze/Forming.
-      </p>
+
     </div>
   );
 }
@@ -1925,23 +1931,7 @@ function ReputationTab({ group }: any) {
 }
 
 // ─── Training Docs Tab ────────────────────────────────────────────────────────
-const DOC_TYPES = [
-  "Standard Operating Procedure",
-  "Tactics Techniques and Procedures",
-  "Field Manual",
-  "Drill",
-  "Reference",
-  "Other",
-] as const;
-
-const DOC_TYPE_SHORT: Record<string, string> = {
-  "Standard Operating Procedure":       "SOP",
-  "Tactics Techniques and Procedures":  "TTP",
-  "Field Manual":                        "FM",
-  "Drill":                               "Drill",
-  "Reference":                           "Ref",
-  "Other":                               "Other",
-};
+const DOC_TYPES = ["SOP", "TTP", "Drill", "Reference", "Rules of Engagement", "Other"] as const;
 
 function TrainingDocsTab({ group, showMsg }: any) {
   const { user } = useAuth();
@@ -1953,7 +1943,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
-    title: "", description: "", doc_type: "Standard Operating Procedure" as typeof DOC_TYPES[number], source_type: "upload" as "upload"|"google_doc"|"apple_pages"|"link", source_url: "",
+    title: "", description: "", doc_type: "SOP" as typeof DOC_TYPES[number],
     last_reviewed_at: new Date().toISOString().split("T")[0],
   });
 
@@ -1975,58 +1965,40 @@ function TrainingDocsTab({ group, showMsg }: any) {
   useEffect(() => { loadDocs(); loadAssessment(); }, [loadDocs, loadAssessment]);
 
   const uploadDoc = async () => {
-    if (!form.title.trim()) { showMsg(false, "Document title is required."); return; }
-
+    const file = fileInputRef.current?.files?.[0];
+    if (!file || !form.title.trim()) {
+      showMsg(false, "Title and file are required."); return;
+    }
+    const allowed = ["application/pdf", "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain", "text/markdown"];
+    if (!allowed.includes(file.type)) {
+      showMsg(false, "Only PDF, DOCX, DOC, TXT, or MD files are supported."); return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      showMsg(false, "File must be under 20MB."); return;
+    }
     setUploading(true);
     try {
-      let result: any;
-
-      if (form.source_type === "upload") {
-        const file = fileInputRef.current?.files?.[0];
-        if (!file) { showMsg(false, "Please select a file to upload."); setUploading(false); return; }
-        const allowed = ["application/pdf", "application/msword",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          "text/plain", "text/markdown",
-          "application/vnd.apple.pages",
-          "application/octet-stream"];
-        if (!allowed.includes(file.type) && !file.name.endsWith(".pages") && !file.name.endsWith(".md")) {
-          showMsg(false, "Supported formats: PDF, DOCX, DOC, TXT, MD, Pages"); setUploading(false); return;
-        }
-        if (file.size > 20 * 1024 * 1024) { showMsg(false, "File must be under 20MB."); setUploading(false); return; }
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("group_id", group.id);
-        fd.append("title", form.title);
-        fd.append("description", form.description);
-        fd.append("doc_type", form.doc_type);
-        fd.append("source_type", "upload");
-        fd.append("last_reviewed_at", form.last_reviewed_at ? new Date(form.last_reviewed_at).toISOString() : new Date().toISOString());
-        fd.append("uploaded_by", user?.id ?? "");
-        fd.append("uploaded_by_username", (user as any)?.username ?? "");
-        result = await apiFetch<any>("/api/training-docs/upload", { method: "POST", body: fd, isFormData: true });
-      } else {
-        if (!(form as any).source_url?.trim()) { showMsg(false, "URL is required."); setUploading(false); return; }
-        result = await apiFetch<any>("/api/training-docs/upload", {
-          method: "POST",
-          body: JSON.stringify({
-            group_id: group.id, title: form.title, description: form.description,
-            doc_type: form.doc_type, source_type: form.source_type,
-            source_url: (form as any).source_url,
-            last_reviewed_at: form.last_reviewed_at ? new Date(form.last_reviewed_at).toISOString() : new Date().toISOString(),
-            uploaded_by: user?.id ?? "", uploaded_by_username: (user as any)?.username ?? "",
-          }),
-        });
-      }
-
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("group_id", group.id);
+      fd.append("title", form.title);
+      fd.append("description", form.description);
+      fd.append("doc_type", form.doc_type);
+      fd.append("last_reviewed_at", form.last_reviewed_at ? new Date(form.last_reviewed_at).toISOString() : new Date().toISOString());
+      fd.append("uploaded_by", user?.id ?? "");
+      fd.append("uploaded_by_username", (user as any)?.username ?? "");
+      const result = await apiFetch<any>("/api/training-docs/upload", { method: "POST", body: fd, isFormData: true });
       if (result?.id) {
         setDocs(prev => [result, ...prev]);
-        setForm({ title: "", description: "", doc_type: "Standard Operating Procedure", source_type: "upload", source_url: "", last_reviewed_at: new Date().toISOString().split("T")[0] });
+        setForm({ title: "", description: "", doc_type: "SOP", last_reviewed_at: new Date().toISOString().split("T")[0] });
         if (fileInputRef.current) fileInputRef.current.value = "";
         setShowForm(false);
-        showMsg(true, form.source_type === "upload" ? "Training document uploaded." : "Training document linked.");
+        showMsg(true, "Training document uploaded.");
         loadAssessment();
-      } else { showMsg(false, "Save failed — try again."); }
-    } catch (e: any) { showMsg(false, e.message ?? "Save failed."); } finally { setUploading(false); }
+      } else { showMsg(false, "Upload failed — try again."); }
+    } catch (e: any) { showMsg(false, e.message ?? "Upload failed."); } finally { setUploading(false); }
   };
 
   const deleteDoc = async (id: string) => {
@@ -2069,12 +2041,12 @@ function TrainingDocsTab({ group, showMsg }: any) {
   };
 
   const docTypeColor: Record<string, string> = {
-    "Standard Operating Procedure":      "text-green-400 border-green-500/30 bg-green-500/10",
-    "Tactics Techniques and Procedures": "text-blue-400 border-blue-500/30 bg-blue-500/10",
-    "Field Manual":                       "text-cyan-400 border-cyan-500/30 bg-cyan-500/10",
-    "Drill":                              "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
-    "Reference":                          "text-purple-400 border-purple-500/30 bg-purple-500/10",
-    "Other":                              "text-muted-foreground border-border bg-secondary/40",
+    "SOP": "text-green-400 border-green-500/30 bg-green-500/10",
+    "TTP": "text-blue-400 border-blue-500/30 bg-blue-500/10",
+    "Drill": "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
+    "Reference": "text-purple-400 border-purple-500/30 bg-purple-500/10",
+    "Rules of Engagement": "text-red-400 border-red-500/30 bg-red-500/10",
+    "Other": "text-muted-foreground border-border bg-secondary/40",
   };
 
   return (
@@ -2120,7 +2092,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h3 className="font-display font-bold uppercase tracking-widest">Training Documents</h3>
-          <p className="text-xs text-muted-foreground font-sans mt-0.5">Upload Standard Operating Procedures, Tactics Techniques and Procedures, Field Manuals, and drill documents. Depth and recency directly influence your unit's capability tier.</p>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Upload SOPs, TTPs, drills, and references. Depth and recency directly influence your unit's capability tier.</p>
         </div>
         <button onClick={() => setShowForm(v => !v)}
           className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs rounded clip-angled-sm transition-all">
@@ -2133,23 +2105,11 @@ function TrainingDocsTab({ group, showMsg }: any) {
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
           className="bg-card border border-primary/30 rounded-lg p-5 space-y-4">
           <h4 className="font-display font-bold uppercase tracking-widest text-sm text-primary">New Training Document</h4>
-
-          {/* Source type selector */}
-          <div className="flex gap-2 flex-wrap">
-            {(["upload", "google_doc", "apple_pages", "link"] as const).map(st => (
-              <button key={st} type="button"
-                onClick={() => setForm(f => ({ ...f, source_type: st }))}
-                className={`px-3 py-1.5 text-[10px] font-display font-bold uppercase tracking-widest rounded border transition-all ${form.source_type === st ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}>
-                {st === "upload" ? "📎 File Upload" : st === "google_doc" ? "📄 Google Doc" : st === "apple_pages" ? "🍎 Apple Pages" : "🔗 Link"}
-              </button>
-            ))}
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
               <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Document Title *</label>
               <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                placeholder="e.g. Section Attack Standard Operating Procedure" className="mf-input w-full" />
+                placeholder="e.g. Section Attack Procedure SOP" className="mf-input w-full" />
             </div>
             <div>
               <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Document Type</label>
@@ -2166,40 +2126,20 @@ function TrainingDocsTab({ group, showMsg }: any) {
               <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 rows={2} placeholder="Brief summary of what this document covers..." className="mf-input w-full resize-none" />
             </div>
-
-            {/* File input — upload mode */}
-            {form.source_type === "upload" && (
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">File * (PDF, DOCX, DOC, TXT, MD — max 20MB)</label>
-                <div className="flex items-center gap-3">
-                  <button type="button" onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 px-4 py-2 border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground font-display font-bold uppercase tracking-wider text-xs rounded transition-all">
-                    <Upload className="w-3.5 h-3.5" /> Choose File
-                  </button>
-                  <span className="text-xs text-muted-foreground font-sans" id="file-label">No file selected</span>
-                </div>
-                <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.md,.pages"
-                  className="hidden"
-                  onChange={e => { const f = e.target.files?.[0]; if (f) { const lbl = document.getElementById('file-label'); if (lbl) lbl.textContent = f.name; } }} />
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">File * (PDF, DOCX, DOC, TXT, MD — max 20MB)</label>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2 border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground font-display font-bold uppercase tracking-wider text-xs rounded transition-all">
+                  <Upload className="w-3.5 h-3.5" /> Choose File
+                </button>
+                <span className="text-xs text-muted-foreground font-sans" id="file-label">No file selected</span>
               </div>
-            )}
-
-            {/* URL input — Google Doc / Apple Pages / Link modes */}
-            {(form.source_type === "google_doc" || form.source_type === "apple_pages" || form.source_type === "link") && (
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">
-                  {form.source_type === "google_doc" ? "Google Doc URL *" : form.source_type === "apple_pages" ? "Apple Pages / iCloud URL *" : "Document URL *"}
-                </label>
-                <input value={form.source_url ?? ""} onChange={e => setForm(f => ({ ...f, source_url: e.target.value }))}
-                  placeholder={form.source_type === "google_doc" ? "https://docs.google.com/document/d/..." : form.source_type === "apple_pages" ? "https://www.icloud.com/pages/..." : "https://..."}
-                  className="mf-input w-full" />
-                {form.source_type === "google_doc" && (
-                  <p className="text-[10px] text-muted-foreground font-sans mt-1">Make sure the doc is shared with "Anyone with the link can view" before saving.</p>
-                )}
-              </div>
-            )}
+              <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.md"
+                className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) { const lbl = document.getElementById('file-label'); if (lbl) lbl.textContent = f.name; } }} />
+            </div>
           </div>
-
           <div className="flex justify-end gap-2">
             <button onClick={() => setShowForm(false)}
               className="px-4 py-2 border border-border hover:border-destructive/50 text-muted-foreground hover:text-destructive font-display font-bold uppercase tracking-wider text-xs rounded transition-all">
@@ -2208,7 +2148,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
             <button onClick={uploadDoc} disabled={uploading}
               className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs rounded clip-angled-sm transition-all disabled:opacity-50">
               {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-              {uploading ? "Saving..." : form.source_type === "upload" ? "Upload" : "Save Link"}
+              {uploading ? "Uploading..." : "Upload"}
             </button>
           </div>
         </motion.div>
@@ -2221,7 +2161,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
         <div className="text-center py-14 border border-dashed border-border rounded-lg text-muted-foreground">
           <Brain className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p className="font-display text-sm uppercase tracking-widest">No Training Documents</p>
-          <p className="text-xs mt-2 font-sans">Upload your Standard Operating Procedures, Tactics Techniques and Procedures, and drill references to build your knowledge baseline.</p>
+          <p className="text-xs mt-2 font-sans">Upload your SOPs, TTPs, and drill references to build your knowledge baseline.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -2236,7 +2176,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span className="font-display font-bold text-sm">{doc.title}</span>
                     <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${docTypeColor[doc.doc_type] ?? docTypeColor.Other}`}>
-                      {DOC_TYPE_SHORT[doc.doc_type] ?? doc.doc_type}
+                      {doc.doc_type}
                     </span>
                     {stale && (
                       <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border border-orange-500/40 text-orange-400 bg-orange-500/10">
@@ -2255,8 +2195,8 @@ function TrainingDocsTab({ group, showMsg }: any) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {(doc.file_url || doc.source_url) && (
-                    <a href={doc.source_url || doc.file_url} target="_blank" rel="noopener noreferrer"
+                  {doc.file_url && (
+                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
                       className="p-1.5 text-muted-foreground hover:text-primary transition-colors" title="View document">
                       <Eye className="w-4 h-4" />
                     </a>
