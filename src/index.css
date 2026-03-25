@@ -228,3 +228,8 @@
 .uav-orbit {
   animation: uav-orbit 120s linear infinite;
 }
+
+/* Shared field label utility */
+.field-label {
+  @apply block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5;
+}
