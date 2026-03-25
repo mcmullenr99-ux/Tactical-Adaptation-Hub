@@ -288,17 +288,45 @@ function MField({ label, children }: { label: string; children: React.ReactNode 
 }
 
 const MC_COUNTRIES = [
-  "🇬🇧 United Kingdom", "🇺🇸 United States", "🇨🇦 Canada",
-  "🇦🇺 Australia", "🇳🇿 New Zealand", "🇩🇪 Germany", "🇫🇷 France",
-  "🇮🇹 Italy", "🇵🇱 Poland", "🇳🇱 Netherlands", "🇳🇴 Norway",
-  "🇸🇪 Sweden", "🇩🇰 Denmark", "🇧🇪 Belgium", "🇪🇸 Spain",
-  "🇵🇹 Portugal", "🇹🇷 Turkey", "🇯🇵 Japan", "🇰🇷 South Korea",
-  "🇧🇷 Brazil", "International", "Other",
+  // Europe
+  "🇬🇧 United Kingdom", "🇩🇪 Germany", "🇫🇷 France", "🇮🇹 Italy",
+  "🇵🇱 Poland", "🇳🇱 Netherlands", "🇳🇴 Norway", "🇸🇪 Sweden",
+  "🇩🇰 Denmark", "🇧🇪 Belgium", "🇪🇸 Spain", "🇵🇹 Portugal",
+  "🇨🇿 Czech Republic", "🇸🇰 Slovakia", "🇭🇺 Hungary", "🇷🇴 Romania",
+  "🇧🇬 Bulgaria", "🇬🇷 Greece", "🇭🇷 Croatia", "🇷🇸 Serbia",
+  "🇺🇦 Ukraine", "🇫🇮 Finland", "🇦🇹 Austria", "🇨🇭 Switzerland",
+  "🇱🇺 Luxembourg", "🇮🇪 Ireland", "🇱🇹 Lithuania", "🇱🇻 Latvia",
+  "🇪🇪 Estonia", "🇸🇮 Slovenia",
+  // North America
+  "🇺🇸 United States", "🇨🇦 Canada", "🇲🇽 Mexico",
+  // South America
+  "🇧🇷 Brazil", "🇦🇷 Argentina", "🇨🇱 Chile", "🇨🇴 Colombia",
+  "🇵🇪 Peru", "🇻🇪 Venezuela", "🇺🇾 Uruguay", "🇪🇨 Ecuador", "🇧🇴 Bolivia",
+  // Middle East
+  "🇹🇷 Turkey", "🇸🇦 Saudi Arabia", "🇮🇱 Israel", "🇦🇪 UAE",
+  "🇶🇦 Qatar", "🇰🇼 Kuwait", "🇮🇶 Iraq", "🇮🇷 Iran",
+  "🇯🇴 Jordan", "🇱🇧 Lebanon", "🇪🇬 Egypt", "🇲🇦 Morocco",
+  // Africa
+  "🇿🇦 South Africa", "🇳🇬 Nigeria", "🇰🇪 Kenya", "🇬🇭 Ghana",
+  "🇪🇹 Ethiopia", "🇹🇿 Tanzania",
+  // Asia
+  "🇯🇵 Japan", "🇰🇷 South Korea", "🇨🇳 China", "🇮🇳 India",
+  "🇵🇰 Pakistan", "🇧🇩 Bangladesh", "🇻🇳 Vietnam", "🇹🇭 Thailand",
+  "🇵🇭 Philippines", "🇮🇩 Indonesia", "🇲🇾 Malaysia", "🇸🇬 Singapore",
+  "🇹🇼 Taiwan", "🇭🇰 Hong Kong",
+  // Oceania
+  "🇦🇺 Australia", "🇳🇿 New Zealand", "🇵🇬 Papua New Guinea", "🇫🇯 Fiji",
+  // Other
+  "International", "Other",
 ];
 const MC_LANGS = [
   "English", "German", "French", "Spanish", "Italian", "Polish",
-  "Dutch", "Portuguese", "Norwegian", "Swedish", "Danish", "Turkish",
-  "Japanese", "Korean", "Other",
+  "Dutch", "Portuguese", "Norwegian", "Swedish", "Danish", "Finnish",
+  "Turkish", "Arabic", "Hebrew", "Japanese", "Korean", "Chinese (Mandarin)",
+  "Tagalog", "Vietnamese", "Thai", "Malay", "Indonesian",
+  "Ukrainian", "Romanian", "Czech", "Slovak", "Hungarian", "Greek",
+  "Croatian", "Serbian", "Bulgarian", "Estonian", "Latvian", "Lithuanian",
+  "Hindi", "Other",
 ];
 
 function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {

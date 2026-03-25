@@ -37,13 +37,40 @@ const PRO_STATUS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/fun
 
 // Regions mapped from country field
 const REGION_MAP: Record<string, string> = {
+  // Europe
   "🇬🇧 United Kingdom": "EU", "🇩🇪 Germany": "EU", "🇫🇷 France": "EU",
   "🇮🇹 Italy": "EU", "🇵🇱 Poland": "EU", "🇳🇱 Netherlands": "EU",
   "🇳🇴 Norway": "EU", "🇸🇪 Sweden": "EU", "🇩🇰 Denmark": "EU",
   "🇧🇪 Belgium": "EU", "🇪🇸 Spain": "EU", "🇵🇹 Portugal": "EU",
-  "🇹🇷 Turkey": "EU", "🇺🇸 United States": "NA", "🇨🇦 Canada": "NA",
-  "🇧🇷 Brazil": "SA", "🇦🇺 Australia": "APAC", "🇳🇿 New Zealand": "APAC",
-  "🇯🇵 Japan": "APAC", "🇰🇷 South Korea": "APAC",
+  "🇨🇿 Czech Republic": "EU", "🇸🇰 Slovakia": "EU", "🇭🇺 Hungary": "EU",
+  "🇷🇴 Romania": "EU", "🇧🇬 Bulgaria": "EU", "🇬🇷 Greece": "EU",
+  "🇭🇷 Croatia": "EU", "🇷🇸 Serbia": "EU", "🇺🇦 Ukraine": "EU",
+  "🇫🇮 Finland": "EU", "🇦🇹 Austria": "EU", "🇨🇭 Switzerland": "EU",
+  "🇱🇺 Luxembourg": "EU", "🇮🇪 Ireland": "EU", "🇱🇹 Lithuania": "EU",
+  "🇱🇻 Latvia": "EU", "🇪🇪 Estonia": "EU", "🇸🇮 Slovenia": "EU",
+  // North America
+  "🇺🇸 United States": "NA", "🇨🇦 Canada": "NA", "🇲🇽 Mexico": "NA",
+  // South America
+  "🇧🇷 Brazil": "SA", "🇦🇷 Argentina": "SA", "🇨🇱 Chile": "SA",
+  "🇨🇴 Colombia": "SA", "🇵🇪 Peru": "SA", "🇻🇪 Venezuela": "SA",
+  "🇺🇾 Uruguay": "SA", "🇪🇨 Ecuador": "SA", "🇧🇴 Bolivia": "SA",
+  // Middle East
+  "🇹🇷 Turkey": "ME", "🇸🇦 Saudi Arabia": "ME", "🇮🇱 Israel": "ME",
+  "🇦🇪 UAE": "ME", "🇶🇦 Qatar": "ME", "🇰🇼 Kuwait": "ME",
+  "🇮🇶 Iraq": "ME", "🇮🇷 Iran": "ME", "🇯🇴 Jordan": "ME",
+  "🇱🇧 Lebanon": "ME", "🇪🇬 Egypt": "ME", "🇲🇦 Morocco": "ME",
+  // Africa
+  "🇿🇦 South Africa": "AF", "🇳🇬 Nigeria": "AF", "🇰🇪 Kenya": "AF",
+  "🇬🇭 Ghana": "AF", "🇪🇹 Ethiopia": "AF", "🇹🇿 Tanzania": "AF",
+  // Asia
+  "🇯🇵 Japan": "ASIA", "🇰🇷 South Korea": "ASIA", "🇨🇳 China": "ASIA",
+  "🇮🇳 India": "ASIA", "🇵🇰 Pakistan": "ASIA", "🇧🇩 Bangladesh": "ASIA",
+  "🇻🇳 Vietnam": "ASIA", "🇹🇭 Thailand": "ASIA", "🇵🇭 Philippines": "ASIA",
+  "🇮🇩 Indonesia": "ASIA", "🇲🇾 Malaysia": "ASIA", "🇸🇬 Singapore": "ASIA",
+  "🇹🇼 Taiwan": "ASIA", "🇭🇰 Hong Kong": "ASIA",
+  // Oceania
+  "🇦🇺 Australia": "OCE", "🇳🇿 New Zealand": "OCE",
+  "🇵🇬 Papua New Guinea": "OCE", "🇫🇯 Fiji": "OCE",
 };
 
 function getRegion(country: string | null | undefined): string {
@@ -419,7 +446,7 @@ function buildLeaderboardRows(
       if (!byRegion[r]) byRegion[r] = [];
       byRegion[r].push(g);
     });
-    const regionOrder = ["EU", "NA", "APAC", "SA", "INTL"];
+    const regionOrder = ["EU", "NA", "SA", "ME", "AF", "ASIA", "OCE", "INTL"];
     // For region: we paginate per-region top 5, all regions together
     sorted = regionOrder.flatMap(r =>
       (byRegion[r] ?? [])
