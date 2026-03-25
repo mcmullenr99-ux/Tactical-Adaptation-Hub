@@ -7,7 +7,8 @@ import { useSEO } from "@/hooks/useSEO";
 import { useLocation } from "wouter";
 import {
   Crown, Check, BarChart3, Shield, FileText, Map,
-  Award, Users, Bot, Loader2, Star, ChevronRight, Rocket, Globe, Zap
+  Award, Users, Bot, Loader2, Star, ChevronRight, Rocket, Globe, Zap,
+  Archive, AlertCircle
 } from "lucide-react";
 
 const CHECKOUT_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/createProCheckout";
@@ -28,15 +29,17 @@ const FREE_FEATURES = [
 
 const PRO_FEATURES = [
   { icon: BarChart3, title: "Analytics Dashboard", desc: "Attendance trends, duty status over time, member retention, op frequency — full insight into your unit's health at a glance." },
-  { icon: Rocket, title: "Campaign System", desc: "Group ops into named campaigns with progression tracking, campaign banners, and a full archived history for every operation series." },
+  { icon: Rocket, title: "Campaign System + Ribbons", desc: "Group ops into named campaigns with progression tracking, campaign banners, ribbon rack display, and a full archived history." },
   { icon: FileText, title: "Unlimited Training Docs", desc: "Upload without limits. AI-powered document scoring, quality flags, depth analysis, and auto-summaries generated for every doc." },
   { icon: Map, title: "Advanced ORBAT Export", desc: "Export print-ready classified PDF briefing packs with NATO APP-6 symbology, echelons, and custom classification markings." },
-  { icon: Award, title: "Award Certificate Generator", desc: "Auto-generate printable, shareable award certificates with your unit's branding for every commendation issued." },
-  { icon: Globe, title: "Priority Registry Listing", desc: "Your unit appears at the top of the public Milsim Registry — the first impression for every potential recruit browsing for a unit." },
+  { icon: Globe, title: "Priority Registry Listing + Verified Badge", desc: "Your unit is featured at the top of the registry with a TAG Verified checkmark — the first impression for every recruit browsing for a unit." },
   { icon: Bot, title: "Discord Bot — Pro Suite", desc: "Automated op announcements, AAR summaries posted to your channels, and role-sync on roster changes. Set it and forget it." },
   { icon: Shield, title: "Full Reputation Reports", desc: "Access complete operator reputation history with export support. Free users see summary only — Pro commanders see everything." },
   { icon: Star, title: "Duty Roster Scheduling", desc: "Advanced rotation planner with assignment scheduling, conflict detection, and member notifications built in." },
-  { icon: Zap, title: "Webhook & API Access", desc: "Connect your unit's systems directly. Build custom integrations with full API access and webhook support for any platform." },
+  { icon: Zap, title: "Recruit Pipeline Board", desc: "Kanban-style applicant tracker: Applied → Reviewing → Interview → Accepted. Full history and notes per applicant." },
+  { icon: Archive, title: "Unit Legacy & Era Timeline", desc: "A permanent public record of every op, campaign, and AAR — a visual history your unit can be proud of." },
+  { icon: AlertCircle, title: "Smart LOA Alerts", desc: "Auto-flag when too many members are on LOA before an upcoming op. Never go undermanned again." },
+  { icon: Users, title: "Inactivity Purge Assistant", desc: "Weekly report of members with no activity in 30 days. One-click bulk status update to keep your roster clean." },
 ];
 
 const COMPARISON = [
@@ -48,12 +51,13 @@ const COMPARISON = [
   { label: "ORBAT export", free: "Screen only", pro: "PDF export + classification" },
   { label: "Discord bot", free: "Basic", pro: "Full Pro automation suite" },
   { label: "API / Webhooks", free: "None", pro: "Full access" },
-  { label: "Award certificates", free: "None", pro: "Auto-generated + branded" },
+  { label: "Recruit pipeline", free: "None", pro: "Full Kanban board" },
+  { label: "Unit legacy page", free: "None", pro: "Full timeline + ribbons" },
   { label: "Duty roster planner", free: "Basic", pro: "Advanced scheduling" },
 ];
 
 const STATS = [
-  { value: "10+", label: "Pro-only features" },
+  { value: "12+", label: "Pro-only features" },
   { value: "£10", label: "Per month, per unit" },
   { value: "Cancel", label: "Anytime, no questions" },
   { value: "Instant", label: "Activation on payment" },
@@ -257,7 +261,7 @@ export default function CommanderPro() {
               )}
 
               <div className="mt-6 pt-6 border-t border-border grid grid-cols-2 gap-2">
-                {["Analytics dashboard", "Campaign system", "Unlimited training docs", "Discord Pro bot", "ORBAT PDF export", "Priority listing", "API + webhooks", "Award certificates"].map(f => (
+                {["Analytics dashboard", "Campaign system", "Recruit pipeline", "Discord Pro bot", "ORBAT PDF export", "Priority listing + Verified badge", "Unit legacy page", "Smart LOA alerts"].map(f => (
                   <div key={f} className="flex items-center gap-2 text-xs text-muted-foreground font-sans">
                     <Check className="w-3 h-3 text-yellow-400 shrink-0" /> {f}
                   </div>

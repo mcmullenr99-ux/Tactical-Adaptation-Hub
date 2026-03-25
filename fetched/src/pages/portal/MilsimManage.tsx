@@ -11,7 +11,7 @@ import {
   Pencil, Check, X, Radio, Star, Medal, Wifi, WifiOff,
   GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp,
   BarChart3, Crown, TrendingUp, Trophy,
-  Rocket, Flag, Link2, Calendar, Target
+  Rocket, Flag, Link2, Calendar, Target, UserCheck, UserX, Clock, ChevronRight, Archive, Zap, Bell
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
@@ -31,7 +31,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "analytics" | "campaigns";
+type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "analytics" | "campaigns" | "pipeline" | "legacy";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -91,6 +91,8 @@ export default function MilsimManage() {
     { id: "questions", label: "App Questions", icon: FileText },
     { id: "campaigns", label: "⭐ Campaigns", icon: Rocket },
     { id: "analytics", label: "⭐ Analytics", icon: BarChart3 },
+    { id: "pipeline", label: "⭐ Pipeline", icon: UserCheck },
+    { id: "legacy", label: "Unit Legacy", icon: Archive },
   ];
 
   return (
@@ -155,6 +157,8 @@ export default function MilsimManage() {
           {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
           {tab === "sops" && <SopsTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
           {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+          {tab === "pipeline" && <RecruitPipelineTab group={group} showMsg={showMsg} />}
+          {tab === "legacy" && <UnitLegacyTab group={group} />}
         </motion.div>
       </div>
     </PortalLayout>
@@ -1557,6 +1561,12 @@ function ReadinessTab({ group }: any) {
         </div>
         <p className="text-xs text-muted-foreground font-sans">Readiness based on portal logins in the last 7 days. 70%+ = Green, 40–69% = Amber, &lt;40% = Red.</p>
       </div>
+
+      {/* Smart LOA Alert */}
+      <SmartLOAAlert group={group} />
+
+      {/* Inactivity Purge */}
+      <InactivityPurgePanel group={group} />
     </div>
   );
 }
@@ -2264,6 +2274,465 @@ function CampaignsTab({ group }: any) {
           onClose={() => setModal({ open: false, campaign: null })}
         />
       )}
+    </div>
+  );
+}
+
+// ─── Recruit Pipeline (Pro) ───────────────────────────────────────────────────
+const PIPELINE_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimApplications";
+
+const PIPELINE_COLUMNS = [
+  { id: "pending", label: "Applied", color: "border-yellow-500/40 bg-yellow-500/5", dot: "bg-yellow-400" },
+  { id: "reviewing", label: "Reviewing", color: "border-blue-500/40 bg-blue-500/5", dot: "bg-blue-400" },
+  { id: "interview", label: "Interview", color: "border-purple-500/40 bg-purple-500/5", dot: "bg-purple-400" },
+  { id: "approved", label: "Accepted", color: "border-green-500/40 bg-green-500/5", dot: "bg-green-400" },
+  { id: "rejected", label: "Rejected", color: "border-red-500/40 bg-red-500/5", dot: "bg-red-400" },
+];
+
+function RecruitPipelineTab({ group, showMsg }: any) {
+  const [apps, setApps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+  const [selected, setSelected] = useState<any | null>(null);
+  const [moving, setMoving] = useState(false);
+
+  useEffect(() => {
+    fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`)
+      .then(r => r.json())
+      .then(s => {
+        setIsPro(s.is_pro);
+        if (s.is_pro) loadApps();
+        else setLoading(false);
+      })
+      .catch(() => { setIsPro(false); setLoading(false); });
+  }, [group.id]);
+
+  const loadApps = () => {
+    const token = localStorage.getItem("auth_token") ?? "";
+    fetch(`${PIPELINE_URL}?path=${encodeURIComponent(`/${group.id}/applications`)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(data => { setApps(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  const moveApp = async (app: any, newStatus: string) => {
+    setMoving(true);
+    const token = localStorage.getItem("auth_token") ?? "";
+    try {
+      await fetch(`${PIPELINE_URL}?path=${encodeURIComponent(`/${app.id}/review`)}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus, review_note: "" }),
+      });
+      setApps(prev => prev.map(a => a.id === app.id ? { ...a, status: newStatus } : a));
+      if (selected?.id === app.id) setSelected({ ...selected, status: newStatus });
+      showMsg(true, `Moved ${app.applicant_username} to ${newStatus}`);
+    } catch { showMsg(false, "Failed to update status"); }
+    setMoving(false);
+  };
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          The Recruitment Pipeline is a Pro feature. Track applicants from applied → reviewing → interview → accepted with full notes and history.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]">
+        <Crown className="w-4 h-4" /> Upgrade to Pro
+      </a>
+    </div>
+  );
+
+  const byStatus = (status: string) => apps.filter(a => a.status === status);
+  const total = apps.length;
+  const pending = byStatus("pending").length;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
+            <UserCheck className="w-4 h-4 text-yellow-400" />
+          </div>
+          <div>
+            <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Recruitment Pipeline</h2>
+            <p className="text-xs font-sans text-muted-foreground">{total} applicant{total !== 1 ? "s" : ""} total{pending > 0 ? ` · ${pending} awaiting review` : ""}</p>
+          </div>
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
+            <Crown className="w-3 h-3" /> Pro
+          </span>
+        </div>
+        {pending > 0 && (
+          <span className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-3 py-1.5 rounded animate-pulse">
+            <Bell className="w-3 h-3" /> {pending} new
+          </span>
+        )}
+      </div>
+
+      {total === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+          <UserCheck className="w-12 h-12 text-muted-foreground/30" />
+          <div>
+            <p className="font-display font-bold uppercase tracking-wider text-foreground mb-1">No Applications Yet</p>
+            <p className="text-sm text-muted-foreground font-sans">Applicants will appear here when they apply to join your unit.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          {PIPELINE_COLUMNS.map(col => {
+            const colApps = byStatus(col.id);
+            return (
+              <div key={col.id} className={`rounded-lg border p-3 ${col.color} min-h-[200px]`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`w-2 h-2 rounded-full ${col.dot}`} />
+                  <span className="font-display font-bold uppercase tracking-wider text-xs text-foreground">{col.label}</span>
+                  <span className="ml-auto text-xs font-display font-bold text-muted-foreground">{colApps.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {colApps.map(app => (
+                    <button key={app.id} onClick={() => setSelected(app)}
+                      className="w-full text-left bg-card border border-border rounded p-3 hover:border-primary/50 transition-all group">
+                      <p className="font-display font-bold text-sm text-foreground">{app.applicant_username}</p>
+                      <p className="text-[10px] font-sans text-muted-foreground mt-0.5 flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> {app.created_date ? new Date(app.created_date).toLocaleDateString() : "—"}
+                      </p>
+                      <ChevronRight className="w-3 h-3 text-muted-foreground mt-1 group-hover:text-primary transition-colors" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Detail panel */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setSelected(null)}>
+          <div className="bg-card border border-border rounded-xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6 space-y-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-display font-black text-xl uppercase tracking-wider text-foreground">{selected.applicant_username}</h3>
+                <p className="text-xs font-sans text-muted-foreground">Applied {selected.created_date ? new Date(selected.created_date).toLocaleDateString() : "—"}</p>
+              </div>
+              <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="space-y-3">
+              {selected.answers && Object.entries(selected.answers).map(([q, a]: any) => (
+                <div key={q} className="bg-secondary/30 rounded p-3">
+                  <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-1">{q}</p>
+                  <p className="text-sm font-sans text-foreground">{a}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
+              {PIPELINE_COLUMNS.filter(c => c.id !== selected.status).map(col => (
+                <button key={col.id} disabled={moving} onClick={() => moveApp(selected, col.id)}
+                  className="text-xs font-display font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-all disabled:opacity-50">
+                  → {col.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Unit Legacy ──────────────────────────────────────────────────────────────
+function UnitLegacyTab({ group }: any) {
+  const [ops, setOps] = useState<any[]>([]);
+  const [aars, setAars] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem("auth_token") ?? "";
+
+  useEffect(() => {
+    const headers = { Authorization: `Bearer ${token}` };
+    Promise.all([
+      fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimOps?path=${encodeURIComponent(`/${group.id}/ops`)}`, { headers }).then(r => r.json()).catch(() => []),
+      fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/aars?path=${encodeURIComponent(`/${group.id}/aars`)}`, { headers }).then(r => r.json()).catch(() => []),
+      fetch(`${CAMPAIGNS_URL}?path=${encodeURIComponent(`/${group.id}/campaigns`)}`, { headers }).then(r => r.json()).catch(() => []),
+    ]).then(([o, a, c]) => {
+      setOps(Array.isArray(o) ? o : []);
+      setAars(Array.isArray(a) ? a : []);
+      setCampaigns(Array.isArray(c) ? c : []);
+      setLoading(false);
+    });
+  }, [group.id]);
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  // Build timeline entries
+  type TimelineEntry = { date: string; type: "op" | "aar" | "campaign"; title: string; sub: string; icon: typeof Siren; color: string };
+  const entries: TimelineEntry[] = [
+    ...ops.filter(o => o.scheduled_at).map(o => ({
+      date: o.scheduled_at, type: "op" as const,
+      title: o.name, sub: `${o.game || "Unknown Game"} · ${o.event_type || "Op"} · ${o.status || ""}`,
+      icon: Siren, color: "text-primary border-primary/40 bg-primary/10"
+    })),
+    ...aars.filter(a => a.created_date).map(a => ({
+      date: a.created_date, type: "aar" as const,
+      title: a.title || a.op_name || "AAR", sub: `By ${a.author_username} · Outcome: ${a.outcome || "—"}`,
+      icon: ClipboardList, color: "text-green-400 border-green-500/40 bg-green-500/10"
+    })),
+    ...campaigns.filter(c => c.start_date).map(c => ({
+      date: c.start_date, type: "campaign" as const,
+      title: `Campaign: ${c.name}`, sub: `${c.status} · ${(c.op_ids || []).length} ops`,
+      icon: Rocket, color: "text-yellow-400 border-yellow-500/40 bg-yellow-500/10"
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const totalOps = ops.length;
+  const totalAARs = aars.length;
+  const totalCampaigns = campaigns.length;
+  const firstOpDate = ops.length > 0 ? ops.reduce((earliest, o) => (!earliest || new Date(o.scheduled_at) < new Date(earliest)) ? o.scheduled_at : earliest, null) : null;
+
+  return (
+    <div className="space-y-8 max-w-4xl">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-secondary border border-border rounded flex items-center justify-center">
+          <Archive className="w-4 h-4 text-foreground" />
+        </div>
+        <div>
+          <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Unit Legacy</h2>
+          <p className="text-xs font-sans text-muted-foreground">The permanent record of {group.name}</p>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Total Ops", value: totalOps, color: "text-primary" },
+          { label: "AARs Filed", value: totalAARs, color: "text-green-400" },
+          { label: "Campaigns", value: totalCampaigns, color: "text-yellow-400" },
+          { label: "Since", value: firstOpDate ? new Date(firstOpDate).getFullYear() : "—", color: "text-foreground" },
+        ].map(s => (
+          <div key={s.label} className="bg-card border border-border rounded-lg p-4 text-center">
+            <p className={`font-display font-black text-2xl ${s.color}`}>{s.value}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Campaign Ribbons */}
+      {campaigns.length > 0 && (
+        <div>
+          <h3 className="font-display font-bold uppercase tracking-wider text-sm text-muted-foreground mb-3">Campaign Ribbons</h3>
+          <div className="flex flex-wrap gap-3">
+            {campaigns.map(c => {
+              const outcome = c.outcome || "incomplete";
+              const color = outcome === "victory" ? "from-green-600 to-green-800 border-green-500/40" :
+                            outcome === "defeat" ? "from-red-700 to-red-900 border-red-500/40" :
+                            outcome === "draw" ? "from-yellow-600 to-yellow-800 border-yellow-500/40" :
+                            "from-zinc-700 to-zinc-900 border-zinc-500/40";
+              return (
+                <div key={c.id} className={`bg-gradient-to-b ${color} border rounded px-4 py-2 text-center min-w-[80px]`}>
+                  <p className="text-xs font-display font-black uppercase tracking-wider text-white leading-tight">{c.name}</p>
+                  <p className="text-[9px] font-sans text-white/70 mt-0.5">{outcome.toUpperCase()}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Timeline */}
+      <div>
+        <h3 className="font-display font-bold uppercase tracking-wider text-sm text-muted-foreground mb-4">Full Timeline</h3>
+        {entries.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <Archive className="w-10 h-10 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground font-sans">No ops, AARs, or campaigns logged yet.</p>
+          </div>
+        ) : (
+          <div className="relative space-y-3 pl-6 border-l border-border">
+            {entries.map((e, i) => (
+              <div key={i} className="relative">
+                <div className={`absolute -left-[25px] w-4 h-4 rounded-full border flex items-center justify-center ${e.color}`}>
+                  <e.icon className="w-2 h-2" />
+                </div>
+                <div className="bg-card border border-border rounded-lg p-3 ml-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-display font-bold text-sm text-foreground">{e.title}</p>
+                    <p className="text-[10px] font-sans text-muted-foreground shrink-0">
+                      {new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  <p className="text-xs font-sans text-muted-foreground mt-0.5">{e.sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Smart LOA Alert ──────────────────────────────────────────────────────────
+function SmartLOAAlert({ group }: any) {
+  const [loas, setLoas] = useState<any[]>([]);
+  const [ops, setOps] = useState<any[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const token = localStorage.getItem("auth_token") ?? "";
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimLOA?path=${encodeURIComponent(`/${group.id}/loas`)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(r => r.json()).catch(() => []),
+      fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimOps?path=${encodeURIComponent(`/${group.id}/ops`)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(r => r.json()).catch(() => []),
+    ]).then(([l, o]) => {
+      setLoas(Array.isArray(l) ? l.filter((x: any) => x.status === "Active") : []);
+      setOps(Array.isArray(o) ? o : []);
+      setLoaded(true);
+    });
+  }, [group.id]);
+
+  if (!loaded) return null;
+
+  const now = new Date();
+  const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  // Find upcoming ops in next 7 days
+  const upcomingOps = ops.filter(o => {
+    const d = new Date(o.scheduled_at);
+    return d >= now && d <= next7Days && o.status !== "cancelled";
+  });
+
+  if (upcomingOps.length === 0 || loas.length === 0) return null;
+
+  // Check if LOA count is > 30% of roster
+  const rosterCount = group.roster?.length ?? 0;
+  const loaPercent = rosterCount > 0 ? Math.round((loas.length / rosterCount) * 100) : 0;
+  const isHighLOA = loaPercent >= 30;
+
+  if (!isHighLOA) return null;
+
+  return (
+    <div className="bg-red-500/10 border border-red-500/40 rounded-lg p-4 flex items-start gap-3">
+      <Bell className="w-5 h-5 text-red-400 shrink-0 mt-0.5 animate-pulse" />
+      <div>
+        <p className="font-display font-bold uppercase tracking-wider text-red-400 text-sm">⚠ LOA Alert — Op Risk</p>
+        <p className="text-xs font-sans text-muted-foreground mt-1">
+          {loas.length} member{loas.length !== 1 ? "s" : ""} ({loaPercent}% of roster) are on active LOA.
+          You have {upcomingOps.length} op{upcomingOps.length !== 1 ? "s" : ""} scheduled in the next 7 days — your unit may be undermanned.
+        </p>
+        <p className="text-xs font-sans text-muted-foreground mt-1">
+          Upcoming: {upcomingOps.map(o => o.name).join(", ")}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Inactivity Purge Panel ───────────────────────────────────────────────────
+function InactivityPurgePanel({ group }: any) {
+  const [roster, setRoster] = useState<any[]>([]);
+  const [aars, setAars] = useState<any[]>([]);
+  const [ops, setOps] = useState<any[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [purging, setPurging] = useState<string | null>(null);
+  const [purged, setPurged] = useState<Set<string>>(new Set());
+  const token = localStorage.getItem("auth_token") ?? "";
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const headers = { Authorization: `Bearer ${token}` };
+    Promise.all([
+      apiFetch<any>(`/api/milsim-groups/${group.id}/roster`).catch(() => []),
+      fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/aars?path=${encodeURIComponent(`/${group.id}/aars`)}`, { headers }).then(r => r.json()).catch(() => []),
+      fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimOps?path=${encodeURIComponent(`/${group.id}/ops`)}`, { headers }).then(r => r.json()).catch(() => []),
+    ]).then(([r, a, o]) => {
+      setRoster(Array.isArray(r) ? r : []);
+      setAars(Array.isArray(a) ? a : []);
+      setOps(Array.isArray(o) ? o : []);
+      setLoaded(true);
+    });
+  }, [group.id]);
+
+  if (!loaded) return null;
+
+  const cutoff30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  // Build per-member last activity map
+  const lastActivity: Record<string, Date> = {};
+  aars.forEach((a: any) => {
+    if (!a.participants) return;
+    (Array.isArray(a.participants) ? a.participants : []).forEach((pid: string) => {
+      const d = new Date(a.created_date);
+      if (!lastActivity[pid] || d > lastActivity[pid]) lastActivity[pid] = d;
+    });
+  });
+  ops.forEach((o: any) => {
+    if (!o.participants) return;
+    (Array.isArray(o.participants) ? o.participants : []).forEach((pid: string) => {
+      const d = new Date(o.scheduled_at);
+      if (!lastActivity[pid] || d > lastActivity[pid]) lastActivity[pid] = d;
+    });
+  });
+
+  const inactive = roster.filter(m => {
+    if (m.status === "inactive" || purged.has(String(m.id))) return false;
+    const last = lastActivity[String(m.user_id)];
+    return !last || last < cutoff30;
+  });
+
+  if (inactive.length === 0) return null;
+
+  const markInactive = async (member: any) => {
+    setPurging(String(member.id));
+    const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+    try {
+      await fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsim?path=${encodeURIComponent(`/roster/${member.id}`)}`, {
+        method: "PATCH", headers, body: JSON.stringify({ status: "inactive" })
+      });
+      setPurged(p => new Set([...p, String(member.id)]));
+      toast({ title: `${member.callsign} marked inactive` });
+    } catch {
+      toast({ title: "Failed to update status", variant: "destructive" });
+    }
+    setPurging(null);
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-lg p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <Zap className="w-4 h-4 text-yellow-400" />
+        <h3 className="font-display font-bold uppercase tracking-wider text-sm text-foreground">Inactivity Report</h3>
+        <span className="ml-auto text-xs font-display font-bold text-muted-foreground">{inactive.length} member{inactive.length !== 1 ? "s" : ""} — no activity in 30 days</span>
+      </div>
+      <div className="space-y-2">
+        {inactive.slice(0, 10).map(m => (
+          <div key={m.id} className="flex items-center justify-between gap-3 bg-secondary/30 rounded p-3">
+            <div>
+              <p className="font-display font-bold text-sm text-foreground">{m.callsign}</p>
+              <p className="text-xs font-sans text-muted-foreground">Last activity: {lastActivity[String(m.user_id)] ? lastActivity[String(m.user_id)].toLocaleDateString() : "Never recorded"}</p>
+            </div>
+            <button onClick={() => markInactive(m)} disabled={!!purging}
+              className="text-xs font-display font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-50">
+              {purging === String(m.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mark Inactive"}
+            </button>
+          </div>
+        ))}
+      </div>
+      {inactive.length > 10 && <p className="text-xs text-muted-foreground font-sans text-center">+{inactive.length - 10} more not shown</p>}
     </div>
   );
 }
