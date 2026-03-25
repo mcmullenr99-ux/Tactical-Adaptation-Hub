@@ -89,6 +89,16 @@ for FILE in "${FILES[@]}"; do
     ISSUES+=("❌ 'MC_GAMES' used but not defined — import GAMES_LIST as MC_GAMES")
   fi
 
+
+  # CHECK 9: Wrong localStorage token key
+  if echo "$CONTENT" | grep -qE "localStorage\.getItem\(['"]auth_token['"]\)"; then
+    ISSUES+=("❌ Wrong token key: use 'tag_auth_token' not 'auth_token'")
+  fi
+  if echo "$CONTENT" | grep -qE "localStorage\.setItem\(['"]auth_token['"]"; then
+    ISSUES+=("❌ Wrong token key on setItem: use 'tag_auth_token' not 'auth_token'")
+  fi
+
+  # CHECK 10: localStorage.getItem("auth_token") vs tag_auth_token — alias check
   # Report
   if [ "${#ISSUES[@]}" -eq 0 ]; then
     echo "  ✅ $BASENAME"
