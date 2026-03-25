@@ -227,10 +227,16 @@ function MField({ label, children }: { label: string; children: React.ReactNode 
 }
 
 function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
-  const { register, handleSubmit } = useForm({ defaultValues: {
+  const { register, handleSubmit, watch, setValue } = useForm({ defaultValues: {
     name: group.name, tagLine: group.tagLine ?? "", description: group.description ?? "",
-    discordUrl: group.discordUrl ?? "", websiteUrl: group.websiteUrl ?? "", logoUrl: group.logoUrl ?? "",
+    discordUrl: group.discordUrl ?? "", websiteUrl: group.websiteUrl ?? "", steamGroupUrl: group.steamGroupUrl ?? "", logoUrl: group.logoUrl ?? "",
+    country: group.country ?? "", language: group.language ?? "",
+    branch: group.branch ?? "", unitType: group.unitType ?? "",
+    games: (group.games ?? []) as string[],
   }});
+  const gamesValue: string[] = watch("games") ?? [];
+  const branchValue: string = watch("branch") ?? "";
+  const unitTypeOptions = branchValue ? (UNIT_TYPES_BY_BRANCH[branchValue as Branch] ?? []) : [];
   const onSubmit = async (data: any) => {
     setSaving(true);
     try {
@@ -246,8 +252,78 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
       <MField label="Tag Line"><input {...register("tagLine")} className="mf-input" /></MField>
       <MField label="Description"><textarea {...register("description")} rows={5} className="mf-input resize-none" /></MField>
       <MField label="Logo URL"><input {...register("logoUrl")} className="mf-input" placeholder="https://i.imgur.com/..." /></MField>
-      <MField label="Discord URL"><input {...register("discordUrl")} className="mf-input" /></MField>
-      <MField label="Website URL"><input {...register("websiteUrl")} className="mf-input" /></MField>
+      <MField label="Discord URL"><input {...register("discordUrl")} className="mf-input" placeholder="https://discord.gg/invite" /></MField>
+      <MField label="Website URL"><input {...register("websiteUrl")} className="mf-input" placeholder="https://yourunit.com" /></MField>
+      <MField label="Steam Group URL"><input {...register("steamGroupUrl")} className="mf-input" placeholder="https://steamcommunity.com/groups/..." /></MField>
+
+      <div className="border-t border-border pt-5">
+        <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Discovery & Filtering</p>
+        <div className="space-y-4">
+          {/* Branch selector */}
+          <MField label="Military Branch">
+            <div className="flex flex-wrap gap-2 mt-1">
+              {BRANCHES.map(b => {
+                const sel = branchValue === b;
+                return (
+                  <button key={b} type="button"
+                    onClick={() => { setValue("branch", b); setValue("unitType", ""); }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                      sel ? "bg-primary/15 border-primary/50 text-primary" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    }`}>
+                    <span className="w-2 h-2 rounded-full bg-current opacity-60 shrink-0" />{b}
+                  </button>
+                );
+              })}
+              {branchValue && (
+                <button type="button" onClick={() => { setValue("branch", ""); setValue("unitType", ""); }}
+                  className="px-2 py-1.5 rounded border border-border text-xs text-muted-foreground hover:text-destructive transition-colors">
+                  ✕ Clear
+                </button>
+              )}
+            </div>
+          </MField>
+          {/* Unit type — context-aware */}
+          <MField label="Unit Type">
+            <select {...register("unitType")} className="mf-input" disabled={!branchValue}>
+              <option value="">{branchValue ? "Select unit type..." : "Select a branch first"}</option>
+              {unitTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </MField>
+          <MField label="Country / Nationality">
+            <select {...register("country")} className="mf-input">
+              <option value="">Select...</option>
+              {MC_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </MField>
+          <MField label="Primary Language">
+            <select {...register("language")} className="mf-input">
+              <option value="">Select...</option>
+              {MC_LANGS.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </MField>
+          <MField label="Games You Play">
+            <div className="flex flex-wrap gap-2 mt-1">
+              {MC_GAMES.map(game => {
+                const selected = gamesValue.includes(game);
+                return (
+                  <button key={game} type="button"
+                    onClick={() => {
+                      const next = selected ? gamesValue.filter(g => g !== game) : [...gamesValue, game];
+                      setValue("games", next);
+                    }}
+                    className={`px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                      selected ? "bg-primary/15 border-primary/50 text-primary" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    }`}
+                  >
+                    {game}
+                  </button>
+                );
+              })}
+            </div>
+          </MField>
+        </div>
+      </div>
+
       <button type="submit" disabled={saving}
         className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Changes
@@ -1317,63 +1393,227 @@ function QualsTab({ group, showMsg }: any) {
 
 // ─── Live Ops / Check-In ──────────────────────────────────────────────────────
 function OpsTab({ group, showMsg }: any) {
-  const [activeOp, setActiveOp] = useState<any | null>(undefined);
-  const [history, setHistory] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [ops, setOps] = useState<any[]>([]);
+  const [aars, setAars] = useState<any[]>([]);
+  const [briefings, setBriefings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [opName, setOpName] = useState(""); const [opDesc, setOpDesc] = useState(""); const [starting, setStarting] = useState(false);
-  const [expandedOp, setExpandedOp] = useState<number | null>(null);
-  const load = () => {
+  const [expandedOp, setExpandedOp] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [linkTarget, setLinkTarget] = useState<{ opId: string; type: "aar" | "briefing" } | null>(null);
+  const emptyForm = { name: "", description: "", game: "", event_type: "Op" as const, scheduled_at: "", end_date: "", status: "Planned" as const };
+  const [form, setForm] = useState<any>(emptyForm);
+  const [editOpId, setEditOpId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
     setLoading(true);
-    Promise.all([apiFetch<any>(`/api/milsim-groups/${group.id}/ops/active`), apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`)])
-      .then(([active, all]) => { setActiveOp(active ?? null); setHistory(all.filter((o: any) => o.status !== "active")); }).catch(() => {}).finally(() => setLoading(false));
+    try {
+      const [opsData, aarsData, briefsData] = await Promise.all([
+        apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
+        apiFetch(`/milsimAars?path=list&group_id=${group.id}`),
+        apiFetch(`/milsimBriefings?path=list&group_id=${group.id}`),
+      ]);
+      setOps(opsData.events ?? []);
+      setAars(aarsData.aars ?? []);
+      setBriefings(briefsData.briefings ?? []);
+    } catch { }
+    setLoading(false);
+  }, [group.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const saveOp = async () => {
+    if (!form.name) { showMsg("Op name required", "error"); return; }
+    setSaving(true);
+    try {
+      if (editOpId) {
+        await apiFetch("/activityCalendar?path=update", { method: "POST", body: JSON.stringify({ id: editOpId, title: form.name, ...form }) });
+        showMsg("Op updated", "success");
+      } else {
+        await apiFetch("/activityCalendar?path=create", { method: "POST", body: JSON.stringify({ group_id: group.id, title: form.name, created_by: user?.username, ...form }) });
+        showMsg("Op created", "success");
+      }
+      setShowCreateForm(false); setEditOpId(null); setForm(emptyForm); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+    setSaving(false);
   };
-  useEffect(() => { load(); }, [group.id]);
-  const startOp = async () => {
-    if (!opName.trim()) return; setStarting(true);
-    try { await apiFetch(`/api/milsim-groups/${group.id}/ops`, { method: "POST", body: JSON.stringify({ name: opName, description: opDesc || undefined }) }); setOpName(""); setOpDesc(""); showMsg(true, "Op started."); load(); }
-    catch (e: any) { showMsg(false, e.message); } finally { setStarting(false); }
+
+  const deleteOp = async (id: string) => {
+    if (!confirm("Delete this op?")) return;
+    await apiFetch("/activityCalendar?path=delete", { method: "POST", body: JSON.stringify({ id }) });
+    showMsg("Deleted", "success"); load();
   };
-  const endOp = async (opId: number) => {
-    try { await apiFetch(`/api/milsim-groups/${group.id}/ops/${opId}/end`, { method: "PATCH" }); showMsg(true, "Op ended."); load(); }
-    catch (e: any) { showMsg(false, e.message); }
+
+  const setOpStatus = async (id: string, status: string) => {
+    await apiFetch("/activityCalendar?path=update", { method: "POST", body: JSON.stringify({ id, status }) });
+    load();
   };
+
+  const linkDoc = async (docId: string) => {
+    if (!linkTarget) return;
+    try {
+      if (linkTarget.type === "aar") {
+        await apiFetch("/milsimAars?path=link-op", { method: "POST", body: JSON.stringify({ aar_id: docId, op_id: linkTarget.opId }) });
+      } else {
+        await apiFetch("/milsimBriefings?path=link-op", { method: "POST", body: JSON.stringify({ briefing_id: docId, op_id: linkTarget.opId }) });
+      }
+      showMsg("Linked", "success"); setLinkTarget(null); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+  };
+
+  const unlinkDoc = async (docId: string, type: "aar" | "briefing") => {
+    try {
+      if (type === "aar") await apiFetch("/milsimAars?path=link-op", { method: "POST", body: JSON.stringify({ aar_id: docId, op_id: null }) });
+      else await apiFetch("/milsimBriefings?path=link-op", { method: "POST", body: JSON.stringify({ briefing_id: docId, op_id: null }) });
+      load();
+    } catch {}
+  };
+
+  const STATUS_COLOR: Record<string, string> = {
+    Active: "text-red-400 bg-red-500/10 border-red-500/30",
+    Planned: "text-amber-400 bg-amber-500/10 border-amber-500/30",
+    Confirmed: "text-green-400 bg-green-500/10 border-green-500/30",
+    Completed: "text-muted-foreground bg-secondary border-border",
+    Cancelled: "text-muted-foreground bg-secondary/40 border-border",
+  };
+  const TYPE_COLOR: Record<string, string> = { Op:"text-red-400", Training:"text-yellow-400", Meeting:"text-purple-400", Social:"text-green-400", Admin:"text-muted-foreground", Other:"text-muted-foreground" };
+  const CL: Record<string, string> = { unclassified:"text-green-400 border-green-500/30", confidential:"text-blue-400 border-blue-500/30", classified:"text-yellow-400 border-yellow-500/30", "top-secret":"text-red-400 border-red-500/30" };
+
+  const opAars = (opId: string) => aars.filter((a: any) => a.op_id === opId);
+  const opBriefings = (opId: string) => briefings.filter((b: any) => b.op_id === opId);
+  const unlinkedAars = aars.filter((a: any) => !a.op_id);
+  const unlinkedBriefings = briefings.filter((b: any) => !b.op_id);
+
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
   return (
-    <div className="max-w-3xl space-y-6">
-      {activeOp ? (
-        <div className="bg-red-500/5 border border-red-500/30 rounded-lg p-5 space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3"><span className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-widest text-red-400 px-2 py-1 bg-red-500/20 border border-red-500/30 rounded animate-pulse"><span className="w-1.5 h-1.5 bg-red-400 rounded-full" /> ACTIVE</span><h3 className="font-display font-bold text-foreground">{activeOp.name}</h3></div>
-            <button onClick={() => endOp(activeOp.id)} className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-white font-display font-bold uppercase tracking-widest text-xs rounded transition-all">End Op</button>
+    <div className="space-y-6">
+      {linkTarget && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md space-y-4">
+            <h3 className="font-display font-bold text-sm uppercase tracking-widest">Attach {linkTarget.type === "aar" ? "AAR" : "Briefing"}</h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {(linkTarget.type === "aar" ? unlinkedAars : unlinkedBriefings).length === 0 ? (
+                <p className="text-xs text-muted-foreground font-sans">No unlinked {linkTarget.type === "aar" ? "AARs" : "briefings"} available.</p>
+              ) : (
+                (linkTarget.type === "aar" ? unlinkedAars : unlinkedBriefings).map((doc: any) => (
+                  <button key={doc.id} onClick={() => linkDoc(doc.id)} className="w-full text-left px-4 py-3 border border-border rounded-lg hover:bg-secondary/40 transition-colors">
+                    <p className="font-display font-bold text-sm">{doc.title ?? doc.op_name}</p>
+                    <p className="text-xs text-muted-foreground font-sans mt-0.5">{doc.author_username ?? doc.created_by ?? ""}</p>
+                  </button>
+                ))
+              )}
+            </div>
+            <button onClick={() => setLinkTarget(null)} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
           </div>
-          {activeOp.description && <p className="text-sm text-muted-foreground">{activeOp.description}</p>}
-          <div>
-            <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Checked In ({activeOp.checkins?.length ?? 0})</p>
-            {activeOp.checkins?.length === 0 ? <p className="text-sm text-muted-foreground">No check-ins yet.</p> : (
-              <div className="flex flex-wrap gap-2">{activeOp.checkins?.map((c: any) => (<span key={c.id} className="text-xs font-display font-bold uppercase tracking-widest px-2.5 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded">{c.callsign}</span>))}</div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="bg-card border border-border rounded-lg p-5 space-y-3">
-          <h3 className="font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">Start New Op</h3>
-          <input value={opName} onChange={e => setOpName(e.target.value)} className="mf-input" placeholder="Op name (e.g. Operation Iron Fist)" />
-          <input value={opDesc} onChange={e => setOpDesc(e.target.value)} className="mf-input" placeholder="Brief description (optional)" />
-          <button onClick={startOp} disabled={starting || !opName.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded clip-angled-sm transition-all disabled:opacity-50">{starting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Siren className="w-3.5 h-3.5" />} Start Op</button>
         </div>
       )}
-      {history.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="font-display font-bold uppercase tracking-widest text-xs text-muted-foreground">Op History</h3>
-          {history.map((op: any) => (
-            <div key={op.id} className="bg-card border border-border rounded-lg overflow-hidden">
-              <button onClick={() => setExpandedOp(expandedOp === op.id ? null : op.id)} className="w-full flex items-center justify-between px-5 py-3 hover:bg-secondary/20 transition-colors">
-                <div className="flex items-center gap-3"><span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground px-2 py-0.5 bg-secondary border border-border rounded">Ended</span><span className="font-display font-bold text-sm text-foreground">{op.name}</span></div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground"><span>{op.checkin_count} checked in</span>{expandedOp === op.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</div>
-              </button>
-              {expandedOp === op.id && <div className="border-t border-border px-5 py-3 bg-secondary/10 text-xs text-muted-foreground">Started: {format(new Date(op.started_at), "PPpp")}{op.ended_at && <> · Ended: {format(new Date(op.ended_at), "PPpp")}</>}</div>}
-            </div>
-          ))}
+
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h2 className="font-display font-bold text-lg uppercase tracking-widest">Live Ops</h2>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Plan, run, and debrief operations. Attach briefings pre-op and AARs post-op.</p>
+        </div>
+        <button onClick={() => { setShowCreateForm(v => !v); setEditOpId(null); setForm(emptyForm); }}
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> New Op
+        </button>
+      </div>
+
+      {(showCreateForm || editOpId) && (
+        <div className="border border-primary/30 rounded-lg p-4 bg-primary/5 space-y-4">
+          <h3 className="font-display font-bold text-sm uppercase tracking-widest text-primary">{editOpId ? "Edit Op" : "New Op"}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <MField label="Op Name *"><input value={form.name} onChange={e => setForm((f:any) => ({...f, name:e.target.value}))} placeholder="Operation Iron Fist" className="mf-input w-full" /></MField>
+            <MField label="Type"><select value={form.event_type} onChange={e => setForm((f:any) => ({...f, event_type:e.target.value}))} className="mf-input w-full">{["Op","Training","Meeting","Social","Admin","Other"].map(t => <option key={t} value={t}>{t}</option>)}</select></MField>
+            <MField label="Scheduled Date / Time"><input type="datetime-local" value={form.scheduled_at} onChange={e => setForm((f:any) => ({...f, scheduled_at:e.target.value}))} className="mf-input w-full" /></MField>
+            <MField label="End Date"><input type="date" value={form.end_date} onChange={e => setForm((f:any) => ({...f, end_date:e.target.value}))} className="mf-input w-full" /></MField>
+            <MField label="Game"><input value={form.game} onChange={e => setForm((f:any) => ({...f, game:e.target.value}))} placeholder="e.g. Arma 3" className="mf-input w-full" /></MField>
+            <MField label="Status"><select value={form.status} onChange={e => setForm((f:any) => ({...f, status:e.target.value}))} className="mf-input w-full">{["Planned","Confirmed","Active","Completed","Cancelled"].map(s => <option key={s} value={s}>{s}</option>)}</select></MField>
+            <div className="md:col-span-2"><MField label="Description"><textarea value={form.description} onChange={e => setForm((f:any) => ({...f, description:e.target.value}))} rows={2} className="mf-input w-full resize-none" /></MField></div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={saveOp} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editOpId ? "Save" : "Create"}</button>
+            <button onClick={() => { setShowCreateForm(false); setEditOpId(null); setForm(emptyForm); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {ops.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground font-sans text-sm border border-dashed border-border rounded-lg"><Siren className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>No ops scheduled yet.</p></div>
+      ) : (
+        <div className="space-y-3">
+          {[...ops].sort((a,b) => new Date(b.scheduled_at ?? b.created_date).getTime() - new Date(a.scheduled_at ?? a.created_date).getTime()).map((op: any) => {
+            const linkedAars = opAars(op.id);
+            const linkedBriefs = opBriefings(op.id);
+            const isExpanded = expandedOp === op.id;
+            const isActive = op.status === "Active";
+            return (
+              <div key={op.id} className={`border rounded-lg overflow-hidden ${isActive ? "border-red-500/40 bg-red-500/5" : "border-border"}`}>
+                <button onClick={() => setExpandedOp(isExpanded ? null : op.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/10 transition-colors text-left">
+                  <div className="flex items-center gap-3 flex-wrap min-w-0">
+                    {isActive && <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest text-red-400 px-2 py-0.5 bg-red-500/20 border border-red-500/30 rounded animate-pulse"><span className="w-1.5 h-1.5 bg-red-400 rounded-full" />LIVE</span>}
+                    <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${STATUS_COLOR[op.status] ?? "text-muted-foreground border-border"}`}>{op.status}</span>
+                    <span className={`text-[10px] font-display font-bold uppercase tracking-widest ${TYPE_COLOR[op.event_type] ?? ""}`}>[{op.event_type ?? "Op"}]</span>
+                    <span className="font-display font-bold text-sm">{op.name ?? op.title}</span>
+                    {op.game && <span className="text-xs text-muted-foreground font-sans hidden md:block">{op.game}</span>}
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0 text-xs text-muted-foreground font-sans">
+                    {linkedBriefs.length > 0 && <span className="flex items-center gap-1 text-blue-400"><MapPin className="w-3 h-3" />{linkedBriefs.length}</span>}
+                    {linkedAars.length > 0 && <span className="flex items-center gap-1 text-green-400"><ClipboardList className="w-3 h-3" />{linkedAars.length}</span>}
+                    {op.scheduled_at && <span>{new Date(op.scheduled_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span>}
+                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </div>
+                </button>
+                {isExpanded && (
+                  <div className="border-t border-border p-5 space-y-5 bg-secondary/10">
+                    {op.description && <p className="text-sm text-muted-foreground font-sans">{op.description}</p>}
+                    <div className="flex flex-wrap gap-2">
+                      {["Planned","Confirmed","Active","Completed","Cancelled"].filter(s => s !== op.status).map(s => (
+                        <button key={s} onClick={() => setOpStatus(op.id, s)} className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 border border-border rounded hover:bg-secondary transition-colors">→ {s}</button>
+                      ))}
+                      <button onClick={() => { setEditOpId(op.id); setForm({ name:op.name??op.title??"", description:op.description??"", game:op.game??"", event_type:op.event_type??"Op", scheduled_at:op.scheduled_at?op.scheduled_at.slice(0,16):"", end_date:op.end_date??"", status:op.status??"Planned" }); setShowCreateForm(false); }}
+                        className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 border border-border text-muted-foreground rounded hover:text-primary transition-colors"><Pencil className="w-3 h-3" /> Edit</button>
+                      <button onClick={() => deleteOp(op.id)} className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 border border-red-500/30 text-red-400 rounded hover:bg-red-500/10 transition-colors"><Trash2 className="w-3 h-3" /> Delete</button>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-display font-bold uppercase tracking-widest text-blue-400 flex items-center gap-1.5"><MapPin className="w-3 h-3" /> Briefings</p>
+                        <button onClick={() => setLinkTarget({ opId: op.id, type: "briefing" })} className="flex items-center gap-1 text-[10px] font-display font-bold uppercase text-muted-foreground border border-border rounded px-2 py-0.5 hover:text-primary transition-colors"><Plus className="w-3 h-3" /> Attach</button>
+                      </div>
+                      {linkedBriefs.length === 0 ? <p className="text-xs text-muted-foreground font-sans italic">No briefings attached.</p> : (
+                        <div className="space-y-1.5">
+                          {linkedBriefs.map((b: any) => (
+                            <div key={b.id} className="flex items-center justify-between px-3 py-2 bg-blue-500/5 border border-blue-500/20 rounded">
+                              <div><span className="text-xs font-display font-bold">{b.title}</span><span className={`ml-2 text-[10px] font-display uppercase tracking-wide px-1.5 py-0.5 rounded border ${CL[b.classification] ?? ""}`}>{b.classification ?? "unclassified"}</span></div>
+                              <button onClick={() => unlinkDoc(b.id, "briefing")} className="p-1 text-muted-foreground hover:text-destructive transition-colors"><X className="w-3 h-3" /></button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-display font-bold uppercase tracking-widest text-green-400 flex items-center gap-1.5"><ClipboardList className="w-3 h-3" /> After Action Reports</p>
+                        <button onClick={() => setLinkTarget({ opId: op.id, type: "aar" })} className="flex items-center gap-1 text-[10px] font-display font-bold uppercase text-muted-foreground border border-border rounded px-2 py-0.5 hover:text-primary transition-colors"><Plus className="w-3 h-3" /> Attach</button>
+                      </div>
+                      {linkedAars.length === 0 ? <p className="text-xs text-muted-foreground font-sans italic">No AARs filed yet.</p> : (
+                        <div className="space-y-1.5">
+                          {linkedAars.map((a: any) => (
+                            <div key={a.id} className="flex items-center justify-between px-3 py-2 bg-green-500/5 border border-green-500/20 rounded">
+                              <div><span className="text-xs font-display font-bold">{a.title ?? a.op_name}</span>{a.outcome && <span className="ml-2 text-[10px] text-muted-foreground font-sans">{a.outcome}</span>}</div>
+                              <button onClick={() => unlinkDoc(a.id, "aar")} className="p-1 text-muted-foreground hover:text-destructive transition-colors"><X className="w-3 h-3" /></button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1592,31 +1832,220 @@ function OrgChartTab({ group }: any) {
 function ReadinessTab({ group }: any) {
   const [readiness, setReadiness] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  useEffect(() => { apiFetch<any>(`/api/stats/readiness/${group.id}`).then(setReadiness).catch(() => {}).finally(() => setLoading(false)); }, [group.id]);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    apiFetch<any>(`/api/stats/readiness/${group.id}`)
+      .then(data => { setReadiness(data); })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [group.id]);
+
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-  if (!readiness) return null;
+  if (error || !readiness) return (
+    <div className="text-center py-16 border border-dashed border-border rounded-lg text-muted-foreground">
+      <Activity className="w-10 h-10 mx-auto mb-3 opacity-30" />
+      <p className="font-display text-sm uppercase tracking-widest">Readiness data unavailable</p>
+      <p className="text-xs mt-2">Add roster members and log operations to generate readiness data.</p>
+    </div>
+  );
+
   const sc = readiness.status === "green" ? "text-green-400" : readiness.status === "amber" ? "text-yellow-400" : "text-red-400";
   const bc = readiness.status === "green" ? "bg-green-500" : readiness.status === "amber" ? "bg-yellow-500" : "bg-red-500";
+
+  const TIER_META: Record<string, { label: string; colour: string; bg: string; border: string; badge: string; desc: string }> = {
+    "SOF":         { label: "Special Operations Forces",               colour: "text-purple-400",    bg: "bg-purple-600/10",   border: "border-purple-500/40",   badge: "bg-purple-600/20 text-purple-300 border-purple-500/40",    desc: "The highest attainable designation. Elite multi-domain doctrine, near-perfect AAR discipline, and an exceptional operational record. This unit operates at the tip of the spear." },
+    "SOC":         { label: "Special Operations Capable",               colour: "text-blue-400",       bg: "bg-blue-500/10",     border: "border-blue-400/40",     badge: "bg-blue-500/20 text-blue-300 border-blue-400/50",          desc: "Extensive op record, elite AAR discipline, and comprehensive multi-type training doctrine. Operates at special operations capable standard." },
+    "STRATEGIC":   { label: "Strategically Capable",                   colour: "text-green-400",     bg: "bg-green-500/10",    border: "border-green-500/40",    badge: "bg-green-500/20 text-green-300 border-green-400/50",       desc: "Proven unit with strong operational output, solid reputation, and well-documented training resources across multiple doctrine types." },
+    "OPERATIONAL": { label: "Operationally Capable",                   colour: "text-emerald-400",   bg: "bg-emerald-600/10",  border: "border-emerald-600/40",  badge: "bg-emerald-600/20 text-emerald-400 border-emerald-500/40", desc: "Active unit with a consistent operational record and growing doctrine framework. Capable of executing standard mission types." },
+    "TACTICAL":    { label: "Tactically Capable",                      colour: "text-yellow-400",    bg: "bg-yellow-400/10",   border: "border-yellow-400/40",   badge: "bg-yellow-400/20 text-yellow-300 border-yellow-400/50",    desc: "Building op history and operator experience. Some training doctrine in place. Unit is progressing toward operational readiness." },
+    "LIMITED":     { label: "Limited Capability",                      colour: "text-amber-400",     bg: "bg-amber-500/10",    border: "border-amber-500/40",    badge: "bg-amber-500/20 text-amber-400 border-amber-500/40",       desc: "Minimal operational record and insufficient training documentation to meet baseline capability standards." },
+    "POOR":        { label: "Poor Capability",                         colour: "text-red-400",       bg: "bg-red-500/10",      border: "border-red-500/40",      badge: "bg-red-500/20 text-red-400 border-red-500/40",             desc: "No established operational record, no doctrine, and no verified activity. Unit has not demonstrated any measurable capability." },
+  };
+
+  const tier = readiness.op_capability_tier ?? "POOR";
+  const tm = TIER_META[tier] ?? TIER_META["POOR"];
+
+  // Score breakdown for transparency
+  const sb = readiness.score_breakdown ?? {};
+  const scoreBreakdown = [
+    { label: "Manpower",            max: 20, earned: sb.manpower ?? 0,         note: `${readiness.verified_total ?? readiness.total} verified members` },
+    { label: "Member Activity",     max: 15, earned: sb.activity ?? 0,         note: `${readiness.active_this_month}/${readiness.total} active (30d)` },
+    { label: "Operations History",  max: 20, earned: sb.ops_history ?? 0,      note: `${readiness.valid_ops ?? readiness.total_ops ?? 0} verified ops` },
+    { label: "Op Recency",          max: 10, earned: sb.op_recency ?? 0,       note: readiness.days_since_last_op != null ? `Last op ${readiness.days_since_last_op}d ago` : "No ops" },
+    { label: "AAR Discipline",      max: 10, earned: sb.aar_discipline ?? 0,   note: `${readiness.completed_ops ?? 0} AARs for ${readiness.valid_ops ?? readiness.total_ops ?? 0} ops` },
+    { label: "Training Doctrine",   max: 15, earned: sb.training_doctrine ?? 0,note: `Knowledge factor ${readiness.training?.knowledge_factor ?? 0}/100` },
+    { label: "Discord Linked",      max: 5,  earned: sb.discord ?? 0,          note: readiness.has_discord ? "Linked" : "Not linked" },
+    { label: "Page Maintenance",    max: 5,  earned: sb.page_maintenance ?? 0, note: readiness.days_since_page_update != null ? `Updated ${readiness.days_since_page_update}d ago` : "Never updated" },
+    { label: "Reputation / Reviews",max: 5,  earned: sb.reputation ?? 0,       note: `${readiness.review_count} review${readiness.review_count !== 1 ? "s" : ""}, avg ${readiness.avg_rep_score || "—"}` },
+  ];
+
   return (
-    <div className="max-w-xl space-y-6">
-      <div className="bg-card border border-border rounded-lg p-6 space-y-5">
-        <div className="flex items-center justify-between"><h3 className="font-display font-bold uppercase tracking-widest">Unit Readiness</h3><span className={`font-display font-black text-2xl uppercase ${sc}`}>{readiness.status.toUpperCase()}</span></div>
+    <div className="max-w-2xl space-y-5">
+
+      {/* ── Readiness header ──────────────────────────────────────────────── */}
+      <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h3 className="font-display font-bold uppercase tracking-widest">Unit Readiness</h3>
+          <div className="flex items-center gap-3">
+            <span className={`font-display font-black text-xl uppercase ${sc}`}>{readiness.status.toUpperCase()}</span>
+            <span className={`text-xs font-display font-bold uppercase tracking-widest px-2.5 py-1 rounded border ${tm.badge}`}>
+              ⊕ {tier}
+            </span>
+          </div>
+        </div>
         <div className="space-y-1">
-          <div className="flex justify-between text-xs font-display font-bold uppercase tracking-widest text-muted-foreground"><span>Active (7d) / Total</span><span>{readiness.active_this_week} / {readiness.total}</span></div>
-          <div className="h-3 bg-secondary rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all ${bc}`} style={{ width: `${readiness.readiness_pct}%` }} /></div>
-          <p className={`text-right text-sm font-display font-bold ${sc}`}>{readiness.readiness_pct}% READY</p>
+          <div className="flex justify-between text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">
+            <span>Composite Readiness Score</span><span>{readiness.readiness_pct} / 100</span>
+          </div>
+          <div className="h-3 bg-secondary rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${bc}`} style={{ width: `${readiness.readiness_pct}%` }} />
+          </div>
+          <p className={`text-right text-xs font-display font-bold ${sc}`}>{readiness.readiness_pct}% COMPOSITE</p>
         </div>
-        <div className="grid grid-cols-3 gap-4 pt-2 border-t border-border">
-          <div className="text-center"><p className="text-2xl font-display font-bold text-foreground">{readiness.total}</p><p className="text-xs text-muted-foreground font-display uppercase tracking-widest">Total</p></div>
-          <div className="text-center"><p className="text-2xl font-display font-bold text-green-400">{readiness.active_this_week}</p><p className="text-xs text-muted-foreground font-display uppercase tracking-widest">Active 7d</p></div>
-          <div className="text-center"><p className="text-2xl font-display font-bold text-blue-400">{readiness.active_this_month}</p><p className="text-xs text-muted-foreground font-display uppercase tracking-widest">Active 30d</p></div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-border text-center">
+          {[
+            { label: "Total", value: readiness.total, col: "" },
+            { label: "Active 7d", value: readiness.active_this_week, col: "text-green-400" },
+            { label: "Active 30d", value: readiness.active_this_month, col: "text-blue-400" },
+            { label: "Ops Logged", value: readiness.total_ops ?? 0, col: "text-primary" },
+          ].map(s => (
+            <div key={s.label}>
+              <p className={`text-xl font-display font-bold ${s.col || "text-foreground"}`}>{s.value}</p>
+              <p className="text-[10px] text-muted-foreground font-display uppercase tracking-widest">{s.label}</p>
+            </div>
+          ))}
         </div>
-        <p className="text-xs text-muted-foreground font-sans">Readiness based on portal logins in the last 7 days. 70%+ = Green, 40–69% = Amber, &lt;40% = Red.</p>
       </div>
+
+      {/* ── Readiness Flags ───────────────────────────────────────────────── */}
+      {readiness.flags && readiness.flags.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Readiness Flags</p>
+          {readiness.flags.map((flag: any) => (
+            <div key={flag.code} className={`rounded-lg border px-4 py-3 flex gap-3 ${
+              flag.severity === "red" ? "border-red-500/40 bg-red-500/5" : "border-yellow-500/30 bg-yellow-500/5"
+            }`}>
+              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${flag.severity === "red" ? "bg-red-500" : "bg-yellow-400"}`} />
+              <div>
+                <p className={`font-display font-bold uppercase tracking-widest text-xs ${flag.severity === "red" ? "text-red-400" : "text-yellow-400"}`}>
+                  {flag.label}
+                </p>
+                <p className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">{flag.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Score Breakdown ───────────────────────────────────────────────── */}
+      <div className="bg-card border border-border rounded-lg p-5 space-y-3">
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Score Breakdown — How Your {readiness.readiness_pct}pts Were Calculated</p>
+        <div className="space-y-2">
+          {scoreBreakdown.map(row => (
+            <div key={row.label} className="flex items-center gap-3 text-xs">
+              <span className="w-40 shrink-0 font-display font-bold uppercase tracking-widest text-muted-foreground text-[10px]">{row.label}</span>
+              <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all"
+                  style={{ width: `${Math.min(100, (row.earned / row.max) * 100)}%`,
+                    background: row.earned === 0 ? '#ef4444' : row.earned >= row.max * 0.75 ? '#22c55e' : row.earned >= row.max * 0.4 ? '#eab308' : '#f97316' }} />
+              </div>
+              <span className="text-[10px] font-display shrink-0 w-14 text-right" style={{ color: row.earned === 0 ? '#ef4444' : row.earned >= row.max * 0.75 ? '#22c55e' : row.earned >= row.max * 0.4 ? '#eab308' : '#f97316' }}>{row.earned}/{row.max}</span>
+              <span className="text-[10px] text-muted-foreground font-sans shrink-0 hidden sm:block">{row.note}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-muted-foreground font-sans pt-1 border-t border-border/50">
+          Max score = 100pts. Green ≥75 · Amber 45–74 · Red &lt;45. Units below squad strength (9 members) are forced Red regardless of score.
+        </p>
+      </div>
+
+      {/* ── Operational Capability Tier ───────────────────────────────────── */}
+      <div className={`rounded-lg border p-5 space-y-3 ${tm.bg} ${tm.border}`}>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Operational Capability Tier</p>
+          <span className={`text-xs font-display font-bold uppercase tracking-widest px-2.5 py-1 rounded border ${tm.badge}`}>
+            ⊕ {tier} — {tm.label}
+          </span>
+        </div>
+        <p className={`text-sm font-sans leading-relaxed ${tm.colour}`}>{tm.desc}</p>
+        <div className="space-y-1">
+          <div className="flex justify-between text-[10px] font-display uppercase tracking-widest text-muted-foreground">
+            <span>Op Capability Score</span><span>{readiness.op_cap_score ?? 0} / 100</span>
+          </div>
+          <div className="h-2 bg-secondary/60 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full ${tm.badge.includes("blue") ? "bg-blue-500" : tm.badge.includes("yellow") ? "bg-yellow-400" : tm.badge.includes("slate") ? "bg-slate-400" : tm.badge.includes("orange") ? "bg-orange-500" : "bg-muted-foreground"}`}
+              style={{ width: `${Math.min(100, readiness.op_cap_score ?? 0)}%` }} />
+          </div>
+        </div>
+        {/* Tier ladder */}
+        <div className="grid grid-cols-5 gap-1 pt-2 border-t border-border/40">
+          {(["POOR","LIMITED","TACTICAL","OPERATIONAL","STRATEGIC","SOC","SOF"] as const).map(t => {
+            const m = TIER_META[t];
+            const active = t === tier;
+            return (
+              <div key={t} className={`rounded p-1.5 text-center transition-all ${active ? `${m.bg} ${m.border} border` : "opacity-30"}`}>
+                <p className={`text-[9px] font-display font-bold uppercase tracking-widest ${active ? m.colour : "text-muted-foreground"}`}>{t}</p>
+                <p className={`text-[8px] font-sans mt-0.5 ${active ? m.colour : "text-muted-foreground"} hidden sm:block`}>{m.label}</p>
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-[10px] text-muted-foreground font-sans">
+          Tier is calculated from: ops logged (30pts) · troop experience (25pts) · roster size (15pts) · AAR culture (10pts) · training doctrine (20pts).
+          <br/>Blue = Platinum (Tier I) · Gold (Tier II) · Silver (Tier III) · Bronze (Tier IV) · Forming.
+        </p>
+      </div>
+
+      {/* ── Rep stats ─────────────────────────────────────────────────────── */}
+      <div className="bg-card border border-border rounded-lg p-5 grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Avg Rep Score</p>
+          <p className="text-2xl font-display font-bold text-foreground">{readiness.avg_rep_score || "—"}</p>
+          <p className="text-[10px] text-muted-foreground">{readiness.review_count} review{readiness.review_count !== 1 ? "s" : ""}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Avg Experience</p>
+          <p className="text-2xl font-display font-bold text-foreground">{readiness.avg_experience > 0 ? `${readiness.avg_experience}/10` : "—"}</p>
+          <p className="text-[10px] text-muted-foreground">from troop ratings</p>
+        </div>
+      </div>
+
+      {/* ── Training Knowledge Assessment ─────────────────────────────────── */}
+      {readiness.training && readiness.training.knowledge_grade !== 'none' && (
+        <div className={`border rounded-lg p-5 space-y-2 ${
+          readiness.training.knowledge_grade === 'expert'     ? 'border-blue-400/40 bg-blue-400/5' :
+          readiness.training.knowledge_grade === 'proficient' ? 'border-yellow-500/40 bg-yellow-500/5' :
+          readiness.training.knowledge_grade === 'developing' ? 'border-slate-400/40 bg-slate-400/5' :
+          'border-orange-500/30 bg-orange-500/5'
+        }`}>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="font-display font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+              <Brain className="w-4 h-4" /> Training Knowledge
+            </span>
+            <span className={`text-xs font-display font-bold px-2 py-0.5 rounded border ${
+              readiness.training.knowledge_grade === 'expert'     ? 'text-blue-300 border-blue-400/40' :
+              readiness.training.knowledge_grade === 'proficient' ? 'text-yellow-400 border-yellow-500/40' :
+              readiness.training.knowledge_grade === 'developing' ? 'text-slate-300 border-slate-400/40' :
+              'text-orange-500 border-orange-600/40'
+            }`}>{readiness.training.knowledge_label}</span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans leading-relaxed">{readiness.training.knowledge_detail}</p>
+          <div className="flex gap-3 text-xs text-muted-foreground font-sans pt-1 border-t border-border/50">
+            <span>{readiness.training.doc_count} docs · {readiness.training.total_pages} pages · Knowledge factor: {readiness.training.knowledge_factor}/100</span>
+          </div>
+        </div>
+      )}
+      {readiness.training && readiness.training.knowledge_grade === 'none' && (
+        <div className="border border-dashed border-orange-500/30 bg-orange-500/5 rounded-lg p-4 text-xs text-orange-400 font-sans flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>No training documents filed. Upload SOPs, TTPs, and drills in the <strong>Training Docs</strong> tab to improve your capability tier score.</span>
+        </div>
+      )}
+
     </div>
   );
 }
-
 
 // ─── Restored Tabs ───
 function ReputationTab({ group }: any) {
