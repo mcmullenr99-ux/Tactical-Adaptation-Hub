@@ -30,6 +30,7 @@ import UserPublicProfile from "@/pages/UserPublicProfile";
 
 // New Pages
 import ServiceCard from "@/pages/portal/ServiceCard";
+import RibbonRack from "@/pages/portal/RibbonRack";
 import Stats from "@/pages/Stats";
 
 // Portal Pages
@@ -115,6 +116,7 @@ function Router() {
       <Route path="/portal/verify-email" component={VerifyEmail} />
       <Route path="/portal/2fa" component={TwoFactorAuth} />
       <Route path="/portal/service-card" component={ServiceCard} />
+      <Route path="/portal/ribbon-rack" component={RibbonRack} />
       <Route path="/portal/support" component={Support} />
       <Route path="/portal/support-admin" component={SupportAdmin} />
       <Route path="/commander-pro" component={CommanderPro} />

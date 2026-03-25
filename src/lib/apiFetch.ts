@@ -36,7 +36,10 @@ const ROUTE_MAP: Record<string, string> = {
   "/api/support":               "support",
   "/api/stripe":                "stripe",
   "/api/referral-code":         "users",
+  "/api/users/profile":         "users",
   "/api/reputation":            "reputation",
+  "/api/group-upvotes":         "groupUpvotes",
+  "/api/milsim-awards":         "milsimAwards",
   "/api/training-docs":         "trainingDocs",
 };
 

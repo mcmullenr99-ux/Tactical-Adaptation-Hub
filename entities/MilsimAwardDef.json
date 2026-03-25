@@ -16,6 +16,24 @@
     "sort_order": {
       "type": "integer",
       "default": 0
+    },
+    "award_type": {
+      "type": "string",
+      "enum": [
+        "medal",
+        "ribbon",
+        "qualification-patch"
+      ],
+      "default": "medal"
+    },
+    "ribbon_color_1": {
+      "type": "string"
+    },
+    "ribbon_color_2": {
+      "type": "string"
+    },
+    "ribbon_color_3": {
+      "type": "string"
     }
   },
   "required": [

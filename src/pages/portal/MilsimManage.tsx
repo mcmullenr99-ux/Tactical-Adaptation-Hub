@@ -1048,6 +1048,9 @@ function AwardsTab({ group, showMsg }: any) {
   const [qualifiers, setQualifiers] = useState<string[]>([]);
   const [qualInput, setQualInput] = useState("");
   const [creating, setCreating] = useState(false);
+  const [ribbonC1, setRibbonC1] = useState("#3b82f6");
+  const [ribbonC2, setRibbonC2] = useState("#3b82f6");
+  const [ribbonC3, setRibbonC3] = useState("#3b82f6");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [issueRosterId, setIssueRosterId] = useState("");
@@ -1099,6 +1102,7 @@ function AwardsTab({ group, showMsg }: any) {
     setName(""); setDesc(""); setAwardType("medal");
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImagePath(null); setImagePreview(null); setQualifiers([]); setQualInput("");
+    setRibbonC1("#3b82f6"); setRibbonC2("#3b82f6"); setRibbonC3("#3b82f6");
     setShowCreate(false);
   };
 
@@ -1108,7 +1112,7 @@ function AwardsTab({ group, showMsg }: any) {
     try {
       await apiFetch(`/api/milsim-groups/${group.id}/award-defs`, {
         method: "POST",
-        body: JSON.stringify({ name: name.trim(), description: desc || undefined, type: awardType, image_path: imagePath || undefined, qualifiers }),
+        body: JSON.stringify({ name: name.trim(), description: desc || undefined, awardType, imagePath: imagePath || undefined, qualifiers, ribbonColor1: awardType === 'ribbon' ? ribbonC1 : undefined, ribbonColor2: awardType === 'ribbon' ? ribbonC2 : undefined, ribbonColor3: awardType === 'ribbon' ? ribbonC3 : undefined }),
       });
       resetCreateForm();
       showMsg(true, "Award created.");
@@ -1275,6 +1279,36 @@ function AwardsTab({ group, showMsg }: any) {
                   })}
                 </div>
               </div>
+
+              {/* Ribbon color picker — only shown when type is ribbon */}
+              {awardType === "ribbon" && (
+                <div>
+                  <label className="mf-label">Ribbon Stripe Colours <span className="font-normal normal-case text-muted-foreground">— up to 3 stripe colours</span></label>
+                  <div className="flex items-center gap-4 mt-2">
+                    {([
+                      { label: "Stripe 1", val: ribbonC1, set: setRibbonC1 },
+                      { label: "Stripe 2", val: ribbonC2, set: setRibbonC2 },
+                      { label: "Stripe 3", val: ribbonC3, set: setRibbonC3 },
+                    ] as const).map(({ label, val, set }) => (
+                      <div key={label} className="flex flex-col items-center gap-1.5">
+                        <span className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">{label}</span>
+                        <input type="color" value={val} onChange={e => set(e.target.value)}
+                          className="w-10 h-10 rounded border border-border cursor-pointer bg-secondary" />
+                        <span className="text-[9px] font-mono text-muted-foreground">{val}</span>
+                      </div>
+                    ))}
+                    {/* Live preview */}
+                    <div className="flex-1 ml-4">
+                      <span className="text-[10px] font-display uppercase tracking-widest text-muted-foreground block mb-1.5">Preview</span>
+                      <div className="w-14 h-9 rounded-sm overflow-hidden flex border border-border/60">
+                        <div className="flex-1" style={{ background: ribbonC1 }} />
+                        <div className="flex-1" style={{ background: ribbonC2 }} />
+                        <div className="flex-1" style={{ background: ribbonC3 }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="mf-label">Description</label>
