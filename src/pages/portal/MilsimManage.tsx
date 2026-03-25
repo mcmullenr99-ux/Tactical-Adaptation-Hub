@@ -1781,16 +1781,17 @@ function ReadinessTab({ group }: any) {
   const tm = TIER_META[tier] ?? TIER_META["TIER V"];
 
   // Score breakdown for transparency
+  const sb = readiness.score_breakdown ?? {};
   const scoreBreakdown = [
-    { label: "Manpower",            max: 20, note: `${readiness.total} roster members` },
-    { label: "Member Activity",     max: 15, note: `${readiness.active_this_month}/${readiness.total} active (30d)` },
-    { label: "Operations History",  max: 20, note: `${readiness.total_ops ?? 0} ops logged` },
-    { label: "Op Recency",          max: 10, note: readiness.days_since_last_op != null ? `Last op ${readiness.days_since_last_op}d ago` : "No ops" },
-    { label: "AAR Discipline",      max: 10, note: `${readiness.completed_ops ?? 0} AARs for ${readiness.total_ops ?? 0} ops` },
-    { label: "Training Doctrine",   max: 15, note: `Knowledge factor ${readiness.training?.knowledge_factor ?? 0}/100` },
-    { label: "Discord Linked",      max: 5,  note: readiness.has_discord ? "Linked" : "Not linked" },
-    { label: "Page Maintenance",    max: 5,  note: readiness.days_since_page_update != null ? `Updated ${readiness.days_since_page_update}d ago` : "Never updated" },
-    { label: "Reputation / Reviews",max: 5,  note: `${readiness.review_count} review${readiness.review_count !== 1 ? "s" : ""}, avg ${readiness.avg_rep_score || "—"}` },
+    { label: "Manpower",            max: 20, earned: sb.manpower ?? 0,         note: `${readiness.verified_total ?? readiness.total} verified members` },
+    { label: "Member Activity",     max: 15, earned: sb.activity ?? 0,         note: `${readiness.active_this_month}/${readiness.total} active (30d)` },
+    { label: "Operations History",  max: 20, earned: sb.ops_history ?? 0,      note: `${readiness.valid_ops ?? readiness.total_ops ?? 0} verified ops` },
+    { label: "Op Recency",          max: 10, earned: sb.op_recency ?? 0,       note: readiness.days_since_last_op != null ? `Last op ${readiness.days_since_last_op}d ago` : "No ops" },
+    { label: "AAR Discipline",      max: 10, earned: sb.aar_discipline ?? 0,   note: `${readiness.completed_ops ?? 0} AARs for ${readiness.valid_ops ?? readiness.total_ops ?? 0} ops` },
+    { label: "Training Doctrine",   max: 15, earned: sb.training_doctrine ?? 0,note: `Knowledge factor ${readiness.training?.knowledge_factor ?? 0}/100` },
+    { label: "Discord Linked",      max: 5,  earned: sb.discord ?? 0,          note: readiness.has_discord ? "Linked" : "Not linked" },
+    { label: "Page Maintenance",    max: 5,  earned: sb.page_maintenance ?? 0, note: readiness.days_since_page_update != null ? `Updated ${readiness.days_since_page_update}d ago` : "Never updated" },
+    { label: "Reputation / Reviews",max: 5,  earned: sb.reputation ?? 0,       note: `${readiness.review_count} review${readiness.review_count !== 1 ? "s" : ""}, avg ${readiness.avg_rep_score || "—"}` },
   ];
 
   return (
@@ -1859,9 +1860,11 @@ function ReadinessTab({ group }: any) {
             <div key={row.label} className="flex items-center gap-3 text-xs">
               <span className="w-40 shrink-0 font-display font-bold uppercase tracking-widest text-muted-foreground text-[10px]">{row.label}</span>
               <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div className="h-full bg-primary/40 rounded-full" style={{ width: `${Math.min(100, (row.max / 100) * 100)}%` }} />
+                <div className="h-full rounded-full transition-all"
+                  style={{ width: `${Math.min(100, (row.earned / row.max) * 100)}%`,
+                    background: row.earned === 0 ? '#ef4444' : row.earned >= row.max * 0.75 ? '#22c55e' : row.earned >= row.max * 0.4 ? '#eab308' : '#f97316' }} />
               </div>
-              <span className="text-[10px] text-muted-foreground font-display shrink-0 w-8 text-right">/{row.max}</span>
+              <span className="text-[10px] font-display shrink-0 w-14 text-right" style={{ color: row.earned === 0 ? '#ef4444' : row.earned >= row.max * 0.75 ? '#22c55e' : row.earned >= row.max * 0.4 ? '#eab308' : '#f97316' }}>{row.earned}/{row.max}</span>
               <span className="text-[10px] text-muted-foreground font-sans shrink-0 hidden sm:block">{row.note}</span>
             </div>
           ))}

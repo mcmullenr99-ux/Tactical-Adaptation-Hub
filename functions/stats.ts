@@ -632,6 +632,17 @@ function buildReadinessReport(params: {
   if (training.knowledge_grade !== 'none') narrative_lines.push(training.knowledge_detail);
   const narrative = narrative_lines.join(' ');
 
+  // Per-category scores for UI breakdown bars
+  const manpowerPts   = manpowerScore(verifiedTotal, gameProfile);
+  const activityPts   = activityRatio >= 0.8 ? 15 : activityRatio >= 0.6 ? 10 : activityRatio >= 0.4 ? 5 : activityRatio >= 0.2 ? 2 : 0;
+  const opHistoryPts  = validOpsCount >= 20 ? 20 : validOpsCount >= 10 ? 14 : validOpsCount >= 5 ? 8 : validOpsCount >= 3 ? 4 : validOpsCount >= 1 ? 2 : 0;
+  const opRecencyPts  = days_since_last_op !== null && days_since_last_op <= 14 ? 10 : days_since_last_op !== null && days_since_last_op <= 30 ? 6 : days_since_last_op !== null && days_since_last_op <= 60 ? 3 : 0;
+  const aarPts        = validOpsCount >= 1 ? (aarRatio >= 0.8 ? 10 : aarRatio >= 0.5 ? 6 : aarRatio >= 0.2 ? 3 : aarRatio > 0 ? 1 : 0) : 0;
+  const trainingPts   = Math.round((training.knowledge_factor / 100) * 15);
+  const discordPts    = has_discord ? 5 : 0;
+  const pagePts       = days_since_page_update !== null && days_since_page_update <= 14 ? 5 : days_since_page_update !== null && days_since_page_update <= 30 ? 3 : days_since_page_update !== null && days_since_page_update <= 90 ? 1 : 0;
+  const repPts        = clean_review_count >= 3 && avg_rep_score >= 70 ? 5 : clean_review_count >= 3 && avg_rep_score >= 50 ? 3 : clean_review_count >= 1 && avg_rep_score >= 50 ? 2 : clean_review_count >= 1 ? 1 : 0;
+
   return {
     status, readiness_pct, total, verified_total: verifiedTotal,
     active_this_week, active_this_month,
@@ -643,6 +654,7 @@ function buildReadinessReport(params: {
     has_discord, has_steam,
     op_capability_tier, op_cap_score: Math.round(opCapScore),
     training, anti_gaming: ag, flags, narrative, narrative_lines,
+    score_breakdown: { manpower: manpowerPts, activity: activityPts, ops_history: opHistoryPts, op_recency: opRecencyPts, aar_discipline: aarPts, training_doctrine: trainingPts, discord: discordPts, page_maintenance: pagePts, reputation: repPts },
   };
 }
 
