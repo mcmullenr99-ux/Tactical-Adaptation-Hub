@@ -437,7 +437,7 @@ export default function MilsimGroup() {
                   <div className="bg-card border border-border rounded-lg p-5 space-y-3">
                     <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">System Assessment</p>
                     <div className="space-y-2">
-                      {(readiness.narrative_items ?? readiness.narrative_lines.map((text: string) => ({ label: '', text, severity: 'neutral' }))).map((item: any, i: number) => {
+                      {(readiness.narrative_items ?? (readiness.narrative_lines ?? []).map((text: string) => ({ label: '', text, severity: 'neutral' }))).map((item: any, i: number) => {
                         const sc = item.severity === 'green'  ? { border: 'border-green-500/30 bg-green-500/5',   dot: 'bg-green-400',  label: 'text-green-400'  }
                                  : item.severity === 'amber'  ? { border: 'border-yellow-500/30 bg-yellow-500/5', dot: 'bg-yellow-400', label: 'text-yellow-400' }
                                  : item.severity === 'red'    ? { border: 'border-red-500/30 bg-red-500/5',       dot: 'bg-red-400',    label: 'text-red-400'    }
@@ -456,11 +456,11 @@ export default function MilsimGroup() {
                   </div>
 
                   {/* Readiness flags */}
-                  {readiness.flags.length > 0 && (
+                  {(readiness.flags ?? []).length > 0 && (
                     <div className="bg-card border border-border rounded-lg p-5 space-y-3">
                       <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Readiness Flags</p>
                       <div className="space-y-2">
-                        {readiness.flags.map((flag: any) => (
+                        {(readiness.flags ?? []).map((flag: any) => (
                           <div key={flag.code} className={`flex items-start gap-3 p-3 rounded-lg border ${
                             flag.severity === 'red'
                               ? 'border-red-500/30 bg-red-500/5'
