@@ -20,9 +20,37 @@
         "confidential",
         "classified",
         "top-secret"
-      ]
+      ],
+      "default": "unclassified"
     },
     "created_by": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "ao": {
+      "type": "string"
+    },
+    "objectives": {
+      "type": "string"
+    },
+    "comms_plan": {
+      "type": "string"
+    },
+    "roe": {
+      "type": "string"
+    },
+    "additional_notes": {
+      "type": "string"
+    },
+    "op_date": {
       "type": "string"
     }
   },

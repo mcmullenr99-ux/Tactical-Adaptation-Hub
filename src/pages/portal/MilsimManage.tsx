@@ -118,7 +118,17 @@ export default function MilsimManage() {
     </PortalLayout>
   );
 
-  const showMsg = (ok: boolean, text: string) => {
+  const showMsg = (okOrText: boolean | string, textOrType?: string) => {
+    // Accept both (ok: boolean, text: string) and (text: string, type: "success"|"error")
+    let ok: boolean;
+    let text: string;
+    if (typeof okOrText === "boolean") {
+      ok = okOrText;
+      text = textOrType ?? "";
+    } else {
+      ok = textOrType !== "error";
+      text = okOrText;
+    }
     setSaveMsg({ ok, text });
     setTimeout(() => setSaveMsg(null), 3500);
   };
