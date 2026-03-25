@@ -2727,25 +2727,31 @@ function LOATab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "succ
 // ─────────────────────────────────────────────────────────────────────────────
 // ACTIVITY CALENDAR TAB
 // ─────────────────────────────────────────────────────────────────────────────
+// ─── Activity Calendar ────────────────────────────────────────────────────────
 const EVENT_TYPES = ["Op", "Training", "Meeting", "Social", "Admin", "Other"] as const;
-const EVENT_TYPE_COLOR: Record<string, string> = {
-  Op:       "bg-red-500/10 border-red-500/30 text-red-400",
-  Training: "bg-blue-500/10 border-blue-500/30 text-blue-400",
-  Meeting:  "bg-purple-500/10 border-purple-500/30 text-purple-400",
-  Social:   "bg-green-500/10 border-green-500/30 text-green-400",
-  Admin:    "bg-muted/40 border-border text-muted-foreground",
+
+const EV_STYLE: Record<string, string> = {
+  Op:       "bg-red-500/15 border-red-500/40 text-red-300",
+  Training: "bg-blue-500/15 border-blue-500/40 text-blue-300",
+  Meeting:  "bg-purple-500/15 border-purple-500/40 text-purple-300",
+  Social:   "bg-green-500/15 border-green-500/40 text-green-300",
+  Admin:    "bg-secondary border-border text-muted-foreground",
   Other:    "bg-secondary border-border text-muted-foreground",
+  LOA:      "bg-blue-500/10 border-blue-500/30 text-blue-400",
+  AAR:      "bg-green-500/10 border-green-500/30 text-green-400",
 };
 
 function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success"|"error") => void }) {
   const { user } = useAuth();
   const now = new Date();
-  const [viewYear, setViewYear] = useState(now.getFullYear());
-  const [viewMonth, setViewMonth] = useState(now.getMonth()); // 0-indexed
-  const [events, setEvents] = useState<any[]>([]);
-  const [loas, setLoas] = useState<any[]>([]);
+  const [viewYear, setViewYear]   = useState(now.getFullYear());
+  const [viewMonth, setViewMonth] = useState(now.getMonth());
+  const [events, setEvents]   = useState<any[]>([]);
+  const [loas, setLoas]       = useState<any[]>([]);
+  const [aars, setAars]       = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [showForm, setShowForm]   = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -2753,20 +2759,18 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
     scheduled_at: "", end_date: "", description: "", game: "", status: "Planned"
   });
 
-  const isCommander = group.owner_id === user?.id || group.roster?.some((r: any) =>
-    r.user_id === user?.id && group.owner_id === user?.id
-  );
-
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [opsData, loaData] = await Promise.all([
+      const [opsData, loaData, aarData] = await Promise.all([
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
         apiFetch(`/loa?path=list&group_id=${group.id}`),
+        apiFetch(`/milsimAars?path=list&group_id=${group.id}`),
       ]);
       setEvents(opsData.events ?? []);
       setLoas(loaData.loas ?? []);
-    } catch { setEvents([]); setLoas([]); }
+      setAars(aarData.aars ?? []);
+    } catch { setEvents([]); setLoas([]); setAars([]); }
     setLoading(false);
   }, [group.id]);
 
@@ -2778,110 +2782,196 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
     try {
       if (editTarget) {
         await apiFetch("/activityCalendar?path=update", { method: "POST", body: JSON.stringify({ id: editTarget.id, ...form }) });
-        showMsg("Event updated ✓", "success");
+        showMsg("Event updated", "success");
       } else {
-        await apiFetch("/activityCalendar?path=create", { method: "POST", body: JSON.stringify({
-          group_id: group.id, created_by: user?.username, ...form
-        }) });
-        showMsg("Event scheduled ✓", "success");
+        await apiFetch("/activityCalendar?path=create", { method: "POST", body: JSON.stringify({ group_id: group.id, created_by: user?.username, ...form }) });
+        showMsg("Event scheduled", "success");
       }
-      setShowForm(false); setEditTarget(null);
-      setForm({ title: "", event_type: "Op", scheduled_at: "", end_date: "", description: "", game: "", status: "Planned" });
-      load();
+      setShowForm(false); setEditTarget(null); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
   };
 
-  const deleteEvent = async (id: string) => {
+  const remove = async (id: string) => {
     if (!confirm("Delete this event?")) return;
-    try {
-      await apiFetch("/activityCalendar?path=delete", { method: "POST", body: JSON.stringify({ id }) });
-      showMsg("Deleted", "success"); load();
-    } catch (e: any) { showMsg(e.message, "error"); }
+    await apiFetch("/activityCalendar?path=delete", { method: "POST", body: JSON.stringify({ id }) });
+    showMsg("Deleted", "success"); load();
   };
 
   const openEdit = (ev: any) => {
     setEditTarget(ev);
-    setForm({ title: ev.title, event_type: ev.event_type, scheduled_at: ev.scheduled_at?.split("T")[0] ?? "", end_date: ev.end_date ?? "", description: ev.description ?? "", game: ev.game ?? "", status: ev.status ?? "Planned" });
+    setForm({ title: ev.title ?? ev.name ?? "", event_type: ev.event_type ?? "Op", scheduled_at: ev.scheduled_at ? ev.scheduled_at.slice(0,16) : "", end_date: ev.end_date ?? "", description: ev.description ?? "", game: ev.game ?? "", status: ev.status ?? "Planned" });
     setShowForm(true);
+    setSelectedDay(null);
   };
 
-  // Build calendar grid
-  const firstDay = new Date(viewYear, viewMonth, 1);
+  const firstDay    = new Date(viewYear, viewMonth, 1);
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const startOffset = firstDay.getDay(); // 0=Sun
-  const monthEvents = events.filter(e => {
+  const startOffset = firstDay.getDay();
+  const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const DAY_NAMES   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  // ── helpers ──────────────────────────────────────────────────────────────────
+  const dayDate = (day: number) => new Date(viewYear, viewMonth, day);
+
+  const opsForDay = (day: number) => events.filter(e => {
+    if (!e.scheduled_at) return false;
     const d = new Date(e.scheduled_at);
-    return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
+    return d.getFullYear() === viewYear && d.getMonth() === viewMonth && d.getDate() === day;
   });
-  const getEventsForDay = (day: number) => monthEvents.filter(e => new Date(e.scheduled_at).getDate() === day);
-  // normalise name→title for display
-  const evTitle = (ev: any) => ev.title ?? ev.name ?? '(untitled)';
-  // LOA markers for calendar: mark days within any active LOA range
-  const getLoasForDay = (day: number) => {
-    const date = new Date(viewYear, viewMonth, day);
+
+  const loasForDay = (day: number) => {
+    const date = dayDate(day);
     return loas.filter(l => {
-      if (l.status !== "Active" && l.status !== "Extension Requested") return false;
+      if (!l.start_date || !l.end_date) return false;
       const start = new Date(l.start_date); const end = new Date(l.end_date);
+      // include all statuses so even pending LOAs show
       return date >= start && date <= end;
     });
   };
 
-  const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  // AARs land on the op's scheduled_at date OR their own created_date
+  const aarsForDay = (day: number) => aars.filter(a => {
+    // try to match to a linked op's date first
+    if (a.op_id) {
+      const linkedOp = events.find(e => e.id === a.op_id);
+      if (linkedOp?.scheduled_at) {
+        const d = new Date(linkedOp.scheduled_at);
+        return d.getFullYear() === viewYear && d.getMonth() === viewMonth && d.getDate() === day;
+      }
+    }
+    // fallback: use created_date
+    const d = new Date(a.created_date ?? a.created_at ?? "");
+    return d.getFullYear() === viewYear && d.getMonth() === viewMonth && d.getDate() === day;
+  });
 
-  const upcomingAll = events.filter(e => new Date(e.scheduled_at) >= now).sort((a,b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()).slice(0, 10);
+  const allItemsForDay = (day: number) => [
+    ...opsForDay(day).map(e => ({ kind: e.event_type ?? "Op", label: e.title ?? e.name, raw: e })),
+    ...loasForDay(day).map(l => ({ kind: "LOA", label: `LOA: ${l.callsign}`, raw: l })),
+    ...aarsForDay(day).map(a => ({ kind: "AAR", label: `AAR: ${a.title ?? a.op_name}`, raw: a })),
+  ];
+
+  const upcomingOps = events
+    .filter(e => new Date(e.scheduled_at) >= now)
+    .sort((a,b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+    .slice(0, 8);
+
+  // ── day detail panel ─────────────────────────────────────────────────────────
+  const renderDayDetail = () => {
+    if (selectedDay === null) return null;
+    const items = allItemsForDay(selectedDay);
+    const dayOps = opsForDay(selectedDay);
+    const dayLoas = loasForDay(selectedDay);
+    const dayAars = aarsForDay(selectedDay);
+    return (
+      <div className="border border-border rounded-lg bg-card p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-display font-bold text-sm uppercase tracking-widest">
+            {selectedDay} {MONTH_NAMES[viewMonth]} {viewYear}
+          </h3>
+          <button onClick={() => setSelectedDay(null)} className="p-1 text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+        </div>
+        {items.length === 0 && <p className="text-xs text-muted-foreground font-sans">Nothing logged for this day.</p>}
+        {dayOps.length > 0 && (
+          <div>
+            <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Operations / Events</p>
+            <div className="space-y-2">
+              {dayOps.map(ev => {
+                const aarCount = aars.filter(a => a.op_id === ev.id).length;
+                return (
+                  <div key={ev.id} className={`rounded-lg border p-3 ${EV_STYLE[ev.event_type] ?? EV_STYLE.Other}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-display font-bold text-sm">{ev.title ?? ev.name}</p>
+                        {ev.game && <p className="text-[10px] font-sans opacity-70 mt-0.5">{ev.game}</p>}
+                        {ev.description && <p className="text-xs font-sans mt-1 opacity-80">{ev.description}</p>}
+                        {aarCount > 0 && <p className="text-[10px] font-display font-bold uppercase tracking-widest text-green-400 mt-1">✓ {aarCount} AAR{aarCount > 1 ? "s" : ""} filed</p>}
+                        {aarCount === 0 && ev.status === "Completed" && <p className="text-[10px] font-display font-bold uppercase tracking-widest text-amber-400 mt-1">⚠ No AAR filed</p>}
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <button onClick={() => openEdit(ev)} className="p-1 opacity-60 hover:opacity-100 transition-opacity"><Pencil className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => remove(ev.id)} className="p-1 opacity-60 hover:opacity-100 text-red-400 transition-opacity"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ${
+                        ev.status === "Active" ? "border-red-500/40 text-red-400" :
+                        ev.status === "Completed" ? "border-border text-muted-foreground" :
+                        ev.status === "Confirmed" ? "border-green-500/40 text-green-400" :
+                        "border-amber-500/40 text-amber-400"}`}>{ev.status}</span>
+                      {ev.scheduled_at && <span className="text-[9px] font-sans opacity-60">{new Date(ev.scheduled_at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {dayAars.length > 0 && (
+          <div>
+            <p className="text-[10px] font-display font-bold uppercase tracking-widest text-green-400 mb-2">After Action Reports</p>
+            <div className="space-y-1.5">
+              {dayAars.map(a => (
+                <div key={a.id} className="rounded border border-green-500/20 bg-green-500/5 p-2.5">
+                  <p className="font-display font-bold text-xs text-green-300">{a.title ?? a.op_name}</p>
+                  {a.outcome && <p className="text-[10px] font-sans text-muted-foreground mt-0.5">{a.outcome}</p>}
+                  {a.lessons_learned && <p className="text-[10px] font-sans text-muted-foreground mt-0.5 line-clamp-2">Lessons: {a.lessons_learned}</p>}
+                  <p className="text-[9px] text-muted-foreground font-sans mt-1">by {a.author_username ?? "—"}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {dayLoas.length > 0 && (
+          <div>
+            <p className="text-[10px] font-display font-bold uppercase tracking-widest text-blue-400 mb-2">Leave of Absence</p>
+            <div className="space-y-1.5">
+              {dayLoas.map(l => (
+                <div key={l.id} className="rounded border border-blue-500/20 bg-blue-500/5 p-2.5 flex items-center justify-between">
+                  <div>
+                    <p className="font-display font-bold text-xs text-blue-300">{l.callsign}</p>
+                    <p className="text-[10px] font-sans text-muted-foreground">{l.reason_category}{l.reason_detail ? ` — ${l.reason_detail}` : ""}</p>
+                  </div>
+                  <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ${
+                    l.status === "Active" ? "border-green-500/40 text-green-400" :
+                    l.status === "Extension Requested" ? "border-amber-500/40 text-amber-400" :
+                    "border-border text-muted-foreground"}`}>{l.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="font-display font-bold text-lg uppercase tracking-widest">Activity Calendar</h2>
-          <p className="text-xs text-muted-foreground font-sans mt-0.5">Pre-plan ops, training, and meetings. Members can see all scheduled activity.</p>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Full ops timeline — ops, training, LOAs, and AARs on their correct dates. Click any day to review.</p>
         </div>
-        <button onClick={() => { setShowForm(v => !v); setEditTarget(null); setForm({ title: "", event_type: "Op", scheduled_at: "", end_date: "", description: "", game: "", status: "Planned" }); }}
+        <button onClick={() => { setShowForm(v => !v); setEditTarget(null); setSelectedDay(null); setForm({ title:"", event_type:"Op", scheduled_at:"", end_date:"", description:"", game:"", status:"Planned" }); }}
           className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
           <Plus className="w-3.5 h-3.5" /> Schedule Event
         </button>
       </div>
 
-      {/* Form */}
       {showForm && (
         <div className="border border-primary/30 rounded-lg p-4 bg-primary/5 space-y-4">
           <h3 className="font-display font-bold text-sm uppercase tracking-widest text-primary">{editTarget ? "Edit Event" : "New Event"}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <MField label="Title">
-              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Sunday Op — Grid 742" className="mf-input w-full" />
-            </MField>
-            <MField label="Type">
-              <select value={form.event_type} onChange={e => setForm(f => ({ ...f, event_type: e.target.value as any }))} className="mf-input w-full">
-                {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </MField>
-            <MField label="Date / Time">
-              <input type="datetime-local" value={form.scheduled_at} onChange={e => setForm(f => ({ ...f, scheduled_at: e.target.value }))} className="mf-input w-full" />
-            </MField>
-            <MField label="End Date (optional)">
-              <input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="mf-input w-full" />
-            </MField>
-            <MField label="Game">
-              <input value={form.game} onChange={e => setForm(f => ({ ...f, game: e.target.value }))} placeholder="e.g. Arma 3, Ground Branch..." className="mf-input w-full" />
-            </MField>
-            <MField label="Status">
-              <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="mf-input w-full">
-                {["Planned","Confirmed","Cancelled","Completed"].map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </MField>
-            <div className="md:col-span-2">
-              <MField label="Description">
-                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Brief notes..." className="mf-input w-full resize-none" />
-              </MField>
-            </div>
+            <MField label="Title"><input value={form.title} onChange={e => setForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Sunday Op — Grid 742" className="mf-input w-full" /></MField>
+            <MField label="Type"><select value={form.event_type} onChange={e => setForm(f=>({...f,event_type:e.target.value as any}))} className="mf-input w-full">{EVENT_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></MField>
+            <MField label="Date / Time"><input type="datetime-local" value={form.scheduled_at} onChange={e => setForm(f=>({...f,scheduled_at:e.target.value}))} className="mf-input w-full" /></MField>
+            <MField label="End Date (optional)"><input type="date" value={form.end_date} onChange={e => setForm(f=>({...f,end_date:e.target.value}))} className="mf-input w-full" /></MField>
+            <MField label="Game"><input value={form.game} onChange={e => setForm(f=>({...f,game:e.target.value}))} placeholder="e.g. Arma 3" className="mf-input w-full" /></MField>
+            <MField label="Status"><select value={form.status} onChange={e => setForm(f=>({...f,status:e.target.value}))} className="mf-input w-full">{["Planned","Confirmed","Active","Completed","Cancelled"].map(s=><option key={s} value={s}>{s}</option>)}</select></MField>
+            <div className="md:col-span-2"><MField label="Description"><textarea value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value}))} rows={2} className="mf-input w-full resize-none" /></MField></div>
           </div>
           <div className="flex gap-2">
-            <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editTarget ? "Save Changes" : "Schedule"}
-            </button>
+            <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">{saving?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:<Save className="w-3.5 h-3.5"/>} {editTarget?"Save Changes":"Schedule"}</button>
             <button onClick={() => { setShowForm(false); setEditTarget(null); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
           </div>
         </div>
@@ -2890,47 +2980,52 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
       {loading ? (
         <div className="flex items-center gap-2 text-muted-foreground text-sm font-sans"><Loader2 className="w-4 h-4 animate-spin" /> Loading calendar...</div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Month navigation */}
           <div className="flex items-center gap-4 justify-between">
-            <button onClick={() => { const d = new Date(viewYear, viewMonth - 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); }}
-              className="p-1.5 border border-border rounded hover:bg-secondary transition-colors"><ChevronDown className="w-4 h-4 rotate-90" /></button>
+            <button onClick={() => { const d=new Date(viewYear,viewMonth-1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); setSelectedDay(null); }} className="p-1.5 border border-border rounded hover:bg-secondary transition-colors"><ChevronDown className="w-4 h-4 rotate-90" /></button>
             <span className="font-display font-bold text-sm uppercase tracking-widest">{MONTH_NAMES[viewMonth]} {viewYear}</span>
-            <button onClick={() => { const d = new Date(viewYear, viewMonth + 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); }}
-              className="p-1.5 border border-border rounded hover:bg-secondary transition-colors"><ChevronDown className="w-4 h-4 -rotate-90" /></button>
+            <button onClick={() => { const d=new Date(viewYear,viewMonth+1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); setSelectedDay(null); }} className="p-1.5 border border-border rounded hover:bg-secondary transition-colors"><ChevronDown className="w-4 h-4 -rotate-90" /></button>
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap gap-3 text-[9px] font-display font-bold uppercase tracking-widest">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-400/60" />Op</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-400/60" />Training</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-400/60" />AAR</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-300/60 border border-blue-400/40" />LOA</span>
+            <span className="flex items-center gap-1 text-muted-foreground">Click any day for full review</span>
           </div>
 
           {/* Calendar grid */}
           <div className="border border-border rounded-lg overflow-hidden">
             <div className="grid grid-cols-7 border-b border-border">
-              {DAY_NAMES.map(d => (
-                <div key={d} className="text-center text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground py-2">{d}</div>
-              ))}
+              {DAY_NAMES.map(d => <div key={d} className="text-center text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground py-2">{d}</div>)}
             </div>
             <div className="grid grid-cols-7">
-              {Array.from({ length: startOffset }).map((_, i) => (
-                <div key={`pad-${i}`} className="border-b border-r border-border/40 min-h-[60px] bg-secondary/20" />
-              ))}
-              {Array.from({ length: daysInMonth }).map((_, i) => {
+              {Array.from({ length: startOffset }).map((_,i) => <div key={`pad-${i}`} className="border-b border-r border-border/40 min-h-[72px] bg-secondary/20" />)}
+              {Array.from({ length: daysInMonth }).map((_,i) => {
                 const day = i + 1;
-                const dayEvents = getEventsForDay(day);
+                const items = allItemsForDay(day);
                 const isToday = viewYear === now.getFullYear() && viewMonth === now.getMonth() && day === now.getDate();
+                const isSelected = selectedDay === day;
+                const hasMissedAAR = opsForDay(day).some(e => e.status === "Completed" && !aars.find(a => a.op_id === e.id));
                 return (
-                  <div key={day} className={`border-b border-r border-border/40 min-h-[60px] p-1.5 ${isToday ? "bg-primary/5" : ""}`}>
-                    <div className={`text-xs font-display font-bold mb-1 ${isToday ? "text-primary" : "text-muted-foreground"}`}>{day}</div>
+                  <div key={day} onClick={() => setSelectedDay(isSelected ? null : day)}
+                    className={`border-b border-r border-border/40 min-h-[72px] p-1.5 cursor-pointer transition-colors
+                      ${isToday ? "bg-primary/5" : ""}
+                      ${isSelected ? "ring-1 ring-inset ring-primary/60 bg-primary/10" : "hover:bg-secondary/20"}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-xs font-display font-bold ${isToday ? "text-primary" : "text-muted-foreground"}`}>{day}</span>
+                      {hasMissedAAR && <span title="Completed op with no AAR" className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+                    </div>
                     <div className="space-y-0.5">
-                      {dayEvents.slice(0, 2).map(ev => (
-                        <div key={ev.id} onClick={() => openEdit(ev)}
-                          className={`text-[9px] font-display font-bold uppercase tracking-wide px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 transition-opacity ${EVENT_TYPE_COLOR[ev.event_type] ?? EVENT_TYPE_COLOR.Other}`}>
-                          {ev.title}
+                      {items.slice(0, 3).map((item, idx) => (
+                        <div key={idx} className={`text-[8px] font-display font-bold uppercase tracking-wide px-1 py-0.5 rounded border truncate ${EV_STYLE[item.kind] ?? EV_STYLE.Other}`}>
+                          {item.label}
                         </div>
                       ))}
-                      {dayEvents.length > 2 && <div className="text-[9px] text-muted-foreground font-sans">+{dayEvents.length - 2} more</div>}
-                      {getLoasForDay(day).slice(0, 1).map(l => (
-                        <div key={l.id} className="text-[9px] font-display font-bold uppercase tracking-wide px-1 py-0.5 rounded border truncate bg-blue-500/10 border-blue-500/30 text-blue-400">
-                          LOA: {l.callsign}
-                        </div>
-                      ))}
+                      {items.length > 3 && <div className="text-[8px] text-muted-foreground font-sans pl-0.5">+{items.length - 3}</div>}
                     </div>
                   </div>
                 );
@@ -2938,21 +3033,24 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
             </div>
           </div>
 
-          {/* Upcoming list */}
-          {upcomingAll.length > 0 && (
+          {/* Day detail panel */}
+          {renderDayDetail()}
+
+          {/* Upcoming */}
+          {upcomingOps.length > 0 && (
             <div className="space-y-2">
               <h3 className="font-display font-bold text-xs uppercase tracking-widest text-muted-foreground">Upcoming</h3>
-              {upcomingAll.map(ev => (
-                <div key={ev.id} className="flex items-center justify-between gap-4 border border-border rounded-lg px-4 py-3">
+              {upcomingOps.map(ev => (
+                <div key={ev.id} className="flex items-center justify-between gap-4 border border-border rounded-lg px-4 py-3 hover:bg-secondary/10 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border flex-shrink-0 ${EVENT_TYPE_COLOR[ev.event_type] ?? EVENT_TYPE_COLOR.Other}`}>{ev.event_type}</span>
-                    <span className="font-display font-bold text-sm truncate">{evTitle(ev)}</span>
+                    <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border flex-shrink-0 ${EV_STYLE[ev.event_type] ?? EV_STYLE.Other}`}>{ev.event_type}</span>
+                    <span className="font-display font-bold text-sm truncate">{ev.title ?? ev.name}</span>
                     {ev.game && <span className="text-xs text-muted-foreground font-sans hidden md:block">{ev.game}</span>}
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-xs text-muted-foreground font-sans">{new Date(ev.scheduled_at).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" })}</span>
+                    <span className="text-xs text-muted-foreground font-sans">{new Date(ev.scheduled_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span>
                     <button onClick={() => openEdit(ev)} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => deleteEvent(ev.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => remove(ev.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
               ))}
