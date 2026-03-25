@@ -92,6 +92,8 @@ export const UNIT_TYPES_BY_BRANCH: Record<Branch, string[]> = {
     "Psychological Operations",
     "Civil Affairs",
     "Pathfinders / Rangers",
+    "Airborne / HALO / HAHO",
+    "Hostage Rescue Team",
     "Combat Search & Rescue",
     "Mixed SOF",
     "Other",
