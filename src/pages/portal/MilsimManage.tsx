@@ -13,7 +13,8 @@ import {
   Shield, Crosshair, Award, Users, FileText, BookOpen,
   Plus, Trash2, Loader2, Save, CheckCircle2, AlertCircle, ExternalLink,
   Pencil, Check, X, Radio, Star, Medal, Wifi, WifiOff,
-  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp, Upload, FileCheck, Brain, AlertTriangle, Eye
+  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp, Upload, FileCheck, Brain, AlertTriangle, Eye,
+  CalendarDays, PlaneTakeoff, Clock, RefreshCw, Ban
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
@@ -35,7 +36,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "reputation" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "training";
+type Tab = "info" | "roles" | "ranks" | "roster" | "reputation" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "training" | "loa" | "calendar";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -95,6 +96,8 @@ export default function MilsimManage() {
     { id: "sops", label: "SOPs / ORBAT", icon: BookOpen },
     { id: "questions", label: "App Questions", icon: FileText },
     { id: "training", label: "Training Docs", icon: Brain },
+    { id: "loa", label: "LOA Manager", icon: PlaneTakeoff },
+    { id: "calendar", label: "Activity Calendar", icon: CalendarDays },
   ];
 
   return (
@@ -159,6 +162,8 @@ export default function MilsimManage() {
           {tab === "sops" && <SopsTab group={group} roster={group.roster} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
           {tab === "training" && <TrainingDocsTab group={group} showMsg={showMsg} />}
           {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+          {tab === "loa" && <LOATab group={group} showMsg={showMsg} />}
+          {tab === "calendar" && <ActivityCalendarTab group={group} showMsg={showMsg} />}
         </motion.div>
       </div>
     </PortalLayout>
@@ -2276,6 +2281,480 @@ function TrainingDocsTab({ group, showMsg }: any) {
               </div>
             );
           })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOA MANAGER TAB
+// ─────────────────────────────────────────────────────────────────────────────
+const LOA_REASONS = [
+  "Personal", "Medical", "Work / Career", "Family", "Travel",
+  "Education", "Mental Health", "Technical Issues", "Military Service", "Other"
+] as const;
+
+function LOATab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success"|"error") => void }) {
+  const { user } = useAuth();
+  const [loas, setLoas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [extTarget, setExtTarget] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    roster_id: "", callsign: "", reason_category: "Personal" as typeof LOA_REASONS[number],
+    reason_detail: "", start_date: new Date().toISOString().split("T")[0],
+    end_date: "", notes: ""
+  });
+  const [extForm, setExtForm] = useState({ extension_requested_until: "", extension_reason: "" });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch(`/loa?path=list&group_id=${group.id}`);
+      setLoas(data.loas ?? []);
+    } catch { setLoas([]); }
+    setLoading(false);
+  }, [group.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const isCommander = group.roster?.some((r: any) =>
+    r.user_id === user?.id && (r.role === "commander" || r.notes?.includes("commander") || group.owner_id === user?.id)
+  ) || group.owner_id === user?.id;
+
+  const rosterOptions = group.roster ?? [];
+
+  const grantLOA = async () => {
+    if (!form.roster_id || !form.end_date) { showMsg("Select member and end date", "error"); return; }
+    setSaving(true);
+    try {
+      await apiFetch("/loa?path=grant", { method: "POST", body: JSON.stringify({
+        group_id: group.id, ...form,
+        granted_by: user?.id, granted_by_username: user?.username
+      }) });
+      showMsg("LOA granted ✓", "success");
+      setShowForm(false);
+      setForm({ roster_id: "", callsign: "", reason_category: "Personal", reason_detail: "", start_date: new Date().toISOString().split("T")[0], end_date: "", notes: "" });
+      load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+    setSaving(false);
+  };
+
+  const revoke = async (id: string) => {
+    if (!confirm("Revoke this LOA?")) return;
+    try {
+      await apiFetch("/loa?path=revoke", { method: "POST", body: JSON.stringify({ loa_id: id }) });
+      showMsg("LOA revoked", "success"); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+  };
+
+  const approveExt = async (loa: any, approve: boolean) => {
+    try {
+      await apiFetch("/loa?path=review-extension", { method: "POST", body: JSON.stringify({
+        loa_id: loa.id, approve, reviewed_by: user?.username
+      }) });
+      showMsg(approve ? "Extension approved ✓" : "Extension denied", "success"); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+  };
+
+  const requestExt = async () => {
+    if (!extForm.extension_requested_until || !extForm.extension_reason) { showMsg("Fill all fields", "error"); return; }
+    try {
+      await apiFetch("/loa?path=request-extension", { method: "POST", body: JSON.stringify({
+        loa_id: extTarget.id, ...extForm
+      }) });
+      showMsg("Extension request submitted", "success"); setExtTarget(null); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+  };
+
+  const statusColor: Record<string, string> = {
+    Active: "text-green-400 border-green-500/30 bg-green-500/10",
+    Expired: "text-muted-foreground border-border bg-secondary/30",
+    Revoked: "text-red-400 border-red-500/30 bg-red-500/10",
+    "Extension Requested": "text-amber-400 border-amber-500/30 bg-amber-500/10",
+  };
+
+  const myLOA = loas.find(l => l.user_id === user?.id && l.status === "Active");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display font-bold text-lg uppercase tracking-widest">Leave of Absence Manager</h2>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Active LOAs freeze reputation decay and activity tracking for the duration.</p>
+        </div>
+        {isCommander && (
+          <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+            <PlaneTakeoff className="w-3.5 h-3.5" /> Grant LOA
+          </button>
+        )}
+      </div>
+
+      {/* Grant Form */}
+      {showForm && isCommander && (
+        <div className="border border-primary/30 rounded-lg p-4 bg-primary/5 space-y-4">
+          <h3 className="font-display font-bold text-sm uppercase tracking-widest text-primary">New LOA</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <MField label="Member">
+              <select value={form.roster_id} onChange={e => {
+                const r = rosterOptions.find((x: any) => x.id === e.target.value);
+                setForm(f => ({ ...f, roster_id: e.target.value, callsign: r?.callsign ?? "" }));
+              }} className="mf-input w-full">
+                <option value="">— Select member —</option>
+                {rosterOptions.map((r: any) => (
+                  <option key={r.id} value={r.id}>{r.callsign}</option>
+                ))}
+              </select>
+            </MField>
+            <MField label="Reason Category">
+              <select value={form.reason_category} onChange={e => setForm(f => ({ ...f, reason_category: e.target.value as any }))} className="mf-input w-full">
+                {LOA_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </MField>
+            <MField label="Start Date">
+              <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className="mf-input w-full" />
+            </MField>
+            <MField label="End Date">
+              <input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="mf-input w-full" />
+            </MField>
+            <MField label="Details (optional)">
+              <input type="text" value={form.reason_detail} onChange={e => setForm(f => ({ ...f, reason_detail: e.target.value }))} placeholder="Brief context..." className="mf-input w-full" />
+            </MField>
+            <MField label="Commander Notes (internal)">
+              <input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Internal notes..." className="mf-input w-full" />
+            </MField>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={grantLOA} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90 transition-colors">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />} Confirm LOA
+            </button>
+            <button onClick={() => setShowForm(false)} className="px-4 py-1.5 border border-border text-muted-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-secondary transition-colors">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Extension request modal for member */}
+      {extTarget && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md space-y-4">
+            <h3 className="font-display font-bold text-sm uppercase tracking-widest">Request LOA Extension</h3>
+            <p className="text-xs text-muted-foreground font-sans">Current end: <span className="text-foreground font-bold">{extTarget.end_date}</span></p>
+            <MField label="New End Date">
+              <input type="date" value={extForm.extension_requested_until} onChange={e => setExtForm(f => ({ ...f, extension_requested_until: e.target.value }))} className="mf-input w-full" />
+            </MField>
+            <MField label="Reason for Extension">
+              <textarea value={extForm.extension_reason} onChange={e => setExtForm(f => ({ ...f, extension_reason: e.target.value }))} rows={3} placeholder="Explain why you need more time..." className="mf-input w-full resize-none" />
+            </MField>
+            <div className="flex gap-2">
+              <button onClick={requestExt} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
+                <RefreshCw className="w-3.5 h-3.5" /> Submit Request
+              </button>
+              <button onClick={() => setExtTarget(null)} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* My active LOA banner */}
+      {myLOA && (
+        <div className="border border-blue-500/30 bg-blue-500/10 rounded-lg p-4 flex items-center justify-between">
+          <div>
+            <p className="font-display font-bold text-sm text-blue-400 uppercase tracking-widest">You are currently on LOA</p>
+            <p className="text-xs text-muted-foreground font-sans mt-0.5">Until {myLOA.end_date} · {myLOA.reason_category} · Granted by {myLOA.granted_by_username}</p>
+          </div>
+          {myLOA.extension_status !== "Pending" && (
+            <button onClick={() => { setExtTarget(myLOA); setExtForm({ extension_requested_until: "", extension_reason: "" }); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-blue-500/40 text-blue-400 rounded font-display text-xs uppercase tracking-widest hover:bg-blue-500/20 transition-colors">
+              <RefreshCw className="w-3 h-3" /> Request Extension
+            </button>
+          )}
+          {myLOA.extension_status === "Pending" && (
+            <span className="text-xs font-display font-bold text-amber-400 uppercase tracking-widest border border-amber-500/30 bg-amber-500/10 px-2 py-1 rounded">Extension Pending</span>
+          )}
+        </div>
+      )}
+
+      {/* LOA list */}
+      {loading ? (
+        <div className="flex items-center gap-2 text-muted-foreground text-sm font-sans"><Loader2 className="w-4 h-4 animate-spin" /> Loading LOAs...</div>
+      ) : loas.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground font-sans text-sm border border-dashed border-border rounded-lg">
+          <PlaneTakeoff className="w-8 h-8 mx-auto mb-2 opacity-30" />
+          <p>No active or historical LOAs.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {loas.map(loa => {
+            const isPending = loa.extension_status === "Pending";
+            const daysLeft = Math.ceil((new Date(loa.end_date).getTime() - Date.now()) / 86400000);
+            return (
+              <div key={loa.id} className="border border-border rounded-lg p-4 space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="font-display font-bold text-sm">{loa.callsign}</span>
+                    <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${statusColor[loa.status] ?? "text-muted-foreground border-border"}`}>{loa.status}</span>
+                    <span className="text-xs text-muted-foreground font-sans">{loa.reason_category}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {loa.status === "Active" && (
+                      <span className={`text-xs font-sans ${daysLeft <= 3 ? "text-red-400" : "text-muted-foreground"}`}>
+                        {daysLeft > 0 ? `${daysLeft}d remaining` : "Expires today"}
+                      </span>
+                    )}
+                    {isPending && isCommander && (
+                      <>
+                        <button onClick={() => approveExt(loa, true)} className="flex items-center gap-1 px-2 py-1 text-xs font-display font-bold uppercase bg-green-500/10 border border-green-500/30 text-green-400 rounded hover:bg-green-500/20 transition-colors">
+                          <Check className="w-3 h-3" /> Approve Ext.
+                        </button>
+                        <button onClick={() => approveExt(loa, false)} className="flex items-center gap-1 px-2 py-1 text-xs font-display font-bold uppercase bg-red-500/10 border border-red-500/30 text-red-400 rounded hover:bg-red-500/20 transition-colors">
+                          <X className="w-3 h-3" /> Deny
+                        </button>
+                      </>
+                    )}
+                    {isCommander && loa.status === "Active" && (
+                      <button onClick={() => revoke(loa.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors" title="Revoke LOA">
+                        <Ban className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground font-sans flex-wrap">
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {loa.start_date} → {loa.end_date}</span>
+                  <span>Granted by <span className="text-foreground">{loa.granted_by_username}</span></span>
+                  {loa.reason_detail && <span>"{loa.reason_detail}"</span>}
+                </div>
+                {isPending && (
+                  <div className="text-xs font-sans bg-amber-500/10 border border-amber-500/20 rounded p-2 flex items-center gap-2">
+                    <RefreshCw className="w-3 h-3 text-amber-400 flex-shrink-0" />
+                    <span><span className="text-amber-400 font-bold">Extension requested</span> until {loa.extension_requested_until} — "{loa.extension_reason}"</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTIVITY CALENDAR TAB
+// ─────────────────────────────────────────────────────────────────────────────
+const EVENT_TYPES = ["Op", "Training", "Meeting", "Social", "Admin", "Other"] as const;
+const EVENT_TYPE_COLOR: Record<string, string> = {
+  Op:       "bg-red-500/10 border-red-500/30 text-red-400",
+  Training: "bg-blue-500/10 border-blue-500/30 text-blue-400",
+  Meeting:  "bg-purple-500/10 border-purple-500/30 text-purple-400",
+  Social:   "bg-green-500/10 border-green-500/30 text-green-400",
+  Admin:    "bg-muted/40 border-border text-muted-foreground",
+  Other:    "bg-secondary border-border text-muted-foreground",
+};
+
+function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success"|"error") => void }) {
+  const { user } = useAuth();
+  const now = new Date();
+  const [viewYear, setViewYear] = useState(now.getFullYear());
+  const [viewMonth, setViewMonth] = useState(now.getMonth()); // 0-indexed
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editTarget, setEditTarget] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    title: "", event_type: "Op" as typeof EVENT_TYPES[number],
+    scheduled_at: "", end_date: "", description: "", game: "", status: "Planned"
+  });
+
+  const isCommander = group.owner_id === user?.id || group.roster?.some((r: any) =>
+    r.user_id === user?.id && group.owner_id === user?.id
+  );
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch(`/activityCalendar?path=list&group_id=${group.id}`);
+      setEvents(data.events ?? []);
+    } catch { setEvents([]); }
+    setLoading(false);
+  }, [group.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const save = async () => {
+    if (!form.title || !form.scheduled_at) { showMsg("Title and date required", "error"); return; }
+    setSaving(true);
+    try {
+      if (editTarget) {
+        await apiFetch("/activityCalendar?path=update", { method: "POST", body: JSON.stringify({ id: editTarget.id, ...form }) });
+        showMsg("Event updated ✓", "success");
+      } else {
+        await apiFetch("/activityCalendar?path=create", { method: "POST", body: JSON.stringify({
+          group_id: group.id, created_by: user?.username, ...form
+        }) });
+        showMsg("Event scheduled ✓", "success");
+      }
+      setShowForm(false); setEditTarget(null);
+      setForm({ title: "", event_type: "Op", scheduled_at: "", end_date: "", description: "", game: "", status: "Planned" });
+      load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+    setSaving(false);
+  };
+
+  const deleteEvent = async (id: string) => {
+    if (!confirm("Delete this event?")) return;
+    try {
+      await apiFetch("/activityCalendar?path=delete", { method: "POST", body: JSON.stringify({ id }) });
+      showMsg("Deleted", "success"); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+  };
+
+  const openEdit = (ev: any) => {
+    setEditTarget(ev);
+    setForm({ title: ev.title, event_type: ev.event_type, scheduled_at: ev.scheduled_at?.split("T")[0] ?? "", end_date: ev.end_date ?? "", description: ev.description ?? "", game: ev.game ?? "", status: ev.status ?? "Planned" });
+    setShowForm(true);
+  };
+
+  // Build calendar grid
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const startOffset = firstDay.getDay(); // 0=Sun
+  const monthEvents = events.filter(e => {
+    const d = new Date(e.scheduled_at);
+    return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
+  });
+  const getEventsForDay = (day: number) => monthEvents.filter(e => new Date(e.scheduled_at).getDate() === day);
+  // normalise name→title for display
+  const evTitle = (ev: any) => ev.title ?? ev.name ?? '(untitled)';
+
+  const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  const upcomingAll = events.filter(e => new Date(e.scheduled_at) >= now).sort((a,b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()).slice(0, 10);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h2 className="font-display font-bold text-lg uppercase tracking-widest">Activity Calendar</h2>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Pre-plan ops, training, and meetings. Members can see all scheduled activity.</p>
+        </div>
+        <button onClick={() => { setShowForm(v => !v); setEditTarget(null); setForm({ title: "", event_type: "Op", scheduled_at: "", end_date: "", description: "", game: "", status: "Planned" }); }}
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> Schedule Event
+        </button>
+      </div>
+
+      {/* Form */}
+      {showForm && (
+        <div className="border border-primary/30 rounded-lg p-4 bg-primary/5 space-y-4">
+          <h3 className="font-display font-bold text-sm uppercase tracking-widest text-primary">{editTarget ? "Edit Event" : "New Event"}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <MField label="Title">
+              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Sunday Op — Grid 742" className="mf-input w-full" />
+            </MField>
+            <MField label="Type">
+              <select value={form.event_type} onChange={e => setForm(f => ({ ...f, event_type: e.target.value as any }))} className="mf-input w-full">
+                {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </MField>
+            <MField label="Date / Time">
+              <input type="datetime-local" value={form.scheduled_at} onChange={e => setForm(f => ({ ...f, scheduled_at: e.target.value }))} className="mf-input w-full" />
+            </MField>
+            <MField label="End Date (optional)">
+              <input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className="mf-input w-full" />
+            </MField>
+            <MField label="Game">
+              <input value={form.game} onChange={e => setForm(f => ({ ...f, game: e.target.value }))} placeholder="e.g. Arma 3, Ground Branch..." className="mf-input w-full" />
+            </MField>
+            <MField label="Status">
+              <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="mf-input w-full">
+                {["Planned","Confirmed","Cancelled","Completed"].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </MField>
+            <div className="md:col-span-2">
+              <MField label="Description">
+                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Brief notes..." className="mf-input w-full resize-none" />
+              </MField>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editTarget ? "Save Changes" : "Schedule"}
+            </button>
+            <button onClick={() => { setShowForm(false); setEditTarget(null); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-muted-foreground text-sm font-sans"><Loader2 className="w-4 h-4 animate-spin" /> Loading calendar...</div>
+      ) : (
+        <div className="space-y-6">
+          {/* Month navigation */}
+          <div className="flex items-center gap-4 justify-between">
+            <button onClick={() => { const d = new Date(viewYear, viewMonth - 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); }}
+              className="p-1.5 border border-border rounded hover:bg-secondary transition-colors"><ChevronDown className="w-4 h-4 rotate-90" /></button>
+            <span className="font-display font-bold text-sm uppercase tracking-widest">{MONTH_NAMES[viewMonth]} {viewYear}</span>
+            <button onClick={() => { const d = new Date(viewYear, viewMonth + 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); }}
+              className="p-1.5 border border-border rounded hover:bg-secondary transition-colors"><ChevronDown className="w-4 h-4 -rotate-90" /></button>
+          </div>
+
+          {/* Calendar grid */}
+          <div className="border border-border rounded-lg overflow-hidden">
+            <div className="grid grid-cols-7 border-b border-border">
+              {DAY_NAMES.map(d => (
+                <div key={d} className="text-center text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground py-2">{d}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7">
+              {Array.from({ length: startOffset }).map((_, i) => (
+                <div key={`pad-${i}`} className="border-b border-r border-border/40 min-h-[60px] bg-secondary/20" />
+              ))}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1;
+                const dayEvents = getEventsForDay(day);
+                const isToday = viewYear === now.getFullYear() && viewMonth === now.getMonth() && day === now.getDate();
+                return (
+                  <div key={day} className={`border-b border-r border-border/40 min-h-[60px] p-1.5 ${isToday ? "bg-primary/5" : ""}`}>
+                    <div className={`text-xs font-display font-bold mb-1 ${isToday ? "text-primary" : "text-muted-foreground"}`}>{day}</div>
+                    <div className="space-y-0.5">
+                      {dayEvents.slice(0, 2).map(ev => (
+                        <div key={ev.id} onClick={() => openEdit(ev)}
+                          className={`text-[9px] font-display font-bold uppercase tracking-wide px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 transition-opacity ${EVENT_TYPE_COLOR[ev.event_type] ?? EVENT_TYPE_COLOR.Other}`}>
+                          {ev.title}
+                        </div>
+                      ))}
+                      {dayEvents.length > 2 && <div className="text-[9px] text-muted-foreground font-sans">+{dayEvents.length - 2} more</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Upcoming list */}
+          {upcomingAll.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-display font-bold text-xs uppercase tracking-widest text-muted-foreground">Upcoming</h3>
+              {upcomingAll.map(ev => (
+                <div key={ev.id} className="flex items-center justify-between gap-4 border border-border rounded-lg px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border flex-shrink-0 ${EVENT_TYPE_COLOR[ev.event_type] ?? EVENT_TYPE_COLOR.Other}`}>{ev.event_type}</span>
+                    <span className="font-display font-bold text-sm truncate">{evTitle(ev)}</span>
+                    {ev.game && <span className="text-xs text-muted-foreground font-sans hidden md:block">{ev.game}</span>}
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-xs text-muted-foreground font-sans">{new Date(ev.scheduled_at).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" })}</span>
+                    <button onClick={() => openEdit(ev)} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => deleteEvent(ev.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

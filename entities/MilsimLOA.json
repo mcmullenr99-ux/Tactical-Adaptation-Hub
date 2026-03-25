@@ -1,0 +1,78 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "roster_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "callsign": {
+      "type": "string"
+    },
+    "reason_category": {
+      "type": "string",
+      "enum": [
+        "Personal",
+        "Medical",
+        "Work / Career",
+        "Family",
+        "Travel",
+        "Education",
+        "Mental Health",
+        "Technical Issues",
+        "Military Service",
+        "Other"
+      ]
+    },
+    "reason_detail": {
+      "type": "string"
+    },
+    "start_date": {
+      "type": "string"
+    },
+    "end_date": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Active",
+        "Expired",
+        "Revoked",
+        "Extension Requested"
+      ]
+    },
+    "granted_by": {
+      "type": "string"
+    },
+    "granted_by_username": {
+      "type": "string"
+    },
+    "extension_requested_until": {
+      "type": "string"
+    },
+    "extension_reason": {
+      "type": "string"
+    },
+    "extension_reviewed_by": {
+      "type": "string"
+    },
+    "extension_status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Approved",
+        "Denied"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "MilsimLOA"
+}

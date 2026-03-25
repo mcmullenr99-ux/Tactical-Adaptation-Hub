@@ -12,8 +12,8 @@ import { differenceInDays, format } from "date-fns";
 
 const DUTY_OPTIONS = [
   { value: "active",     label: "Active",     color: "bg-green-500/20 text-green-400 border-green-500/40" },
-  { value: "available",  label: "Available",  color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/40" },
-  { value: "on-leave",   label: "On Leave",   color: "bg-amber-500/20 text-amber-400 border-amber-500/40" },
+  { value: "available",  label: "Available",  color: "bg-amber-500/20 text-amber-400 border-amber-500/40" },
+  { value: "on-leave",   label: "On Leave",   color: "bg-blue-500/20 text-blue-400 border-blue-500/40" },
   { value: "mia",        label: "MIA",        color: "bg-red-500/20 text-red-400 border-red-500/40" },
 ];
 
@@ -214,8 +214,8 @@ export default function Profile() {
           </div>
           <div className="text-xs text-muted-foreground font-sans space-y-1 pt-1 border-t border-border">
             <p><span className="text-green-400 font-bold">● Active</span> — 5–7 days/week participation</p>
-            <p><span className="text-emerald-400 font-bold">● Available</span> — 3–4 days/week</p>
-            <p><span className="text-amber-400 font-bold">● On Leave</span> — 1–2 days/week</p>
+            <p><span className="text-amber-400 font-bold">● Available</span> — 3–4 days/week</p>
+            <p><span className="text-blue-400 font-bold">● On Leave</span> — 1–2 days/week</p>
             <p><span className="text-red-400 font-bold">● MIA</span> — no recorded activity this week</p>
           </div>
         </div>

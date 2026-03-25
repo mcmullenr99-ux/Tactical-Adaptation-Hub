@@ -14,33 +14,39 @@
       "type": "string"
     },
     "scheduled_at": {
+      "type": "string"
+    },
+    "end_date": {
+      "type": "string"
+    },
+    "event_type": {
       "type": "string",
-      "format": "date-time"
+      "enum": [
+        "Op",
+        "Training",
+        "Meeting",
+        "Social",
+        "Admin",
+        "Other"
+      ]
     },
     "status": {
       "type": "string",
       "enum": [
-        "planned",
-        "active",
-        "completed",
-        "ended"
-      ],
-      "default": "planned"
+        "Planned",
+        "Confirmed",
+        "Active",
+        "Completed",
+        "Cancelled"
+      ]
     },
     "created_by": {
       "type": "string"
     },
     "participants": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Array of roster entry IDs who participated"
+      "type": "array"
     }
   },
-  "required": [
-    "group_id",
-    "name"
-  ],
+  "required": [],
   "name": "MilsimOp"
 }
