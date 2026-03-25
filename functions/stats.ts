@@ -723,8 +723,6 @@ function buildReadinessReport(params: {
   const narrative = narrative_lines.join(' ');
 
   // Per-category scores for UI breakdown bars
-  const gameListDisp   = Array.isArray(group.games) ? group.games as string[] : group.games ? [group.games as string] : [];
-  const gameBreadthPts = gameListDisp.length >= 5 ? 15 : gameListDisp.length >= 4 ? 12 : gameListDisp.length >= 3 ? 8 : gameListDisp.length >= 2 ? 4 : gameListDisp.length >= 1 ? 1 : 0;
   const manpowerPts   = manpowerScore(verifiedTotal, gameProfile);
   const activityPts   = activityRatio >= 0.8 ? 20 : activityRatio >= 0.6 ? 14 : activityRatio >= 0.4 ? 7 : activityRatio >= 0.2 ? 3 : 0;
   const opHistoryPts  = validOpsCount >= 25 ? 25 : validOpsCount >= 15 ? 18 : validOpsCount >= 8 ? 12 : validOpsCount >= 4 ? 6 : validOpsCount >= 1 ? 2 : 0;
