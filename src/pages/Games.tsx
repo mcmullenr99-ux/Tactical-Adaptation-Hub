@@ -106,6 +106,15 @@ const GAMES_DATA: GameData[] = [
     operator: null,
   },
   {
+    name: "Operator",
+    genre: "Tactical Military Shooter",
+    desc: "Tier 1 special operations across global theatres. Clandestine missions, realistic ballistics, and team-coordinated assaults.",
+    youtubeId: "f_hfe80mVXo",
+    steamAppId: 2166730,
+    developer: "Pdesignation",
+    operator: null,
+  },
+  {
     name: "Exfil",
     genre: "Extraction Shooter",
     desc: "Tactical 8v8v8v8 extraction — secure objectives and get out under coordinated enemy pressure.",

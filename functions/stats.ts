@@ -188,11 +188,11 @@ const GAME_CAPACITY_PROFILES: Record<string, GameCapacityProfile> = {
   "Arma Reforger":       { game: "Arma Reforger",        maxSquadSize: 40, fullStrength: 25, adequate: 12, minimal: 6,  label: "Platoon Strength (25+)",    category: 'large_format'   },
   "Hell Let Loose":      { game: "Hell Let Loose",       maxSquadSize: 50, fullStrength: 30, adequate: 15, minimal: 6,  label: "Platoon Strength (30+)",    category: 'large_format'   },
   "Post Scriptum":       { game: "Post Scriptum",        maxSquadSize: 40, fullStrength: 25, adequate: 12, minimal: 6,  label: "Platoon Strength (25+)",    category: 'large_format'   },
-  "Foxhole":             { game: "Foxhole",              maxSquadSize: 80, fullStrength: 40, adequate: 20, minimal: 8,  label: "Company Strength (40+)",    category: 'large_format'   },
 
   // Squad-tactical: team/section level, 9-25 players
   "Squad":               { game: "Squad",                maxSquadSize: 50, fullStrength: 18, adequate: 9,  minimal: 4,  label: "Section Strength (18+)",    category: 'squad_tactical' },
   "Insurgency: Sandstorm":{ game: "Insurgency: Sandstorm",maxSquadSize: 20, fullStrength: 12, adequate: 6,  minimal: 3,  label: "Squad Strength (12+)",      category: 'squad_tactical' },
+  "Operator":             { game: "Operator",             maxSquadSize: 8,  fullStrength: 6,  adequate: 3,  minimal: 2,  label: "Full Team (6)",             category: 'small_unit'    },
   "Ground Branch":       { game: "Ground Branch",        maxSquadSize: 10, fullStrength: 8,  adequate: 4,  minimal: 2,  label: "Team Strength (8+)",        category: 'squad_tactical' },
   "GHPC":                { game: "GHPC",                 maxSquadSize: 16, fullStrength: 8,  adequate: 4,  minimal: 2,  label: "Crew/Section Strength (8+)",category: 'squad_tactical' },
   "DCS World":           { game: "DCS World",            maxSquadSize: 16, fullStrength: 8,  adequate: 4,  minimal: 2,  label: "Flight/Element Strength (8+)", category: 'squad_tactical' },
