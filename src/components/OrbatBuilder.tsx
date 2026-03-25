@@ -24,6 +24,35 @@ export const NATO_ECHELONS = [
   { id: "corps",     label: "Corps",      echelonCode: "20" },
 ];
 
+// ─── Unit Types ───────────────────────────────────────────────────────────────
+
+export const NATO_UNIT_TYPES = [
+  { id: "hq",             label: "HQ / Command",       category: "Command",   sidc: "10031000000000000000" },
+  { id: "command_post",   label: "Command Post",        category: "Command",   sidc: "10031000160000000000" },
+  { id: "infantry",       label: "Infantry",            category: "Infantry",  sidc: "10031000100000000000" },
+  { id: "light_infantry", label: "Light Infantry",      category: "Infantry",  sidc: "10031000100000000000" },
+  { id: "mech_infantry",  label: "Mechanised Infantry", category: "Infantry",  sidc: "10031000100000000000" },
+  { id: "airborne",       label: "Airborne",            category: "Infantry",  sidc: "10031000101600000000" },
+  { id: "ranger",         label: "Ranger / Recon",      category: "Infantry",  sidc: "10031000100000000000" },
+  { id: "special_forces", label: "Special Forces",      category: "Infantry",  sidc: "10031000100000000000" },
+  { id: "armour",         label: "Armour / Tank",       category: "Armour",    sidc: "10031000300000000000" },
+  { id: "apc",            label: "APC",                 category: "Armour",    sidc: "10031000350000000000" },
+  { id: "ifv",            label: "IFV",                 category: "Armour",    sidc: "10031000350000000000" },
+  { id: "aviation",       label: "Aviation",            category: "Aviation",  sidc: "10031000110000000000" },
+  { id: "cas",            label: "Close Air Support",   category: "Aviation",  sidc: "10031000110000000000" },
+  { id: "helicopter",     label: "Helicopter",          category: "Aviation",  sidc: "10031000120000000000" },
+  { id: "uav",            label: "UAV / Drone",         category: "Aviation",  sidc: "10031000110000000000" },
+  { id: "artillery",      label: "Artillery",           category: "Support",   sidc: "10031000550000000000" },
+  { id: "mortar",         label: "Mortar",              category: "Support",   sidc: "10031000550000000000" },
+  { id: "engineers",      label: "Engineers",           category: "Support",   sidc: "10031000650000000000" },
+  { id: "logistics",      label: "Logistics / Supply",  category: "Support",   sidc: "10031000800000000000" },
+  { id: "medical",        label: "Medical",             category: "Support",   sidc: "10031000850000000000" },
+  { id: "signals",        label: "Signals / Comms",     category: "Support",   sidc: "10031000950000000000" },
+  { id: "intelligence",   label: "Intelligence",        category: "Support",   sidc: "10031001000000000000" },
+  { id: "mp",             label: "Military Police",     category: "Support",   sidc: "10031001150000000000" },
+  { id: "sof",            label: "SOF / JTAC",          category: "Support",   sidc: "10031000100000000000" },
+];
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface OrbatNode {
