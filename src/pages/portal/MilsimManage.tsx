@@ -1263,6 +1263,31 @@ function OpsTab({ group, showMsg }: any) {
               <div className="flex flex-wrap gap-2">{activeOp.checkins?.map((c: any) => (<span key={c.id} className="text-xs font-display font-bold uppercase tracking-widest px-2.5 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded">{c.callsign}</span>))}</div>
             )}
           </div>
+          {group.roster && group.roster.length > 0 && (
+            <div>
+              <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Mark Attendance</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-40 overflow-y-auto p-2 bg-black/20 border border-red-500/20 rounded">
+                {group.roster.map((r: any) => {
+                  const attending = (activeOp.participants ?? []).includes(r.id);
+                  return (
+                    <label key={r.id} className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${attending ? "bg-primary/15 border border-primary/30" : "hover:bg-secondary/40"}`}>
+                      <input type="checkbox" className="accent-primary" checked={attending}
+                        onChange={async (e) => {
+                          const newP = e.target.checked
+                            ? [...(activeOp.participants ?? []), r.id]
+                            : (activeOp.participants ?? []).filter((id: string) => id !== r.id);
+                          try {
+                            await apiFetch(`/api/milsim-groups/${group.id}/ops/${activeOp.id}`, { method: "PATCH", body: JSON.stringify({ participants: newP }) });
+                            setActiveOp((prev: any) => prev ? { ...prev, participants: newP } : prev);
+                          } catch {}
+                        }} />
+                      <span className="text-xs font-display font-bold uppercase tracking-wider">{r.callsign}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-card border border-border rounded-lg p-5 space-y-3">
@@ -1281,7 +1306,22 @@ function OpsTab({ group, showMsg }: any) {
                 <div className="flex items-center gap-3"><span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground px-2 py-0.5 bg-secondary border border-border rounded">Ended</span><span className="font-display font-bold text-sm text-foreground">{op.name}</span></div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground"><span>{op.checkin_count} checked in</span>{expandedOp === op.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</div>
               </button>
-              {expandedOp === op.id && <div className="border-t border-border px-5 py-3 bg-secondary/10 text-xs text-muted-foreground">Started: {op.started_at && !isNaN(new Date(op.started_at).getTime()) ? format(new Date(op.started_at), "PPpp") : "—"}{op.ended_at && !isNaN(new Date(op.ended_at).getTime()) && <> · Ended: {format(new Date(op.ended_at), "PPpp")}</>}</div>}
+              {expandedOp === op.id && (
+              <div className="border-t border-border px-5 py-3 bg-secondary/10 space-y-2">
+                <p className="text-xs text-muted-foreground">Started: {op.started_at && !isNaN(new Date(op.started_at).getTime()) ? format(new Date(op.started_at), "PPpp") : "—"}{op.ended_at && !isNaN(new Date(op.ended_at).getTime()) && <> · Ended: {format(new Date(op.ended_at), "PPpp")}</>}</p>
+                {op.participants && op.participants.length > 0 && (
+                  <div>
+                    <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Attendees ({op.participants.length})</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {op.participants.map((pid: string) => {
+                        const member = group.roster?.find((r: any) => r.id === pid);
+                        return member ? <span key={pid} className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded">{member.callsign}</span> : null;
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             </div>
           ))}
         </div>
@@ -1300,7 +1340,7 @@ function AARsTab({ group, showMsg }: any) {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const emptyForm = { op_name: "", op_date: "", summary: "", objectives_hit: "", objectives_missed: "", casualties: "", commendations: "", recommendations: "", classification: "unclassified" };
+  const emptyForm = { op_name: "", op_date: "", summary: "", objectives_hit: "", objectives_missed: "", casualties: "", commendations: "", recommendations: "", classification: "unclassified", participants: [] as string[] };
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -1336,6 +1376,23 @@ function AARsTab({ group, showMsg }: any) {
           <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Objectives Hit</label><textarea rows={3} value={form.objectives_hit} onChange={setF("objectives_hit")} className="mf-input resize-none" /></div><div><label className="mf-label">Objectives Missed</label><textarea rows={3} value={form.objectives_missed} onChange={setF("objectives_missed")} className="mf-input resize-none" /></div></div>
           <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Casualties</label><textarea rows={2} value={form.casualties} onChange={setF("casualties")} className="mf-input resize-none" /></div><div><label className="mf-label">Commendations</label><textarea rows={2} value={form.commendations} onChange={setF("commendations")} className="mf-input resize-none" /></div></div>
           <div><label className="mf-label">Recommendations</label><textarea rows={3} value={form.recommendations} onChange={setF("recommendations")} className="mf-input resize-none" /></div>
+          <div>
+            <label className="mf-label">Participants (Attendance)</label>
+            {group.roster && group.roster.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mt-1 max-h-40 overflow-y-auto p-2 bg-secondary/20 border border-border rounded">
+                {group.roster.map((r: any) => {
+                  const checked = (form.participants ?? []).includes(r.id);
+                  return (
+                    <label key={r.id} className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${checked ? "bg-primary/15 border border-primary/30" : "hover:bg-secondary/60"}`}>
+                      <input type="checkbox" className="accent-primary" checked={checked}
+                        onChange={e => setForm((f: any) => ({ ...f, participants: e.target.checked ? [...(f.participants ?? []), r.id] : (f.participants ?? []).filter((id: string) => id !== r.id) }))} />
+                      <span className="text-xs font-display font-bold uppercase tracking-wider">{r.callsign}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : <p className="text-xs text-muted-foreground mt-1">No roster members yet.</p>}
+          </div>
           <div className="flex gap-2">
             <button onClick={submit} disabled={saving || !form.op_name.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editId ? "Update" : "File AAR"}</button>
             <button onClick={() => { setCreating(false); setEditId(null); setForm(emptyForm); }} className="px-4 py-2 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground">Cancel</button>
@@ -1349,9 +1406,9 @@ function AARsTab({ group, showMsg }: any) {
           {aars.map((a: any) => (
             <div key={a.id} className="bg-card border border-border rounded-lg overflow-hidden">
               <button onClick={() => setExpandedId(expandedId === a.id ? null : a.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
-                <div className="flex items-center gap-3 flex-wrap"><span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${CL[a.classification] ?? ""}`}>{a.classification.replace("-"," ")}</span><span className="font-display font-bold text-sm text-foreground">{a.op_name}</span>{a.op_date && <span className="text-xs text-muted-foreground">{format(new Date(a.op_date + "T00:00:00"), "MMM dd, yyyy")}</span>}</div>
+                <div className="flex items-center gap-3 flex-wrap"><span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${CL[a.classification] ?? ""}`}>{(a.classification ?? "unclassified").replace("-"," ")}</span><span className="font-display font-bold text-sm text-foreground">{a.op_name}</span>{a.op_date && <span className="text-xs text-muted-foreground">{format(new Date(a.op_date + "T00:00:00"), "MMM dd, yyyy")}</span>}</div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ op_name: a.op_name, op_date: a.op_date?.split("T")[0] ?? "", summary: a.summary ?? "", objectives_hit: a.objectives_hit ?? "", objectives_missed: a.objectives_missed ?? "", casualties: a.casualties ?? "", commendations: a.commendations ?? "", recommendations: a.recommendations ?? "", classification: a.classification }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ op_name: a.op_name, op_date: a.op_date?.split("T")[0] ?? "", summary: a.summary ?? "", objectives_hit: a.objectives_hit ?? "", objectives_missed: a.objectives_missed ?? "", casualties: a.casualties ?? "", commendations: a.commendations ?? "", recommendations: a.recommendations ?? "", classification: a.classification ?? "unclassified", participants: a.participants ?? [] }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={e => { e.stopPropagation(); remove(a.id); }} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                   {expandedId === a.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 </div>

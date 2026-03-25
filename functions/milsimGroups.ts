@@ -575,6 +575,21 @@ Deno.serve(async (req) => {
       return Response.json(op, { status: 201 });
     }
 
+    // PATCH /:id/ops/:opId — update participants mid-op
+    if (method === 'PATCH' && parts.length === 3 && parts[1] === 'ops') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
+      if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const body = await req.json().catch(() => ({}));
+      const updateData: any = {};
+      if (Array.isArray(body.participants)) updateData.participants = body.participants;
+      if (body.name !== undefined) updateData.name = body.name;
+      if (body.description !== undefined) updateData.description = body.description;
+      const updated = await base44.asServiceRole.entities.MilsimOp.update(parts[2], updateData);
+      return Response.json(updated);
+    }
+
     // PATCH /:id/ops/:opId/end
     if (method === 'PATCH' && parts.length === 4 && parts[1] === 'ops' && parts[3] === 'end') {
       const full = await getCallerUser(base44, req);

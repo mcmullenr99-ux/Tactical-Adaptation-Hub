@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import {
   BRANCHES, UNIT_TYPES_BY_BRANCH, ALL_UNIT_TYPES, GAMES_LIST,
-  COUNTRIES_LIST, LANGUAGES_LIST, type Branch,
+  COUNTRIES_LIST, LANGUAGES_LIST, BRANCH_ICONS, type Branch,
 } from "@/lib/milsimConstants";
 
 interface MilsimGroup {
