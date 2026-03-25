@@ -2427,18 +2427,32 @@ function TrainingDocsTab({ group, showMsg }: any) {
                     <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${docTypeColor[doc.doc_type] ?? docTypeColor.Other}`}>
                       {doc.doc_type}
                     </span>
+                    {doc.quality_flag === 'amber' && (
+                      <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border border-yellow-500/40 text-yellow-400 bg-yellow-500/10" title={doc.ai_summary ?? 'Thin content — review recommended'}>
+                        <AlertTriangle className="w-2.5 h-2.5" /> Thin Content
+                      </span>
+                    )}
+                    {doc.quality_flag === 'red' && (
+                      <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border border-red-500/40 text-red-400 bg-red-500/10" title={doc.ai_summary ?? 'Suspected low-quality or invalid content'}>
+                        <AlertTriangle className="w-2.5 h-2.5" /> Flagged
+                      </span>
+                    )}
                     {stale && (
                       <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border border-orange-500/40 text-orange-400 bg-orange-500/10">
                         <AlertTriangle className="w-2.5 h-2.5" /> Outdated
                       </span>
                     )}
                   </div>
+                  {(doc.quality_flag === 'amber' || doc.quality_flag === 'red') && doc.ai_summary && (
+                    <p className="text-[10px] font-sans mt-1 mb-1 italic text-muted-foreground opacity-70">⚠ {doc.ai_summary}</p>
+                  )}
                   {doc.description && <p className="text-xs text-muted-foreground font-sans mb-2 line-clamp-2">{doc.description}</p>}
                   <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground font-sans">
                     {doc.page_count && <span>{doc.page_count} pages</span>}
                     {doc.file_name && <span>{doc.file_name}</span>}
                     {doc.file_size_bytes && <span>{(doc.file_size_bytes / 1024).toFixed(0)} KB</span>}
                     {doc.depth_score && <span>Depth: {doc.depth_score}/100</span>}
+                    {doc.ai_score != null && <span>AI Score: {doc.ai_score}/100</span>}
                     <span>Reviewed: {doc.last_reviewed_at ? format(new Date(doc.last_reviewed_at), "dd MMM yyyy") : "—"}</span>
                     <span>By: {doc.uploaded_by_username ?? "—"}</span>
                   </div>

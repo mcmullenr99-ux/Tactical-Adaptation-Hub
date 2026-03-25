@@ -11,19 +11,7 @@
       "type": "string"
     },
     "doc_type": {
-      "type": "string",
-      "enum": [
-        "SOP",
-        "TTP",
-        "Field Manual",
-        "Drill",
-        "Reference",
-        "Rules of Engagement",
-        "WARNO",
-        "OPORD",
-        "FRAGO",
-        "Other"
-      ]
+      "type": "string"
     },
     "file_url": {
       "type": "string"
@@ -38,10 +26,10 @@
       "type": "string"
     },
     "page_count": {
-      "type": "integer"
+      "type": "number"
     },
     "word_count": {
-      "type": "integer"
+      "type": "number"
     },
     "uploaded_by": {
       "type": "string"
@@ -60,6 +48,17 @@
     },
     "ai_summary": {
       "type": "string"
+    },
+    "ai_score": {
+      "type": "number"
+    },
+    "quality_flag": {
+      "type": "string",
+      "enum": [
+        "green",
+        "amber",
+        "red"
+      ]
     },
     "source_type": {
       "type": "string"

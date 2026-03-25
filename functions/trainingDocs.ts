@@ -5,7 +5,7 @@ const JWT_SECRET    = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') ?? '';
 
 // ─── ANTI-GAMING CONSTANTS ────────────────────────────────────────────────────
-const AI_LEGITIMACY_THRESHOLD = 40;   // docs scoring below this are rejected as gibberish/spam
+const AI_LEGITIMACY_THRESHOLD = 40;   // threshold for quality_flag colour (not a hard block)
 const MIN_CONTENT_CHARS       = 80;   // raw text must have at least this many non-whitespace chars
 
 async function getCallerUser(base44: any, req: Request) {
@@ -197,7 +197,7 @@ async function validateDocContent(
     return {
       score: 0,
       reason: `Document content is repetitive garbage (${Math.round(repetitionRatio * 100)}% single character). This is not valid doctrine.`,
-      passed: false,
+      passed: true,
     };
   }
 
@@ -209,7 +209,7 @@ async function validateDocContent(
       return {
         score: 5,
         reason: 'Document contains highly repetitive text with very few unique words. This is not valid doctrine.',
-        passed: false,
+        passed: true,
       };
     }
   }
@@ -359,13 +359,10 @@ Deno.serve(async (req) => {
         const textSample = await extractTextSample(arrayBuf, file.type, file.name);
         const aiResult = await validateDocContent(textSample, docType, title.trim());
 
-        if (!aiResult.passed) {
-          return Response.json({
-            error: `Document failed content validation. ${aiResult.reason} Score: ${aiResult.score}/100 (minimum required: ${AI_LEGITIMACY_THRESHOLD}/100). Upload genuine doctrine — SOPs, TTPs, drills, field manuals, or operational orders.`,
-            ai_score: aiResult.score,
-            ai_reason: aiResult.reason,
-          }, { status: 422 });
-        }
+        // Quality flag — never hard reject, always upload but badge accordingly
+        const qualityFlag: 'green' | 'amber' | 'red' =
+          aiResult.score >= 60 ? 'green' :
+          aiResult.score >= 30 ? 'amber' : 'red';
 
         // Upload to storage
         const appId = Deno.env.get('BASE44_APP_ID') ?? '';
@@ -397,7 +394,9 @@ Deno.serve(async (req) => {
           uploaded_by: uploadedBy, uploaded_by_username: uploadedByUsername,
           last_reviewed_at: new Date().toISOString(), // FIX 4: always server-side
           is_current: true,
-          ai_summary: aiResult.reason, // store AI verdict for audit trail
+          ai_summary: aiResult.reason,
+          ai_score: aiResult.score,
+          quality_flag: qualityFlag,
         });
 
       } else {
