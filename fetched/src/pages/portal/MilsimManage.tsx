@@ -12,6 +12,7 @@ import {
   GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+import OrbatBuilder from "@/components/OrbatBuilder";
 
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
 interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
@@ -193,31 +194,68 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
 }
 
 function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
-  const { register, handleSubmit } = useForm({ defaultValues: { sops: group.sops ?? "", orbat: group.orbat ?? "" } });
-  const onSubmit = async (data: any) => {
+  const [subTab, setSubTab] = useState<"sops" | "orbat">("sops");
+  const [sopsText, setSopsText] = useState(group.sops ?? "");
+  const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
+
+  const saveSops = async () => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify(data) });
+      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: sopsText, orbat: group.orbat }) });
       onSaved(updated);
-      showMsg(true, "Doctrine saved.");
+      showMsg(true, "SOPs saved.");
     } catch (e: any) { showMsg(false, e.message); }
     finally { setSaving(false); }
   };
+
+  const saveOrbat = async () => {
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
+      onSaved(updated);
+      showMsg(true, "ORBAT saved.");
+    } catch (e: any) { showMsg(false, e.message); }
+    finally { setSaving(false); }
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-3xl">
-      <MField label="Standard Operating Procedures (SOPs)">
-        <textarea {...register("sops")} rows={12} className="mf-input resize-y font-mono text-sm"
-          placeholder="1. Comms discipline — PTT only when necessary&#10;2. Movement protocols..." />
-      </MField>
-      <MField label="Order of Battle (ORBAT)">
-        <textarea {...register("orbat")} rows={12} className="mf-input resize-y font-mono text-sm"
-          placeholder="HQ Element&#10;  CO: Commander&#10;  XO: Executive Officer&#10;&#10;Alpha Squad..." />
-      </MField>
-      <button type="submit" disabled={saving}
-        className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Doctrine
-      </button>
-    </form>
+    <div className="space-y-4">
+      {/* Sub-tab switcher */}
+      <div className="flex gap-1 border-b border-border">
+        {(["sops", "orbat"] as const).map(t => (
+          <button key={t} onClick={() => setSubTab(t)}
+            className={`px-4 py-2 text-xs font-display font-bold uppercase tracking-widest transition-colors border-b-2 -mb-px ${subTab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+            {t === "sops" ? "SOPs" : "ORBAT Builder"}
+          </button>
+        ))}
+      </div>
+
+      {subTab === "sops" && (
+        <div className="space-y-4 max-w-3xl">
+          <MField label="Standard Operating Procedures (SOPs)">
+            <textarea value={sopsText} onChange={e => setSopsText(e.target.value)} rows={16}
+              className="mf-input resize-y font-mono text-sm"
+              placeholder="1. Comms discipline — PTT only when necessary&#10;2. Movement protocols..." />
+          </MField>
+          <button onClick={saveSops} disabled={saving}
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save SOPs
+          </button>
+        </div>
+      )}
+
+      {subTab === "orbat" && (
+        <div className="space-y-4">
+          <OrbatBuilder value={orbatJson} onChange={setOrbatJson} groupName={group.name} />
+          <div className="flex justify-end pt-2">
+            <button onClick={saveOrbat} disabled={saving}
+              className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save ORBAT
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
