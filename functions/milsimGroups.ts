@@ -686,9 +686,7 @@ ${body.objectives}`);
 ${body.comms_plan}`);
       if (body.additional_notes) contentParts.push(`**Additional Notes:**
 ${body.additional_notes}`);
-      const content = body.content ?? contentParts.join('
-
-');
+      const content = body.content ?? contentParts.join('\n\n');
       const briefing = await base44.asServiceRole.entities.MilsimBriefing.create({
         group_id: parts[0], op_id: body.op_id ?? null, title: body.title.trim(),
         content, classification: body.classification ?? 'unclassified', created_by: full.id,
