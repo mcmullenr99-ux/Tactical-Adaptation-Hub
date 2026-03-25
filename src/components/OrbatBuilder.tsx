@@ -3,7 +3,7 @@
  * NATO APP-6 standard. One uniform system. No switcher.
  */
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   Plus, Trash2, ChevronDown, ChevronRight, Save,
   ZoomIn, ZoomOut, Settings, X, Download,
@@ -24,78 +24,6 @@ export const NATO_ECHELONS = [
   { id: "corps",     label: "Corps",      echelonCode: "20" },
 ];
 
-// ─── SIDC Map ─────────────────────────────────────────────────────────────────
-
-const UNIT_SIDC_MAP: Record<string, string> = {
-  infantry:         "10031000141200000000",
-  armor:            "10031000141100000000",
-  mechanized:       "10031000121100000000",
-  motorized:        "10031000120500000000",
-  airborne:         "10031000141800000000",
-  air_assault:      "10031000141900000000",
-  special_forces:   "10031000140600000000",
-  ranger:           "10031000140900000000",
-  cavalry:          "10031000120100000000",
-  recce:            "10031000151600000000",
-  sniper:           "10031000140700000000",
-  anti_armor:       "10031000130500000000",
-  artillery:        "10031000121300000000",
-  rocket_artillery: "10031000121400000000",
-  mortar:           "10031000121200000000",
-  air_defense:      "10031000131100000000",
-  aviation:         "10031500000000000000",
-  attack_helo:      "10031500110100000000",
-  transport_helo:   "10031500120100000000",
-  uav:              "10031500130100000000",
-  engineer:         "10031000131200000000",
-  signal:           "10031000151200000000",
-  military_police:  "10031000151500000000",
-  intelligence:     "10031000151300000000",
-  cbrn:             "10031000131300000000",
-  logistics:        "10031000160100000000",
-  medical:          "10031000130600000000",
-  maintenance:      "10031000160200000000",
-  transport:        "10031000160300000000",
-  hq:               "10031000000000000000",
-  command_post:     "10031000000000000000",
-  fac:              "10031000151100000000",
-};
-
-export const NATO_UNIT_TYPES = [
-  { id: "infantry",         label: "Infantry",             category: "Combat"   },
-  { id: "armor",            label: "Armor / Tank",         category: "Combat"   },
-  { id: "mechanized",       label: "Mechanized Infantry",  category: "Combat"   },
-  { id: "motorized",        label: "Motorized Infantry",   category: "Combat"   },
-  { id: "airborne",         label: "Airborne",             category: "Combat"   },
-  { id: "air_assault",      label: "Air Assault",          category: "Combat"   },
-  { id: "special_forces",   label: "Special Forces",       category: "Combat"   },
-  { id: "ranger",           label: "Ranger",               category: "Combat"   },
-  { id: "cavalry",          label: "Cavalry / Recon",      category: "Combat"   },
-  { id: "recce",            label: "Reconnaissance",       category: "Combat"   },
-  { id: "sniper",           label: "Sniper",               category: "Combat"   },
-  { id: "anti_armor",       label: "Anti-Armor",           category: "Combat"   },
-  { id: "artillery",        label: "Field Artillery",      category: "Fires"    },
-  { id: "rocket_artillery", label: "Rocket Artillery",     category: "Fires"    },
-  { id: "mortar",           label: "Mortar",               category: "Fires"    },
-  { id: "air_defense",      label: "Air Defense",          category: "Fires"    },
-  { id: "aviation",         label: "Aviation",             category: "Aviation" },
-  { id: "attack_helo",      label: "Attack Helicopter",    category: "Aviation" },
-  { id: "transport_helo",   label: "Transport Helicopter", category: "Aviation" },
-  { id: "uav",              label: "UAV / Drone",          category: "Aviation" },
-  { id: "engineer",         label: "Engineer",             category: "Support"  },
-  { id: "signal",           label: "Signal / Comms",       category: "Support"  },
-  { id: "military_police",  label: "Military Police",      category: "Support"  },
-  { id: "intelligence",     label: "Intelligence",         category: "Support"  },
-  { id: "cbrn",             label: "CBRN",                 category: "Support"  },
-  { id: "logistics",        label: "Logistics / Supply",   category: "CSS"      },
-  { id: "medical",          label: "Medical",              category: "CSS"      },
-  { id: "maintenance",      label: "Maintenance",          category: "CSS"      },
-  { id: "transport",        label: "Transport",            category: "CSS"      },
-  { id: "hq",               label: "Headquarters",         category: "C2"       },
-  { id: "command_post",     label: "Command Post",         category: "C2"       },
-  { id: "fac",              label: "FAC / JTAC",           category: "C2"       },
-];
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface OrbatNode {
@@ -113,59 +41,250 @@ function generateId() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-// ─── Cached milsymbol loader ──────────────────────────────────────────────────
+// ─── NATO Paper-Map Symbol Renderer ──────────────────────────────────────────
+// Hand-drawn authentic style: white fill, black lines, no library dependency.
 
-let msCache: any = null;
-let msPromise: Promise<any> | null = null;
+// Echelon marks drawn ABOVE the box
+// fireteam=· squad=·· section=··· platoon=| company=|| battalion=||| 
+// regiment=X brigade=XX division=XXX corps=XXXX
 
-function loadMilsymbol(): Promise<any> {
-  if (msCache) return Promise.resolve(msCache);
-  if (!msPromise) {
-    msPromise = import("milsymbol").then((ms: any) => {
-      msCache = ms.default ?? ms;
-      return msCache;
-    });
-  }
-  return msPromise;
+function echelonMark(id: string, cx: number, y: number, sw: number): React.ReactNode {
+  const marks: Record<string, React.ReactNode> = {
+    fireteam:  <text x={cx} y={y} textAnchor="middle" fontSize={sw*3.5} fontFamily="serif" fill="#111">·</text>,
+    squad:     <text x={cx} y={y} textAnchor="middle" fontSize={sw*3.5} fontFamily="serif" fill="#111">··</text>,
+    section:   <text x={cx} y={y} textAnchor="middle" fontSize={sw*3.5} fontFamily="serif" fill="#111">···</text>,
+    platoon:   <line x1={cx} y1={y-sw*4} x2={cx} y2={y} stroke="#111" strokeWidth={sw} />,
+    company:   <><line x1={cx-sw*2} y1={y-sw*4} x2={cx-sw*2} y2={y} stroke="#111" strokeWidth={sw}/><line x1={cx+sw*2} y1={y-sw*4} x2={cx+sw*2} y2={y} stroke="#111" strokeWidth={sw}/></>,
+    battalion: <><line x1={cx-sw*3} y1={y-sw*4} x2={cx-sw*3} y2={y} stroke="#111" strokeWidth={sw}/><line x1={cx} y1={y-sw*4} x2={cx} y2={y} stroke="#111" strokeWidth={sw}/><line x1={cx+sw*3} y1={y-sw*4} x2={cx+sw*3} y2={y} stroke="#111" strokeWidth={sw}/></>,
+    regiment:  <text x={cx} y={y} textAnchor="middle" fontSize={sw*5} fontFamily="serif" fontWeight="bold" fill="#111">X</text>,
+    brigade:   <text x={cx} y={y} textAnchor="middle" fontSize={sw*5} fontFamily="serif" fontWeight="bold" fill="#111">XX</text>,
+    division:  <text x={cx} y={y} textAnchor="middle" fontSize={sw*5} fontFamily="serif" fontWeight="bold" fill="#111">XXX</text>,
+    corps:     <text x={cx} y={y} textAnchor="middle" fontSize={sw*5} fontFamily="serif" fontWeight="bold" fill="#111">XXXX</text>,
+  };
+  return marks[id] ?? null;
 }
 
-// ─── milsymbol Symbol ─────────────────────────────────────────────────────────
+// Interior symbol paths/elements for each unit type
+// All drawn within a normalised 80×50 box (viewBox "0 0 80 50")
+function unitInterior(type: string, sw: number): React.ReactNode {
+  const s = sw;
+  switch (type) {
+    // ── Combat ──────────────────────────────────────────────────────────────
+    case "infantry":
+      // Two diagonal crosses (X) — classic NATO infantry
+      return <>
+        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
+        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
+      </>;
+    case "armor":
+      // Oval / ellipse centred
+      return <ellipse cx={40} cy={25} rx={22} ry={13} fill="none" stroke="#111" strokeWidth={s}/>;
+    case "mechanized":
+      // Oval + diagonal cross
+      return <>
+        <ellipse cx={40} cy={25} rx={22} ry={13} fill="none" stroke="#111" strokeWidth={s}/>
+        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
+        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
+      </>;
+    case "motorized":
+      // Single diagonal line + small circle
+      return <>
+        <line x1={15} y1={10} x2={65} y2={40} stroke="#111" strokeWidth={s}/>
+        <circle cx={40} cy={25} r={8} fill="none" stroke="#111" strokeWidth={s}/>
+      </>;
+    case "airborne":
+      // Cross + arc (parachute suggestion)
+      return <>
+        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
+        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
+        <path d="M 20 40 Q 40 10 60 40" fill="none" stroke="#111" strokeWidth={s}/>
+      </>;
+    case "air_assault":
+      // Cross + helicopter rotor (horizontal line at top)
+      return <>
+        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
+        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
+        <line x1={25} y1={12} x2={55} y2={12} stroke="#111" strokeWidth={s}/>
+      </>;
+    case "special_forces":
+      // Cross + inner diamond
+      return <>
+        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
+        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
+        <polygon points="40,13 55,25 40,37 25,25" fill="none" stroke="#111" strokeWidth={s}/>
+      </>;
+    case "ranger":
+      // Cross + small chevron top
+      return <>
+        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
+        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
+        <polyline points="30,18 40,10 50,18" fill="none" stroke="#111" strokeWidth={s}/>
+      </>;
+    case "cavalry":
+      // Diagonal line (recon slash)
+      return <line x1={15} y1={42} x2={65} y2={8} stroke="#111" strokeWidth={s+0.5}/>;
+    case "recce":
+      // Diagonal line + small eye/oval
+      return <>
+        <line x1={15} y1={42} x2={65} y2={8} stroke="#111" strokeWidth={s+0.5}/>
+        <ellipse cx={40} cy={25} rx={10} ry={6} fill="none" stroke="#111" strokeWidth={s}/>
+      </>;
+    case "sniper":
+      // Cross + dot centre
+      return <>
+        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
+        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
+        <circle cx={40} cy={25} r={4} fill="#111"/>
+      </>;
+    case "anti_armor":
+      // Arrow pointing left (anti-tank symbol)
+      return <>
+        <line x1={20} y1={25} x2={60} y2={25} stroke="#111" strokeWidth={s+0.5}/>
+        <polyline points="32,16 20,25 32,34" fill="none" stroke="#111" strokeWidth={s+0.5}/>
+        <line x1={55} y1={18} x2={65} y2={25} stroke="#111" strokeWidth={s}/>
+        <line x1={55} y1={32} x2={65} y2={25} stroke="#111" strokeWidth={s}/>
+      </>;
+    // ── Fires ────────────────────────────────────────────────────────────────
+    case "artillery":
+      // Solid black dot (classic field artillery)
+      return <circle cx={40} cy={25} r={11} fill="#111"/>;
+    case "rocket_artillery":
+      // Dot + upward arrow
+      return <>
+        <circle cx={40} cy={30} r={9} fill="#111"/>
+        <line x1={40} y1={21} x2={40} y2={9} stroke="#111" strokeWidth={s}/>
+        <polyline points="34,15 40,9 46,15" fill="none" stroke="#111" strokeWidth={s}/>
+      </>;
+    case "mortar":
+      // Dot + vertical bar
+      return <>
+        <circle cx={40} cy={28} r={9} fill="#111"/>
+        <line x1={40} y1={8} x2={40} y2={18} stroke="#111" strokeWidth={s}/>
+      </>;
+    case "air_defense":
+      // Upward pointing arrow
+      return <>
+        <line x1={40} y1={42} x2={40} y2={10} stroke="#111" strokeWidth={s+1}/>
+        <polyline points="28,22 40,10 52,22" fill="none" stroke="#111" strokeWidth={s+1}/>
+        <line x1={28} y1={35} x2={52} y2={35} stroke="#111" strokeWidth={s}/>
+      </>;
+    // ── Aviation ─────────────────────────────────────────────────────────────
+    case "aviation":
+      // Infinity / rotor symbol
+      return <path d="M 18,25 C 18,15 32,15 40,25 C 48,35 62,35 62,25 C 62,15 48,15 40,25 C 32,35 18,35 18,25 Z" fill="none" stroke="#111" strokeWidth={s}/>;
+    case "attack_helo":
+      // Infinity + upward arrow
+      return <>
+        <path d="M 18,30 C 18,20 30,20 40,30 C 50,40 62,40 62,30 C 62,20 50,20 40,30 C 30,40 18,40 18,30 Z" fill="none" stroke="#111" strokeWidth={s}/>
+        <line x1={40} y1={20} x2={40} y2={8} stroke="#111" strokeWidth={s}/>
+        <polyline points="34,14 40,8 46,14" fill="none" stroke="#111" strokeWidth={s}/>
+      </>;
+    case "transport_helo":
+      // Infinity + horizontal bar
+      return <>
+        <path d="M 18,30 C 18,20 30,20 40,30 C 50,40 62,40 62,30 C 62,20 50,20 40,30 C 30,40 18,40 18,30 Z" fill="none" stroke="#111" strokeWidth={s}/>
+        <line x1={28} y1={13} x2={52} y2={13} stroke="#111" strokeWidth={s}/>
+      </>;
+    case "uav":
+      // Small propeller cross
+      return <>
+        <line x1={24} y1={25} x2={56} y2={25} stroke="#111" strokeWidth={s+0.5}/>
+        <line x1={40} y1={12} x2={40} y2={38} stroke="#111" strokeWidth={s+0.5}/>
+        <circle cx={40} cy={25} r={4} fill="none" stroke="#111" strokeWidth={s}/>
+      </>;
+    // ── Support ──────────────────────────────────────────────────────────────
+    case "engineer":
+      // Castle / battlement suggestion (horizontal line + 3 uprights)
+      return <>
+        <line x1={15} y1={35} x2={65} y2={35} stroke="#111" strokeWidth={s}/>
+        <line x1={20} y1={35} x2={20} y2={15} stroke="#111" strokeWidth={s}/>
+        <line x1={40} y1={35} x2={40} y2={15} stroke="#111" strokeWidth={s}/>
+        <line x1={60} y1={35} x2={60} y2={15} stroke="#111" strokeWidth={s}/>
+        <line x1={15} y1={15} x2={65} y2={15} stroke="#111" strokeWidth={s}/>
+      </>;
+    case "signal":
+      // Sine wave / lightning bolt
+      return <path d="M 12,25 Q 22,10 32,25 Q 42,40 52,25 Q 62,10 68,25" fill="none" stroke="#111" strokeWidth={s+0.5}/>;
+    case "military_police":
+      // MP text
+      return <text x={40} y={32} textAnchor="middle" fontSize={18} fontFamily="serif" fontWeight="bold" fill="#111">MP</text>;
+    case "intelligence":
+      // Eye symbol
+      return <>
+        <path d="M 14,25 Q 40,5 66,25 Q 40,45 14,25 Z" fill="none" stroke="#111" strokeWidth={s}/>
+        <circle cx={40} cy={25} r={7} fill="none" stroke="#111" strokeWidth={s}/>
+        <circle cx={40} cy={25} r={3} fill="#111"/>
+      </>;
+    case "cbrn":
+      // Circle + hazard lines
+      return <>
+        <circle cx={40} cy={25} r={14} fill="none" stroke="#111" strokeWidth={s}/>
+        <line x1={40} y1={11} x2={40} y2={39} stroke="#111" strokeWidth={s}/>
+        <line x1={26} y1={25} x2={54} y2={25} stroke="#111" strokeWidth={s}/>
+        <line x1={30} y1={15} x2={50} y2={35} stroke="#111" strokeWidth={s}/>
+        <line x1={50} y1={15} x2={30} y2={35} stroke="#111" strokeWidth={s}/>
+      </>;
+    // ── CSS ──────────────────────────────────────────────────────────────────
+    case "logistics":
+      // Open circle (general logistics)
+      return <circle cx={40} cy={25} r={13} fill="none" stroke="#111" strokeWidth={s}/>;
+    case "medical":
+      // Cross (red cross style but black)
+      return <>
+        <line x1={40} y1={10} x2={40} y2={40} stroke="#111" strokeWidth={s*3}/>
+        <line x1={24} y1={25} x2={56} y2={25} stroke="#111" strokeWidth={s*3}/>
+      </>;
+    case "maintenance":
+      // Wrench suggestion (circle + diagonal)
+      return <>
+        <circle cx={40} cy={25} r={13} fill="none" stroke="#111" strokeWidth={s}/>
+        <line x1={30} y1={15} x2={50} y2={35} stroke="#111" strokeWidth={s*2}/>
+      </>;
+    case "transport":
+      // Horizontal arrow
+      return <>
+        <line x1={15} y1={25} x2={60} y2={25} stroke="#111" strokeWidth={s+1}/>
+        <polyline points="50,17 62,25 50,33" fill="none" stroke="#111" strokeWidth={s+1}/>
+      </>;
+    // ── C2 ───────────────────────────────────────────────────────────────────
+    case "hq":
+    case "command_post":
+      // HQ — single horizontal line through middle
+      return <line x1={12} y1={25} x2={68} y2={25} stroke="#111" strokeWidth={s+0.5}/>;
+    case "fac":
+      // FAC/JTAC — binoculars / two linked circles
+      return <>
+        <circle cx={30} cy={25} r={10} fill="none" stroke="#111" strokeWidth={s}/>
+        <circle cx={50} cy={25} r={10} fill="none" stroke="#111" strokeWidth={s}/>
+        <line x1={36} y1={20} x2={44} y2={20} stroke="#111" strokeWidth={s}/>
+      </>;
+    default:
+      // Fallback: X
+      return <>
+        <line x1={10} y1={8} x2={70} y2={42} stroke="#111" strokeWidth={s}/>
+        <line x1={70} y1={8} x2={10} y2={42} stroke="#111" strokeWidth={s}/>
+      </>;
+  }
+}
 
 function MilSymbol({ unitType, echelon, size = 56 }: { unitType: string; echelon: string; size?: number }) {
-  const [svg, setSvg] = useState<string>("");
+  const W = size;
+  const H = Math.round(size * 0.625);
+  const sw = Math.max(1.2, size / 36);          // stroke width scales with size
   const echelonData = NATO_ECHELONS.find(e => e.id === echelon);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadMilsymbol().then(MS => {
-      if (cancelled) return;
-      let sidc = UNIT_SIDC_MAP[unitType] ?? UNIT_SIDC_MAP.infantry;
-      sidc = sidc.slice(0, 8) + (echelonData?.echelonCode ?? "14") + sidc.slice(10);
-      try {
-        const sym = new MS.Symbol(sidc, { size, standard: "APP6", fillOpacity: 1 });
-        setSvg(sym.asSVG());
-      } catch {
-        try {
-          const sym = new MS.Symbol(UNIT_SIDC_MAP[unitType] ?? UNIT_SIDC_MAP.infantry, { size, standard: "APP6", fillOpacity: 1 });
-          setSvg(sym.asSVG());
-        } catch { setSvg(""); }
-      }
-    }).catch(() => setSvg(""));
-    return () => { cancelled = true; };
-  }, [unitType, echelon, size]);
-
-  if (!svg) {
-    return (
-      <div className="border border-primary/40 bg-primary/10 flex items-center justify-center font-display font-bold text-xs rounded text-primary"
-        style={{ width: size, height: Math.round(size * 0.75) }}>
-        {unitType.slice(0, 3).toUpperCase()}
-      </div>
-    );
-  }
+  const topPad = size * 0.28;                   // space above box for echelon mark
+  const totalH  = H + topPad;
 
   return (
-    <span className="inline-block leading-none" style={{ width: size, height: Math.round(size * 0.75) + 12, overflow: "visible" }}
-      dangerouslySetInnerHTML={{ __html: svg }} />
+    <svg width={W} height={totalH} viewBox={`0 0 80 ${50 + topPad * (80/W)}`} xmlns="http://www.w3.org/2000/svg">
+      {/* Echelon mark above box */}
+      <g>{echelonData && echelonMark(echelonData.id, 40, topPad * (80/W) - 2, sw)}</g>
+      {/* Main box */}
+      <g transform={`translate(0, ${topPad * (80/W)})`}>
+        <rect x={5} y={3} width={70} height={44} rx={1} fill="white" stroke="#111" strokeWidth={sw}/>
+        {unitInterior(unitType, sw)}
+      </g>
+    </svg>
   );
 }
 
