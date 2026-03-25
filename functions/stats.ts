@@ -356,6 +356,8 @@ function getCapacityGrade(total: number, profile: GameCapacityProfile): Capacity
 }
 
 function manpowerScore(total: number, profile: GameCapacityProfile): number {
+  // 0-1 members = not a unit, score 0. Prevents solo operators inflating tier.
+  if (total < 2) return 0;
   // Scaled 0–30 against game profile thresholds
   const utilisation = Math.min(total / profile.fullStrength, 1.0);
   if (utilisation >= 1.0) return 30;
@@ -460,10 +462,13 @@ function buildReadinessReport(params: {
   score += manpowerScore(verifiedTotal, gameProfile);
 
   // Member Activity (0–20)
-  if      (activityRatio >= 0.8) score += 20;
-  else if (activityRatio >= 0.6) score += 14;
-  else if (activityRatio >= 0.4) score += 7;
-  else if (activityRatio >= 0.2) score += 3;
+  // Activity only meaningful once unit meets minimum viable manpower
+  if (verifiedTotal >= gameProfile.minimal) {
+    if      (activityRatio >= 0.8) score += 20;
+    else if (activityRatio >= 0.6) score += 14;
+    else if (activityRatio >= 0.4) score += 7;
+    else if (activityRatio >= 0.2) score += 3;
+  }
 
   // Operations History (0–25)
   if      (validOpsCount >= 25) score += 25;
@@ -492,7 +497,7 @@ function buildReadinessReport(params: {
   score += Math.round((training.knowledge_factor / 100) * 50);
 
   // Discord Linked (0–10)
-  if (has_discord) score += 10;
+  if (has_discord && verifiedTotal >= gameProfile.minimal) score += 10; // Discord only meaningful once unit can field minimum ops
 
   // Page Maintenance (0–10)
   if      (days_since_page_update !== null && days_since_page_update <= 14) score += 10;
