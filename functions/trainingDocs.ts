@@ -28,8 +28,13 @@ function estimateDepthScore(pageCount: number, fileSizeBytes: number, docType: s
     bpp >= 15_000  ? 0.55 : 0.4;
 
   const typeBonus =
-    docType === 'Standard Operating Procedure'       ? 10 :
-    docType === 'Tactics Techniques and Procedures'  ? 10 :
+    docType === 'SOP'                   ? 10 :
+    docType === 'TTP'                   ? 10 :
+    docType === 'Field Manual'          ? 9  :
+    docType === 'OPORD'                 ? 8  :
+    docType === 'WARNO'                 ? 7  :
+    docType === 'FRAGO'                 ? 7  :
+    docType === 'Rules of Engagement'   ? 8  :
     docType === 'Field Manual'                        ? 8  :
     docType === 'Drill'                              ? 6  : 0;
 

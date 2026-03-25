@@ -1988,7 +1988,7 @@ function ReputationTab({ group }: any) {
 }
 
 // ─── Training Docs Tab ────────────────────────────────────────────────────────
-const DOC_TYPES = ["SOP", "TTP", "Drill", "Reference", "Rules of Engagement", "Other"] as const;
+const DOC_TYPES = ["SOP", "TTP", "Field Manual", "Drill", "Reference", "Rules of Engagement", "WARNO", "OPORD", "FRAGO", "Other"] as const;
 
 function TrainingDocsTab({ group, showMsg }: any) {
   const { user } = useAuth();
@@ -2098,9 +2098,13 @@ function TrainingDocsTab({ group, showMsg }: any) {
   };
 
   const docTypeColor: Record<string, string> = {
-    "SOP": "text-green-400 border-green-500/30 bg-green-500/10",
-    "TTP": "text-blue-400 border-blue-500/30 bg-blue-500/10",
-    "Drill": "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
+    "SOP":                  "text-green-400 border-green-500/30 bg-green-500/10",
+    "TTP":                  "text-blue-400 border-blue-500/30 bg-blue-500/10",
+    "Field Manual":         "text-cyan-400 border-cyan-500/30 bg-cyan-500/10",
+    "Drill":                "text-yellow-400 border-yellow-500/30 bg-yellow-500/10",
+    "WARNO":                "text-orange-400 border-orange-500/30 bg-orange-500/10",
+    "OPORD":                "text-orange-400 border-orange-500/30 bg-orange-500/10",
+    "FRAGO":                "text-orange-300 border-orange-400/30 bg-orange-400/10",
     "Reference": "text-purple-400 border-purple-500/30 bg-purple-500/10",
     "Rules of Engagement": "text-red-400 border-red-500/30 bg-red-500/10",
     "Other": "text-muted-foreground border-border bg-secondary/40",

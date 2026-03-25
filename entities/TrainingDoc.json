@@ -13,11 +13,15 @@
     "doc_type": {
       "type": "string",
       "enum": [
-        "Standard Operating Procedure",
-        "Tactics Techniques and Procedures",
+        "SOP",
+        "TTP",
         "Field Manual",
         "Drill",
         "Reference",
+        "Rules of Engagement",
+        "WARNO",
+        "OPORD",
+        "FRAGO",
         "Other"
       ]
     },
@@ -34,10 +38,10 @@
       "type": "string"
     },
     "page_count": {
-      "type": "number"
+      "type": "integer"
     },
     "word_count": {
-      "type": "number"
+      "type": "integer"
     },
     "uploaded_by": {
       "type": "string"
@@ -46,12 +50,10 @@
       "type": "string"
     },
     "last_reviewed_at": {
-      "type": "string",
-      "format": "date"
+      "type": "string"
     },
     "is_current": {
-      "type": "boolean",
-      "default": true
+      "type": "boolean"
     },
     "depth_score": {
       "type": "number"
@@ -60,23 +62,12 @@
       "type": "string"
     },
     "source_type": {
-      "type": "string",
-      "enum": [
-        "upload",
-        "google_doc",
-        "apple_pages",
-        "link"
-      ],
-      "default": "upload"
+      "type": "string"
     },
     "source_url": {
-      "type": "string",
-      "description": "URL for Google Doc or external link sources"
+      "type": "string"
     }
   },
-  "required": [
-    "group_id",
-    "title"
-  ],
+  "required": [],
   "name": "TrainingDoc"
 }
