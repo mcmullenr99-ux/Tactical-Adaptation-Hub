@@ -4829,14 +4829,267 @@ function DeveloperTab({ group, showMsg }: { group: any; showMsg: (m: string, t?:
         </div>
       </div>
 
-      {/* Webhook info */}
-      <div className="space-y-3">
-        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Webhook Signing</p>
-        <div className="bg-secondary/30 border border-border rounded-lg p-4 space-y-2 text-xs font-sans text-muted-foreground leading-relaxed">
-          <p>When your webhook secret is generated, outbound events will be signed with an <code className="text-foreground font-mono bg-black/30 px-1 rounded">X-TAG-Signature</code> header.</p>
-          <p>Verify it on your server: compute <code className="text-foreground font-mono bg-black/30 px-1 rounded">HMAC-SHA256(payload, webhook_secret)</code> and compare to the header value.</p>
-          <p className="text-yellow-400/80">Webhook delivery is coming in a future update. API key generation and verification are live now.</p>
+      {/* ─── Webhook Endpoints ─────────────────────────────────────────────── */}
+      <WebhookEndpointsSection group={group} showMsg={showMsg} token={token} />
+    </div>
+  );
+}
+
+// ─── All supported events ────────────────────────────────────────────────────
+const ALL_WEBHOOK_EVENTS = [
+  { id: "application.submitted", label: "Application Submitted", cat: "Applications" },
+  { id: "application.approved",  label: "Application Approved",  cat: "Applications" },
+  { id: "application.rejected",  label: "Application Rejected",  cat: "Applications" },
+  { id: "roster.member_joined",  label: "Member Joined Roster",  cat: "Roster" },
+  { id: "roster.member_left",    label: "Member Left Roster",    cat: "Roster" },
+  { id: "roster.rank_changed",   label: "Rank Changed",          cat: "Roster" },
+  { id: "roster.status_changed", label: "Member Status Changed", cat: "Roster" },
+  { id: "op.created",            label: "Op Created",            cat: "Ops" },
+  { id: "op.status_changed",     label: "Op Status Changed",     cat: "Ops" },
+  { id: "op.completed",          label: "Op Completed",          cat: "Ops" },
+  { id: "aar.posted",            label: "AAR Posted",            cat: "AARs" },
+  { id: "loa.submitted",         label: "LOA Submitted",         cat: "LOA" },
+  { id: "loa.approved",          label: "LOA Approved",          cat: "LOA" },
+  { id: "loa.expired",           label: "LOA Expired",           cat: "LOA" },
+  { id: "award.granted",         label: "Award Granted",         cat: "Awards" },
+  { id: "briefing.published",    label: "Briefing Published",    cat: "Briefings" },
+];
+
+const WEBHOOKS_BASE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/webhooks";
+
+function WebhookEndpointsSection({ group, showMsg, token }: { group: any; showMsg: (m: string, t?: "success"|"error") => void; token: string }) {
+  const [endpoints, setEndpoints] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newUrl, setNewUrl] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [newEvents, setNewEvents] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState<string | null>(null);
+  const [freshSecret, setFreshSecret] = useState<{ id: string; secret: string } | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const copy = (val: string, id: string) => {
+    navigator.clipboard.writeText(val);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const load = () => {
+    fetch(`${WEBHOOKS_BASE}?path=%2Fendpoints&group_id=${group.id}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json()).then(d => { setEndpoints(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [group.id]);
+
+  const addEndpoint = async () => {
+    if (!newUrl.trim()) { showMsg("URL required", "error"); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`${WEBHOOKS_BASE}?path=%2Fendpoints`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ group_id: group.id, label: newLabel || "My Endpoint", webhook_url: newUrl, events: newEvents }),
+      });
+      const data = await res.json();
+      if (data.error) { showMsg(data.error, "error"); setSaving(false); return; }
+      setFreshSecret({ id: data.id, secret: data.secret });
+      setShowAdd(false);
+      setNewUrl(""); setNewLabel(""); setNewEvents([]);
+      load();
+    } catch { showMsg("Failed to add endpoint", "error"); }
+    setSaving(false);
+  };
+
+  const removeEndpoint = async (id: string, label: string) => {
+    if (!confirm(`Remove webhook "${label}"?`)) return;
+    await fetch(`${WEBHOOKS_BASE}?path=%2Fendpoints%2F${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    setEndpoints(prev => prev.filter(e => e.id !== id));
+    showMsg("Webhook removed", "success");
+  };
+
+  const testEndpoint = async (id: string) => {
+    setTesting(id);
+    try {
+      const res = await fetch(`${WEBHOOKS_BASE}?path=%2Ftest`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint_id: id }),
+      });
+      const data = await res.json();
+      if (data.ok) showMsg(`Test ping delivered (HTTP ${data.status})`, "success");
+      else showMsg(`Test failed: ${data.error || `HTTP ${data.status}`}`, "error");
+      load();
+    } catch { showMsg("Test request failed", "error"); }
+    setTesting(null);
+  };
+
+  const toggleEvent = (ev: string) => {
+    setNewEvents(prev => prev.includes(ev) ? prev.filter(e => e !== ev) : [...prev, ev]);
+  };
+
+  const catGroups = ALL_WEBHOOK_EVENTS.reduce((acc, ev) => {
+    (acc[ev.cat] = acc[ev.cat] || []).push(ev);
+    return acc;
+  }, {} as Record<string, typeof ALL_WEBHOOK_EVENTS>);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">
+          Webhook Endpoints ({endpoints.filter(e => e.is_active).length}/5)
+        </p>
+        {!showAdd && endpoints.filter(e => e.is_active).length < 5 && (
+          <button onClick={() => setShowAdd(true)}
+            className="flex items-center gap-1.5 text-[10px] font-display font-bold uppercase tracking-wider text-primary border border-primary/30 bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded transition-all">
+            <Plus className="w-3 h-3" /> Add Endpoint
+          </button>
+        )}
+      </div>
+
+      {/* Fresh secret reveal */}
+      {freshSecret && (
+        <div className="border-2 border-yellow-500/60 bg-yellow-500/5 rounded-xl p-4 space-y-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+            <p className="text-xs font-display font-bold uppercase tracking-wider text-yellow-400">Save your signing secret — shown once only</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 bg-black/40 border border-border rounded px-3 py-2 text-xs font-mono text-green-400 truncate">{freshSecret.secret}</code>
+            <button onClick={() => copy(freshSecret.secret, "whsec")}
+              className="shrink-0 px-3 py-2 text-xs font-display font-bold uppercase tracking-wider border border-border rounded hover:border-primary/50 text-muted-foreground hover:text-foreground transition-all">
+              {copied === "whsec" ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
+          <button onClick={() => setFreshSecret(null)} className="text-[10px] font-display uppercase tracking-wider text-muted-foreground hover:text-foreground">I've saved it — dismiss</button>
         </div>
+      )}
+
+      {/* Add form */}
+      {showAdd && (
+        <div className="border border-primary/30 bg-primary/5 rounded-xl p-4 space-y-4">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-primary">New Webhook Endpoint</p>
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground block mb-1">Label</label>
+              <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="e.g. Discord Ops Bot"
+                className="w-full bg-secondary border border-border rounded px-3 py-1.5 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50" />
+            </div>
+            <div>
+              <label className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground block mb-1">Endpoint URL *</label>
+              <input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="https://your-server.com/webhook"
+                className="w-full bg-secondary border border-border rounded px-3 py-1.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50" />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground block mb-2">
+                Events to subscribe ({newEvents.length === 0 ? "all events" : `${newEvents.length} selected`})
+              </label>
+              <div className="space-y-3">
+                {Object.entries(catGroups).map(([cat, evs]) => (
+                  <div key={cat}>
+                    <p className="text-[9px] font-display font-bold uppercase tracking-widest text-muted-foreground/60 mb-1.5">{cat}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {evs.map(ev => (
+                        <button key={ev.id} onClick={() => toggleEvent(ev.id)}
+                          className={`text-[10px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border transition-all ${newEvents.includes(ev.id) ? "border-primary/60 bg-primary/20 text-primary" : "border-border bg-secondary text-muted-foreground hover:border-border/80"}`}>
+                          {ev.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[9px] text-muted-foreground/60 mt-2">Leave none selected to receive all events.</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 pt-1">
+            <button onClick={addEndpoint} disabled={saving}
+              className="flex items-center gap-2 px-4 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors disabled:opacity-50">
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+              Register Endpoint
+            </button>
+            <button onClick={() => { setShowAdd(false); setNewUrl(""); setNewLabel(""); setNewEvents([]); }}
+              className="px-4 py-1.5 text-xs font-display uppercase tracking-widest text-muted-foreground border border-border rounded hover:text-foreground transition-all">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Endpoint list */}
+      {loading ? (
+        <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+      ) : endpoints.length === 0 ? (
+        <div className="border border-dashed border-border rounded-lg p-6 text-center">
+          <p className="text-xs font-display uppercase tracking-widest text-muted-foreground">No webhook endpoints yet</p>
+          <p className="text-[10px] text-muted-foreground/60 mt-1">Add one above to start receiving real-time events.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {endpoints.map(ep => {
+            const failRate = ep.delivery_count > 0 ? Math.round((ep.failure_count / ep.delivery_count) * 100) : 0;
+            const healthColor = failRate === 0 ? "text-green-400 border-green-500/30 bg-green-500/10"
+              : failRate < 20 ? "text-yellow-400 border-yellow-500/30 bg-yellow-500/10"
+              : "text-red-400 border-red-500/30 bg-red-500/10";
+            return (
+              <div key={ep.id} className="border border-border bg-card rounded-lg p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-display font-bold text-sm text-foreground">{ep.label || "Endpoint"}</span>
+                      <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ${ep.is_active ? healthColor : "text-muted-foreground border-border"}`}>
+                        {ep.is_active ? (failRate === 0 ? "Healthy" : `${failRate}% fail`) : "Inactive"}
+                      </span>
+                    </div>
+                    <code className="text-[10px] font-mono text-muted-foreground truncate block mt-0.5">{ep.url}</code>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button onClick={() => testEndpoint(ep.id)} disabled={testing === ep.id}
+                      className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground border border-border px-2 py-1 rounded hover:text-foreground hover:border-border/80 transition-all disabled:opacity-50">
+                      {testing === ep.id ? <Loader2 className="w-3 h-3 animate-spin inline" /> : "Test"}
+                    </button>
+                    <button onClick={() => removeEndpoint(ep.id, ep.label)}
+                      className="text-[10px] font-display font-bold uppercase tracking-wider text-red-400 border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 px-2 py-1 rounded transition-all">
+                      Remove
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+                  <span>{ep.delivery_count} deliveries</span>
+                  <span>{ep.failure_count} failures</span>
+                  {ep.last_triggered_at && <span>Last fired {new Date(ep.last_triggered_at).toLocaleDateString("en-GB")}</span>}
+                  {ep.last_status_code && <span className={ep.last_status_code >= 200 && ep.last_status_code < 300 ? "text-green-400" : "text-red-400"}>HTTP {ep.last_status_code}</span>}
+                </div>
+                {ep.events && ep.events.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {ep.events.map((ev: string) => (
+                      <span key={ev} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-secondary border border-border text-muted-foreground">{ev}</span>
+                    ))}
+                  </div>
+                )}
+                {(!ep.events || ep.events.length === 0) && (
+                  <p className="text-[9px] text-muted-foreground/60">Subscribed to all events</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Signing doc */}
+      <div className="bg-secondary/30 border border-border rounded-lg p-4 space-y-2 text-xs font-sans text-muted-foreground leading-relaxed">
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Webhook Payload Format</p>
+        <pre className="text-[10px] font-mono text-foreground/70 bg-black/30 rounded p-3 overflow-x-auto">{`{
+  "event": "op.created",
+  "timestamp": "2026-03-25T22:00:00Z",
+  "group_id": "abc123",
+  "data": { ... event-specific fields ... }
+}`}</pre>
+        <p>Verify the <code className="text-foreground bg-black/30 px-1 rounded">X-TAG-Signature</code> header: compute <code className="text-foreground bg-black/30 px-1 rounded">HMAC-SHA256(body, signing_secret)</code> — compare to <code className="text-foreground bg-black/30 px-1 rounded">sha256=...</code>.</p>
       </div>
     </div>
   );

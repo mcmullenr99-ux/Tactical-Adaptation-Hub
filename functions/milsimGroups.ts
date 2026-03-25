@@ -2,6 +2,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+const WEBHOOKS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/webhooks";
+async function fireEvent(groupId: string, event: string, payload: object) {
+  try { await fetch(`${WEBHOOKS_URL}?path=%2Ffire`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ group_id: groupId, event, payload }) }); } catch (_) {}
+}
 
 async function getCallerUser(base44: any, req: Request) {
   const authHeader = req.headers.get('Authorization') ?? '';
@@ -703,6 +707,7 @@ Deno.serve(async (req) => {
       if (Array.isArray(body.participants) && body.participants.length > 0) {
         recordActivityDateForRoster(base44, body.participants).catch(() => {});
       }
+      await fireEvent(parts[0], "aar.posted", { aar_id: aar.id, op_name: aar.op_name, outcome: aar.outcome, author_username: aar.author_username, participant_count: (aar.participants ?? []).length });
       return Response.json(aar, { status: 201 });
     }
 

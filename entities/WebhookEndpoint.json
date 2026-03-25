@@ -1,0 +1,49 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "secret": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "last_triggered_at": {
+      "type": "string"
+    },
+    "last_status_code": {
+      "type": "integer"
+    },
+    "last_error": {
+      "type": "string"
+    },
+    "delivery_count": {
+      "type": "integer",
+      "default": 0
+    },
+    "failure_count": {
+      "type": "integer",
+      "default": 0
+    }
+  },
+  "required": [
+    "group_id",
+    "url"
+  ],
+  "name": "WebhookEndpoint"
+}
