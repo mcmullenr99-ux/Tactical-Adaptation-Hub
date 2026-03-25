@@ -316,43 +316,89 @@ function buildReadinessReport(params: {
   // ── FLAGS ─────────────────────────────────────────────────────────────────
   const flags: ReadinessFlag[] = [];
 
+  // 1. Manpower
   if (capacity_grade === 'fireteam_incomplete') {
-    flags.push({ severity: 'red', code: 'CRITICAL_UNDERMANNED', label: 'Critical — Below Fireteam Strength', detail: `This unit has only ${total} member${total !== 1 ? 's' : ''}. A minimum fireteam requires 4 personnel.` });
+    const needed = 4 - total;
+    flags.push({ severity: 'red', code: 'CRITICAL_UNDERMANNED', label: 'Critical — Below Fireteam Strength',
+      detail: `This unit has only ${total} member${total !== 1 ? 's' : ''} on roster — ${needed} short of a minimum fireteam (4). No meaningful operation can be assessed at this strength. Scoring 0/20 on manpower, directly capping composite readiness.` });
   } else if (capacity_grade === 'squad_incomplete') {
-    flags.push({ severity: 'red', code: 'UNDERMANNED', label: 'Below Squad Strength', detail: `This unit has ${total} members — insufficient to form a complete squad (9+). Operational capacity is severely limited.` });
+    const needed = 9 - total;
+    flags.push({ severity: 'red', code: 'UNDERMANNED', label: 'Below Squad Strength',
+      detail: `This unit has ${total} roster members — ${needed} short of a full squad (9). Below squad strength forces Red status regardless of all other scores, and earns only 4/20 manpower points. Operational capacity is limited to individual-level tasks only.` });
   } else if (capacity_grade === 'section_force') {
-    flags.push({ severity: 'amber', code: 'LIMITED_STRENGTH', label: 'Section-Level Force Only', detail: `This unit fields ${total} members — above squad strength but below platoon size (30+). Adequate for small-scale operations.` });
+    const needed = 30 - total;
+    flags.push({ severity: 'amber', code: 'LIMITED_STRENGTH', label: 'Section-Level Force Only',
+      detail: `This unit fields ${total} members — ${needed} short of platoon size (30+). Earning 10/20 manpower points. Adequate for small-scale section operations but lacking the depth for sustained platoon-level engagements. Recruiting ${needed} more members would unlock the full 20 manpower points.` });
   }
 
+  // 2. Discord
   if (!has_discord) {
-    flags.push({ severity: 'red', code: 'NO_DISCORD', label: 'No Discord Server Linked', detail: 'No Discord server linked. Discord activity is a primary indicator of organisational cohesion.' });
+    flags.push({ severity: 'red', code: 'NO_DISCORD', label: 'No Discord Server Linked',
+      detail: 'No Discord server is linked — scoring 0/5 on the Discord category. Discord is the primary coordination and activity hub for milsim units. Its absence signals a lack of accessible command infrastructure. Link your server in the Group Info tab to recover these 5 points.' });
   }
 
+  // 3. Activity
   if (activityRatio < 0.3 && total > 0) {
-    flags.push({ severity: 'red', code: 'HIGH_INACTIVITY', label: 'High Member Inactivity', detail: `Only ${active_this_month} of ${total} roster members (${Math.round(activityRatio * 100)}%) showed activity in the last 30 days.` });
+    const inactive = total - active_this_month;
+    flags.push({ severity: 'red', code: 'HIGH_INACTIVITY', label: 'High Member Inactivity',
+      detail: `Only ${active_this_month} of ${total} roster members (${Math.round(activityRatio * 100)}%) were active in the last 30 days — ${inactive} members inactive. Scoring 0/15 on activity. This suggests roster bloat or unit stagnation. Consider auditing the roster and removing ghost members. Reaching 40% active earns 5pts; 60% earns 10pts; 80%+ earns the full 15pts.` });
   } else if (activityRatio < 0.5 && total > 0) {
-    flags.push({ severity: 'amber', code: 'MODERATE_INACTIVITY', label: 'Moderate Inactivity', detail: `${active_this_month} of ${total} members (${Math.round(activityRatio * 100)}%) were active in the last 30 days.` });
+    const inactive = total - active_this_month;
+    flags.push({ severity: 'amber', code: 'MODERATE_INACTIVITY', label: 'Moderate Member Inactivity',
+      detail: `${active_this_month} of ${total} members (${Math.round(activityRatio * 100)}%) active in the last 30 days — ${inactive} currently inactive. Earning 5/15 on activity. Reaching 60% active would increase this to 10/15, and 80%+ achieves the full 15 points.` });
   }
 
+  // 4. Page maintenance
   if (days_since_page_update !== null && days_since_page_update > 60) {
-    flags.push({ severity: 'amber', code: 'STALE_PAGE', label: 'Commander Not Maintaining Page', detail: `Group page has not been updated in ${days_since_page_update} days. Inactive command posture.` });
+    flags.push({ severity: 'amber', code: 'STALE_PAGE', label: 'Commander Not Maintaining Page',
+      detail: `Group profile has not been updated in ${days_since_page_update} days — scoring 0/5 on page maintenance. A stale page signals an absent command posture. Updating group info at least once every 30 days earns the full 5 points; within 90 days earns 1 point.` });
+  } else if (days_since_page_update !== null && days_since_page_update > 30) {
+    flags.push({ severity: 'amber', code: 'PAGE_AGEING', label: 'Group Page Ageing',
+      detail: `Group profile was last updated ${days_since_page_update} days ago — earning 1/5 on page maintenance. Refreshing the profile within the last 30 days earns 3 points; within 14 days earns the full 5 points.` });
   }
 
+  // 5. Operations
   if (totalOps === 0) {
-    flags.push({ severity: 'amber', code: 'NO_OPS_HISTORY', label: 'No Operations Logged', detail: 'This unit has not logged any operations. Without an operational record there is no basis for assessing real combat readiness.' });
-  } else if (aarRatio < 0.2 && totalOps >= 3) {
-    flags.push({ severity: 'amber', code: 'POOR_AAR_DISCIPLINE', label: 'Low AAR Discipline', detail: `Only ${aars.length} AAR${aars.length !== 1 ? 's' : ''} filed for ${totalOps} operations — ${Math.round(aarRatio * 100)}% coverage. Units that don't document lessons learned fail to grow.` });
+    flags.push({ severity: 'amber', code: 'NO_OPS_HISTORY', label: 'No Operations Logged',
+      detail: 'Zero operations logged — scoring 0/20 on operational history and 0/10 on op recency. These two categories represent 30pts of the 100pt readiness score and 55% of the capability tier score. Without an operational record there is no basis for assessing real combat readiness. Log your first op in the Ops tab to begin building your record.' });
+  } else {
+    if (aarRatio < 0.2 && totalOps >= 3) {
+      const missing = totalOps - aars.length;
+      flags.push({ severity: 'amber', code: 'POOR_AAR_DISCIPLINE', label: 'Low AAR Discipline',
+        detail: `Only ${aars.length} AAR${aars.length !== 1 ? 's' : ''} for ${totalOps} operations — ${Math.round(aarRatio * 100)}% coverage. ${missing} op${missing !== 1 ? 's are' : ' is'} missing post-op reports, costing points in the 10pt AAR category. AARs demonstrate that commanders learn from each engagement. Filing AARs for past ops will recover these points.` });
+    } else if (aarRatio < 0.5 && totalOps >= 2) {
+      flags.push({ severity: 'amber', code: 'WEAK_AAR_DISCIPLINE', label: 'Inconsistent AAR Discipline',
+        detail: `${aars.length} AAR${aars.length !== 1 ? 's' : ''} for ${totalOps} operations (${Math.round(aarRatio * 100)}% coverage). Below the 50% threshold for good points in the 10pt AAR category. Consistently filing AARs after each op is a hallmark of professional units.` });
+    }
+    if (days_since_last_op !== null && days_since_last_op > 45) {
+      flags.push({ severity: 'amber', code: 'OPS_DORMANT', label: 'No Recent Operations',
+        detail: `Last operation was ${days_since_last_op} days ago — scoring 0/10 on operational recency. Active units should be running regular ops. Running an op within the last 14 days earns the full 10pts; within 30 days earns 6pts; within 60 days earns 3pts.` });
+    } else if (days_since_last_op !== null && days_since_last_op > 30) {
+      flags.push({ severity: 'amber', code: 'OPS_SLOWING', label: 'Operational Tempo Slowing',
+        detail: `Last operation was ${days_since_last_op} days ago — earning 3/10 on recency. Running an op within the next ${days_since_last_op - 14} days would bring this to the maximum 10 points.` });
+    }
   }
 
-  if (days_since_last_op !== null && days_since_last_op > 45) {
-    flags.push({ severity: 'amber', code: 'OPS_DORMANT', label: 'No Recent Operations', detail: `Last operation was ${days_since_last_op} days ago. Active units should be running regular ops.` });
-  }
-
-  // Training-specific flags
+  // 6. Training docs
   if (training.knowledge_grade === 'none') {
-    flags.push({ severity: 'amber', code: 'NO_TRAINING_DOCS', label: 'No Training Documentation Filed', detail: 'This unit has uploaded no training resources. SOPs, TTPs, and drill docs are key indicators of doctrinal knowledge.' });
+    flags.push({ severity: 'amber', code: 'NO_TRAINING_DOCS', label: 'No Training Documentation Filed',
+      detail: `Zero training resources uploaded — scoring 0/15 on training doctrine (readiness) and 0/20 on training doctrine (capability tier). SOPs, TTPs, Rules of Engagement, and drill documents are the primary evidence of a unit's knowledge base. Filing even a single SOP will begin earning points in this category.` });
+  } else if (training.knowledge_grade === 'minimal') {
+    flags.push({ severity: 'amber', code: 'MINIMAL_TRAINING_DOCS', label: 'Training Documentation Insufficient',
+      detail: `${training.doc_count} document${training.doc_count !== 1 ? 's' : ''} on file — knowledge factor ${training.knowledge_factor}/100, earning ~${Math.round((training.knowledge_factor / 100) * 15)}/15 on training doctrine. The knowledge base is too thin to demonstrate credible doctrine. Add more docs covering SOPs, TTPs, and drills to raise the score.` });
   } else if (training.outdated_count > 0) {
-    flags.push({ severity: 'amber', code: 'STALE_TRAINING_DOCS', label: `${training.outdated_count} Training Doc${training.outdated_count !== 1 ? 's' : ''} Outdated`, detail: `${training.outdated_count} document${training.outdated_count !== 1 ? 's are' : ' is'} over 6 months since last review. Outdated doctrine can be worse than no doctrine.` });
+    const pct = training.doc_count > 0 ? Math.round((training.outdated_count / training.doc_count) * 100) : 0;
+    flags.push({ severity: 'amber', code: 'STALE_TRAINING_DOCS', label: `${training.outdated_count} Training Doc${training.outdated_count !== 1 ? 's' : ''} Outdated`,
+      detail: `${training.outdated_count} of ${training.doc_count} documents (${pct}%) are over 6 months since last review. Stale doctrine reduces the recency component of your knowledge factor. Review and update these documents to restore lost points. Outdated SOPs can be operationally misleading.` });
+  }
+
+  // 7. Reputation
+  if (review_count === 0) {
+    flags.push({ severity: 'amber', code: 'NO_REPUTATION_DATA', label: 'No Peer Reputation Reviews',
+      detail: `No peer reputation reviews on file — scoring 0/5 on reputation. Reviews are submitted by commanders who have operated alongside this unit's members. Without external validation there is no basis for assessing peer standing. Participating in joint ops and encouraging peer reviews will unlock these points.` });
+  } else if (review_count < 3) {
+    flags.push({ severity: 'amber', code: 'INSUFFICIENT_REPUTATION_DATA', label: 'Insufficient Reputation Sample',
+      detail: `Only ${review_count} reputation review${review_count !== 1 ? 's' : ''} on file. A minimum of 3 reviews is required for full reputation points. ${3 - review_count} more review${(3 - review_count) !== 1 ? 's' : ''} would allow proper peer standing assessment.` });
   }
 
   // ── NARRATIVE ─────────────────────────────────────────────────────────────

@@ -118,9 +118,9 @@ function ReadinessGauge({ pct, status }: { pct: number; status: string }) {
 // ─── Capability Tier badge ─────────────────────────────────────────────────────
 function TierBadge({ tier }: { tier: string }) {
   const styles: Record<string, string> = {
-    "TIER I":   "bg-slate-200/15 border-slate-300/60 text-slate-200",
+    "TIER I":   "bg-blue-500/15 border-blue-400/60 text-blue-300",
     "TIER II":  "bg-yellow-500/15 border-yellow-500/50 text-yellow-400",
-    "TIER III": "bg-blue-300/15 border-blue-300/50 text-blue-300",
+    "TIER III": "bg-slate-400/15 border-slate-400/50 text-slate-300",
     "TIER IV":  "bg-orange-700/15 border-orange-600/50 text-orange-500",
     "FORMING":  "bg-border/30 border-border text-muted-foreground",
   };
@@ -456,7 +456,13 @@ export default function MilsimGroup() {
                         { tier: "TIER IV",  label: "Limited Capability", desc: "New or low-activity unit with minimal documented record and few training resources." },
                         { tier: "FORMING",  label: "Forming",            desc: "No established operational record yet." },
                       ].map(t => (
-                        <div key={t.tier} className={`flex items-start gap-3 p-3 rounded border transition-colors ${readiness.op_capability_tier === t.tier ? "border-primary/40 bg-primary/5" : "border-transparent"}`}>
+                        <div key={t.tier} className={`flex items-start gap-3 p-3 rounded border transition-colors ${readiness.op_capability_tier === t.tier ? (
+                            t.tier === "TIER I"   ? "border-blue-400/40 bg-blue-500/5" :
+                            t.tier === "TIER II"  ? "border-yellow-500/40 bg-yellow-500/5" :
+                            t.tier === "TIER III" ? "border-slate-400/40 bg-slate-400/5" :
+                            t.tier === "TIER IV"  ? "border-orange-500/40 bg-orange-500/5" :
+                            "border-border/60 bg-secondary/50"
+                          ) : "border-transparent opacity-40"}`}>
                           <TierBadge tier={t.tier} />
                           <div>
                             <p className="text-xs font-display font-bold uppercase tracking-wider text-foreground">{t.label}</p>
