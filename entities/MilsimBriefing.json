@@ -18,18 +18,14 @@
       "enum": [
         "unclassified",
         "confidential",
-        "secret"
-      ],
-      "default": "unclassified"
+        "classified",
+        "top-secret"
+      ]
     },
     "created_by": {
       "type": "string"
     }
   },
-  "required": [
-    "group_id",
-    "title",
-    "content"
-  ],
+  "required": [],
   "name": "MilsimBriefing"
 }

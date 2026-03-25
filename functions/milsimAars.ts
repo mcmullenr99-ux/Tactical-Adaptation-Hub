@@ -1,107 +1,73 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
-import { verify } from 'npm:jsonwebtoken@9.0.2';
+import { createClientFromRequest } from "npm:@base44/sdk@0.8.21";
 
-const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+Deno.serve(async (req: Request) => {
+  const cors = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
 
-async function getCallerUser(base44: any, req: Request) {
-  const authHeader = req.headers.get('Authorization') ?? '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token) return null;
-  try {
-    const payload = verify(token, JWT_SECRET) as { sub: string };
-    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
-  } catch { return null; }
-}
+  const url = new URL(req.url);
+  const path = url.searchParams.get("path") ?? "";
 
-
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   try {
     const base44 = createClientFromRequest(req);
-    const url = new URL(req.url);
-    const pathOverride = url.searchParams.get('path');
-    const parts = pathOverride
-      ? pathOverride.split('/').filter(Boolean)
-      : url.pathname.replace(/^\/functions\/milsimAars/, '').split('/').filter(Boolean);
-    const method = req.method;
+    const asAdmin = base44.asServiceRole;
 
-    // GET /milsimAars/:groupId/aars
-    if (method === 'GET' && parts.length === 2 && parts[1] === 'aars') {
-      const aars = await base44.asServiceRole.entities.MilsimAAR.filter({ group_id: parts[0] });
-      return Response.json(aars.sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime()));
+    // ── LIST ─────────────────────────────────────────────────
+    if (path === "list") {
+      const group_id = url.searchParams.get("group_id");
+      if (!group_id) return new Response(JSON.stringify({ error: "group_id required" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+      const aars = await asAdmin.entities.MilsimAAR.filter({ group_id });
+      return new Response(JSON.stringify({ aars }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    // GET /milsimAars/:groupId/aars/:aarId
-    if (method === 'GET' && parts.length === 3 && parts[1] === 'aars') {
-      const aar = await base44.asServiceRole.entities.MilsimAAR.get(parts[2]);
-      if (!aar) return Response.json({ error: 'AAR not found' }, { status: 404 });
-      return Response.json(aar);
-    }
-
-    // POST /milsimAars/:groupId/aars
-    if (method === 'POST' && parts.length === 2 && parts[1] === 'aars') {
-      const full = await getCallerUser(base44, req);
-      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-      const body = await req.json().catch(() => ({}));
-      if (!body.title || !body.content) return Response.json({ error: 'Title and content required' }, { status: 400 });
-
-      let opName: string | null = null;
-      if (body.opId) {
-        const op = await base44.asServiceRole.entities.MilsimOp.get(body.opId);
-        opName = op?.name ?? null;
-      }
-
-      const aar = await base44.asServiceRole.entities.MilsimAAR.create({
-        group_id: parts[0], op_id: body.opId ?? null, op_name: opName,
-        author_id: full.id, author_username: full.username,
-        title: body.title, content: body.content,
-        outcome: body.outcome ?? null, lessons_learned: body.lessonsLearned ?? null,
+    // ── CREATE ────────────────────────────────────────────────
+    if (path === "create" && req.method === "POST") {
+      const body = await req.json();
+      const { group_id, author_id, author_username, title, op_name, op_id, outcome, lessons_learned, content, participants } = body;
+      if (!group_id || !title) return new Response(JSON.stringify({ error: "group_id and title required" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+      const aar = await asAdmin.entities.MilsimAAR.create({
+        group_id,
+        author_id: author_id ?? "",
+        author_username: author_username ?? "",
+        title: title ?? "",
+        op_name: op_name ?? "",
+        op_id: op_id ?? null,
+        outcome: outcome ?? "",
+        lessons_learned: lessons_learned ?? "",
+        content: content ?? "",
+        participants: participants ?? [],
       });
-      // Stamp group's last_aar_date
-      await base44.asServiceRole.entities.MilsimGroup.update(parts[0], {
-        last_aar_date: new Date().toISOString(),
-        last_page_update: new Date().toISOString(),
-      }).catch(() => {});
-      return Response.json(aar, { status: 201 });
+      return new Response(JSON.stringify({ aar }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    // PATCH /milsimAars/:groupId/aars/:aarId
-    if (method === 'PATCH' && parts.length === 3 && parts[1] === 'aars') {
-      const full = await getCallerUser(base44, req);
-      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-      const aar = await base44.asServiceRole.entities.MilsimAAR.get(parts[2]);
-      if (!aar) return Response.json({ error: 'AAR not found' }, { status: 404 });
-      if (aar.author_id !== full.id && full.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
-
-      const body = await req.json().catch(() => ({}));
-      const updates: Record<string, any> = {};
-      if (body.title !== undefined) updates.title = body.title;
-      if (body.content !== undefined) updates.content = body.content;
-      if (body.outcome !== undefined) updates.outcome = body.outcome;
-      if (body.lessonsLearned !== undefined) updates.lessons_learned = body.lessonsLearned;
-
-      const updated = await base44.asServiceRole.entities.MilsimAAR.update(parts[2], updates);
-      return Response.json(updated);
+    // ── UPDATE ────────────────────────────────────────────────
+    if (path === "update" && req.method === "POST") {
+      const { id, ...updates } = await req.json();
+      if (!id) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+      const aar = await asAdmin.entities.MilsimAAR.update(id, updates);
+      return new Response(JSON.stringify({ aar }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    // DELETE /milsimAars/:groupId/aars/:aarId
-    if (method === 'DELETE' && parts.length === 3 && parts[1] === 'aars') {
-      const full = await getCallerUser(base44, req);
-      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-      const aar = await base44.asServiceRole.entities.MilsimAAR.get(parts[2]);
-      if (!aar) return Response.json({ error: 'AAR not found' }, { status: 404 });
-      const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
-      if (aar.author_id !== full.id && group?.owner_id !== full.id && full.role !== 'admin') {
-        return Response.json({ error: 'Forbidden' }, { status: 403 });
-      }
-      await base44.asServiceRole.entities.MilsimAAR.delete(parts[2]);
-      return new Response(null, { status: 204 });
+    // ── DELETE ────────────────────────────────────────────────
+    if (path === "delete" && req.method === "POST") {
+      const { id } = await req.json();
+      await asAdmin.entities.MilsimAAR.delete(id);
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    return Response.json({ error: 'Not found' }, { status: 404 });
-  } catch (error) {
-    console.error('[milsimAars]', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    // ── LINK OP ───────────────────────────────────────────────
+    if (path === "link-op" && req.method === "POST") {
+      const { aar_id, op_id } = await req.json();
+      if (!aar_id) return new Response(JSON.stringify({ error: "aar_id required" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+      await asAdmin.entities.MilsimAAR.update(aar_id, { op_id: op_id ?? null });
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
+    return new Response(JSON.stringify({ error: "Unknown path" }), { status: 404, headers: { ...cors, "Content-Type": "application/json" } });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
   }
 });
