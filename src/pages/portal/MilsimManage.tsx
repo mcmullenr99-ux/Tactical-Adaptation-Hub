@@ -1503,12 +1503,14 @@ function ReadinessTab({ group }: any) {
   const [readiness, setReadiness] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
   useEffect(() => {
     apiFetch<any>(`/api/stats/readiness/${group.id}`)
       .then(data => { setReadiness(data); })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [group.id]);
+
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   if (error || !readiness) return (
     <div className="text-center py-16 border border-dashed border-border rounded-lg text-muted-foreground">
@@ -1517,39 +1519,64 @@ function ReadinessTab({ group }: any) {
       <p className="text-xs mt-2">Add roster members and log operations to generate readiness data.</p>
     </div>
   );
+
   const sc = readiness.status === "green" ? "text-green-400" : readiness.status === "amber" ? "text-yellow-400" : "text-red-400";
   const bc = readiness.status === "green" ? "bg-green-500" : readiness.status === "amber" ? "bg-yellow-500" : "bg-red-500";
-  const tierStyles: Record<string, string> = {
-    "TIER I":   "text-slate-200", "TIER II":  "text-yellow-400",
-    "TIER III": "text-blue-300",  "TIER IV": "text-orange-500", "FORMING": "text-muted-foreground",
+
+  // Colour scheme: TIER I = blue (platinum), TIER II = gold, TIER III = silver/slate, TIER IV = bronze/orange, FORMING = muted
+  const TIER_META: Record<string, { label: string; colour: string; bg: string; border: string; badge: string; desc: string }> = {
+    "TIER I":   { label: "Elite Force",        colour: "text-blue-400",        bg: "bg-blue-500/10",   border: "border-blue-500/40",   badge: "bg-blue-500/20 text-blue-300 border-blue-400/50",       desc: "Tier I units demonstrate an extensive op record, high troop experience, strong AAR discipline, and comprehensive training documentation." },
+    "TIER II":  { label: "Operational",        colour: "text-yellow-400",      bg: "bg-yellow-500/10", border: "border-yellow-500/40", badge: "bg-yellow-500/20 text-yellow-300 border-yellow-400/50",  desc: "Active unit with solid rep, consistent operational output, and documented training resources." },
+    "TIER III": { label: "Developing",         colour: "text-slate-300",       bg: "bg-slate-400/10",  border: "border-slate-400/30",  badge: "bg-slate-400/20 text-slate-300 border-slate-400/40",    desc: "Building op history and troop experience. Some training doctrine in place." },
+    "TIER IV":  { label: "Limited Capability", colour: "text-orange-500",      bg: "bg-orange-500/10", border: "border-orange-500/30", badge: "bg-orange-500/20 text-orange-400 border-orange-500/40", desc: "New or low-activity unit with minimal documented record and few training resources." },
+    "FORMING":  { label: "Forming",            colour: "text-muted-foreground", bg: "bg-secondary",    border: "border-border",        badge: "bg-secondary text-muted-foreground border-border",       desc: "No established operational record yet." },
   };
+
+  const tier = readiness.op_capability_tier ?? "FORMING";
+  const tm = TIER_META[tier] ?? TIER_META["FORMING"];
+
+  // Score breakdown for transparency
+  const scoreBreakdown = [
+    { label: "Manpower",            max: 20, note: `${readiness.total} roster members` },
+    { label: "Member Activity",     max: 15, note: `${readiness.active_this_month}/${readiness.total} active (30d)` },
+    { label: "Operations History",  max: 20, note: `${readiness.total_ops ?? 0} ops logged` },
+    { label: "Op Recency",          max: 10, note: readiness.days_since_last_op != null ? `Last op ${readiness.days_since_last_op}d ago` : "No ops" },
+    { label: "AAR Discipline",      max: 10, note: `${readiness.completed_ops ?? 0} AARs for ${readiness.total_ops ?? 0} ops` },
+    { label: "Training Doctrine",   max: 15, note: `Knowledge factor ${readiness.training?.knowledge_factor ?? 0}/100` },
+    { label: "Discord Linked",      max: 5,  note: readiness.has_discord ? "Linked" : "Not linked" },
+    { label: "Page Maintenance",    max: 5,  note: readiness.days_since_page_update != null ? `Updated ${readiness.days_since_page_update}d ago` : "Never updated" },
+    { label: "Reputation / Reviews",max: 5,  note: `${readiness.review_count} review${readiness.review_count !== 1 ? "s" : ""}, avg ${readiness.avg_rep_score || "—"}` },
+  ];
+
   return (
     <div className="max-w-2xl space-y-5">
-      {/* Readiness header */}
+
+      {/* ── Readiness header ──────────────────────────────────────────────── */}
       <div className="bg-card border border-border rounded-lg p-6 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-display font-bold uppercase tracking-widest">Unit Readiness</h3>
           <div className="flex items-center gap-3">
             <span className={`font-display font-black text-xl uppercase ${sc}`}>{readiness.status.toUpperCase()}</span>
-            <span className={`text-xs font-display font-bold uppercase tracking-widest px-2 py-1 rounded border border-current/30 bg-current/10 ${tierStyles[readiness.op_capability_tier] ?? "text-muted-foreground"}`}>
-              {readiness.op_capability_tier}
+            <span className={`text-xs font-display font-bold uppercase tracking-widest px-2.5 py-1 rounded border ${tm.badge}`}>
+              ⊕ {tier}
             </span>
           </div>
         </div>
         <div className="space-y-1">
           <div className="flex justify-between text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">
-            <span>Composite Readiness</span><span>{readiness.readiness_pct}%</span>
+            <span>Composite Readiness Score</span><span>{readiness.readiness_pct} / 100</span>
           </div>
           <div className="h-3 bg-secondary rounded-full overflow-hidden">
             <div className={`h-full rounded-full transition-all ${bc}`} style={{ width: `${readiness.readiness_pct}%` }} />
           </div>
+          <p className={`text-right text-xs font-display font-bold ${sc}`}>{readiness.readiness_pct}% COMPOSITE</p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-border text-center">
           {[
             { label: "Total", value: readiness.total, col: "" },
             { label: "Active 7d", value: readiness.active_this_week, col: "text-green-400" },
             { label: "Active 30d", value: readiness.active_this_month, col: "text-blue-400" },
-            { label: "Win Rate", value: `${readiness.win_rate}%`, col: "text-primary" },
+            { label: "Ops Logged", value: readiness.total_ops ?? 0, col: "text-primary" },
           ].map(s => (
             <div key={s.label}>
               <p className={`text-xl font-display font-bold ${s.col || "text-foreground"}`}>{s.value}</p>
@@ -1558,7 +1585,85 @@ function ReadinessTab({ group }: any) {
           ))}
         </div>
       </div>
-      {/* Rep stats */}
+
+      {/* ── Readiness Flags ───────────────────────────────────────────────── */}
+      {readiness.flags && readiness.flags.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Readiness Flags</p>
+          {readiness.flags.map((flag: any) => (
+            <div key={flag.code} className={`rounded-lg border px-4 py-3 flex gap-3 ${
+              flag.severity === "red" ? "border-red-500/40 bg-red-500/5" : "border-yellow-500/30 bg-yellow-500/5"
+            }`}>
+              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${flag.severity === "red" ? "bg-red-500" : "bg-yellow-400"}`} />
+              <div>
+                <p className={`font-display font-bold uppercase tracking-widest text-xs ${flag.severity === "red" ? "text-red-400" : "text-yellow-400"}`}>
+                  {flag.label}
+                </p>
+                <p className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">{flag.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Score Breakdown ───────────────────────────────────────────────── */}
+      <div className="bg-card border border-border rounded-lg p-5 space-y-3">
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Score Breakdown — How Your {readiness.readiness_pct}pts Were Calculated</p>
+        <div className="space-y-2">
+          {scoreBreakdown.map(row => (
+            <div key={row.label} className="flex items-center gap-3 text-xs">
+              <span className="w-40 shrink-0 font-display font-bold uppercase tracking-widest text-muted-foreground text-[10px]">{row.label}</span>
+              <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                <div className="h-full bg-primary/40 rounded-full" style={{ width: `${Math.min(100, (row.max / 100) * 100)}%` }} />
+              </div>
+              <span className="text-[10px] text-muted-foreground font-display shrink-0 w-8 text-right">/{row.max}</span>
+              <span className="text-[10px] text-muted-foreground font-sans shrink-0 hidden sm:block">{row.note}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-muted-foreground font-sans pt-1 border-t border-border/50">
+          Max score = 100pts. Green ≥75 · Amber 45–74 · Red &lt;45. Units below squad strength (9 members) are forced Red regardless of score.
+        </p>
+      </div>
+
+      {/* ── Operational Capability Tier ───────────────────────────────────── */}
+      <div className={`rounded-lg border p-5 space-y-3 ${tm.bg} ${tm.border}`}>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Operational Capability Tier</p>
+          <span className={`text-xs font-display font-bold uppercase tracking-widest px-2.5 py-1 rounded border ${tm.badge}`}>
+            ⊕ {tier} — {tm.label}
+          </span>
+        </div>
+        <p className={`text-sm font-sans leading-relaxed ${tm.colour}`}>{tm.desc}</p>
+        <div className="space-y-1">
+          <div className="flex justify-between text-[10px] font-display uppercase tracking-widest text-muted-foreground">
+            <span>Op Capability Score</span><span>{readiness.op_cap_score ?? 0} / 100</span>
+          </div>
+          <div className="h-2 bg-secondary/60 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full ${tm.badge.includes("blue") ? "bg-blue-500" : tm.badge.includes("yellow") ? "bg-yellow-400" : tm.badge.includes("slate") ? "bg-slate-400" : tm.badge.includes("orange") ? "bg-orange-500" : "bg-muted-foreground"}`}
+              style={{ width: `${Math.min(100, readiness.op_cap_score ?? 0)}%` }} />
+          </div>
+        </div>
+        {/* Tier ladder */}
+        <div className="grid grid-cols-5 gap-1 pt-2 border-t border-border/40">
+          {(["FORMING","TIER IV","TIER III","TIER II","TIER I"] as const).map(t => {
+            const m = TIER_META[t];
+            const active = t === tier;
+            return (
+              <div key={t} className={`rounded p-1.5 text-center transition-all ${active ? `${m.bg} ${m.border} border` : "opacity-30"}`}>
+                <p className={`text-[9px] font-display font-bold uppercase tracking-widest ${active ? m.colour : "text-muted-foreground"}`}>{t === "FORMING" ? "FORMING" : t}</p>
+                <p className={`text-[8px] font-sans mt-0.5 ${active ? m.colour : "text-muted-foreground"} hidden sm:block`}>{m.label}</p>
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-[10px] text-muted-foreground font-sans">
+          Tier is calculated from: ops logged (30pts) · troop experience (25pts) · roster size (15pts) · AAR culture (10pts) · training doctrine (20pts).
+          <br/>Blue = Platinum (Tier I) · Gold (Tier II) · Silver (Tier III) · Bronze (Tier IV) · Forming.
+        </p>
+      </div>
+
+      {/* ── Rep stats ─────────────────────────────────────────────────────── */}
       <div className="bg-card border border-border rounded-lg p-5 grid grid-cols-2 gap-4">
         <div>
           <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Avg Rep Score</p>
@@ -1571,12 +1676,13 @@ function ReadinessTab({ group }: any) {
           <p className="text-[10px] text-muted-foreground">from troop ratings</p>
         </div>
       </div>
-      {/* Training Knowledge Assessment */}
+
+      {/* ── Training Knowledge Assessment ─────────────────────────────────── */}
       {readiness.training && readiness.training.knowledge_grade !== 'none' && (
         <div className={`border rounded-lg p-5 space-y-2 ${
-          readiness.training.knowledge_grade === 'expert'     ? 'border-slate-300/40 bg-slate-200/5' :
+          readiness.training.knowledge_grade === 'expert'     ? 'border-blue-400/40 bg-blue-400/5' :
           readiness.training.knowledge_grade === 'proficient' ? 'border-yellow-500/40 bg-yellow-500/5' :
-          readiness.training.knowledge_grade === 'developing' ? 'border-blue-300/40 bg-blue-300/5' :
+          readiness.training.knowledge_grade === 'developing' ? 'border-slate-400/40 bg-slate-400/5' :
           'border-orange-500/30 bg-orange-500/5'
         }`}>
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1584,9 +1690,9 @@ function ReadinessTab({ group }: any) {
               <Brain className="w-4 h-4" /> Training Knowledge
             </span>
             <span className={`text-xs font-display font-bold px-2 py-0.5 rounded border ${
-              readiness.training.knowledge_grade === 'expert' ? 'text-slate-200 border-slate-300/40' :
+              readiness.training.knowledge_grade === 'expert'     ? 'text-blue-300 border-blue-400/40' :
               readiness.training.knowledge_grade === 'proficient' ? 'text-yellow-400 border-yellow-500/40' :
-              readiness.training.knowledge_grade === 'developing' ? 'text-blue-300 border-blue-300/40' :
+              readiness.training.knowledge_grade === 'developing' ? 'text-slate-300 border-slate-400/40' :
               'text-orange-500 border-orange-600/40'
             }`}>{readiness.training.knowledge_label}</span>
           </div>
@@ -1602,9 +1708,7 @@ function ReadinessTab({ group }: any) {
           <span>No training documents filed. Upload SOPs, TTPs, and drills in the <strong>Training Docs</strong> tab to improve your capability tier score.</span>
         </div>
       )}
-      <p className="text-xs text-muted-foreground font-sans">
-        Capability tier now includes training documentation depth (20pt weight). Tier = ops logged, troop experience, roster size, AAR discipline, and training knowledge. Platinum/Gold/Silver/Bronze/Forming.
-      </p>
+
     </div>
   );
 }
