@@ -82,11 +82,16 @@ export default function CommanderPro() {
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
-    // Try to load groups owned by this user via milsim groups filter
-    fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimGroups?path=my-groups&user_id=${user.id}`)
+    // Load the group owned by this user via mine/all endpoint
+    const token = localStorage.getItem("auth_token");
+    fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimGroups?path=mine/all`, {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+    })
       .then(r => r.json())
       .then(data => {
-        const groups = Array.isArray(data) ? data : (data?.groups || []);
+        // mine/all returns a single group object or null
+        const group = data && data.id ? data : null;
+        const groups = group ? [group] : [];
         setMyGroups(groups);
         if (groups.length === 1) setSelectedGroup(groups[0].id);
         groups.forEach((g: any) => {
@@ -110,11 +115,15 @@ export default function CommanderPro() {
     setLoading(true);
     try {
       const group = myGroups.find(g => g.id === selectedGroup) || myGroups[0];
+      if (!group?.id) {
+        toast({ title: "No unit found", description: "You need a registered MilSim group to subscribe to Commander Pro.", variant: "destructive" });
+        setLoading(false); return;
+      }
       const res = await fetch(CHECKOUT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          group_id: group?.id || user!.id,
+          group_id: group.id,
           group_name: group?.name || "My Unit",
           user_id: user!.id,
           username: (user as any).username || user!.full_name || "",
