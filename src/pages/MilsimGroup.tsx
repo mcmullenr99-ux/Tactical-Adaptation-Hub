@@ -7,9 +7,10 @@ import { BRANCH_ICONS, type Branch } from "@/lib/milsimConstants";
 import {
   Shield, Globe, ExternalLink, Loader2, Users, Award, Crosshair,
   FileText, ChevronLeft, Star, BookOpen, Map, Radio, Medal,
-  Zap, Target, TrendingUp, Activity,
+  Zap, Target, TrendingUp, Activity, Archive, Rocket, ClipboardList, Siren,
 } from "lucide-react";
 const OrbatBuilder = lazy(() => import("@/components/OrbatBuilder"));
+const CAMPAIGNS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/campaigns";
 import { formatDistanceToNow } from "date-fns";
 
 interface Role    { id: string; name: string; description: string | null; sortOrder: number }
@@ -54,7 +55,7 @@ interface ReadinessData {
   narrative_items: { label: string; text: string; severity: 'green' | 'amber' | 'red' | 'neutral' }[];
 }
 
-type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "capabilities";
+type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "capabilities" | "legacy";
 
 function getEmbedUrl(url: string): string | null {
   try {
@@ -196,6 +197,8 @@ export default function MilsimGroup() {
   const rankById = Object.fromEntries(ranks.map(r => [r.id, r]));
   const roleById = Object.fromEntries(roles.map(r => [r.id, r]));
   const embedUrl = group.stream_url ? getEmbedUrl(group.stream_url) : null;
+  const isPro = !!(group as any).is_pro;
+  const isVerified = !!(group as any).is_verified;
 
   const TABS: { id: Tab; label: string; icon: typeof Shield; show: boolean }[] = [
     { id: "overview",      label: "Overview",      icon: Shield,     show: true },
@@ -208,6 +211,7 @@ export default function MilsimGroup() {
     { id: "sops",          label: "SOPs",          icon: BookOpen,   show: !!group.sops },
     { id: "orbat",         label: "ORBAT",         icon: Map,        show: !!group.orbat },
     { id: "apply",         label: "Apply",         icon: FileText,   show: questions.length > 0 },
+    { id: "legacy",        label: "Unit Legacy",   icon: Archive,    show: isPro },
   ];
 
   return (
@@ -248,6 +252,16 @@ export default function MilsimGroup() {
                 {group.is_live && (
                   <span className="flex items-center gap-1 bg-red-500/20 border border-red-500/40 text-red-400 px-2.5 py-1 rounded text-xs font-display font-bold uppercase tracking-widest animate-pulse">
                     <span className="w-1.5 h-1.5 bg-red-400 rounded-full" /> LIVE
+                  </span>
+                )}
+                {isVerified && (
+                  <span className="flex items-center gap-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-2.5 py-1 rounded text-xs font-display font-bold uppercase tracking-widest" title="This unit has been verified by TAG">
+                    <Shield className="w-3 h-3" /> Verified
+                  </span>
+                )}
+                {isPro && (
+                  <span className="flex items-center gap-1 bg-primary/10 border border-primary/30 text-primary px-2.5 py-1 rounded text-xs font-display font-bold uppercase tracking-widest">
+                    <Rocket className="w-3 h-3" /> Pro
                   </span>
                 )}
               </div>
@@ -716,9 +730,154 @@ export default function MilsimGroup() {
             </div>
           )}
 
+          {tab === "legacy" && isPro && (
+            <PublicLegacyTab group={group} />
+          )}
+
         </motion.div>
       </div>
     </MainLayout>
+  );
+}
+
+// ─── Public Legacy Tab ────────────────────────────────────────────────────────
+function PublicLegacyTab({ group }: { group: any }) {
+  const [ops, setOps]             = useState<any[]>([]);
+  const [aars, setAars]           = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loading, setLoading]     = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("tag_auth_token") ?? "";
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+    Promise.all([
+      apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`).catch(() => []),
+      apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).catch(() => []),
+      fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`, { headers }).then(r => r.json()).catch(() => []),
+    ]).then(([o, a, c]) => {
+      setOps(Array.isArray(o) ? o : []);
+      setAars(Array.isArray(a) ? a : []);
+      setCampaigns(Array.isArray(c) ? c : []);
+      setLoading(false);
+    });
+  }, [group.id]);
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  type TimelineEntry = {
+    date: string; type: "op" | "aar" | "campaign";
+    title: string; sub: string;
+    icon: typeof Archive; color: string;
+  };
+
+  const entries: TimelineEntry[] = [
+    ...ops.filter(o => o.scheduled_at).map(o => ({
+      date: o.scheduled_at, type: "op" as const,
+      title: o.name,
+      sub: `${o.game || "Unknown Game"} · ${o.event_type || "Op"} · ${o.status || ""}`,
+      icon: Siren, color: "text-primary border-primary/40 bg-primary/10",
+    })),
+    ...aars.filter(a => a.created_date).map(a => ({
+      date: a.created_date, type: "aar" as const,
+      title: a.title || a.op_name || "After Action Report",
+      sub: `By ${a.author_username} · Outcome: ${a.outcome || "—"}`,
+      icon: ClipboardList, color: "text-green-400 border-green-500/40 bg-green-500/10",
+    })),
+    ...campaigns.filter(c => c.start_date).map(c => ({
+      date: c.start_date, type: "campaign" as const,
+      title: `Campaign: ${c.name}`,
+      sub: `${c.status} · ${(c.op_ids || []).length} ops`,
+      icon: Rocket, color: "text-yellow-400 border-yellow-500/40 bg-yellow-500/10",
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const firstOpDate = ops.length > 0
+    ? ops.reduce((e: string | null, o) => (!e || new Date(o.scheduled_at) < new Date(e)) ? o.scheduled_at : e, null)
+    : null;
+
+  const victories = campaigns.filter(c => c.outcome === "victory").length;
+
+  return (
+    <div className="space-y-10 max-w-4xl">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-secondary border border-border rounded flex items-center justify-center">
+          <Archive className="w-4 h-4 text-foreground" />
+        </div>
+        <div>
+          <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Unit Legacy</h2>
+          <p className="text-xs font-sans text-muted-foreground">The permanent operational record of {group.name}</p>
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Total Ops",   value: ops.length,        color: "text-primary"    },
+          { label: "AARs Filed",  value: aars.length,       color: "text-green-400"  },
+          { label: "Campaigns",   value: campaigns.length,  color: "text-yellow-400" },
+          { label: "Est.",        value: firstOpDate ? new Date(firstOpDate).getFullYear() : "—", color: "text-foreground" },
+        ].map(s => (
+          <div key={s.label} className="bg-card border border-border rounded-lg p-4 text-center">
+            <p className={`font-display font-black text-2xl ${s.color}`}>{s.value}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Campaign Ribbons */}
+      {campaigns.length > 0 && (
+        <div>
+          <h3 className="font-display font-bold uppercase tracking-wider text-sm text-muted-foreground mb-3">Campaign Ribbons</h3>
+          <div className="flex flex-wrap gap-3">
+            {campaigns.map((c: any) => {
+              const outcome = c.outcome || "incomplete";
+              const col =
+                outcome === "victory" ? "from-green-600 to-green-800 border-green-500/40" :
+                outcome === "defeat"  ? "from-red-700 to-red-900 border-red-500/40" :
+                outcome === "draw"    ? "from-yellow-600 to-yellow-800 border-yellow-500/40" :
+                "from-zinc-700 to-zinc-900 border-zinc-500/40";
+              return (
+                <div key={c.id} className={`bg-gradient-to-b ${col} border rounded px-4 py-2 text-center min-w-[80px]`}>
+                  <p className="text-xs font-display font-black uppercase tracking-wider text-white leading-tight">{c.name}</p>
+                  <p className="text-[9px] font-sans text-white/70 mt-0.5">{outcome.toUpperCase()}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Full Timeline */}
+      <div>
+        <h3 className="font-display font-bold uppercase tracking-wider text-sm text-muted-foreground mb-4">Full Timeline</h3>
+        {entries.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <Archive className="w-10 h-10 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground font-sans">No ops, AARs, or campaigns on record yet.</p>
+          </div>
+        ) : (
+          <div className="relative space-y-3 pl-6 border-l border-border">
+            {entries.map((e, i) => (
+              <div key={i} className="relative">
+                <div className={`absolute -left-[25px] w-4 h-4 rounded-full border flex items-center justify-center ${e.color}`}>
+                  <e.icon className="w-2 h-2" />
+                </div>
+                <div className="bg-card border border-border rounded-lg p-3 ml-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-display font-bold text-sm text-foreground">{e.title}</p>
+                    <p className="text-[10px] font-sans text-muted-foreground shrink-0">
+                      {new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  <p className="text-xs font-sans text-muted-foreground mt-0.5">{e.sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
