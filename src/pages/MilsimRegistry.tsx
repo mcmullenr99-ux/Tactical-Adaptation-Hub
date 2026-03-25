@@ -426,7 +426,7 @@ function LeaderboardView({ groups, category, setCategory }: { groups: MilsimGrou
   );
 }
 
-interface LbRow { group: MilsimGroup; score: string; scoreLabel: string }
+interface LbRow { group: MilsimGroup; score: string; scoreLabel: string; dividerLabel?: string }
 
 function buildLeaderboardRows(
   groups: MilsimGroup[],
@@ -447,17 +447,27 @@ function buildLeaderboardRows(
       byRegion[r].push(g);
     });
     const regionOrder = ["EU", "NA", "SA", "ME", "AF", "ASIA", "OCE", "INTL"];
+    const regionLabels: Record<string, string> = {
+      EU: "Europe", NA: "North America", SA: "South America",
+      ME: "Middle East", AF: "Africa", ASIA: "Asia", OCE: "Oceania", INTL: "International",
+    };
     // For region: we paginate per-region top 5, all regions together
-    sorted = regionOrder.flatMap(r =>
-      (byRegion[r] ?? [])
+    sorted = regionOrder.flatMap(r => {
+      const regionGroups = (byRegion[r] ?? [])
         .sort((a, b) => {
           if (isVerified(b) !== isVerified(a)) return isVerified(b) ? 1 : -1;
           if ((b.is_pro ? 1 : 0) !== (a.is_pro ? 1 : 0)) return (b.is_pro ? 1 : 0) - (a.is_pro ? 1 : 0);
           return a.name.localeCompare(b.name);
         })
-        .slice(0, 5)
-        .map(g => ({ group: g, score: isVerified(g) ? "Verified" : g.is_pro ? "Pro" : "Active", scoreLabel: r }))
-    );
+        .slice(0, 5);
+      if (regionGroups.length === 0) return [];
+      return regionGroups.map((g, idx) => ({
+        group: g,
+        score: isVerified(g) ? "Verified" : g.is_pro ? "Pro" : "Active",
+        scoreLabel: regionLabels[r] ?? r,
+        dividerLabel: idx === 0 ? (regionLabels[r] ?? r) : undefined,
+      }));
+    });
     // Region doesn't paginate the same way — show all (max 5*5=25), no page
     return { rows: sorted, totalRows: sorted.length };
   }
@@ -502,7 +512,15 @@ function LbTable({ rows, startRank }: { rows: LbRow[]; startRank: number }) {
       {rows.map((row, i) => {
         const rank = startRank + i;
         return (
-          <motion.div key={row.group.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+          <div key={row.group.id}>
+            {row.dividerLabel && (
+              <div className="flex items-center gap-3 pt-4 pb-1 first:pt-0">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground px-2">{row.dividerLabel}</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+            )}
+          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
             className={`flex items-center gap-4 px-4 py-3 rounded-lg border transition-all hover:border-primary/40 ${
               rank === 1 ? "border-yellow-500/40 bg-yellow-500/5" :
               rank === 2 ? "border-zinc-400/30 bg-zinc-400/5" :
@@ -551,6 +569,7 @@ function LbTable({ rows, startRank }: { rows: LbRow[]; startRank: number }) {
               View <ExternalLink className="w-3 h-3" />
             </Link>
           </motion.div>
+          </div>
         );
       })}
     </div>

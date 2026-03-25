@@ -2220,14 +2220,19 @@ function ReputationTab({ group }: any) {
   const [repData, setRepData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isProUnit, setIsProUnit] = useState(false);
   const [form, setForm] = useState({ activity: 7, attitude: 7, experience: 5, discipline: 7, overall_vote: "commend", blacklisted: false, blacklist_reason: "", notes: "" });
   const [saved, setSaved] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    apiFetch<any>(`/api/milsim-groups/${group.id}/full`)
-      .then(g => setRoster(g.roster ?? []))
-      .catch(() => {})
+    Promise.all([
+      apiFetch<any>(`/api/milsim-groups/${group.id}/full`),
+      apiFetch<any>(`/api/milsim-groups/${group.id}/pro-status`).catch(() => ({ is_pro: false })),
+    ]).then(([g, proStatus]) => {
+      setRoster(g.roster ?? []);
+      setIsProUnit(!!proStatus?.is_pro);
+    }).catch(() => {})
       .finally(() => setLoading(false));
   }, [group.id]);
 
@@ -2343,7 +2348,7 @@ function ReputationTab({ group }: any) {
               {/* Existing reviews summary — Pro: full detail | Free: summary only */}
               {repData[selected.userId] && (() => {
                 const rd = repData[selected.userId];
-                const isPro = (window as any).__tagProStatus?.[group.id] === true;
+                const isPro = isProUnit;
                 const reviewCount = rd.reviews?.length ?? 0;
                 const commends = rd.score?.commends ?? 0;
                 const flags = rd.score?.flags ?? 0;
@@ -2476,6 +2481,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [isProUnit, setIsProUnit] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [assessment, setAssessment] = useState<any | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2488,8 +2494,12 @@ function TrainingDocsTab({ group, showMsg }: any) {
   const loadDocs = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiFetch<any[]>(`/api/training-docs/${group.id}`);
+      const [data, proStatus] = await Promise.all([
+        apiFetch<any[]>(`/api/training-docs/${group.id}`),
+        apiFetch<any>(`/api/milsim-groups/${group.id}/pro-status`).catch(() => ({ is_pro: false })),
+      ]);
       setDocs(data ?? []);
+      setIsProUnit(!!proStatus?.is_pro);
     } catch { setDocs([]); } finally { setLoading(false); }
   }, [group.id]);
 
@@ -2535,8 +2545,16 @@ function TrainingDocsTab({ group, showMsg }: any) {
         setShowForm(false);
         showMsg(true, "Training document uploaded.");
         loadAssessment();
+      } else if (result?.pro_required) {
+        showMsg(false, "You've reached the 5-document limit for free units. Upgrade to Commander Pro for unlimited uploads.");
       } else { showMsg(false, "Upload failed — try again."); }
-    } catch (e: any) { showMsg(false, e.message ?? "Upload failed."); } finally { setUploading(false); }
+    } catch (e: any) {
+      if (e?.pro_required || e?.message?.includes("Commander Pro")) {
+        showMsg(false, "You've reached the 5-document limit. Upgrade to Commander Pro for unlimited uploads.");
+      } else {
+        showMsg(false, e.message ?? "Upload failed.");
+      }
+    } finally { setUploading(false); }
   };
 
   const deleteDoc = async (id: string) => {
@@ -2687,7 +2705,17 @@ function TrainingDocsTab({ group, showMsg }: any) {
               className="px-4 py-2 border border-border hover:border-destructive/50 text-muted-foreground hover:text-destructive font-display font-bold uppercase tracking-wider text-xs rounded transition-all">
               Cancel
             </button>
-            <button onClick={uploadDoc} disabled={uploading}
+            {!isProUnit && docs.length >= 5 && (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 text-xs font-sans text-yellow-400 mb-2">
+                <span className="text-lg">⚠️</span>
+                <span>
+                  <strong className="font-display font-bold uppercase">Doc limit reached (5/5).</strong>{" "}
+                  Free units can store up to 5 training documents.{" "}
+                  <a href="/commander-pro" className="underline font-bold hover:text-yellow-300">Upgrade to Commander Pro</a> for unlimited uploads.
+                </span>
+              </div>
+            )}
+            <button onClick={uploadDoc} disabled={uploading || (!isProUnit && docs.length >= 5)}
               className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs rounded clip-angled-sm transition-all disabled:opacity-50">
               {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
               {uploading ? "Uploading..." : "Upload"}
