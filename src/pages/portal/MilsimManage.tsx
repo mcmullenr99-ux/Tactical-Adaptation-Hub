@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, type ElementType } from "react";
+import React, { useEffect, useState, useCallback, useRef, type ElementType } from "react";
 import { useUpload } from "@/stubs/object-storage-web";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
@@ -82,7 +82,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer";
+type Tab = "info" | "roles" | "ranks" | "roster" | "recognition" | "stream" | "sops" | "orbat" | "questions" | "ops" | "aars" | "briefings" | "orgchart" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -167,9 +167,7 @@ export default function MilsimManage() {
     {
       label: "Recognition",
       items: [
-        { id: "awards", label: "Awards", icon: Medal },
-        { id: "commendations", label: "Commendations", icon: Megaphone },
-        { id: "quals", label: "Qualifications", icon: GraduationCap },
+        { id: "recognition", label: "Recognition", icon: Medal },
         { id: "legacy", label: "Unit Legacy", icon: Archive, pro: true },
         { id: "developer", label: "API & Webhooks", icon: GitBranch, pro: true },
       ],
@@ -262,9 +260,7 @@ export default function MilsimManage() {
               {tab === "roles" && <RolesTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-              {tab === "awards" && <AwardsTab group={group} showMsg={showMsg} />}
-              {tab === "commendations" && <CommendationsTab group={group} />}
-              {tab === "quals" && <QualsTab group={group} showMsg={showMsg} />}
+              {tab === "recognition" && <RecognitionTab group={group} showMsg={showMsg} />}
               {tab === "ops" && <OpsTab group={group} showMsg={showMsg} />}
               {tab === "aars" && <AARsTab group={group} showMsg={showMsg} />}
               {tab === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
@@ -345,7 +341,7 @@ const MC_LANGS = [
 function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const { register, handleSubmit, watch, setValue } = useForm({ defaultValues: {
     name: group.name, tagLine: group.tagLine ?? "", description: group.description ?? "",
-    discordUrl: group.discordUrl ?? "", websiteUrl: group.websiteUrl ?? "", steamGroupUrl: group.steamGroupUrl ?? "", logoUrl: group.logoUrl ?? "",
+    discordUrl: group.discordUrl ?? "", websiteUrl: group.websiteUrl ?? "", steamGroupUrl: group.steamGroupUrl ?? "", logoUrl: group.logoUrl ?? "", bannerUrl: group.banner_url ?? "",
     country: group.country ?? "", language: group.language ?? "",
     branch: group.branch ?? "", unitType: group.unitType ?? "",
     games: (group.games ?? []) as string[],
@@ -356,7 +352,7 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const onSubmit = async (data: any) => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify(data) });
+      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ ...data, banner_url: data.bannerUrl }) });
       onSaved(updated);
       showMsg(true, "Group info saved.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -367,7 +363,22 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
       <MField label="Unit Name"><input {...register("name")} className="mf-input" /></MField>
       <MField label="Tag Line"><input {...register("tagLine")} className="mf-input" /></MField>
       <MField label="Description"><textarea {...register("description")} rows={5} className="mf-input resize-none" /></MField>
-      <MField label="Logo URL"><input {...register("logoUrl")} className="mf-input" placeholder="https://i.imgur.com/..." /></MField>
+      {/* Logo Upload */}
+      <MField label="Logo Image">
+        <div className="space-y-2">
+          <LogoUploadField value={watch("logoUrl") ?? ""} onChange={(url) => setValue("logoUrl", url)} />
+          <p className="text-[10px] text-muted-foreground font-sans">Upload a PNG/JPG (recommended: 256×256px square). Or paste a URL below.</p>
+          <input {...register("logoUrl")} className="mf-input text-xs" placeholder="https://i.imgur.com/..." />
+        </div>
+      </MField>
+      {/* Banner Upload */}
+      <MField label="Banner Image">
+        <div className="space-y-2">
+          <BannerUploadField value={watch("bannerUrl") ?? ""} onChange={(url) => setValue("bannerUrl", url)} />
+          <p className="text-[10px] text-muted-foreground font-sans">Upload a wide banner image (recommended: 1200×400px). Or paste a URL below.</p>
+          <input {...register("bannerUrl")} className="mf-input text-xs" placeholder="https://i.imgur.com/..." />
+        </div>
+      </MField>
       <MField label="Discord URL"><input {...register("discordUrl")} className="mf-input" placeholder="https://discord.gg/invite" /></MField>
       <MField label="Website URL"><input {...register("websiteUrl")} className="mf-input" placeholder="https://yourunit.com" /></MField>
       <MField label="Steam Group URL"><input {...register("steamGroupUrl")} className="mf-input" placeholder="https://steamcommunity.com/groups/..." /></MField>
@@ -913,6 +924,116 @@ function AwardImage({ path, fallbackIcon: FIcon }: { path: string | null | undef
       )}
     </div>
   );
+}
+
+
+
+// ─── Recognition Tab (Awards + Commendations + Qualifications merged) ────────
+function RecognitionTab({ group, showMsg }: any) {
+  const [sub, setSub] = useState<"awards" | "commendations" | "quals">("awards");
+  const SUB_TABS = [
+    { id: "awards" as const,        label: "Awards",         icon: Medal },
+    { id: "commendations" as const, label: "Commendations",  icon: Megaphone },
+    { id: "quals" as const,         label: "Qualifications", icon: GraduationCap },
+  ];
+  return (
+    <div className="space-y-4">
+      {/* Sub-tab pills */}
+      <div className="flex items-center gap-2 border-b border-border pb-3">
+        {SUB_TABS.map(({ id, label, icon: Icon }) => (
+          <button key={id} onClick={() => setSub(id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-display font-bold uppercase tracking-wider transition-all border ${
+              sub === id ? "bg-primary/15 border-primary/50 text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            }`}>
+            <Icon className="w-3.5 h-3.5" />{label}
+          </button>
+        ))}
+      </div>
+      {sub === "awards"        && <AwardsTab        group={group} showMsg={showMsg} />}
+      {sub === "commendations" && <CommendationsTab group={group} />}
+      {sub === "quals"         && <QualsTab         group={group} showMsg={showMsg} />}
+    </div>
+  );
+}
+
+// ─── Image Upload Helper Components ─────────────────────────────────────────
+const UPLOAD_API = "https://api.base44.com/api/apps/" + (import.meta.env.VITE_BASE44_APP_ID ?? "69bf52c997cae5d4cff87ae4") + "/files/upload";
+const SERVICE_TOKEN = import.meta.env.VITE_BASE44_SERVICE_TOKEN ?? "";
+
+async function uploadImageToStorage(file: File): Promise<string | null> {
+  const token = localStorage.getItem("auth_token") ?? "";
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(UPLOAD_API, {
+    method: "POST",
+    headers: { "x-api-key": token || SERVICE_TOKEN },
+    body: fd,
+  });
+  if (!res.ok) {
+    // Fallback: try via our backend function
+    const fd2 = new FormData();
+    fd2.append("file", file);
+    const res2 = await fetch("/api/storage/upload", { method: "POST", body: fd2, credentials: "include" });
+    if (!res2.ok) throw new Error("Upload failed");
+    const d2 = await res2.json();
+    return d2.url ?? d2.file_url ?? null;
+  }
+  const data = await res.json();
+  return data.file_url ?? data.url ?? null;
+}
+
+function ImageUploadField({ value, onChange, aspectHint, label }: { value: string; onChange: (url: string) => void; aspectHint?: string; label?: string }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setError("Please select an image file."); return; }
+    if (file.size > 5 * 1024 * 1024) { setError("Max file size is 5MB."); return; }
+    setError(null);
+    setUploading(true);
+    try {
+      const url = await uploadImageToStorage(file);
+      if (url) onChange(url);
+      else setError("Upload returned no URL.");
+    } catch (err: any) {
+      setError(err.message ?? "Upload failed.");
+    }
+    setUploading(false);
+    e.target.value = "";
+  };
+
+  return (
+    <div className="space-y-2">
+      <div
+        onClick={() => !uploading && inputRef.current?.click()}
+        className={`relative flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg cursor-pointer transition-all ${aspectHint === "banner" ? "h-24" : "h-20"} ${uploading ? "border-primary/60 bg-primary/5" : value ? "border-green-500/40 bg-green-500/5" : "border-border hover:border-primary/40 bg-secondary/20"}`}>
+        {value && !uploading && (
+          <img src={value} alt="preview" className={`absolute inset-0 w-full h-full object-cover rounded-lg opacity-50`} />
+        )}
+        <div className="relative z-10 flex flex-col items-center gap-1">
+          {uploading ? (
+            <><Loader2 className="w-5 h-5 animate-spin text-primary" /><p className="text-[10px] font-display uppercase tracking-wider text-primary">Uploading...</p></>
+          ) : value ? (
+            <><Upload className="w-4 h-4 text-green-400" /><p className="text-[10px] font-display uppercase tracking-wider text-green-400">✓ Uploaded — click to replace</p></>
+          ) : (
+            <><Upload className="w-5 h-5 text-muted-foreground" /><p className="text-[10px] font-display uppercase tracking-wider text-muted-foreground">Click to upload {label ?? "image"}</p><p className="text-[9px] text-muted-foreground/60">{aspectHint === "banner" ? "1200×400px recommended" : "256×256px recommended"} · PNG/JPG · Max 5MB</p></>
+          )}
+        </div>
+      </div>
+      {error && <p className="text-[10px] text-red-400 font-sans">{error}</p>}
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+    </div>
+  );
+}
+
+function LogoUploadField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  return <ImageUploadField value={value} onChange={onChange} aspectHint="logo" label="logo" />;
+}
+function BannerUploadField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  return <ImageUploadField value={value} onChange={onChange} aspectHint="banner" label="banner" />;
 }
 
 function AwardsTab({ group, showMsg }: any) {
