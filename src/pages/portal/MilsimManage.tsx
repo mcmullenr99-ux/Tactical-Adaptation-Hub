@@ -82,7 +82,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "recognition" | "stream" | "sops" | "orbat" | "questions" | "operations" | "orgchart" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer";
+type Tab = "info" | "roles" | "ranks" | "roster" | "recognition" | "stream" | "sops" | "orbat" | "questions" | "operations" | "orgchart" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -140,18 +140,13 @@ export default function MilsimManage() {
       label: "Setup",
       items: [
         { id: "info", label: "Info", icon: Shield },
-        { id: "roles", label: "Roles", icon: Crosshair },
-        { id: "ranks", label: "Ranks", icon: Award },
         { id: "questions", label: "App Questions", icon: FileText },
       ],
     },
     {
       label: "Personnel",
       items: [
-        { id: "roster", label: "Roster", icon: Users },
-        { id: "pipeline", label: "Pipeline", icon: UserCheck, pro: true },
-        { id: "loa", label: "LOA Manager", icon: PlaneTakeoff },
-        { id: "reputation", label: "Reputation", icon: Star },
+        { id: "troops", label: "Troop Management", icon: Users },
       ],
     },
     {
@@ -255,6 +250,7 @@ export default function MilsimManage() {
           <div className="flex-1 min-w-0">
             <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
               {tab === "info" && <InfoTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+              {tab === "troops" && <TroopManagementTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "roles" && <RolesTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
@@ -559,6 +555,52 @@ function OrbatProGate({ group, orbatJson, setOrbatJson, saveOrbat, saving }: any
     </div>
   );
 }
+
+// ─── Troop Management Tab (Roles + Ranks + Roster + Pipeline + LOA + Reputation) ──
+function TroopManagementTab({ group, onUpdated, showMsg }: any) {
+  type TTSub = "roster" | "roles" | "ranks" | "pipeline" | "loa" | "reputation";
+  const [sub, setSub] = useState<TTSub>("roster");
+
+  const SUBS: { id: TTSub; label: string; icon: React.ReactNode; pro?: boolean }[] = [
+    { id: "roster",     label: "Roster",      icon: <Users className="w-3.5 h-3.5" /> },
+    { id: "roles",      label: "Roles",       icon: <Crosshair className="w-3.5 h-3.5" /> },
+    { id: "ranks",      label: "Ranks",       icon: <Award className="w-3.5 h-3.5" /> },
+    { id: "pipeline",   label: "Pipeline",    icon: <UserCheck className="w-3.5 h-3.5" />, pro: true },
+    { id: "loa",        label: "LOA Manager", icon: <PlaneTakeoff className="w-3.5 h-3.5" /> },
+    { id: "reputation", label: "Reputation",  icon: <Star className="w-3.5 h-3.5" /> },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Sub-tab pills */}
+      <div className="flex flex-wrap gap-2">
+        {SUBS.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setSub(s.id)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded font-display font-bold uppercase tracking-widest text-xs border transition-colors ${
+              sub === s.id
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+            }`}
+          >
+            {s.icon}
+            {s.label}
+            {s.pro && <span className="ml-1 text-[9px] text-amber-400">★</span>}
+          </button>
+        ))}
+      </div>
+
+      {sub === "roster"     && <RosterTab     group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "roles"      && <RolesTab      group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "ranks"      && <RanksTab      group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "pipeline"   && <RecruitPipelineTab group={group} showMsg={showMsg} />}
+      {sub === "loa"        && <LOATab        group={group} showMsg={showMsg} />}
+      {sub === "reputation" && <ReputationTab group={group} />}
+    </div>
+  );
+}
+
 
 function RolesTab({ group, onUpdated, showMsg }: any) {
   const [roles, setRoles] = useState<Role[]>(group.roles);
