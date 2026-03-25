@@ -25,6 +25,7 @@ const ROUTE_MAP: Record<string, string> = {
   "/api/friends":               "friends",
   "/api/notifications":         "notifications",
   "/api/milsim-groups":         "milsimGroups",
+  "/api/leaderboard-stats":     "leaderboardStats",
   "/api/motd":                  "motd",
   "/api/admin":                 "admin",
   "/api/security":              "security",

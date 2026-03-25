@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import { useSEO } from "@/hooks/useSEO";
-import { Shield, Globe, Star, Users, Plus, ExternalLink, Loader2, Trophy, CheckCircle2, Zap, TrendingUp } from "lucide-react";
+import {
+  Shield, Globe, Star, Users, Plus, ExternalLink, Loader2, Trophy,
+  CheckCircle2, Zap, TrendingUp, Map, Gamepad2, BarChart3, Crown
+} from "lucide-react";
 
 interface MilsimGroup {
   id: number;
@@ -20,18 +23,43 @@ interface MilsimGroup {
   is_pro?: boolean;
   last_op_date?: string | null;
   last_aar_date?: string | null;
+  games?: string[];
+  country?: string | null;
+  language?: string | null;
+  branch?: string | null;
+  unit_type?: string | null;
+  roster_count?: number;
+  op_success_rate?: number | null; // 0-100, calculated from AARs
+  total_ops?: number;
 }
 
 const PRO_STATUS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/getProStatus";
 
+// Regions mapped from country field
+const REGION_MAP: Record<string, string> = {
+  "🇬🇧 United Kingdom": "EU", "🇩🇪 Germany": "EU", "🇫🇷 France": "EU",
+  "🇮🇹 Italy": "EU", "🇵🇱 Poland": "EU", "🇳🇱 Netherlands": "EU",
+  "🇳🇴 Norway": "EU", "🇸🇪 Sweden": "EU", "🇩🇰 Denmark": "EU",
+  "🇧🇪 Belgium": "EU", "🇪🇸 Spain": "EU", "🇵🇹 Portugal": "EU",
+  "🇹🇷 Turkey": "EU", "🇺🇸 United States": "NA", "🇨🇦 Canada": "NA",
+  "🇧🇷 Brazil": "SA", "🇦🇺 Australia": "APAC", "🇳🇿 New Zealand": "APAC",
+  "🇯🇵 Japan": "APAC", "🇰🇷 South Korea": "APAC",
+};
+
+function getRegion(country: string | null | undefined): string {
+  if (!country) return "INTL";
+  return REGION_MAP[country] ?? "INTL";
+}
+
 function isVerified(group: MilsimGroup): boolean {
-  // Verified = Pro + has recent activity (op or AAR in last 60 days)
   if (!group.is_pro) return false;
   const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
   const lastOp = group.last_op_date ? new Date(group.last_op_date).getTime() : 0;
   const lastAar = group.last_aar_date ? new Date(group.last_aar_date).getTime() : 0;
   return Math.max(lastOp, lastAar) > cutoff;
 }
+
+type LeaderboardCategory = "region" | "game" | "troop_count" | "op_success";
 
 export default function MilsimRegistry() {
   useSEO({ title: "MilSim Registry", description: "Browse TAG's registered MilSim groups — find your unit and enlist in organised tactical play." });
@@ -40,47 +68,75 @@ export default function MilsimRegistry() {
   const [view, setView] = useState<"grid" | "leaderboard">("grid");
   const [search, setSearch] = useState("");
   const [filterGame, setFilterGame] = useState("");
+  const [filterRegion, setFilterRegion] = useState("");
+  const [filterBranch, setFilterBranch] = useState("");
+  const [lbCategory, setLbCategory] = useState<LeaderboardCategory>("region");
 
   useEffect(() => {
-    apiFetch<MilsimGroup[]>("/api/milsim-groups")
-      .then(data => {
-        const list = Array.isArray(data) ? data : [];
-        // Fetch pro status for each group in parallel (batch)
-        Promise.allSettled(
-          list.map(g =>
-            fetch(`${PRO_STATUS_URL}?group_id=${g.id}`)
-              .then(r => r.json())
-              .then(s => ({ id: g.id, is_pro: !!s.is_pro }))
-              .catch(() => ({ id: g.id, is_pro: false }))
-          )
-        ).then(results => {
-          const proMap: Record<number, boolean> = {};
-          results.forEach(r => { if (r.status === "fulfilled") proMap[r.value.id] = r.value.is_pro; });
-          setGroups(list.map(g => ({ ...g, is_pro: proMap[g.id] ?? false })));
-        });
-      })
-      .catch(() => setGroups([]))
-      .finally(() => setLoading(false));
+    Promise.all([
+      apiFetch<MilsimGroup[]>("/api/milsim-groups"),
+      apiFetch<{ group_id: number; op_success_rate: number; total_ops: number; roster_count: number }[]>("/api/milsim-groups/leaderboard-stats").catch(() => []),
+    ]).then(([data, stats]) => {
+      const list = Array.isArray(data) ? data : [];
+      const statsMap: Record<number, { op_success_rate: number; total_ops: number; roster_count: number }> = {};
+      if (Array.isArray(stats)) {
+        stats.forEach(s => { statsMap[s.group_id] = { op_success_rate: s.op_success_rate, total_ops: s.total_ops, roster_count: s.roster_count }; });
+      }
+
+      Promise.allSettled(
+        list.map(g =>
+          fetch(`${PRO_STATUS_URL}?group_id=${g.id}`)
+            .then(r => r.json())
+            .then(s => ({ id: g.id, is_pro: !!s.is_pro }))
+            .catch(() => ({ id: g.id, is_pro: false }))
+        )
+      ).then(results => {
+        const proMap: Record<number, boolean> = {};
+        results.forEach(r => { if (r.status === "fulfilled") proMap[r.value.id] = r.value.is_pro; });
+        setGroups(list.map(g => ({
+          ...g,
+          is_pro: proMap[g.id] ?? false,
+          op_success_rate: statsMap[g.id]?.op_success_rate ?? null,
+          total_ops: statsMap[g.id]?.total_ops ?? 0,
+          roster_count: statsMap[g.id]?.roster_count ?? 0,
+        })));
+      });
+    })
+    .catch(() => setGroups([]))
+    .finally(() => setLoading(false));
   }, []);
 
+  // Distinct games and regions for filter dropdowns
+  const allGames = useMemo(() => {
+    const set = new Set<string>();
+    groups.forEach(g => (g.games ?? []).forEach(game => set.add(game)));
+    return Array.from(set).sort();
+  }, [groups]);
+
+  const allRegions = useMemo(() => {
+    const set = new Set<string>();
+    groups.forEach(g => set.add(getRegion(g.country)));
+    return Array.from(set).sort();
+  }, [groups]);
+
+  const allBranches = useMemo(() => {
+    const set = new Set<string>();
+    groups.forEach(g => { if (g.branch) set.add(g.branch); });
+    return Array.from(set).sort();
+  }, [groups]);
+
   const filtered = groups.filter(g => {
+    if (g.status !== "approved" && g.status !== "featured") return false;
     const q = search.toLowerCase();
-    const matchSearch = !q || g.name.toLowerCase().includes(q) || (g.tagLine ?? "").toLowerCase().includes(q);
-    return matchSearch;
+    if (q && !g.name.toLowerCase().includes(q) && !(g.tagLine ?? "").toLowerCase().includes(q)) return false;
+    if (filterGame && !(g.games ?? []).includes(filterGame)) return false;
+    if (filterRegion && getRegion(g.country) !== filterRegion) return false;
+    if (filterBranch && g.branch !== filterBranch) return false;
+    return true;
   });
 
   const featured = filtered.filter(g => g.status === "featured");
   const approved = filtered.filter(g => g.status === "approved");
-
-  // Leaderboard: sort by pro first, then featured, then alphabetical
-  const leaderboard = [...filtered]
-    .filter(g => g.status === "approved" || g.status === "featured")
-    .sort((a, b) => {
-      if (isVerified(b) !== isVerified(a)) return isVerified(b) ? 1 : -1;
-      if ((b.is_pro ? 1 : 0) !== (a.is_pro ? 1 : 0)) return (b.is_pro ? 1 : 0) - (a.is_pro ? 1 : 0);
-      if ((b.status === "featured" ? 1 : 0) !== (a.status === "featured" ? 1 : 0)) return (b.status === "featured" ? 1 : 0) - (a.status === "featured" ? 1 : 0);
-      return a.name.localeCompare(b.name);
-    });
 
   return (
     <MainLayout>
@@ -111,7 +167,7 @@ export default function MilsimRegistry() {
         ) : (
           <>
             {/* Controls */}
-            <div className="flex flex-wrap items-center gap-3 mb-10">
+            <div className="flex flex-wrap items-center gap-3 mb-6">
               <input
                 type="text"
                 placeholder="Search units..."
@@ -120,8 +176,12 @@ export default function MilsimRegistry() {
                 className="bg-secondary border border-border rounded px-4 py-2 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 flex-1 min-w-[180px] max-w-xs"
               />
               <div className="flex items-center gap-1 border border-border rounded overflow-hidden">
-                <button onClick={() => setView("grid")} className={`px-4 py-2 text-xs font-display font-bold uppercase tracking-wider transition-colors ${view === "grid" ? "bg-primary text-black" : "text-muted-foreground hover:text-foreground"}`}>Grid</button>
-                <button onClick={() => setView("leaderboard")} className={`px-4 py-2 text-xs font-display font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ${view === "leaderboard" ? "bg-primary text-black" : "text-muted-foreground hover:text-foreground"}`}>
+                <button onClick={() => setView("grid")}
+                  className={`px-4 py-2 text-xs font-display font-bold uppercase tracking-wider transition-colors ${view === "grid" ? "bg-primary text-black" : "text-muted-foreground hover:text-foreground"}`}>
+                  Grid
+                </button>
+                <button onClick={() => setView("leaderboard")}
+                  className={`px-4 py-2 text-xs font-display font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ${view === "leaderboard" ? "bg-primary text-black" : "text-muted-foreground hover:text-foreground"}`}>
                   <Trophy className="w-3 h-3" /> Leaderboard
                 </button>
               </div>
@@ -133,11 +193,42 @@ export default function MilsimRegistry() {
               </Link>
             </div>
 
+            {/* Filters row — only show in grid view */}
+            {view === "grid" && (
+              <div className="flex flex-wrap items-center gap-2 mb-10">
+                <span className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mr-1">Filter:</span>
+                {/* Game filter */}
+                <select value={filterGame} onChange={e => setFilterGame(e.target.value)}
+                  className="bg-secondary border border-border rounded px-3 py-1.5 text-xs font-display font-bold uppercase tracking-wider text-foreground focus:outline-none focus:border-primary/50">
+                  <option value="">All Games</option>
+                  {allGames.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+                {/* Region filter */}
+                <select value={filterRegion} onChange={e => setFilterRegion(e.target.value)}
+                  className="bg-secondary border border-border rounded px-3 py-1.5 text-xs font-display font-bold uppercase tracking-wider text-foreground focus:outline-none focus:border-primary/50">
+                  <option value="">All Regions</option>
+                  {allRegions.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+                {/* Branch filter */}
+                <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)}
+                  className="bg-secondary border border-border rounded px-3 py-1.5 text-xs font-display font-bold uppercase tracking-wider text-foreground focus:outline-none focus:border-primary/50">
+                  <option value="">All Branches</option>
+                  {allBranches.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+                {(filterGame || filterRegion || filterBranch) && (
+                  <button onClick={() => { setFilterGame(""); setFilterRegion(""); setFilterBranch(""); }}
+                    className="text-[10px] font-display font-bold uppercase tracking-widest text-destructive hover:text-destructive/80 transition-colors px-2 py-1.5">
+                    ✕ Clear
+                  </button>
+                )}
+                <span className="ml-auto text-xs text-muted-foreground font-sans">{filtered.length} unit{filtered.length !== 1 ? "s" : ""}</span>
+              </div>
+            )}
+
             {view === "leaderboard" ? (
-              <LeaderboardView groups={leaderboard} />
+              <LeaderboardView groups={filtered} category={lbCategory} setCategory={setLbCategory} />
             ) : (
               <>
-                {/* Featured */}
                 {featured.length > 0 && (
                   <section className="mb-16">
                     <div className="flex items-center gap-3 mb-8">
@@ -149,8 +240,6 @@ export default function MilsimRegistry() {
                     </div>
                   </section>
                 )}
-
-                {/* All */}
                 <section>
                   <div className="flex items-center gap-3 mb-8">
                     <Users className="w-5 h-5 text-primary" />
@@ -158,7 +247,6 @@ export default function MilsimRegistry() {
                       {featured.length > 0 ? "All Registered Units" : "Registered Units"}
                     </h2>
                   </div>
-
                   {approved.length === 0 && featured.length === 0 ? (
                     <div className="text-center py-24 border border-dashed border-border rounded-lg">
                       <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-40" />
@@ -183,76 +271,202 @@ export default function MilsimRegistry() {
   );
 }
 
-function LeaderboardView({ groups }: { groups: MilsimGroup[] }) {
-  if (groups.length === 0) return (
-    <div className="text-center py-24 border border-dashed border-border rounded-lg">
-      <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-40" />
-      <p className="font-display font-bold uppercase tracking-wider text-muted-foreground">No units found</p>
+// ─── Leaderboard ──────────────────────────────────────────────────────────────
+
+const LB_CATEGORIES: { id: LeaderboardCategory; label: string; icon: typeof Trophy; description: string }[] = [
+  { id: "region",       label: "By Region",        icon: Map,       description: "Top unit in each global region" },
+  { id: "game",         label: "By Game",           icon: Gamepad2,  description: "Leading unit for each supported game" },
+  { id: "troop_count",  label: "Troop Count",       icon: Users,     description: "Largest active rosters on the platform" },
+  { id: "op_success",   label: "Op Success Rate",   icon: BarChart3, description: "Highest mission success rate from AARs" },
+];
+
+function LeaderboardView({ groups, category, setCategory }: { groups: MilsimGroup[]; category: LeaderboardCategory; setCategory: (c: LeaderboardCategory) => void }) {
+  const sections = useMemo(() => buildLeaderboardSections(groups, category), [groups, category]);
+
+  return (
+    <div className="space-y-8">
+      {/* Category tabs */}
+      <div className="flex flex-wrap gap-2">
+        {LB_CATEGORIES.map(cat => (
+          <button key={cat.id} onClick={() => setCategory(cat.id)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+              category === cat.id
+                ? "bg-primary/10 border-primary/40 text-primary"
+                : "border-border text-muted-foreground hover:text-foreground hover:border-primary/20"
+            }`}>
+            <cat.icon className="w-3.5 h-3.5" />
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Description */}
+      <p className="text-xs text-muted-foreground font-sans">
+        {LB_CATEGORIES.find(c => c.id === category)?.description}
+        {category === "op_success" && " — minimum 3 ops required to qualify."}
+      </p>
+
+      {sections.length === 0 ? (
+        <div className="text-center py-24 border border-dashed border-border rounded-lg">
+          <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-40" />
+          <p className="font-display font-bold uppercase tracking-wider text-muted-foreground">Not enough data yet</p>
+          <p className="text-xs text-muted-foreground font-sans mt-2">File AARs and log ops to appear on the leaderboard.</p>
+        </div>
+      ) : (
+        <div className="space-y-10">
+          {sections.map(section => (
+            <div key={section.label}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-[10px] font-display font-black uppercase tracking-[0.2em] text-muted-foreground px-3 py-1 border border-border rounded">{section.label}</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <LbTable rows={section.rows} category={category} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
+}
+
+interface LbRow { group: MilsimGroup; score: string; scoreLabel: string }
+interface LbSection { label: string; rows: LbRow[] }
+
+function buildLeaderboardSections(groups: MilsimGroup[], category: LeaderboardCategory): LbSection[] {
+  const eligible = groups.filter(g => g.status === "approved" || g.status === "featured");
+
+  if (category === "region") {
+    const byRegion: Record<string, MilsimGroup[]> = {};
+    eligible.forEach(g => {
+      const r = getRegion(g.country);
+      if (!byRegion[r]) byRegion[r] = [];
+      byRegion[r].push(g);
+    });
+    const regionOrder = ["EU", "NA", "APAC", "SA", "INTL"];
+    return regionOrder
+      .filter(r => byRegion[r]?.length)
+      .map(r => ({
+        label: r,
+        rows: byRegion[r]
+          .sort((a, b) => {
+            // Sort by: verified > pro > featured > alphabetical
+            if (isVerified(b) !== isVerified(a)) return isVerified(b) ? 1 : -1;
+            if ((b.is_pro ? 1 : 0) !== (a.is_pro ? 1 : 0)) return (b.is_pro ? 1 : 0) - (a.is_pro ? 1 : 0);
+            return a.name.localeCompare(b.name);
+          })
+          .slice(0, 5)
+          .map(g => ({ group: g, score: isVerified(g) ? "Verified" : g.is_pro ? "Pro" : "Active", scoreLabel: "status" })),
+      }));
+  }
+
+  if (category === "game") {
+    const byGame: Record<string, MilsimGroup[]> = {};
+    eligible.forEach(g => {
+      (g.games ?? []).forEach(game => {
+        if (!byGame[game]) byGame[game] = [];
+        byGame[game].push(g);
+      });
+    });
+    return Object.entries(byGame)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([game, gs]) => ({
+        label: game,
+        rows: gs
+          .sort((a, b) => {
+            if (isVerified(b) !== isVerified(a)) return isVerified(b) ? 1 : -1;
+            if ((b.is_pro ? 1 : 0) !== (a.is_pro ? 1 : 0)) return (b.is_pro ? 1 : 0) - (a.is_pro ? 1 : 0);
+            return (b.roster_count ?? 0) - (a.roster_count ?? 0);
+          })
+          .slice(0, 5)
+          .map(g => ({ group: g, score: `${g.roster_count ?? 0}`, scoreLabel: "troops" })),
+      }));
+  }
+
+  if (category === "troop_count") {
+    const sorted = [...eligible]
+      .filter(g => (g.roster_count ?? 0) > 0)
+      .sort((a, b) => (b.roster_count ?? 0) - (a.roster_count ?? 0))
+      .slice(0, 20)
+      .map(g => ({ group: g, score: `${g.roster_count ?? 0}`, scoreLabel: "troops" }));
+    if (sorted.length === 0) return [];
+    return [{ label: "Global Ranking", rows: sorted }];
+  }
+
+  if (category === "op_success") {
+    const sorted = [...eligible]
+      .filter(g => (g.total_ops ?? 0) >= 3 && g.op_success_rate !== null && g.op_success_rate !== undefined)
+      .sort((a, b) => (b.op_success_rate ?? 0) - (a.op_success_rate ?? 0))
+      .slice(0, 20)
+      .map(g => ({ group: g, score: `${Math.round(g.op_success_rate ?? 0)}%`, scoreLabel: `${g.total_ops ?? 0} ops` }));
+    if (sorted.length === 0) return [];
+    return [{ label: "Operational Success Rate", rows: sorted }];
+  }
+
+  return [];
+}
+
+function LbTable({ rows, category }: { rows: LbRow[]; category: LeaderboardCategory }) {
+  if (rows.length === 0) return null;
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-12 text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground px-4 pb-2 border-b border-border">
-        <span className="col-span-1">#</span>
-        <span className="col-span-5">Unit</span>
-        <span className="col-span-2 text-center">Status</span>
-        <span className="col-span-2 text-center">Tier</span>
-        <span className="col-span-2 text-right">Profile</span>
-      </div>
-      {groups.map((g, i) => (
-        <motion.div key={g.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
-          className={`grid grid-cols-12 items-center px-4 py-3 rounded-lg border transition-all hover:border-primary/40 ${
+      {rows.map((row, i) => (
+        <motion.div key={row.group.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+          className={`flex items-center gap-4 px-4 py-3 rounded-lg border transition-all hover:border-primary/40 ${
             i === 0 ? "border-yellow-500/40 bg-yellow-500/5" :
             i === 1 ? "border-zinc-400/30 bg-zinc-400/5" :
             i === 2 ? "border-amber-600/30 bg-amber-600/5" :
             "border-border bg-card"
           }`}>
-          <span className={`col-span-1 font-display font-black text-lg ${i === 0 ? "text-yellow-400" : i === 1 ? "text-zinc-400" : i === 2 ? "text-amber-600" : "text-muted-foreground"}`}>
-            {i + 1}
-          </span>
-          <div className="col-span-5 flex items-center gap-3">
-            {g.logoUrl ? (
-              <img src={g.logoUrl} alt={g.name} className="w-8 h-8 object-contain rounded" />
-            ) : (
-              <Shield className="w-8 h-8 text-muted-foreground/30" />
-            )}
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="font-display font-bold text-sm text-foreground">{g.name}</p>
-                {isVerified(g) && (
-                  <span title="TAG Verified Unit" className="flex items-center gap-0.5 text-[9px] font-display font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/30 px-1.5 py-0.5 rounded">
-                    <CheckCircle2 className="w-2.5 h-2.5" /> Verified
-                  </span>
-                )}
-              </div>
-              <p className="text-[10px] font-sans text-muted-foreground truncate max-w-[160px]">{g.tagLine ?? ""}</p>
+          {/* Rank */}
+          <span className={`w-7 text-center font-display font-black text-lg shrink-0 ${
+            i === 0 ? "text-yellow-400" : i === 1 ? "text-zinc-400" : i === 2 ? "text-amber-600" : "text-muted-foreground"
+          }`}>{i + 1}</span>
+
+          {/* Logo */}
+          <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+            {row.group.logoUrl
+              ? <img src={row.group.logoUrl} alt={row.group.name} className="w-8 h-8 object-contain rounded" />
+              : <Shield className="w-6 h-6 text-muted-foreground/30" />
+            }
+          </div>
+
+          {/* Name + badges */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-display font-bold text-sm text-foreground">{row.group.name}</span>
+              {isVerified(row.group) && (
+                <span className="flex items-center gap-0.5 text-[9px] font-display font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/30 px-1.5 py-0.5 rounded">
+                  <CheckCircle2 className="w-2.5 h-2.5" /> Verified
+                </span>
+              )}
+              {row.group.is_pro && !isVerified(row.group) && (
+                <span className="flex items-center gap-0.5 text-[9px] font-display font-bold uppercase tracking-widest text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-1.5 py-0.5 rounded">
+                  <Crown className="w-2.5 h-2.5" /> Pro
+                </span>
+              )}
             </div>
+            <p className="text-[10px] font-sans text-muted-foreground truncate">{row.group.tagLine ?? ""}</p>
           </div>
-          <div className="col-span-2 flex justify-center">
-            <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${
-              g.status === "featured" ? "bg-accent/20 text-accent border-accent/40" : "bg-primary/10 text-primary border-primary/30"
-            }`}>{g.status}</span>
+
+          {/* Score */}
+          <div className="shrink-0 text-right">
+            <p className={`font-display font-black text-base ${i === 0 ? "text-yellow-400" : "text-foreground"}`}>{row.score}</p>
+            <p className="text-[9px] font-sans text-muted-foreground uppercase tracking-widest">{row.scoreLabel}</p>
           </div>
-          <div className="col-span-2 flex justify-center">
-            {g.is_pro ? (
-              <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-2 py-0.5 rounded">
-                <Zap className="w-2.5 h-2.5" /> Pro
-              </span>
-            ) : (
-              <span className="text-[10px] font-sans text-muted-foreground">Free</span>
-            )}
-          </div>
-          <div className="col-span-2 flex justify-end">
-            <Link href={`/milsim/${g.slug}`}
-              className="text-xs font-display font-bold uppercase tracking-wider text-primary hover:underline flex items-center gap-1">
-              View <ExternalLink className="w-3 h-3" />
-            </Link>
-          </div>
+
+          {/* Link */}
+          <Link href={`/milsim/${row.group.slug}`}
+            className="shrink-0 text-xs font-display font-bold uppercase tracking-wider text-primary hover:underline flex items-center gap-1 ml-2">
+            View <ExternalLink className="w-3 h-3" />
+          </Link>
         </motion.div>
       ))}
     </div>
   );
 }
+
+// ─── Group Card ───────────────────────────────────────────────────────────────
 
 function GroupCard({ group, index, featured = false }: { group: MilsimGroup; index: number; featured?: boolean }) {
   const verified = isVerified(group);
@@ -295,6 +509,24 @@ function GroupCard({ group, index, featured = false }: { group: MilsimGroup; ind
         {group.tagLine && (
           <p className="text-xs text-primary font-display font-bold uppercase tracking-widest mb-3 truncate">{group.tagLine}</p>
         )}
+
+        {/* Mini stats row */}
+        <div className="flex items-center gap-4 mb-3">
+          {(group.roster_count ?? 0) > 0 && (
+            <span className="flex items-center gap-1 text-[10px] font-sans text-muted-foreground">
+              <Users className="w-3 h-3" /> {group.roster_count}
+            </span>
+          )}
+          {group.op_success_rate !== null && group.op_success_rate !== undefined && (group.total_ops ?? 0) >= 3 && (
+            <span className="flex items-center gap-1 text-[10px] font-sans text-muted-foreground">
+              <TrendingUp className="w-3 h-3 text-green-400" /> {Math.round(group.op_success_rate)}% success
+            </span>
+          )}
+          {group.country && (
+            <span className="text-[10px] font-sans text-muted-foreground">{getRegion(group.country)}</span>
+          )}
+        </div>
+
         {group.description && (
           <p className="text-sm text-muted-foreground font-sans line-clamp-2 mb-4 leading-relaxed">
             {group.description}
