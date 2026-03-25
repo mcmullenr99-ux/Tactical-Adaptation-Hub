@@ -42,7 +42,7 @@ import {
   Plus,
   Radio,
   RefreshCw,
-  Rocket,
+  Zap,
   Save,
   Shield,
   Siren,
@@ -160,7 +160,7 @@ export default function MilsimManage() {
         { id: "aars", label: "AARs", icon: ClipboardList },
         { id: "briefings", label: "Briefings", icon: MapPin },
         { id: "calendar", label: "Activity Calendar", icon: CalendarDays },
-        { id: "campaigns", label: "Campaigns", icon: Rocket, pro: true },
+        { id: "campaigns", label: "Campaigns", icon: Zap, pro: true },
       ],
     },
     {
@@ -2395,7 +2395,7 @@ function ReputationTab({ group }: any) {
                       {reviewCount} review(s) on record — {commends} commend(s), {flags} flag(s)
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-accent border border-accent/20 bg-accent/5 rounded px-2.5 py-1.5">
-                      <Rocket className="w-3 h-3 shrink-0" />
+                      <Zap className="w-3 h-3 shrink-0" />
                       <span className="font-sans">Full review history visible with <a href="/commander-pro" className="underline font-bold">Commander Pro</a></span>
                     </div>
                   </div>
@@ -4043,7 +4043,7 @@ function CampaignsTab({ group }: any) {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
-            <Rocket className="w-4 h-4 text-yellow-400" />
+            <Zap className="w-4 h-4 text-yellow-400" />
           </div>
           <div>
             <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Campaigns</h2>
@@ -4323,7 +4323,7 @@ function UnitLegacyTab({ group }: any) {
       </div>
       <a href="/commander-pro"
         className="inline-flex items-center gap-2 px-5 py-2.5 rounded border border-primary/40 bg-primary/10 text-primary text-xs font-display font-bold uppercase tracking-widest hover:bg-primary/20 transition-all">
-        <Rocket className="w-3.5 h-3.5" />
+        <Zap className="w-3.5 h-3.5" />
         Upgrade to Commander Pro
       </a>
     </div>
@@ -4344,7 +4344,7 @@ function UnitLegacyTab({ group }: any) {
     ...campaigns.filter(c => c.start_date).map(c => ({
       date: c.start_date, type: "campaign" as const,
       title: `Campaign: ${c.name}`, sub: `${c.status} · ${(c.op_ids || []).length} ops`,
-      icon: Rocket, color: "text-yellow-400 border-yellow-500/40 bg-yellow-500/10"
+      icon: Zap, color: "text-yellow-400 border-yellow-500/40 bg-yellow-500/10"
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 

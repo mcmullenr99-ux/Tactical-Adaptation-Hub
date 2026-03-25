@@ -267,7 +267,7 @@ export default function MilsimRegistry() {
                 {proApproved.length > 0 && (
                   <section className="mb-16">
                     <div className="flex items-center gap-3 mb-6">
-                      <Rocket className="w-4 h-4 text-primary" />
+                      <Zap className="w-4 h-4 text-primary" />
                       <h2 className="font-display font-black text-lg uppercase tracking-wider text-foreground">Commander Pro Units</h2>
                       <span className="text-[9px] font-display font-bold uppercase tracking-widest text-primary border border-primary/30 bg-primary/10 px-2 py-0.5 rounded">Pro</span>
                     </div>

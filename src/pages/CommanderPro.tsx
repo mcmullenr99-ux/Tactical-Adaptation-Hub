@@ -7,7 +7,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { useLocation } from "wouter";
 import {
   Crown, Check, BarChart3, Shield, FileText, Map,
-  Award, Users, Bot, Loader2, Star, ChevronRight, Rocket, Globe, Zap,
+  Award, Users, Bot, Loader2, Star, ChevronRight, Zap, Globe, Zap,
   Archive, AlertCircle
 } from "lucide-react";
 
@@ -29,7 +29,7 @@ const FREE_FEATURES = [
 
 const PRO_FEATURES = [
   { icon: BarChart3, title: "Analytics Dashboard", desc: "Attendance trends, duty status over time, member retention, op frequency — full insight into your unit's health at a glance." },
-  { icon: Rocket, title: "Campaign System + Ribbons", desc: "Group ops into named campaigns with progression tracking, campaign banners, ribbon rack display, and a full archived history." },
+  { icon: Zap, title: "Campaign System + Ribbons", desc: "Group ops into named campaigns with progression tracking, campaign banners, ribbon rack display, and a full archived history." },
   { icon: FileText, title: "Unlimited Training Docs", desc: "Upload without limits. AI-powered document scoring, quality flags, depth analysis, and auto-summaries generated for every doc." },
   { icon: Map, title: "Visual ORBAT Builder + PDF Export", desc: "Build your unit's command structure visually with NATO APP-6 symbology and drag-and-drop hierarchy. Export print-ready classified PDF briefing packs." },
   { icon: Globe, title: "Priority Registry Listing + Verified Badge", desc: "Your unit is featured at the top of the registry with a TAG Verified checkmark — the first impression for every recruit browsing for a unit." },

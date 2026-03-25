@@ -7,7 +7,7 @@ import { BRANCH_ICONS, type Branch } from "@/lib/milsimConstants";
 import {
   Shield, Globe, ExternalLink, Loader2, Users, Award, Crosshair,
   FileText, ChevronLeft, Star, BookOpen, Map, Radio, Medal,
-  Zap, Target, TrendingUp, Activity, Archive, Rocket, ClipboardList, Siren,
+  Zap, Target, TrendingUp, Activity, Archive, Zap, ClipboardList, Siren,
 } from "lucide-react";
 const OrbatBuilder = lazy(() => import("@/components/OrbatBuilder"));
 const CAMPAIGNS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/campaigns";
@@ -261,7 +261,7 @@ export default function MilsimGroup() {
                 )}
                 {isPro && (
                   <span className="flex items-center gap-1 bg-primary/10 border border-primary/30 text-primary px-2.5 py-1 rounded text-xs font-display font-bold uppercase tracking-widest">
-                    <Rocket className="w-3 h-3" /> Pro
+                    <Zap className="w-3 h-3" /> Pro
                   </span>
                 )}
               </div>
@@ -787,7 +787,7 @@ function PublicLegacyTab({ group }: { group: any }) {
       date: c.start_date, type: "campaign" as const,
       title: `Campaign: ${c.name}`,
       sub: `${c.status} · ${(c.op_ids || []).length} ops`,
-      icon: Rocket, color: "text-yellow-400 border-yellow-500/40 bg-yellow-500/10",
+      icon: Zap, color: "text-yellow-400 border-yellow-500/40 bg-yellow-500/10",
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
