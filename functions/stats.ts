@@ -510,12 +510,19 @@ function buildReadinessReport(params: {
   // wider skillset flexibility and mixed-force capability.
   const gameList = Array.isArray(group.games) ? group.games as string[] : group.games ? [group.games as string] : [];
   const gameCount = gameList.length;
+  // Game breadth only counts a game if the unit meets minimum headcount for it.
+  // A single-person unit claiming 6 games is not a multi-force unit.
+  const qualifiedGames = gameList.filter((g: string) => {
+    const gp = GAME_PROFILES[g];
+    return gp ? verifiedTotal >= gp.minimal : verifiedTotal >= 4; // unknown games: require 4 minimum
+  });
+  const qualifiedGameCount = qualifiedGames.length;
   let gameBreadthPts = 0;
-  if      (gameCount >= 5) gameBreadthPts = 15;
-  else if (gameCount >= 4) gameBreadthPts = 12;
-  else if (gameCount >= 3) gameBreadthPts = 8;
-  else if (gameCount >= 2) gameBreadthPts = 4;
-  else if (gameCount >= 1) gameBreadthPts = 1;
+  if      (qualifiedGameCount >= 5) gameBreadthPts = 15;
+  else if (qualifiedGameCount >= 4) gameBreadthPts = 12;
+  else if (qualifiedGameCount >= 3) gameBreadthPts = 8;
+  else if (qualifiedGameCount >= 2) gameBreadthPts = 4;
+  else if (qualifiedGameCount >= 1) gameBreadthPts = 1;
   score += gameBreadthPts;
 
   // MAX = 30+20+25+15+15+50+10+10+10+15 = 200 base
@@ -710,13 +717,21 @@ function buildReadinessReport(params: {
       ` Knowledge factor: ${training.knowledge_factor}/100. ${training.knowledge_detail}`;
   narrative_items.push({ label: 'Training', text: trainingText, severity: trainingSev });
 
-  // Game breadth line
-  const gameBreadthSev: NarrativeItem['severity'] = gameCount >= 3 ? 'green' : gameCount >= 2 ? 'amber' : gameCount >= 1 ? 'neutral' : 'red';
+  // Game breadth line — only qualified games (met minimum headcount) count
+  const unqualifiedCount = gameCount - qualifiedGameCount;
+  const gameBreadthSev: NarrativeItem['severity'] =
+    qualifiedGameCount >= 3 ? 'green' :
+    qualifiedGameCount >= 2 ? 'amber' :
+    qualifiedGameCount >= 1 ? 'neutral' : 'red';
   const gameBreadthText = gameCount === 0
     ? 'No games listed. Platform breadth cannot be assessed.'
-    : gameCount === 1
-    ? `Operates on 1 platform. Single-game unit.`
-    : `Operates across ${gameCount} platforms — mixed-force capability demonstrated.`;
+    : qualifiedGameCount === 0
+    ? `${gameCount} game${gameCount !== 1 ? 's' : ''} listed but unit does not meet minimum headcount for any of them. Platform breadth score: 0.`
+    : qualifiedGameCount === gameCount
+    ? (qualifiedGameCount === 1
+        ? 'Operates on 1 platform at minimum strength. Single-game unit.'
+        : `Operates across ${qualifiedGameCount} platforms at minimum strength — mixed-force capability recognised.`)
+    : `${qualifiedGameCount} of ${gameCount} listed games meet minimum headcount. ${unqualifiedCount} game${unqualifiedCount !== 1 ? 's' : ''} excluded — insufficient personnel to field.`;
   narrative_items.push({ label: 'Platform Breadth', text: gameBreadthText, severity: gameBreadthSev });
 
   // Integrity line (only if not clean)
