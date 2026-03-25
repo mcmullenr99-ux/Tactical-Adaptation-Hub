@@ -306,12 +306,12 @@ function buildReadinessReport(params: {
     (aars.length > 0 ? Math.min(aarRatio, 1) : 0) * 10 +    // AAR culture (10pts)
     (training.knowledge_factor / 100) * 20;                  // training docs (20pts)
 
-  // Tier system: T1 (Elite/Green) > T2 (Operational/Yellow) > T3 (Capable/Amber) > T4 (Limited/Red) > T5 (Under Developed/Dark Red)
+  // Tier system: TIER I (Elite/Green) > TIER II (Operational/Yellow) > TIER III (Capable/Amber) > TIER IV (Limited/Red) > TIER V (Under Developed/Dark Red)
   const op_capability_tier =
-    opCapScore >= 80 ? 'T1' :
-    opCapScore >= 60 ? 'T2' :
-    opCapScore >= 40 ? 'T3' :
-    opCapScore >= 20 ? 'T4' : 'T5';
+    opCapScore >= 80 ? 'TIER I'   :
+    opCapScore >= 60 ? 'TIER II'  :
+    opCapScore >= 40 ? 'TIER III' :
+    opCapScore >= 20 ? 'TIER IV'  : 'TIER V';
 
   // ── FLAGS ─────────────────────────────────────────────────────────────────
   const flags: ReadinessFlag[] = [];
