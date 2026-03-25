@@ -171,6 +171,7 @@ export default function MilsimManage() {
         { id: "commendations", label: "Commendations", icon: Megaphone },
         { id: "quals", label: "Qualifications", icon: GraduationCap },
         { id: "legacy", label: "Unit Legacy", icon: Archive, pro: true },
+        { id: "developer", label: "API & Webhooks", icon: GitBranch, pro: true },
       ],
     },
     {
@@ -4607,6 +4608,236 @@ function UnitLegacyTab({ group }: any) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Developer / API & Webhooks Tab ──────────────────────────────────────────
+const API_KEYS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimApiKeys";
+
+function DeveloperTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success"|"error") => void }) {
+  const [keys, setKeys] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [newKeyLabel, setNewKeyLabel] = useState("Default");
+  const [freshKey, setFreshKey] = useState<{ raw_key: string; webhook_secret: string } | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const token = localStorage.getItem("tag_auth_token") ?? "";
+
+  const copy = (val: string, id: string) => {
+    navigator.clipboard.writeText(val);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`).then(r => r.json()).catch(() => ({ is_pro: false })),
+      fetch(`${API_KEYS_URL}?path=%2Fkeys&group_id=${group.id}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+    ]).then(([proStatus, keyList]) => {
+      setIsPro(!!proStatus?.is_pro);
+      setKeys(Array.isArray(keyList) ? keyList : []);
+      setLoading(false);
+    });
+  }, [group.id]);
+
+  const generateKey = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch(`${API_KEYS_URL}?path=%2Fgenerate`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ group_id: group.id, label: newKeyLabel || "Default" }),
+      });
+      const data = await res.json();
+      if (data.error) { showMsg(data.error, "error"); setGenerating(false); return; }
+      setFreshKey({ raw_key: data.raw_key, webhook_secret: data.webhook_secret });
+      setKeys(prev => [...prev, { id: Date.now(), key_prefix: data.prefix, label: data.label, is_active: true, last_used_at: null, created_date: new Date().toISOString() }]);
+      setNewKeyLabel("Default");
+    } catch { showMsg("Failed to generate key", "error"); }
+    setGenerating(false);
+  };
+
+  const revokeKey = async (keyId: string, label: string) => {
+    if (!confirm(`Revoke key "${label}"? Any integrations using it will stop working immediately.`)) return;
+    try {
+      await fetch(`${API_KEYS_URL}?path=%2Frevoke`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ key_id: keyId }),
+      });
+      setKeys(prev => prev.map(k => k.id === keyId ? { ...k, is_active: false } : k));
+      showMsg(`Key "${label}" revoked`, "success");
+    } catch { showMsg("Failed to revoke key", "error"); }
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          API access and webhook integration are Pro features. Connect your unit's Discord bot, sync rosters to external tools, or build custom dashboards.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]">
+        <Crown className="w-4 h-4" /> Upgrade to Pro — £10/mo
+      </a>
+    </div>
+  );
+
+  const BASE_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions";
+
+  const endpoints = [
+    { method: "GET",  path: "/milsimGroups?path=%2F{group_id}%2Ffull",        label: "Get full group data (roster, roles, ranks)" },
+    { method: "GET",  path: "/milsimGroups?path=%2F{group_id}%2Fops",         label: "List all ops for group" },
+    { method: "GET",  path: "/milsimGroups?path=%2F{group_id}%2Faars",        label: "List all AARs" },
+    { method: "POST", path: "/milsimApiKeys?path=%2Fverify",                  label: "Verify an API key" },
+    { method: "GET",  path: "/milsimApplications?path=%2F{group_id}%2Fapplications", label: "List applications (pipeline)" },
+  ];
+
+  return (
+    <div className="space-y-8 max-w-3xl">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
+          <GitBranch className="w-4 h-4 text-yellow-400" />
+        </div>
+        <div>
+          <h2 className="font-display font-bold uppercase tracking-wider text-foreground">API & Webhooks</h2>
+          <p className="text-xs font-sans text-muted-foreground">Connect external tools, Discord bots, and custom dashboards to your unit.</p>
+        </div>
+        <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
+          <Crown className="w-3 h-3" /> Pro
+        </span>
+      </div>
+
+      {/* Fresh key reveal — shown once after generation */}
+      {freshKey && (
+        <div className="border-2 border-yellow-500/60 bg-yellow-500/5 rounded-xl p-5 space-y-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-display font-bold uppercase tracking-wider text-yellow-400">Save these now — they won't be shown again</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">Store them securely. Once you close this, neither value can be recovered.</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {[{ label: "API Key", val: freshKey.raw_key, id: "apikey" }, { label: "Webhook Secret", val: freshKey.webhook_secret, id: "secret" }].map(item => (
+              <div key={item.id}>
+                <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">{item.label}</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-black/40 border border-border rounded px-3 py-2 text-xs font-mono text-green-400 truncate">{item.val}</code>
+                  <button onClick={() => copy(item.val, item.id)}
+                    className="shrink-0 px-3 py-2 text-xs font-display font-bold uppercase tracking-wider border border-border rounded hover:border-primary/50 text-muted-foreground hover:text-foreground transition-all">
+                    {copied === item.id ? "✓ Copied" : "Copy"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => setFreshKey(null)} className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground">
+            I've saved these — dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Active keys */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">API Keys ({keys.filter(k => k.is_active).length}/3 active)</p>
+        </div>
+        {keys.length === 0 ? (
+          <div className="border border-dashed border-border rounded-lg p-8 text-center">
+            <GitBranch className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-sm font-display uppercase tracking-widest text-muted-foreground">No API keys yet</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {keys.map(k => (
+              <div key={k.id} className={`flex items-center justify-between gap-3 p-3 rounded-lg border ${k.is_active ? "border-border bg-card" : "border-border/40 bg-secondary/20 opacity-50"}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display font-bold text-sm text-foreground">{k.label}</span>
+                    <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ${k.is_active ? "text-green-400 border-green-500/30 bg-green-500/10" : "text-muted-foreground border-border"}`}>
+                      {k.is_active ? "Active" : "Revoked"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <code className="text-[10px] font-mono text-muted-foreground">{k.key_prefix}</code>
+                    {k.last_used_at && <span className="text-[10px] text-muted-foreground">Last used {new Date(k.last_used_at).toLocaleDateString("en-GB")}</span>}
+                    {!k.last_used_at && <span className="text-[10px] text-muted-foreground">Never used</span>}
+                    <span className="text-[10px] text-muted-foreground">Created {new Date(k.created_date).toLocaleDateString("en-GB")}</span>
+                  </div>
+                </div>
+                {k.is_active && (
+                  <button onClick={() => revokeKey(k.id, k.label)}
+                    className="text-[10px] font-display font-bold uppercase tracking-wider text-red-400 border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 px-2.5 py-1 rounded transition-all">
+                    Revoke
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Generate new key */}
+        {keys.filter(k => k.is_active).length < 3 && (
+          <div className="flex items-center gap-2 pt-1">
+            <input value={newKeyLabel} onChange={e => setNewKeyLabel(e.target.value)}
+              placeholder="Key label (e.g. Discord Bot)"
+              className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 flex-1 max-w-xs"
+            />
+            <button onClick={generateKey} disabled={generating}
+              className="flex items-center gap-2 px-4 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors disabled:opacity-50">
+              {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+              Generate Key
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* API Reference */}
+      <div className="space-y-3">
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">API Reference</p>
+        <div className="bg-secondary/30 border border-border rounded-lg p-4 space-y-1.5">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Authentication</p>
+          <code className="block text-xs font-mono text-green-400 bg-black/30 rounded px-3 py-2">Authorization: Bearer YOUR_API_KEY</code>
+        </div>
+        <div className="space-y-2">
+          {endpoints.map((ep, i) => (
+            <div key={i} className="flex items-start gap-3 p-3 bg-card border border-border rounded-lg">
+              <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded shrink-0 mt-0.5 ${ep.method === "GET" ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-green-500/20 text-green-400 border border-green-500/30"}`}>
+                {ep.method}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-sans text-muted-foreground">{ep.label}</p>
+                <code className="text-[10px] font-mono text-foreground/70 truncate block">{BASE_URL}{ep.path}</code>
+              </div>
+              <button onClick={() => copy(`${BASE_URL}${ep.path}`, `ep${i}`)}
+                className="text-[10px] text-muted-foreground hover:text-foreground shrink-0">
+                {copied === `ep${i}` ? "✓" : "Copy"}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Webhook info */}
+      <div className="space-y-3">
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Webhook Signing</p>
+        <div className="bg-secondary/30 border border-border rounded-lg p-4 space-y-2 text-xs font-sans text-muted-foreground leading-relaxed">
+          <p>When your webhook secret is generated, outbound events will be signed with an <code className="text-foreground font-mono bg-black/30 px-1 rounded">X-TAG-Signature</code> header.</p>
+          <p>Verify it on your server: compute <code className="text-foreground font-mono bg-black/30 px-1 rounded">HMAC-SHA256(payload, webhook_secret)</code> and compare to the header value.</p>
+          <p className="text-yellow-400/80">Webhook delivery is coming in a future update. API key generation and verification are live now.</p>
+        </div>
+      </div>
     </div>
   );
 }
