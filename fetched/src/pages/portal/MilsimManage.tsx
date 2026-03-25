@@ -10,10 +10,12 @@ import {
   Plus, Trash2, Loader2, Save, CheckCircle2, AlertCircle, ExternalLink,
   Pencil, Check, X, Radio, Star, Medal, Wifi, WifiOff,
   GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp,
-  BarChart3, Crown, TrendingUp, Trophy
+  BarChart3, Crown, TrendingUp, Trophy,
+  Rocket, Flag, Link2, Calendar, Target
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
+import { useToast } from "@/hooks/use-toast";
 
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
 interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
@@ -29,7 +31,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "analytics";
+type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "analytics" | "campaigns";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -87,6 +89,7 @@ export default function MilsimManage() {
     { id: "stream", label: "Stream", icon: Radio },
     { id: "sops", label: "SOPs / ORBAT", icon: BookOpen },
     { id: "questions", label: "App Questions", icon: FileText },
+    { id: "campaigns", label: "⭐ Campaigns", icon: Rocket },
     { id: "analytics", label: "⭐ Analytics", icon: BarChart3 },
   ];
 
@@ -148,6 +151,7 @@ export default function MilsimManage() {
           {tab === "orgchart" && <OrgChartTab group={group} />}
           {tab === "readiness" && <ReadinessTab group={group} />}
           {tab === "analytics" && <AnalyticsTab group={group} />}
+          {tab === "campaigns" && <CampaignsTab group={group} />}
           {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
           {tab === "sops" && <SopsTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
           {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
@@ -1833,6 +1837,433 @@ function AnalyticsTab({ group }: any) {
         </div>
       )}
 
+    </div>
+  );
+}
+
+// ─── Campaigns (Pro) ──────────────────────────────────────────────────────────
+const CAMPAIGNS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/campaigns";
+
+const OUTCOME_OPTIONS = ["Victory", "Defeat", "Draw", "Ongoing", "Abandoned"];
+const STATUS_OPTIONS = ["active", "completed", "archived"];
+
+const STATUS_COLORS: Record<string, string> = {
+  active: "bg-green-500/15 text-green-400 border-green-500/30",
+  completed: "bg-primary/15 text-primary border-primary/30",
+  archived: "bg-secondary text-muted-foreground border-border",
+};
+
+const OUTCOME_COLORS: Record<string, string> = {
+  Victory: "text-green-400",
+  Defeat: "text-red-400",
+  Draw: "text-yellow-400",
+  Ongoing: "text-primary",
+  Abandoned: "text-muted-foreground",
+};
+
+function CampaignCard({ campaign, onEdit, onDelete }: { campaign: any; onEdit: () => void; onDelete: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const winColor = campaign.win_rate !== null
+    ? campaign.win_rate >= 60 ? "text-green-400" : campaign.win_rate >= 40 ? "text-yellow-400" : "text-red-400"
+    : "text-muted-foreground";
+
+  return (
+    <div className="bg-card border border-border rounded-lg overflow-hidden hover:border-primary/30 transition-colors">
+      {/* Banner */}
+      {campaign.banner_url && (
+        <div className="h-24 w-full overflow-hidden">
+          <img src={campaign.banner_url} alt={campaign.name} className="w-full h-full object-cover opacity-70" />
+        </div>
+      )}
+
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h3 className="font-display font-black uppercase tracking-wider text-foreground text-base truncate">{campaign.name}</h3>
+              <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${STATUS_COLORS[campaign.status] || STATUS_COLORS.active}`}>
+                {campaign.status}
+              </span>
+              {campaign.outcome && (
+                <span className={`text-[10px] font-display font-bold uppercase tracking-widest ${OUTCOME_COLORS[campaign.outcome] || ""}`}>
+                  {campaign.outcome}
+                </span>
+              )}
+            </div>
+            {campaign.objective && (
+              <p className="text-xs text-muted-foreground font-sans line-clamp-1">{campaign.objective}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={onEdit} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+            <button onClick={onDelete} className="p-1.5 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-4 gap-3 py-3 border-y border-border mb-3">
+          <div className="text-center">
+            <p className="font-display font-black text-lg text-foreground">{campaign.ops_count}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">Ops</p>
+          </div>
+          <div className="text-center">
+            <p className="font-display font-black text-lg text-foreground">{campaign.aars_count}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">AARs</p>
+          </div>
+          <div className="text-center">
+            <p className="font-display font-black text-lg text-foreground">{campaign.avg_attendance || "—"}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">Avg Att.</p>
+          </div>
+          <div className="text-center">
+            <p className={`font-display font-black text-lg ${winColor}`}>{campaign.win_rate !== null ? `${campaign.win_rate}%` : "—"}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">Win Rate</p>
+          </div>
+        </div>
+
+        {/* Dates */}
+        <div className="flex items-center gap-4 text-xs font-sans text-muted-foreground mb-3">
+          {campaign.start_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(campaign.start_date).toLocaleDateString()}</span>}
+          {campaign.end_date && <span>→ {new Date(campaign.end_date).toLocaleDateString()}</span>}
+          {campaign.tags?.length > 0 && (
+            <div className="flex gap-1 flex-wrap">
+              {campaign.tags.map((t: string) => (
+                <span key={t} className="bg-secondary px-1.5 py-0.5 rounded text-[10px] text-muted-foreground">{t}</span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Expandable ops list */}
+        {campaign.ops?.length > 0 && (
+          <div>
+            <button onClick={() => setExpanded(!expanded)} className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+              {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {campaign.ops_count} Linked Op{campaign.ops_count !== 1 ? "s" : ""}
+            </button>
+            {expanded && (
+              <div className="mt-2 space-y-1">
+                {campaign.ops.map((op: any) => (
+                  <div key={op.id} className="flex items-center gap-2 text-xs font-sans text-muted-foreground py-1 border-b border-border/50 last:border-0">
+                    <Target className="w-3 h-3 text-primary shrink-0" />
+                    <span className="flex-1 truncate text-foreground">{op.name}</span>
+                    <span className="capitalize text-muted-foreground">{op.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Outcome note */}
+        {campaign.outcome_note && (
+          <div className="mt-3 pt-3 border-t border-border">
+            <p className="text-xs font-sans text-muted-foreground italic">"{campaign.outcome_note}"</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CampaignModal({ group, campaign, availableOps, onSave, onClose }: {
+  group: any; campaign: any | null; availableOps: any[]; onSave: (data: any) => void; onClose: () => void;
+}) {
+  const [form, setForm] = useState({
+    name: campaign?.name || "",
+    description: campaign?.description || "",
+    objective: campaign?.objective || "",
+    banner_url: campaign?.banner_url || "",
+    status: campaign?.status || "active",
+    start_date: campaign?.start_date || "",
+    end_date: campaign?.end_date || "",
+    outcome: campaign?.outcome || "",
+    outcome_note: campaign?.outcome_note || "",
+    tags: campaign?.tags?.join(", ") || "",
+    op_ids: campaign?.op_ids || [],
+  });
+  const [saving, setSaving] = useState(false);
+
+  const toggleOp = (opId: string) => {
+    setForm(f => ({
+      ...f,
+      op_ids: f.op_ids.includes(opId) ? f.op_ids.filter((id: string) => id !== opId) : [...f.op_ids, opId],
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (!form.name.trim()) return;
+    setSaving(true);
+    const payload = {
+      ...form,
+      tags: form.tags ? form.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
+      group_id: group.id,
+    };
+    onSave(payload);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+          <h2 className="font-display font-black uppercase tracking-wider text-foreground">
+            {campaign ? "Edit Campaign" : "New Campaign"}
+          </h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Campaign Name *</label>
+            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              className="mf-input w-full" placeholder="Operation Thunderstorm" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Objective</label>
+            <input value={form.objective} onChange={e => setForm(f => ({ ...f, objective: e.target.value }))}
+              className="mf-input w-full" placeholder="Secure the northern corridor..." />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Description</label>
+            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              className="mf-input w-full min-h-[80px] resize-y" placeholder="Full campaign brief..." />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Status</label>
+              <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                className="mf-input w-full">
+                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Outcome</label>
+              <select value={form.outcome} onChange={e => setForm(f => ({ ...f, outcome: e.target.value }))}
+                className="mf-input w-full">
+                <option value="">— Not set —</option>
+                {OUTCOME_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Start Date</label>
+              <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
+                className="mf-input w-full" />
+            </div>
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">End Date</label>
+              <input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
+                className="mf-input w-full" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Outcome Note</label>
+            <input value={form.outcome_note} onChange={e => setForm(f => ({ ...f, outcome_note: e.target.value }))}
+              className="mf-input w-full" placeholder="A decisive victory achieved through..." />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Banner Image URL</label>
+            <input value={form.banner_url} onChange={e => setForm(f => ({ ...f, banner_url: e.target.value }))}
+              className="mf-input w-full" placeholder="https://..." />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Tags (comma separated)</label>
+            <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+              className="mf-input w-full" placeholder="arma3, combined-arms, summer-2025" />
+          </div>
+
+          {/* Link ops */}
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">
+              <Link2 className="w-3 h-3 inline mr-1" /> Link Ops ({form.op_ids.length} selected)
+            </label>
+            <div className="max-h-48 overflow-y-auto border border-border rounded-lg divide-y divide-border">
+              {availableOps.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground font-sans text-center">No ops found — create some in the Live Ops tab first</p>
+              ) : availableOps.map((op: any) => (
+                <label key={op.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-secondary/50 cursor-pointer">
+                  <input type="checkbox" checked={form.op_ids.includes(op.id)} onChange={() => toggleOp(op.id)}
+                    className="rounded" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-sans text-foreground truncate">{op.name}</p>
+                    <p className="text-[10px] text-muted-foreground capitalize">{op.status} · {op.event_type || op.game || ""}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3 shrink-0">
+          <button onClick={onClose} className="px-5 py-2 border border-border rounded text-sm font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+          <button onClick={handleSubmit} disabled={saving || !form.name.trim()}
+            className="inline-flex items-center gap-2 px-6 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-wider text-sm rounded transition-all disabled:opacity-50">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {campaign ? "Save Changes" : "Create Campaign"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CampaignsTab({ group }: any) {
+  const { toast } = useToast();
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [availableOps, setAvailableOps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState<{ open: boolean; campaign: any | null }>({ open: false, campaign: null });
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      // Check pro
+      const proRes = await fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`);
+      const proData = await proRes.json();
+      setIsPro(proData.is_pro);
+      if (!proData.is_pro) { setLoading(false); return; }
+
+      // Load campaigns + ops in parallel
+      const [campRes, opsRes] = await Promise.all([
+        fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`),
+        fetch(`${CAMPAIGNS_URL}?path=ops&group_id=${group.id}`),
+      ]);
+      if (campRes.ok) setCampaigns(await campRes.json());
+      if (opsRes.ok) setAvailableOps(await opsRes.json());
+    } catch { /* noop */ } finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, [group.id]);
+
+  const handleSave = async (data: any) => {
+    try {
+      const isEdit = !!modal.campaign;
+      const res = await fetch(
+        isEdit
+          ? `${CAMPAIGNS_URL}?path=update&id=${modal.campaign.id}`
+          : `${CAMPAIGNS_URL}?path=create`,
+        { method: isEdit ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }
+      );
+      if (!res.ok) throw new Error((await res.json()).error || "Save failed");
+      toast({ title: isEdit ? "Campaign updated" : "Campaign created" });
+      setModal({ open: false, campaign: null });
+      load();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (campaign: any) => {
+    if (!confirm(`Delete "${campaign.name}"? This cannot be undone.`)) return;
+    try {
+      await fetch(`${CAMPAIGNS_URL}?path=delete&id=${campaign.id}`, { method: "DELETE" });
+      toast({ title: "Campaign deleted" });
+      load();
+    } catch {
+      toast({ title: "Delete failed", variant: "destructive" });
+    }
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          Campaigns let you group ops into named series with full progression tracking, win rates, attendance analytics, outcome notes and banners. Upgrade to unlock.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]"
+      >
+        <Crown className="w-4 h-4" /> Upgrade to Pro — £10/mo
+      </a>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6 max-w-5xl">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
+            <Rocket className="w-4 h-4 text-yellow-400" />
+          </div>
+          <div>
+            <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Campaigns</h2>
+            <p className="text-xs font-sans text-muted-foreground">{campaigns.length} campaign{campaigns.length !== 1 ? "s" : ""} · link ops into series and track progression</p>
+          </div>
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
+            <Crown className="w-3 h-3" /> Pro
+          </span>
+        </div>
+        <button onClick={() => setModal({ open: true, campaign: null })}
+          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/80 text-black font-display font-black uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all">
+          <Plus className="w-4 h-4" /> New Campaign
+        </button>
+      </div>
+
+      {/* Summary stats */}
+      {campaigns.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: "Total Campaigns", value: campaigns.length },
+            { label: "Active", value: campaigns.filter(c => c.status === "active").length, color: "text-green-400" },
+            { label: "Total Ops Linked", value: campaigns.reduce((a, c) => a + c.ops_count, 0), color: "text-primary" },
+            { label: "Avg Win Rate", value: (() => { const wrs = campaigns.filter(c => c.win_rate !== null); return wrs.length ? `${Math.round(wrs.reduce((a, c) => a + c.win_rate, 0) / wrs.length)}%` : "—"; })(), color: "text-yellow-400" },
+          ].map(s => (
+            <div key={s.label} className="bg-card border border-border rounded-lg p-4 text-center">
+              <p className={`font-display font-black text-2xl ${s.color || "text-foreground"}`}>{s.value}</p>
+              <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Campaign cards */}
+      {campaigns.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+          <Flag className="w-12 h-12 text-muted-foreground/30" />
+          <div>
+            <p className="font-display font-bold uppercase tracking-wider text-foreground mb-1">No Campaigns Yet</p>
+            <p className="text-sm text-muted-foreground font-sans">Group your ops into named campaigns. Track win rates, attendance, and progression across op series.</p>
+          </div>
+          <button onClick={() => setModal({ open: true, campaign: null })}
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary/80 text-black font-display font-black uppercase tracking-wider text-sm px-6 py-2.5 rounded transition-all">
+            <Plus className="w-4 h-4" /> Create First Campaign
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {campaigns.map(c => (
+            <CampaignCard key={c.id} campaign={c}
+              onEdit={() => setModal({ open: true, campaign: c })}
+              onDelete={() => handleDelete(c)} />
+          ))}
+        </div>
+      )}
+
+      {modal.open && (
+        <CampaignModal
+          group={group}
+          campaign={modal.campaign}
+          availableOps={availableOps}
+          onSave={handleSave}
+          onClose={() => setModal({ open: false, campaign: null })}
+        />
+      )}
     </div>
   );
 }
