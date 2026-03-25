@@ -715,9 +715,7 @@ ${body.objectives}`);
 ${body.comms_plan}`);
         if (body.additional_notes) contentParts.push(`**Additional Notes:**
 ${body.additional_notes}`);
-        if (contentParts.length > 0) updates.content = contentParts.join('
-
-');
+        if (contentParts.length > 0) updates.content = contentParts.join('\n\n');
       }
       const updated = await base44.asServiceRole.entities.MilsimBriefing.update(parts[2], updates);
       return Response.json(updated);
