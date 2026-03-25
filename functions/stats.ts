@@ -193,6 +193,7 @@ const GAME_CAPACITY_PROFILES: Record<string, GameCapacityProfile> = {
   "Squad":               { game: "Squad",                maxSquadSize: 50, fullStrength: 18, adequate: 9,  minimal: 4,  label: "Section Strength (18+)",    category: 'squad_tactical' },
   "Insurgency: Sandstorm":{ game: "Insurgency: Sandstorm",maxSquadSize: 20, fullStrength: 12, adequate: 6,  minimal: 3,  label: "Squad Strength (12+)",      category: 'squad_tactical' },
   "Operator":             { game: "Operator",             maxSquadSize: 8,  fullStrength: 6,  adequate: 3,  minimal: 2,  label: "Full Team (6)",             category: 'small_unit'    },
+  "DayZ":                 { game: "DayZ",                 maxSquadSize: 60, fullStrength: 16, adequate: 8,  minimal: 3,  label: "Group Strength (16+)",        category: 'squad_tactical' },
   "Ground Branch":       { game: "Ground Branch",        maxSquadSize: 10, fullStrength: 8,  adequate: 4,  minimal: 2,  label: "Team Strength (8+)",        category: 'squad_tactical' },
   "GHPC":                { game: "GHPC",                 maxSquadSize: 16, fullStrength: 8,  adequate: 4,  minimal: 2,  label: "Crew/Section Strength (8+)",category: 'squad_tactical' },
   "DCS World":           { game: "DCS World",            maxSquadSize: 16, fullStrength: 8,  adequate: 4,  minimal: 2,  label: "Flight/Element Strength (8+)", category: 'squad_tactical' },

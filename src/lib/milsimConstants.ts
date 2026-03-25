@@ -139,6 +139,7 @@ export const GAMES_LIST = [
   "Post Scriptum",
   "Insurgency: Sandstorm",
   "Operator",
+  "DayZ",
   "GHPC",
   "Ground Branch",
   "Ready or Not",
