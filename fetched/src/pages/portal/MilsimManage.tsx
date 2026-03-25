@@ -208,6 +208,14 @@ function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const [subTab, setSubTab] = useState<"sops" | "orbat">("sops");
   const [sopsText, setSopsText] = useState(group.sops ?? "");
   const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`)
+      .then(r => r.json())
+      .then(s => setIsPro(!!s.is_pro))
+      .catch(() => setIsPro(false));
+  }, [group.id]);
 
   const saveSops = async () => {
     setSaving(true);
@@ -233,12 +241,14 @@ function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
     <div className="space-y-4">
       {/* Sub-tab switcher */}
       <div className="flex gap-1 border-b border-border">
-        {(["sops", "orbat"] as const).map(t => (
-          <button key={t} onClick={() => setSubTab(t)}
-            className={`px-4 py-2 text-xs font-display font-bold uppercase tracking-widest transition-colors border-b-2 -mb-px ${subTab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-            {t === "sops" ? "SOPs" : "ORBAT Builder"}
-          </button>
-        ))}
+        <button onClick={() => setSubTab("sops")}
+          className={`px-4 py-2 text-xs font-display font-bold uppercase tracking-widest transition-colors border-b-2 -mb-px ${subTab === "sops" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+          SOPs
+        </button>
+        <button onClick={() => setSubTab("orbat")}
+          className={`px-4 py-2 text-xs font-display font-bold uppercase tracking-widest transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${subTab === "orbat" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+          ORBAT Builder <Crown className="w-3 h-3 text-yellow-400" />
+        </button>
       </div>
 
       {subTab === "sops" && (
@@ -256,15 +266,36 @@ function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
       )}
 
       {subTab === "orbat" && (
-        <div className="space-y-4">
-          <OrbatBuilder value={orbatJson} onChange={setOrbatJson} groupName={group.name} />
-          <div className="flex justify-end pt-2">
-            <button onClick={saveOrbat} disabled={saving}
-              className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save ORBAT
-            </button>
+        isPro === null ? (
+          <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+        ) : isPro ? (
+          <div className="space-y-4">
+            <OrbatBuilder value={orbatJson} onChange={setOrbatJson} groupName={group.name} />
+            <div className="flex justify-end pt-2">
+              <button onClick={saveOrbat} disabled={saving}
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save ORBAT
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+            <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+              <Crown className="w-8 h-8 text-yellow-400" />
+            </div>
+            <div>
+              <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+              <p className="text-muted-foreground font-sans leading-relaxed">
+                The visual ORBAT Builder is a Pro feature. Build your command structure with NATO APP-6 symbology, drag-and-drop hierarchy, echelon markers, and print-ready PDF export.
+              </p>
+            </div>
+            <a href="/commander-pro"
+              className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]">
+              <Crown className="w-4 h-4" /> Upgrade to Pro — £10/mo
+            </a>
+            <p className="text-xs text-muted-foreground font-sans">SOPs remain free — ORBAT is a Pro visual tool.</p>
+          </div>
+        )
       )}
     </div>
   );
