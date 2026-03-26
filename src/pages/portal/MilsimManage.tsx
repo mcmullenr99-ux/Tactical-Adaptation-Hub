@@ -2597,6 +2597,11 @@ function AARsTab({ group, showMsg }: any) {
 // ─── Briefings ────────────────────────────────────────────────────────────────
 
 /* ─── LACE Report Tab ─────────────────────────────────────────────────────── */
+/* ─── LACE Report Tab — NATO Standard ───────────────────────────────────────
+   LACE: Liquid · Ammo · Casualty · Equipment
+   Colour codes: GREEN (good — shown for visibility), ORANGE (low/degraded), RED (out/critical)
+   DTG format, FROM/TO callsigns, slate-card layout
+──────────────────────────────────────────────────────────────────────────── */
 function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
@@ -2604,180 +2609,205 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const now = new Date();
+  const dtgNow = `${String(now.getUTCDate()).padStart(2,'0')}${String(now.getUTCHours()).padStart(2,'0')}${String(now.getUTCMinutes()).padStart(2,'0')}Z ${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][now.getUTCMonth()]} ${now.getUTCFullYear()}`;
+
   const emptyForm = {
-    callsign: "", op_id: "", op_name: "", report_time: new Date().toISOString().slice(0, 16),
-    liquid: "Green", liquid_note: "",
-    ammo: "Green", ammo_note: "",
-    casualty: "Green", casualty_note: "",
-    equipment: "Green", equipment_note: "",
+    from_callsign: "", to_callsign: "", op_id: "", op_name: "",
+    report_time: dtgNow,
+    liquid: "GREEN", liquid_note: "",
+    ammo: "GREEN", ammo_note: "",
+    casualty: "GREEN", casualty_note: "",
+    equipment: "GREEN", equipment_note: "",
   };
   const [form, setForm] = useState<any>(emptyForm);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [laceData, opsData] = await Promise.all([
+      const [d, opsData] = await Promise.all([
         apiFetch(`/milsimLace?path=list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
       ]);
-      setReports(laceData.lace_reports ?? []);
-      setOps((opsData.events ?? []).filter((o: any) => ["Active", "Confirmed", "Planned"].includes(o.status)));
+      setReports(d.lace_reports ?? []);
+      setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned"].includes(o.status)));
     } catch {}
     setLoading(false);
   };
-
   useEffect(() => { load(); }, [group.id]);
 
-  const saveReport = async () => {
-    if (!form.callsign) { showMsg("Callsign required", "error"); return; }
+  const save = async () => {
+    if (!form.from_callsign) { showMsg("FROM callsign required", "error"); return; }
     setSaving(true);
     try {
-      const payload = { ...form, group_id: group.id, reported_by: user?.username ?? "Unknown" };
-      if (payload.op_id) {
-        const op = ops.find((o: any) => o.id === payload.op_id);
-        if (op) payload.op_name = op.title ?? op.name ?? "";
-      }
+      const payload = {
+        group_id: group.id, reported_by: user?.username ?? "Unknown",
+        callsign: form.from_callsign,
+        report_time: form.report_time,
+        op_id: form.op_id, op_name: form.op_name,
+        liquid: form.liquid, liquid_note: form.liquid_note,
+        ammo: form.ammo, ammo_note: form.ammo_note,
+        casualty: form.casualty, casualty_note: form.casualty_note,
+        equipment: form.equipment, equipment_note: form.equipment_note,
+      };
+      if (payload.op_id) { const op = ops.find((o:any) => o.id === payload.op_id); if (op) payload.op_name = op.title ?? op.name ?? ""; }
       await apiFetch("/milsimLace?path=create", { method: "POST", body: JSON.stringify(payload) });
-      showMsg("LACE report filed", "success");
-      setShowForm(false); setForm(emptyForm); load();
+      showMsg("LACE filed", "success"); setShowForm(false); setForm({ ...emptyForm, report_time: dtgNow }); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
   };
 
-  const deleteReport = async (id: string) => {
-    if (!confirm("Delete this LACE report?")) return;
-    await apiFetch("/milsimLace?path=delete", { method: "POST", body: JSON.stringify({ id }) });
-    showMsg("Deleted", "success"); load();
+  const STATUS: Record<string, { color: string; bg: string; border: string; dot: string; desc: string }> = {
+    GREEN:  { color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/40",  dot: "bg-green-400",  desc: "All Good / Fully Operational" },
+    ORANGE: { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/40", dot: "bg-orange-400", desc: "Low / Degraded — able to continue" },
+    RED:    { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/40",    dot: "bg-red-400",    desc: "Out / Critical — resupply required" },
   };
 
-  const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; dot: string; desc: string }> = {
-    Green:  { label: "Green",  color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/30",  dot: "bg-green-400",  desc: "All Good" },
-    Yellow: { label: "Yellow", color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30", dot: "bg-yellow-400", desc: "Able to function" },
-    Red:    { label: "Red",    color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/30",    dot: "bg-red-400",    desc: "Requires resupply" },
-    "N/A":  { label: "N/A",   color: "text-muted-foreground", bg: "bg-secondary", border: "border-border", dot: "bg-muted-foreground", desc: "Not applicable" },
-  };
-
-  const LACE_FIELDS: { key: "liquid" | "ammo" | "casualty" | "equipment"; label: string; sublabel: string; noteKey: "liquid_note" | "ammo_note" | "casualty_note" | "equipment_note" }[] = [
-    { key: "liquid",    label: "L — Liquid",    sublabel: "Water supply status",        noteKey: "liquid_note"    },
-    { key: "ammo",      label: "A — Ammo",      sublabel: "Ammunition status",          noteKey: "ammo_note"      },
-    { key: "casualty",  label: "C — Casualty",  sublabel: "Personnel status (WIA/KIA)", noteKey: "casualty_note"  },
-    { key: "equipment", label: "E — Equipment", sublabel: "Mission-essential gear",     noteKey: "equipment_note" },
+  const FIELDS: { key: "liquid"|"ammo"|"casualty"|"equipment"; letter: string; label: string; sublabel: string; noteKey: "liquid_note"|"ammo_note"|"casualty_note"|"equipment_note"; notePlaceholder: string }[] = [
+    { key: "liquid",    letter: "L", label: "LIQUID",    sublabel: "Water / hydration supply",          noteKey: "liquid_note",    notePlaceholder: "e.g. 2x water bottles remaining per man" },
+    { key: "ammo",      letter: "A", label: "AMMO",      sublabel: "Ammunition across all weapons",     noteKey: "ammo_note",      notePlaceholder: "e.g. Orange 5.56, Red AT4" },
+    { key: "casualty",  letter: "C", label: "CASUALTY",  sublabel: "# up / # WIA / # KIA",             noteKey: "casualty_note",  notePlaceholder: "e.g. 4 up, 1 WIA (walking)" },
+    { key: "equipment", letter: "E", label: "EQUIPMENT", sublabel: "Mission-critical gear status",       noteKey: "equipment_note", notePlaceholder: "e.g. Orange bandages, Red NVG" },
   ];
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h2 className="font-display font-bold text-lg uppercase tracking-widest">LACE Reports</h2>
-          <p className="text-xs text-muted-foreground font-sans mt-0.5">Liquid · Ammo · Casualty · Equipment — section status reports.</p>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display font-bold text-lg uppercase tracking-widest">LACE Report</h2>
+            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded">NATO Standard</span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Liquid · Ammo · Casualty · Equipment — section status to higher command.</p>
         </div>
-        <button onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
-          <Plus className="w-3.5 h-3.5" /> File Report
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> File LACE
         </button>
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-3">
-        {Object.values(STATUS_CONFIG).map(s => (
-          <div key={s.label} className={`flex items-center gap-1.5 px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider ${s.bg} ${s.border} ${s.color}`}>
-            <span className={`w-2 h-2 rounded-full ${s.dot}`} />
-            {s.label} — {s.desc}
+      {/* Colour Legend */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        {Object.entries(STATUS).map(([k, s]) => (
+          <div key={k} className={`flex items-start gap-2.5 p-2.5 rounded border ${s.bg} ${s.border}`}>
+            <span className={`w-2.5 h-2.5 rounded-full ${s.dot} mt-0.5 shrink-0`} />
+            <div><p className={`font-display font-black text-xs uppercase tracking-widest ${s.color}`}>{k}</p><p className="text-xs text-muted-foreground font-sans">{s.desc}</p></div>
           </div>
         ))}
       </div>
 
+      {/* Form — styled as slate card */}
       {showForm && (
-        <div className="border border-primary/30 rounded-lg p-5 bg-primary/5 space-y-5">
-          <h3 className="font-display font-bold text-sm uppercase tracking-widest text-primary">File LACE Report</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <MField label="Callsign *">
-              <input value={form.callsign} onChange={e => setForm((f: any) => ({ ...f, callsign: e.target.value }))} placeholder="e.g. 1-1D" className="mf-input w-full" />
-            </MField>
-            <MField label="Report Time">
-              <input type="datetime-local" value={form.report_time} onChange={e => setForm((f: any) => ({ ...f, report_time: e.target.value }))} className="mf-input w-full" />
-            </MField>
-            <MField label="Linked Op (optional)">
-              <select value={form.op_id} onChange={e => setForm((f: any) => ({ ...f, op_id: e.target.value }))} className="mf-input w-full">
+        <div className="border border-primary/40 rounded-lg overflow-hidden">
+          {/* Slate card header */}
+          <div className="bg-primary/15 border-b border-primary/30 px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="font-display font-black text-sm uppercase tracking-widest text-primary">LACE REPORT — SLATE CARD</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">Complete all fields. Report to next higher element.</p>
+            </div>
+            <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1 rounded">UNCLASSIFIED</span>
+          </div>
+
+          <div className="p-5 space-y-5 bg-card">
+            {/* Header fields */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b border-border">
+              <MField label="DTG (Date-Time Group)">
+                <input value={form.report_time} onChange={e => setForm((f:any) => ({...f, report_time: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
+              </MField>
+              <MField label="FROM (Callsign) *">
+                <input value={form.from_callsign} onChange={e => setForm((f:any) => ({...f, from_callsign: e.target.value}))} placeholder="e.g. 1-1 DELTA" className="mf-input w-full" />
+              </MField>
+              <MField label="TO (Higher Element)">
+                <input value={form.to_callsign} onChange={e => setForm((f:any) => ({...f, to_callsign: e.target.value}))} placeholder="e.g. 1-0 BRAVO / PLATOON ACTUAL" className="mf-input w-full" />
+              </MField>
+            </div>
+            <MField label="Linked Op (Optional)">
+              <select value={form.op_id} onChange={e => setForm((f:any) => ({...f, op_id: e.target.value}))} className="mf-input w-full">
                 <option value="">— No op —</option>
-                {ops.map((o: any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
+                {ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
               </select>
             </MField>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {LACE_FIELDS.map(f => (
-              <div key={f.key} className="border border-border rounded-lg p-4 space-y-3">
-                <div>
-                  <p className="font-display font-bold text-xs uppercase tracking-widest">{f.label}</p>
-                  <p className="text-xs text-muted-foreground font-sans">{f.sublabel}</p>
+            {/* LACE fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {FIELDS.map(f => (
+                <div key={f.key} className="border border-border rounded-lg overflow-hidden">
+                  <div className="bg-secondary/40 px-4 py-2 border-b border-border flex items-center gap-2">
+                    <span className={`w-7 h-7 rounded flex items-center justify-center font-display font-black text-sm ${STATUS[form[f.key]]?.bg} ${STATUS[form[f.key]]?.color} border ${STATUS[form[f.key]]?.border}`}>{f.letter}</span>
+                    <div>
+                      <p className="font-display font-black text-xs uppercase tracking-widest">{f.label}</p>
+                      <p className="text-xs text-muted-foreground font-sans">{f.sublabel}</p>
+                    </div>
+                  </div>
+                  <div className="p-3 space-y-2.5">
+                    <div className="flex gap-2">
+                      {(["GREEN","ORANGE","RED"] as const).map(status => {
+                        const cfg = STATUS[status];
+                        const active = form[f.key] === status;
+                        return (
+                          <button key={status} onClick={() => setForm((prev:any) => ({...prev, [f.key]: status}))}
+                            className={`flex-1 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${active ? `${cfg.bg} ${cfg.border} ${cfg.color} ring-1 ring-inset ${cfg.border}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>
+                            <span className={`w-2 h-2 rounded-full ${active ? cfg.dot : "bg-muted-foreground/30"}`} />{status}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <input value={form[f.noteKey]} onChange={e => setForm((prev:any) => ({...prev, [f.noteKey]: e.target.value}))} placeholder={f.notePlaceholder} className="mf-input w-full text-xs font-sans" />
+                  </div>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                  {(["Green", "Yellow", "Red", "N/A"] as const).map(status => {
-                    const cfg = STATUS_CONFIG[status];
-                    return (
-                      <button key={status} onClick={() => setForm((prev: any) => ({ ...prev, [f.key]: status }))}
-                        className={`px-3 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
-                          form[f.key] === status ? `${cfg.bg} ${cfg.border} ${cfg.color} ring-1 ring-inset ${cfg.border}` : "border-border text-muted-foreground hover:text-foreground hover:bg-secondary/60"
-                        }`}>
-                        <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${form[f.key] === status ? cfg.dot : "bg-muted-foreground/40"}`} />
-                        {status}
-                      </button>
-                    );
-                  })}
-                </div>
-                <input value={form[f.noteKey]} onChange={e => setForm((prev: any) => ({ ...prev, [f.noteKey]: e.target.value }))}
-                  placeholder="Optional notes..." className="mf-input w-full text-xs" />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <div className="flex gap-2">
-            <button onClick={saveReport} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Submit
-            </button>
-            <button onClick={() => { setShowForm(false); setForm(emptyForm); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+            <div className="flex gap-2 pt-2 border-t border-border">
+              <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Transmit Report
+              </button>
+              <button onClick={() => { setShowForm(false); setForm({...emptyForm, report_time: dtgNow}); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+            </div>
           </div>
         </div>
       )}
 
+      {/* Records */}
       {reports.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground font-sans text-sm border border-dashed border-border rounded-lg">
-          <Radio className="w-8 h-8 mx-auto mb-2 opacity-30" />
-          <p>No LACE reports filed.</p>
-        </div>
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><Radio className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No LACE reports filed.</p></div>
       ) : (
         <div className="space-y-3">
-          {reports.map((r: any) => {
-            const overall = [r.liquid, r.ammo, r.casualty, r.equipment];
-            const hasRed = overall.some(v => v === "Red");
-            const hasYellow = overall.some(v => v === "Yellow");
-            const borderCls = hasRed ? "border-red-500/40" : hasYellow ? "border-yellow-500/40" : "border-green-500/30";
+          {reports.map((r:any) => {
+            const vals = [r.liquid, r.ammo, r.casualty, r.equipment];
+            const hasRed = vals.some(v => v === "RED");
+            const hasOrange = vals.some(v => v === "ORANGE");
+            const bCls = hasRed ? "border-red-500/50" : hasOrange ? "border-orange-500/40" : "border-green-500/30";
             return (
-              <div key={r.id} className={`border ${borderCls} rounded-lg p-4 space-y-3 bg-card`}>
-                <div className="flex items-center justify-between flex-wrap gap-2">
+              <div key={r.id} className={`border ${bCls} rounded-lg overflow-hidden bg-card`}>
+                <div className="bg-secondary/30 border-b border-border px-4 py-2 flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-3">
                     <Radio className="w-4 h-4 text-primary shrink-0" />
                     <div>
-                      <span className="font-display font-bold text-sm uppercase tracking-widest">{r.callsign}</span>
-                      {r.op_name && <span className="ml-2 text-xs text-muted-foreground font-sans">— {r.op_name}</span>}
+                      <span className="font-display font-black text-sm uppercase tracking-widest">{r.callsign}</span>
+                      {r.op_name && <span className="ml-2 text-xs text-muted-foreground font-sans">/ {r.op_name}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground font-sans">{r.reported_by} · {r.report_time ? new Date(r.report_time).toLocaleString() : new Date(r.created_date).toLocaleString()}</span>
-                    <button onClick={() => deleteReport(r.id)} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
+                    <span className="text-xs text-muted-foreground font-mono">{r.report_time || new Date(r.created_date).toUTCString().slice(5,22)}</span>
+                    <span className="text-xs text-muted-foreground font-sans">{r.reported_by}</span>
+                    <button onClick={async () => { if(!confirm("Delete?")) return; await apiFetch("/milsimLace?path=delete",{method:"POST",body:JSON.stringify({id:r.id})}); load(); }} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {LACE_FIELDS.map(f => {
-                    const val: string = r[f.key] ?? "N/A";
-                    const cfg = STATUS_CONFIG[val] ?? STATUS_CONFIG["N/A"];
+                <div className="grid grid-cols-4">
+                  {FIELDS.map((f,i) => {
+                    const val:string = (r[f.key] ?? "GREEN").toUpperCase();
+                    const cfg = STATUS[val] ?? STATUS["GREEN"];
                     return (
-                      <div key={f.key} className={`rounded border p-2.5 space-y-1 ${cfg.bg} ${cfg.border}`}>
-                        <p className="font-display font-bold text-xs uppercase tracking-widest text-muted-foreground">{f.label.split(" — ")[0]}</p>
-                        <div className={`flex items-center gap-1.5 font-display font-bold text-xs uppercase ${cfg.color}`}>
+                      <div key={f.key} className={`p-3 space-y-1 ${i < 3 ? "border-r border-border" : ""}`}>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-6 h-6 rounded flex items-center justify-center font-display font-black text-xs ${cfg.bg} ${cfg.color} border ${cfg.border}`}>{f.letter}</span>
+                          <span className="text-xs text-muted-foreground font-display font-bold uppercase tracking-wider">{f.label}</span>
+                        </div>
+                        <div className={`flex items-center gap-1.5 font-display font-black text-xs uppercase tracking-widest ${cfg.color}`}>
                           <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />{val}
                         </div>
                         {r[f.noteKey] && <p className="text-xs text-muted-foreground font-sans">{r[f.noteKey]}</p>}
@@ -2794,8 +2824,10 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
   );
 }
 
-
-/* ─── SITREP Tab ─────────────────────────────────────────────────────────── */
+/* ─── SITREP Tab — NATO Standard ─────────────────────────────────────────────
+   NATO SITREP: DTG · FROM · TO · LOCATION · ACTIVITY · REMARKS
+   Compact slate card — answers "where are you?" and "what are you doing?"
+──────────────────────────────────────────────────────────────────────────── */
 function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
@@ -2803,11 +2835,18 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const now = new Date();
+  const dtgNow = `${String(now.getUTCDate()).padStart(2,'0')}${String(now.getUTCHours()).padStart(2,'0')}${String(now.getUTCMinutes()).padStart(2,'0')}Z ${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][now.getUTCMonth()]} ${now.getUTCFullYear()}`;
+
   const emptyForm = {
-    callsign: "", op_id: "", op_name: "", report_time: new Date().toISOString().slice(0, 16),
-    position: "", enemy_contact: "None", enemy_notes: "",
-    friendly_casualties: "None", casualty_notes: "",
-    mission_status: "On Track", mission_notes: "", next_action: "", additional_info: "",
+    from_callsign: "", to_callsign: "", op_id: "", op_name: "",
+    report_time: dtgNow,
+    position: "", activity: "",
+    enemy_contact: "NONE", enemy_notes: "",
+    friendly_casualties: "NONE", casualty_notes: "",
+    mission_status: "ON TRACK", mission_notes: "",
+    next_action: "", remarks: "",
   };
   const [form, setForm] = useState<any>(emptyForm);
 
@@ -2819,40 +2858,49 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
       ]);
       setReports(d.sitreps ?? []);
-      setOps((opsData.events ?? []).filter((o: any) => ["Active", "Confirmed", "Planned"].includes(o.status)));
+      setOps((opsData.events ?? []).filter((o:any) => ["Active","Confirmed","Planned"].includes(o.status)));
     } catch {}
     setLoading(false);
   };
   useEffect(() => { load(); }, [group.id]);
 
   const save = async () => {
-    if (!form.callsign) { showMsg("Callsign required", "error"); return; }
+    if (!form.from_callsign) { showMsg("FROM callsign required", "error"); return; }
+    if (!form.position || !form.activity) { showMsg("Location and Activity are mandatory SITREP fields", "error"); return; }
     setSaving(true);
     try {
-      const payload = { ...form, group_id: group.id, reported_by: user?.username ?? "Unknown" };
-      if (payload.op_id) { const op = ops.find((o: any) => o.id === payload.op_id); if (op) payload.op_name = op.title ?? op.name ?? ""; }
+      const payload: any = {
+        group_id: group.id, reported_by: user?.username ?? "Unknown",
+        callsign: form.from_callsign, report_time: form.report_time,
+        op_id: form.op_id, op_name: form.op_name,
+        position: form.position,
+        activity: form.activity,
+        enemy_contact: form.enemy_contact, enemy_notes: form.enemy_notes,
+        friendly_casualties: form.friendly_casualties, casualty_notes: form.casualty_notes,
+        mission_status: form.mission_status, mission_notes: form.mission_notes,
+        next_action: form.next_action,
+        additional_info: form.remarks,
+      };
+      if (payload.op_id) { const op = ops.find((o:any) => o.id === payload.op_id); if (op) payload.op_name = op.title ?? op.name ?? ""; }
       await apiFetch("/milsimSitrep?path=create", { method: "POST", body: JSON.stringify(payload) });
-      showMsg("SITREP filed", "success"); setShowForm(false); setForm(emptyForm); load();
+      showMsg("SITREP filed", "success"); setShowForm(false); setForm({...emptyForm, report_time: dtgNow}); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
   };
 
-  const ENEMY_CFG: Record<string, { color: string; bg: string; border: string }> = {
-    None:      { color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/30" },
-    Possible:  { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30" },
-    Confirmed: { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30" },
-    Engaged:   { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/30" },
+  const CONTACT: Record<string, { color: string; bg: string; border: string }> = {
+    NONE:      { color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/40" },
+    POSSIBLE:  { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/40" },
+    CONFIRMED: { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/40" },
+    ENGAGED:   { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/40" },
   };
-  const MISSION_CFG: Record<string, { color: string; bg: string; border: string }> = {
-    "On Track":    { color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/30" },
-    "Delayed":     { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30" },
-    "Compromised": { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30" },
-    "Abort":       { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/30" },
+  const MISSION: Record<string, { color: string; bg: string; border: string }> = {
+    "ON TRACK":    { color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/40" },
+    "DELAYED":     { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/40" },
+    "COMPROMISED": { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/40" },
+    "ABORT":       { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/40" },
   };
-  const CAS_CFG: Record<string, { color: string }> = {
-    None: { color: "text-green-400" }, Minor: { color: "text-yellow-400" },
-    Significant: { color: "text-orange-400" }, Critical: { color: "text-red-400" },
-  };
+  const CAS_COLOR: Record<string, string> = { NONE:"text-green-400", MINOR:"text-yellow-400", SIGNIFICANT:"text-orange-400", CRITICAL:"text-red-400" };
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
@@ -2860,69 +2908,114 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h2 className="font-display font-bold text-lg uppercase tracking-widest">SITREPs</h2>
-          <p className="text-xs text-muted-foreground font-sans mt-0.5">Situation reports — position, enemy contact, mission status, next action.</p>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display font-bold text-lg uppercase tracking-widest">SITREP</h2>
+            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded">NATO Standard</span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Situation Report — Location + Activity to higher command. Mandatory fields: DTG, FROM, LOCATION, ACTIVITY.</p>
         </div>
         <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
-          <Plus className="w-3.5 h-3.5" /> File SITREP
+          <Plus className="w-3.5 h-3.5" /> Send SITREP
         </button>
       </div>
 
       {showForm && (
-        <div className="border border-primary/30 rounded-lg p-5 bg-primary/5 space-y-5">
-          <h3 className="font-display font-bold text-sm uppercase tracking-widest text-primary">New SITREP</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <MField label="Callsign *"><input value={form.callsign} onChange={e => setForm((f: any) => ({ ...f, callsign: e.target.value }))} placeholder="e.g. 1-1A" className="mf-input w-full" /></MField>
-            <MField label="Report Time"><input type="datetime-local" value={form.report_time} onChange={e => setForm((f: any) => ({ ...f, report_time: e.target.value }))} className="mf-input w-full" /></MField>
-            <MField label="Linked Op"><select value={form.op_id} onChange={e => setForm((f: any) => ({ ...f, op_id: e.target.value }))} className="mf-input w-full"><option value="">— None —</option>{ops.map((o: any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}</select></MField>
-            <MField label="Position / Grid"><input value={form.position} onChange={e => setForm((f: any) => ({ ...f, position: e.target.value }))} placeholder="e.g. Grid 45N, Sector Charlie" className="mf-input w-full" /></MField>
-          </div>
-
-          {/* Enemy Contact */}
-          <div className="border border-border rounded-lg p-4 space-y-3">
-            <p className="font-display font-bold text-xs uppercase tracking-widest">Enemy Contact</p>
-            <div className="flex gap-2 flex-wrap">
-              {(["None", "Possible", "Confirmed", "Engaged"] as const).map(v => {
-                const cfg = ENEMY_CFG[v];
-                return <button key={v} onClick={() => setForm((f: any) => ({ ...f, enemy_contact: v }))}
-                  className={`px-3 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.enemy_contact === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
-              })}
+        <div className="border border-primary/40 rounded-lg overflow-hidden">
+          <div className="bg-primary/15 border-b border-primary/30 px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="font-display font-black text-sm uppercase tracking-widest text-primary">SITUATION REPORT — SLATE CARD</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">Mandatory: DTG · FROM · LOCATION · ACTIVITY. All others are supplementary.</p>
             </div>
-            <input value={form.enemy_notes} onChange={e => setForm((f: any) => ({ ...f, enemy_notes: e.target.value }))} placeholder="Enemy notes..." className="mf-input w-full text-xs" />
+            <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1 rounded">UNCLASSIFIED</span>
           </div>
-
-          {/* Friendly Casualties */}
-          <div className="border border-border rounded-lg p-4 space-y-3">
-            <p className="font-display font-bold text-xs uppercase tracking-widest">Friendly Casualties</p>
-            <div className="flex gap-2 flex-wrap">
-              {(["None", "Minor", "Significant", "Critical"] as const).map(v => {
-                const cfg = CAS_CFG[v];
-                return <button key={v} onClick={() => setForm((f: any) => ({ ...f, friendly_casualties: v }))}
-                  className={`px-3 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.friendly_casualties === v ? `bg-secondary border-primary/50 ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
-              })}
+          <div className="p-5 space-y-5 bg-card">
+            {/* Mandatory header */}
+            <div>
+              <p className="font-display font-bold text-xs uppercase tracking-widest text-primary mb-3">— Mandatory Fields —</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <MField label="DTG *">
+                  <input value={form.report_time} onChange={e => setForm((f:any) => ({...f, report_time: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
+                </MField>
+                <MField label="FROM (Callsign) *">
+                  <input value={form.from_callsign} onChange={e => setForm((f:any) => ({...f, from_callsign: e.target.value}))} placeholder="e.g. 1-1 ALPHA" className="mf-input w-full" />
+                </MField>
+                <MField label="TO (Higher Element)">
+                  <input value={form.to_callsign} onChange={e => setForm((f:any) => ({...f, to_callsign: e.target.value}))} placeholder="e.g. PLATOON ACTUAL" className="mf-input w-full" />
+                </MField>
+              </div>
             </div>
-            <input value={form.casualty_notes} onChange={e => setForm((f: any) => ({ ...f, casualty_notes: e.target.value }))} placeholder="Casualty notes..." className="mf-input w-full text-xs" />
-          </div>
-
-          {/* Mission Status */}
-          <div className="border border-border rounded-lg p-4 space-y-3">
-            <p className="font-display font-bold text-xs uppercase tracking-widest">Mission Status</p>
-            <div className="flex gap-2 flex-wrap">
-              {(["On Track", "Delayed", "Compromised", "Abort"] as const).map(v => {
-                const cfg = MISSION_CFG[v];
-                return <button key={v} onClick={() => setForm((f: any) => ({ ...f, mission_status: v }))}
-                  className={`px-3 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.mission_status === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
-              })}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <MField label="LOCATION / GRID *">
+                <input value={form.position} onChange={e => setForm((f:any) => ({...f, position: e.target.value}))} placeholder="e.g. Grid 4523, Compound 6-6, Sector Bravo" className="mf-input w-full" />
+              </MField>
+              <MField label="ACTIVITY *">
+                <input value={form.activity} onChange={e => setForm((f:any) => ({...f, activity: e.target.value}))} placeholder="e.g. Firm, awaiting orders / Advancing to OBJ FALCON" className="mf-input w-full" />
+              </MField>
             </div>
-            <input value={form.mission_notes} onChange={e => setForm((f: any) => ({ ...f, mission_notes: e.target.value }))} placeholder="Mission notes..." className="mf-input w-full text-xs" />
-          </div>
+            <MField label="Linked Op">
+              <select value={form.op_id} onChange={e => setForm((f:any) => ({...f, op_id: e.target.value}))} className="mf-input w-full">
+                <option value="">— None —</option>
+                {ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
+              </select>
+            </MField>
 
-          <MField label="Next Action"><textarea value={form.next_action} onChange={e => setForm((f: any) => ({ ...f, next_action: e.target.value }))} rows={2} placeholder="What happens next..." className="mf-input w-full resize-none" /></MField>
-          <MField label="Additional Info"><textarea value={form.additional_info} onChange={e => setForm((f: any) => ({ ...f, additional_info: e.target.value }))} rows={2} placeholder="Any other relevant information..." className="mf-input w-full resize-none" /></MField>
+            {/* Supplementary */}
+            <div className="border-t border-border pt-4">
+              <p className="font-display font-bold text-xs uppercase tracking-widest text-muted-foreground mb-3">— Supplementary (Optional) —</p>
+              <div className="space-y-4">
+                {/* Enemy Contact */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-border rounded-lg p-3 space-y-2">
+                    <p className="font-display font-bold text-xs uppercase tracking-widest">Enemy Contact</p>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {(["NONE","POSSIBLE","CONFIRMED","ENGAGED"] as const).map(v => {
+                        const cfg = CONTACT[v];
+                        return <button key={v} onClick={() => setForm((f:any) => ({...f, enemy_contact: v}))}
+                          className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.enemy_contact === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
+                      })}
+                    </div>
+                    <input value={form.enemy_notes} onChange={e => setForm((f:any) => ({...f, enemy_notes: e.target.value}))} placeholder="Enemy detail, bearing, distance..." className="mf-input w-full text-xs" />
+                  </div>
+                  <div className="border border-border rounded-lg p-3 space-y-2">
+                    <p className="font-display font-bold text-xs uppercase tracking-widest">Friendly Casualties</p>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {(["NONE","MINOR","SIGNIFICANT","CRITICAL"] as const).map(v => (
+                        <button key={v} onClick={() => setForm((f:any) => ({...f, friendly_casualties: v}))}
+                          className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.friendly_casualties === v ? `bg-secondary/80 border-primary/50 ${CAS_COLOR[v]}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>
+                      ))}
+                    </div>
+                    <input value={form.casualty_notes} onChange={e => setForm((f:any) => ({...f, casualty_notes: e.target.value}))} placeholder="e.g. 5 up, 1 WIA walking" className="mf-input w-full text-xs" />
+                  </div>
+                </div>
+                {/* Mission Status */}
+                <div className="border border-border rounded-lg p-3 space-y-2">
+                  <p className="font-display font-bold text-xs uppercase tracking-widest">Mission Status</p>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {(["ON TRACK","DELAYED","COMPROMISED","ABORT"] as const).map(v => {
+                      const cfg = MISSION[v];
+                      return <button key={v} onClick={() => setForm((f:any) => ({...f, mission_status: v}))}
+                        className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.mission_status === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
+                    })}
+                  </div>
+                  <input value={form.mission_notes} onChange={e => setForm((f:any) => ({...f, mission_notes: e.target.value}))} placeholder="Mission detail..." className="mf-input w-full text-xs" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <MField label="Next Action">
+                    <input value={form.next_action} onChange={e => setForm((f:any) => ({...f, next_action: e.target.value}))} placeholder="e.g. Advance to Phase Line BLUE" className="mf-input w-full" />
+                  </MField>
+                  <MField label="Remarks">
+                    <input value={form.remarks} onChange={e => setForm((f:any) => ({...f, remarks: e.target.value}))} placeholder="Any additional info..." className="mf-input w-full" />
+                  </MField>
+                </div>
+              </div>
+            </div>
 
-          <div className="flex gap-2">
-            <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Submit</button>
-            <button onClick={() => { setShowForm(false); setForm(emptyForm); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+            <div className="flex gap-2 pt-2 border-t border-border">
+              <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Transmit SITREP
+              </button>
+              <button onClick={() => { setShowForm(false); setForm({...emptyForm, report_time: dtgNow}); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+            </div>
           </div>
         </div>
       )}
@@ -2931,29 +3024,54 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
         <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><Target className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No SITREPs filed.</p></div>
       ) : (
         <div className="space-y-3">
-          {reports.map((r: any) => {
-            const ec = ENEMY_CFG[r.enemy_contact] ?? ENEMY_CFG["None"];
-            const ms = MISSION_CFG[r.mission_status] ?? MISSION_CFG["On Track"];
+          {reports.map((r:any) => {
+            const ec = CONTACT[(r.enemy_contact ?? "NONE").toUpperCase()] ?? CONTACT["NONE"];
+            const ms = MISSION[(r.mission_status ?? "ON TRACK").toUpperCase()] ?? MISSION["ON TRACK"];
+            const isHot = (r.enemy_contact ?? "").toUpperCase() === "ENGAGED" || (r.mission_status ?? "").toUpperCase() === "ABORT";
+            const isWarm = (r.enemy_contact ?? "").toUpperCase() === "CONFIRMED" || (r.mission_status ?? "").toUpperCase() === "COMPROMISED";
             return (
-              <div key={r.id} className={`border ${r.enemy_contact === "Engaged" || r.mission_status === "Abort" ? "border-red-500/40" : r.enemy_contact === "Confirmed" || r.mission_status === "Compromised" ? "border-orange-500/40" : "border-border"} rounded-lg p-4 space-y-3 bg-card`}>
-                <div className="flex items-center justify-between flex-wrap gap-2">
+              <div key={r.id} className={`border ${isHot ? "border-red-500/50" : isWarm ? "border-orange-500/40" : "border-border"} rounded-lg overflow-hidden bg-card`}>
+                <div className="bg-secondary/30 border-b border-border px-4 py-2 flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-3">
                     <Target className="w-4 h-4 text-primary shrink-0" />
-                    <span className="font-display font-bold text-sm uppercase tracking-widest">{r.callsign}</span>
-                    {r.op_name && <span className="text-xs text-muted-foreground font-sans">— {r.op_name}</span>}
+                    <span className="font-display font-black text-sm uppercase tracking-widest">{r.callsign}</span>
+                    {r.op_name && <span className="text-xs text-muted-foreground font-sans">/ {r.op_name}</span>}
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground font-sans">{r.reported_by} · {r.report_time ? new Date(r.report_time).toLocaleString() : new Date(r.created_date).toLocaleString()}</span>
-                    <button onClick={async () => { if (!confirm("Delete?")) return; await apiFetch("/milsimSitrep?path=delete", { method: "POST", body: JSON.stringify({ id: r.id }) }); load(); }} className="text-muted-foreground hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                    <span className="text-xs text-muted-foreground font-mono">{r.report_time || new Date(r.created_date).toUTCString().slice(5,22)}</span>
+                    <span className="text-xs text-muted-foreground font-sans">{r.reported_by}</span>
+                    <button onClick={async () => { if(!confirm("Delete?")) return; await apiFetch("/milsimSitrep?path=delete",{method:"POST",body:JSON.stringify({id:r.id})}); load(); }} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                  <div className={`rounded border p-2 ${ec.bg} ${ec.border}`}><p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Enemy</p><p className={`font-display font-bold uppercase ${ec.color}`}>{r.enemy_contact}</p>{r.enemy_notes && <p className="text-muted-foreground font-sans mt-1">{r.enemy_notes}</p>}</div>
-                  <div className={`rounded border p-2 ${ms.bg} ${ms.border}`}><p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Mission</p><p className={`font-display font-bold uppercase ${ms.color}`}>{r.mission_status}</p>{r.mission_notes && <p className="text-muted-foreground font-sans mt-1">{r.mission_notes}</p>}</div>
-                  <div className="rounded border p-2 border-border bg-secondary/20"><p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Casualties</p><p className={`font-display font-bold uppercase ${(CAS_CFG[r.friendly_casualties] ?? CAS_CFG["None"]).color}`}>{r.friendly_casualties ?? "None"}</p></div>
-                  <div className="rounded border p-2 border-border bg-secondary/20"><p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Position</p><p className="font-sans text-foreground">{r.position || "—"}</p></div>
+                {/* Core fields: Location + Activity */}
+                <div className="grid grid-cols-1 md:grid-cols-2 border-b border-border">
+                  <div className="p-3 border-r border-border">
+                    <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Location</p>
+                    <p className="text-sm font-sans">{r.position || "—"}</p>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Activity</p>
+                    <p className="text-sm font-sans">{r.activity || r.next_action || "—"}</p>
+                  </div>
                 </div>
-                {r.next_action && <p className="text-xs font-sans text-muted-foreground border-t border-border pt-2"><span className="font-display font-bold uppercase tracking-wider text-foreground">Next: </span>{r.next_action}</p>}
+                {/* Status grid */}
+                <div className="grid grid-cols-3 text-xs">
+                  <div className={`p-2.5 border-r border-border ${ec.bg}`}>
+                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Enemy</p>
+                    <p className={`font-display font-black uppercase ${ec.color}`}>{r.enemy_contact ?? "NONE"}</p>
+                    {r.enemy_notes && <p className="text-muted-foreground font-sans mt-1 text-xs">{r.enemy_notes}</p>}
+                  </div>
+                  <div className={`p-2.5 border-r border-border ${ms.bg}`}>
+                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Mission</p>
+                    <p className={`font-display font-black uppercase ${ms.color}`}>{r.mission_status ?? "ON TRACK"}</p>
+                    {r.mission_notes && <p className="text-muted-foreground font-sans mt-1 text-xs">{r.mission_notes}</p>}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Casualties</p>
+                    <p className={`font-display font-black uppercase ${CAS_COLOR[(r.friendly_casualties ?? "NONE").toUpperCase()] ?? "text-green-400"}`}>{r.friendly_casualties ?? "NONE"}</p>
+                    {r.casualty_notes && <p className="text-muted-foreground font-sans mt-1 text-xs">{r.casualty_notes}</p>}
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -2963,8 +3081,11 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
   );
 }
 
-/* ─── Training Review Tab ─────────────────────────────────────────────────── */
-const TRAINING_SKILLS = ["Patrolling","Room Clearing","Fire & Manoeuvre","Bounding Overwatch","Medical/CASEVAC","Comms Procedures","Air Assault","Convoy Ops","Recon","Indirect Fire","Vehicle Ops","NBC","Night Ops","Urban Combat","Breaching","Sniper Ops","Logistics","Command & Control"];
+/* ─── Training Review Tab — NATO EXEVAL Style ─────────────────────────────────
+   Based on NATO exercise evaluation structure:
+   Exercise Name · DTG · Conducted By · Participants · Skills · Scores · Gaps
+──────────────────────────────────────────────────────────────────────────── */
+const TRAINING_SKILLS = ["Patrolling","Room Clearing","Fire & Manoeuvre","Bounding Overwatch","Medical/CASEVAC","Comms Procedures","Air Assault","Convoy Ops","Recce","Indirect Fire","Vehicle Ops","NBC / CBRN","Night Ops","Urban Combat","Breaching","Sniper Ops","Logistics","Command & Control","Land Navigation","Orders Process","QBO / TTP"];
 
 function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
   const { user } = useAuth();
@@ -2972,10 +3093,15 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const now = new Date();
+  const dtgNow = `${String(now.getUTCDate()).padStart(2,'0')}${String(now.getUTCHours()).padStart(2,'0')}${String(now.getUTCMinutes()).padStart(2,'0')}Z ${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][now.getUTCMonth()]} ${now.getUTCFullYear()}`;
+
   const emptyForm = {
-    exercise_name: "", exercise_date: new Date().toISOString().slice(0, 10),
-    participant_count: "", conducted_by: "", skills_practised: [] as string[],
-    overall_execution: 3, comms_quality: 3, tactics_quality: 3, discipline_quality: 3,
+    exercise_name: "", exercise_date: dtgNow, exercise_type: "TRAINING EX",
+    conducted_by: "", reviewed_by: "", participant_count: "",
+    skills_practised: [] as string[],
+    overall_execution: 0, comms_quality: 0, tactics_quality: 0, discipline_quality: 0,
     notable_gaps: "", highlights: "", repeat_recommended: false,
   };
   const [form, setForm] = useState<any>(emptyForm);
@@ -2995,23 +3121,43 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
 
   const save = async () => {
     if (!form.exercise_name) { showMsg("Exercise name required", "error"); return; }
+    if (!form.conducted_by) { showMsg("Conducted by required", "error"); return; }
     setSaving(true);
     try {
-      await apiFetch("/milsimTrainingReview?path=create", { method: "POST", body: JSON.stringify({ ...form, group_id: group.id, reviewed_by: user?.username ?? "Unknown", participant_count: Number(form.participant_count) || 0 }) });
-      showMsg("Exercise review saved", "success"); setShowForm(false); setForm(emptyForm); load();
+      await apiFetch("/milsimTrainingReview?path=create", { method: "POST", body: JSON.stringify({
+        ...form, group_id: group.id,
+        reviewed_by: form.reviewed_by || user?.username || "Unknown",
+        participant_count: Number(form.participant_count) || 0,
+      })});
+      showMsg("Exercise review saved", "success"); setShowForm(false); setForm({...emptyForm, exercise_date: dtgNow}); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
   };
 
-  const ScoreSelect = ({ label, field }: { label: string; field: string }) => (
-    <MField label={label}>
-      <div className="flex gap-1.5">
+  // NATO grading: 1=Unsatisfactory, 2=Marginal, 3=Satisfactory, 4=Commendable, 5=Outstanding
+  const GRADE: Record<number, { label: string; color: string }> = {
+    0: { label: "—", color: "text-muted-foreground" },
+    1: { label: "UNSAT", color: "text-red-400" },
+    2: { label: "MARGINAL", color: "text-orange-400" },
+    3: { label: "SAT", color: "text-yellow-400" },
+    4: { label: "COMMENDABLE", color: "text-blue-400" },
+    5: { label: "OUTSTANDING", color: "text-green-400" },
+  };
+
+  const ScoreRow = ({ label, field, sublabel }: { label: string; field: string; sublabel?: string }) => (
+    <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
+      <div>
+        <p className="font-display font-bold text-xs uppercase tracking-widest">{label}</p>
+        {sublabel && <p className="text-xs text-muted-foreground font-sans">{sublabel}</p>}
+      </div>
+      <div className="flex gap-1.5 items-center">
         {[1,2,3,4,5].map(n => (
-          <button key={n} onClick={() => setForm((f: any) => ({ ...f, [field]: n }))}
+          <button key={n} onClick={() => setForm((f:any) => ({...f, [field]: n}))}
             className={`w-8 h-8 rounded border text-xs font-display font-bold transition-all ${form[field] >= n ? "bg-primary/20 border-primary/50 text-primary" : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{n}</button>
         ))}
+        <span className={`ml-2 text-xs font-display font-bold uppercase tracking-wider w-20 text-right ${GRADE[form[field]]?.color}`}>{GRADE[form[field]]?.label}</span>
       </div>
-    </MField>
+    </div>
   );
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -3020,92 +3166,143 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h2 className="font-display font-bold text-lg uppercase tracking-widest">Exercise Reviews</h2>
-          <p className="text-xs text-muted-foreground font-sans mt-0.5">Post-exercise evaluations — skills, scores, gaps. Feeds training doctrine rating.</p>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display font-bold text-lg uppercase tracking-widest">Exercise Reviews</h2>
+            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded">NATO EXEVAL</span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Post-exercise evaluation — skills, NATO grading (1–5), gaps. Feeds training doctrine score.</p>
         </div>
         <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
-          <Plus className="w-3.5 h-3.5" /> New Review
+          <Plus className="w-3.5 h-3.5" /> New EXEVAL
         </button>
       </div>
 
       {showForm && (
-        <div className="border border-primary/30 rounded-lg p-5 bg-primary/5 space-y-5">
-          <h3 className="font-display font-bold text-sm uppercase tracking-widest text-primary">Exercise Review</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <MField label="Exercise Name *"><input value={form.exercise_name} onChange={e => setForm((f: any) => ({ ...f, exercise_name: e.target.value }))} placeholder="e.g. Ex Iron Anvil" className="mf-input w-full" /></MField>
-            <MField label="Date"><input type="date" value={form.exercise_date} onChange={e => setForm((f: any) => ({ ...f, exercise_date: e.target.value }))} className="mf-input w-full" /></MField>
-            <MField label="Conducted By"><input value={form.conducted_by} onChange={e => setForm((f: any) => ({ ...f, conducted_by: e.target.value }))} placeholder="Callsign / rank" className="mf-input w-full" /></MField>
-            <MField label="Participants"><input type="number" min={1} value={form.participant_count} onChange={e => setForm((f: any) => ({ ...f, participant_count: e.target.value }))} className="mf-input w-full" /></MField>
-          </div>
-
-          <div>
-            <p className="font-display font-bold text-xs uppercase tracking-widest mb-2">Skills Practised</p>
-            <div className="flex flex-wrap gap-1.5">
-              {TRAINING_SKILLS.map(skill => (
-                <button key={skill} onClick={() => toggleSkill(skill)}
-                  className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.skills_practised.includes(skill) ? "bg-primary/20 border-primary/50 text-primary" : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{skill}</button>
-              ))}
+        <div className="border border-primary/40 rounded-lg overflow-hidden">
+          <div className="bg-primary/15 border-b border-primary/30 px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="font-display font-black text-sm uppercase tracking-widest text-primary">EXERCISE EVALUATION — EXEVAL</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">NATO grading: 1=Unsatisfactory · 2=Marginal · 3=Satisfactory · 4=Commendable · 5=Outstanding</p>
             </div>
+            <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1 rounded">UNCLASSIFIED</span>
           </div>
+          <div className="p-5 space-y-5 bg-card">
+            {/* Admin fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b border-border">
+              <MField label="Exercise Name *">
+                <input value={form.exercise_name} onChange={e => setForm((f:any) => ({...f, exercise_name: e.target.value}))} placeholder="e.g. EX IRON ANVIL" className="mf-input w-full" />
+              </MField>
+              <MField label="Exercise Type">
+                <select value={form.exercise_type} onChange={e => setForm((f:any) => ({...f, exercise_type: e.target.value}))} className="mf-input w-full">
+                  {["TRAINING EX","LIVE FIRE EX","COMMAND POST EX (CPX)","FIELD TRAINING EX (FTX)","TABLE TOP EX (TTX)","COMBINED ARMS EX"].map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </MField>
+              <MField label="DTG *">
+                <input value={form.exercise_date} onChange={e => setForm((f:any) => ({...f, exercise_date: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
+              </MField>
+              <MField label="Participants">
+                <input type="number" min={1} value={form.participant_count} onChange={e => setForm((f:any) => ({...f, participant_count: e.target.value}))} placeholder="e.g. 12" className="mf-input w-full" />
+              </MField>
+              <MField label="Conducted By *">
+                <input value={form.conducted_by} onChange={e => setForm((f:any) => ({...f, conducted_by: e.target.value}))} placeholder="Rank + Callsign" className="mf-input w-full" />
+              </MField>
+              <MField label="EXEVAL Officer">
+                <input value={form.reviewed_by} onChange={e => setForm((f:any) => ({...f, reviewed_by: e.target.value}))} placeholder="Evaluating officer callsign" className="mf-input w-full" />
+              </MField>
+            </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <ScoreSelect label="Overall Execution" field="overall_execution" />
-            <ScoreSelect label="Comms Quality" field="comms_quality" />
-            <ScoreSelect label="Tactics Quality" field="tactics_quality" />
-            <ScoreSelect label="Discipline" field="discipline_quality" />
-          </div>
+            {/* Skills */}
+            <div>
+              <p className="font-display font-bold text-xs uppercase tracking-widest mb-2">Skills / Tasks Evaluated</p>
+              <div className="flex flex-wrap gap-1.5">
+                {TRAINING_SKILLS.map(skill => (
+                  <button key={skill} onClick={() => toggleSkill(skill)}
+                    className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.skills_practised.includes(skill) ? "bg-primary/20 border-primary/50 text-primary" : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{skill}</button>
+                ))}
+              </div>
+            </div>
 
-          <MField label="Highlights"><textarea value={form.highlights} onChange={e => setForm((f: any) => ({ ...f, highlights: e.target.value }))} rows={2} placeholder="What went well..." className="mf-input w-full resize-none" /></MField>
-          <MField label="Notable Gaps"><textarea value={form.notable_gaps} onChange={e => setForm((f: any) => ({ ...f, notable_gaps: e.target.value }))} rows={2} placeholder="Areas requiring improvement..." className="mf-input w-full resize-none" /></MField>
+            {/* Grading */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/40 border-b border-border px-4 py-2">
+                <p className="font-display font-bold text-xs uppercase tracking-widest">Performance Grades (NATO 1–5 Scale)</p>
+              </div>
+              <div className="px-4 py-2">
+                <ScoreRow label="Overall Execution" field="overall_execution" sublabel="General mission accomplishment" />
+                <ScoreRow label="Communications" field="comms_quality" sublabel="Radio discipline, BATCO, reporting" />
+                <ScoreRow label="Tactics & Drills" field="tactics_quality" sublabel="TTP adherence, formations, manoeuvre" />
+                <ScoreRow label="Discipline & Admin" field="discipline_quality" sublabel="Timings, dress, weapon handling" />
+              </div>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="repeat-rec" checked={form.repeat_recommended} onChange={e => setForm((f: any) => ({ ...f, repeat_recommended: e.target.checked }))} className="rounded" />
-            <label htmlFor="repeat-rec" className="text-xs font-display font-bold uppercase tracking-widest">Recommend repeat exercise</label>
-          </div>
-
-          <div className="flex gap-2">
-            <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save Review</button>
-            <button onClick={() => { setShowForm(false); setForm(emptyForm); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+            {/* Narrative */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <MField label="Strengths / Highlights">
+                <textarea value={form.highlights} onChange={e => setForm((f:any) => ({...f, highlights: e.target.value}))} rows={3} placeholder="What was executed well..." className="mf-input w-full resize-none" />
+              </MField>
+              <MField label="Areas for Improvement / Gaps">
+                <textarea value={form.notable_gaps} onChange={e => setForm((f:any) => ({...f, notable_gaps: e.target.value}))} rows={3} placeholder="Identified weaknesses, tasks requiring remedial training..." className="mf-input w-full resize-none" />
+              </MField>
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="repeat-rec" checked={form.repeat_recommended} onChange={e => setForm((f:any) => ({...f, repeat_recommended: e.target.checked}))} className="rounded" />
+              <label htmlFor="repeat-rec" className="text-xs font-display font-bold uppercase tracking-widest">Recommend repeat exercise before next deployment</label>
+            </div>
+            <div className="flex gap-2 pt-2 border-t border-border">
+              <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Submit EXEVAL
+              </button>
+              <button onClick={() => { setShowForm(false); setForm({...emptyForm, exercise_date: dtgNow}); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+            </div>
           </div>
         </div>
       )}
 
       {reviews.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><BookCheck className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No exercise reviews yet.</p></div>
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><BookCheck className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No exercise evaluations on record.</p></div>
       ) : (
         <div className="space-y-3">
-          {reviews.map((r: any) => {
-            const avg = ((r.overall_execution + r.comms_quality + r.tactics_quality + r.discipline_quality) / 4).toFixed(1);
-            const avgNum = parseFloat(avg);
-            const scoreColor = avgNum >= 4 ? "text-green-400" : avgNum >= 3 ? "text-yellow-400" : "text-red-400";
+          {reviews.map((r:any) => {
+            const scores = [r.overall_execution, r.comms_quality, r.tactics_quality, r.discipline_quality].filter(Boolean);
+            const avg = scores.length ? (scores.reduce((a:number,b:number) => a+b, 0) / scores.length) : 0;
+            const avgGrade = GRADE[Math.round(avg)] ?? GRADE[0];
             return (
-              <div key={r.id} className="border border-border rounded-lg p-4 space-y-3 bg-card">
-                <div className="flex items-center justify-between flex-wrap gap-2">
+              <div key={r.id} className="border border-border rounded-lg overflow-hidden bg-card">
+                <div className="bg-secondary/30 border-b border-border px-4 py-2 flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-3">
                     <BookCheck className="w-4 h-4 text-primary shrink-0" />
                     <div>
-                      <span className="font-display font-bold text-sm uppercase tracking-widest">{r.exercise_name}</span>
-                      {r.exercise_date && <span className="ml-2 text-xs text-muted-foreground font-sans">{new Date(r.exercise_date).toLocaleDateString()}</span>}
+                      <span className="font-display font-black text-sm uppercase tracking-widest">{r.exercise_name}</span>
+                      {r.exercise_type && <span className="ml-2 text-xs text-muted-foreground font-display font-bold uppercase">{r.exercise_type}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`font-display font-black text-lg ${scoreColor}`}>{avg}<span className="text-xs text-muted-foreground">/5</span></span>
-                    <button onClick={async () => { if (!confirm("Delete?")) return; await apiFetch("/milsimTrainingReview?path=delete", { method: "POST", body: JSON.stringify({ id: r.id }) }); load(); }} className="text-muted-foreground hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                    <span className={`font-display font-black text-xs uppercase tracking-widest ${avgGrade.color}`}>{avgGrade.label}</span>
+                    <span className="font-display font-black text-lg text-primary">{avg > 0 ? avg.toFixed(1) : "—"}<span className="text-xs text-muted-foreground">/5</span></span>
+                    <button onClick={async () => { if(!confirm("Delete?")) return; await apiFetch("/milsimTrainingReview?path=delete",{method:"POST",body:JSON.stringify({id:r.id})}); load(); }} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {(r.skills_practised ?? []).map((s: string) => <span key={s} className="px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded text-xs font-display font-bold uppercase tracking-wider">{s}</span>)}
+                <div className="p-3 space-y-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {(r.skills_practised ?? []).map((s:string) => <span key={s} className="px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded text-xs font-display font-bold uppercase tracking-wider">{s}</span>)}
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    {[["Overall",r.overall_execution],["Comms",r.comms_quality],["Tactics",r.tactics_quality],["Discipline",r.discipline_quality]].map(([label,val]) => (
+                      <div key={label as string} className="bg-secondary/30 rounded p-2 text-center">
+                        <p className="text-muted-foreground font-display font-bold uppercase tracking-wider text-xs mb-1">{label}</p>
+                        <p className={`font-display font-black text-base ${(GRADE[Number(val)] ?? GRADE[0]).color}`}>{val || "—"}</p>
+                        <p className={`text-xs font-display font-bold uppercase ${(GRADE[Number(val)] ?? GRADE[0]).color}`}>{val ? (GRADE[Number(val)]?.label ?? "") : ""}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {r.notable_gaps && <p className="text-xs font-sans text-muted-foreground border-t border-border pt-2"><span className="font-display font-bold uppercase tracking-wider text-foreground">Gaps: </span>{r.notable_gaps}</p>}
+                  {r.highlights && <p className="text-xs font-sans text-muted-foreground"><span className="font-display font-bold uppercase tracking-wider text-green-400">Strengths: </span>{r.highlights}</p>}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
+                    <span>Conducted by: <span className="text-foreground font-bold">{r.conducted_by}</span></span>
+                    {r.participant_count > 0 && <span>{r.participant_count} participants</span>}
+                    {r.repeat_recommended && <span className="text-yellow-400 font-display font-bold uppercase tracking-wider">⚠ Repeat Recommended</span>}
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 gap-2 text-xs">
-                  {[["Overall", r.overall_execution], ["Comms", r.comms_quality], ["Tactics", r.tactics_quality], ["Discipline", r.discipline_quality]].map(([label, val]) => (
-                    <div key={label as string} className="bg-secondary/30 rounded p-2 text-center">
-                      <p className="text-muted-foreground font-display font-bold uppercase tracking-wider text-xs mb-1">{label}</p>
-                      <p className={`font-display font-black text-base ${Number(val) >= 4 ? "text-green-400" : Number(val) >= 3 ? "text-yellow-400" : "text-red-400"}`}>{val ?? "—"}</p>
-                    </div>
-                  ))}
-                </div>
-                {r.notable_gaps && <p className="text-xs font-sans text-muted-foreground border-t border-border pt-2"><span className="font-display font-bold uppercase tracking-wider text-foreground">Gaps: </span>{r.notable_gaps}</p>}
-                {r.highlights && <p className="text-xs font-sans text-muted-foreground"><span className="font-display font-bold uppercase tracking-wider text-green-400">Highlights: </span>{r.highlights}</p>}
               </div>
             );
           })}
@@ -3115,17 +3312,25 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
   );
 }
 
-/* ─── Conduct Report Tab ──────────────────────────────────────────────────── */
+/* ─── Conduct / Admin Report Tab — Military Admin Standard ────────────────────
+   Used for: disciplinary actions, commendations, absences, admin notices
+   Fields: Subject, DTG, Category, Severity, Description, Evidence, Outcome, Authority
+──────────────────────────────────────────────────────────────────────────── */
 function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const now = new Date();
+  const dtgNow = `${String(now.getUTCDate()).padStart(2,'0')}${String(now.getUTCHours()).padStart(2,'0')}${String(now.getUTCMinutes()).padStart(2,'0')}Z ${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][now.getUTCMonth()]} ${now.getUTCFullYear()}`;
+
   const emptyForm = {
-    subject_callsign: "", report_date: new Date().toISOString().slice(0, 10),
-    category: "Conduct", severity: "Minor", description: "",
-    evidence: "", outcome: "No Action", outcome_notes: "", reviewed_by: "",
+    subject_callsign: "", report_date: dtgNow, filed_by_rank: "",
+    category: "Conduct", severity: "Minor",
+    description: "", evidence: "",
+    outcome: "No Action", outcome_notes: "", reviewed_by: "",
   };
   const [form, setForm] = useState<any>(emptyForm);
 
@@ -3137,28 +3342,32 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
   useEffect(() => { load(); }, [group.id]);
 
   const save = async () => {
-    if (!form.subject_callsign || !form.description) { showMsg("Callsign and description required", "error"); return; }
+    if (!form.subject_callsign) { showMsg("Subject callsign required", "error"); return; }
+    if (!form.description) { showMsg("Description of incident required", "error"); return; }
     setSaving(true);
     try {
-      await apiFetch("/milsimConductReport?path=create", { method: "POST", body: JSON.stringify({ ...form, group_id: group.id, filed_by: user?.username ?? "Unknown" }) });
-      showMsg("Conduct report filed", "success"); setShowForm(false); setForm(emptyForm); load();
+      await apiFetch("/milsimConductReport?path=create", { method: "POST", body: JSON.stringify({
+        ...form, group_id: group.id,
+        filed_by: (form.filed_by_rank ? form.filed_by_rank + " " : "") + (user?.username ?? "Unknown"),
+      })});
+      showMsg("Admin report filed", "success"); setShowForm(false); setForm({...emptyForm, report_date: dtgNow}); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
   };
 
-  const SEV_CFG: Record<string, { color: string; bg: string; border: string }> = {
+  const SEV: Record<string, { color: string; bg: string; border: string }> = {
     Info:     { color: "text-blue-400",   bg: "bg-blue-500/10",   border: "border-blue-500/30" },
     Minor:    { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30" },
     Major:    { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30" },
     Critical: { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/30" },
   };
-  const CAT_CFG: Record<string, string> = {
-    Absence: "text-yellow-400", Conduct: "text-orange-400", Insubordination: "text-red-400",
-    Negligence: "text-orange-400", Commendation: "text-green-400", Admin: "text-muted-foreground",
+  const CAT_COLOR: Record<string, string> = {
+    Absence:"text-yellow-400", Conduct:"text-orange-400", Insubordination:"text-red-400",
+    Negligence:"text-orange-400", Commendation:"text-green-400", Admin:"text-muted-foreground",
   };
-  const OUTCOME_CFG: Record<string, string> = {
-    "No Action": "text-muted-foreground", "Verbal Warning": "text-yellow-400", "Written Warning": "text-orange-400",
-    "Strike": "text-red-400", "Demotion": "text-red-400", "Removal": "text-red-500", "Commendation": "text-green-400",
+  const OUTCOME_COLOR: Record<string, string> = {
+    "No Action":"text-muted-foreground", "Verbal Warning":"text-yellow-400", "Written Warning":"text-orange-400",
+    "Strike":"text-red-400", "Demotion":"text-red-400", "Removal":"text-red-500", "Commendation":"text-green-400",
   };
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -3167,8 +3376,11 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h2 className="font-display font-bold text-lg uppercase tracking-widest">Conduct Reports</h2>
-          <p className="text-xs text-muted-foreground font-sans mt-0.5">Disciplinary and admin reports — commendations, warnings, absences, removals.</p>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display font-bold text-lg uppercase tracking-widest">Admin / Conduct Reports</h2>
+            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded">Military Admin</span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Disciplinary notices, commendations, absences, admin actions. Filed by chain of command.</p>
         </div>
         <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
           <Plus className="w-3.5 h-3.5" /> File Report
@@ -3176,67 +3388,112 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
       </div>
 
       {showForm && (
-        <div className="border border-primary/30 rounded-lg p-5 bg-primary/5 space-y-5">
-          <h3 className="font-display font-bold text-sm uppercase tracking-widest text-primary">New Conduct Report</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <MField label="Subject Callsign *"><input value={form.subject_callsign} onChange={e => setForm((f: any) => ({ ...f, subject_callsign: e.target.value }))} placeholder="e.g. Cpl Smith" className="mf-input w-full" /></MField>
-            <MField label="Report Date"><input type="date" value={form.report_date} onChange={e => setForm((f: any) => ({ ...f, report_date: e.target.value }))} className="mf-input w-full" /></MField>
-            <MField label="Category">
-              <select value={form.category} onChange={e => setForm((f: any) => ({ ...f, category: e.target.value }))} className="mf-input w-full">
-                {["Absence", "Conduct", "Insubordination", "Negligence", "Commendation", "Admin"].map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </MField>
-            <MField label="Severity">
-              <div className="flex gap-2 flex-wrap mt-1">
-                {(["Info", "Minor", "Major", "Critical"] as const).map(v => {
-                  const cfg = SEV_CFG[v];
-                  return <button key={v} onClick={() => setForm((f: any) => ({ ...f, severity: v }))}
-                    className={`px-3 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.severity === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
-                })}
+        <div className="border border-primary/40 rounded-lg overflow-hidden">
+          <div className="bg-primary/15 border-b border-primary/30 px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="font-display font-black text-sm uppercase tracking-widest text-primary">ADMIN / CONDUCT REPORT</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">To be raised by chain of command only. Filed reports are permanent record.</p>
+            </div>
+            <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1 rounded">RESTRICTED</span>
+          </div>
+          <div className="p-5 space-y-5 bg-card">
+            {/* Header */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b border-border">
+              <MField label="DTG (Date-Time Group)">
+                <input value={form.report_date} onChange={e => setForm((f:any) => ({...f, report_date: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
+              </MField>
+              <MField label="Subject (Rank / Callsign) *">
+                <input value={form.subject_callsign} onChange={e => setForm((f:any) => ({...f, subject_callsign: e.target.value}))} placeholder="e.g. Cpl CALLSIGN" className="mf-input w-full" />
+              </MField>
+              <MField label="Reviewing Authority">
+                <input value={form.reviewed_by} onChange={e => setForm((f:any) => ({...f, reviewed_by: e.target.value}))} placeholder="e.g. Sgt / Officer callsign" className="mf-input w-full" />
+              </MField>
+            </div>
+
+            {/* Category + Severity */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="border border-border rounded-lg p-3 space-y-2">
+                <p className="font-display font-bold text-xs uppercase tracking-widest">Report Category</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(["Absence","Conduct","Insubordination","Negligence","Commendation","Admin"] as const).map(cat => (
+                    <button key={cat} onClick={() => setForm((f:any) => ({...f, category: cat}))}
+                      className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.category === cat ? `bg-secondary/80 border-primary/50 ${CAT_COLOR[cat]}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{cat}</button>
+                  ))}
+                </div>
               </div>
+              <div className="border border-border rounded-lg p-3 space-y-2">
+                <p className="font-display font-bold text-xs uppercase tracking-widest">Severity</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {(["Info","Minor","Major","Critical"] as const).map(sev => {
+                    const cfg = SEV[sev];
+                    return <button key={sev} onClick={() => setForm((f:any) => ({...f, severity: sev}))}
+                      className={`px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.severity === sev ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{sev}</button>;
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Incident detail */}
+            <MField label="Description of Incident / Conduct *">
+              <textarea value={form.description} onChange={e => setForm((f:any) => ({...f, description: e.target.value}))} rows={4} placeholder="Detailed account of the incident, conduct, absence, or commendation..." className="mf-input w-full resize-none" />
             </MField>
-          </div>
-          <MField label="Description *"><textarea value={form.description} onChange={e => setForm((f: any) => ({ ...f, description: e.target.value }))} rows={3} placeholder="Describe the incident or commendation..." className="mf-input w-full resize-none" /></MField>
-          <MField label="Evidence / Reference"><textarea value={form.evidence} onChange={e => setForm((f: any) => ({ ...f, evidence: e.target.value }))} rows={2} placeholder="Screenshots, witness callsigns, dates..." className="mf-input w-full resize-none" /></MField>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <MField label="Outcome">
-              <select value={form.outcome} onChange={e => setForm((f: any) => ({ ...f, outcome: e.target.value }))} className="mf-input w-full">
-                {["No Action", "Verbal Warning", "Written Warning", "Strike", "Demotion", "Removal", "Commendation"].map(o => <option key={o} value={o}>{o}</option>)}
-              </select>
+            <MField label="Evidence / Supporting References">
+              <textarea value={form.evidence} onChange={e => setForm((f:any) => ({...f, evidence: e.target.value}))} rows={2} placeholder="Witness callsigns, timestamps, screenshots, prior reports..." className="mf-input w-full resize-none" />
             </MField>
-            <MField label="Reviewed By"><input value={form.reviewed_by} onChange={e => setForm((f: any) => ({ ...f, reviewed_by: e.target.value }))} placeholder="Senior officer callsign" className="mf-input w-full" /></MField>
-          </div>
-          <MField label="Outcome Notes"><textarea value={form.outcome_notes} onChange={e => setForm((f: any) => ({ ...f, outcome_notes: e.target.value }))} rows={2} placeholder="Any additional outcome notes..." className="mf-input w-full resize-none" /></MField>
-          <div className="flex gap-2">
-            <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} File Report</button>
-            <button onClick={() => { setShowForm(false); setForm(emptyForm); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+
+            {/* Outcome */}
+            <div className="border border-border rounded-lg p-3 space-y-2">
+              <p className="font-display font-bold text-xs uppercase tracking-widest">Outcome / Action Taken</p>
+              <div className="flex flex-wrap gap-1.5">
+                {(["No Action","Verbal Warning","Written Warning","Strike","Demotion","Removal","Commendation"] as const).map(o => (
+                  <button key={o} onClick={() => setForm((f:any) => ({...f, outcome: o}))}
+                    className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.outcome === o ? `bg-secondary/80 border-primary/50 ${OUTCOME_COLOR[o]}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{o}</button>
+                ))}
+              </div>
+            </div>
+            <MField label="Outcome Notes / Instructions">
+              <textarea value={form.outcome_notes} onChange={e => setForm((f:any) => ({...f, outcome_notes: e.target.value}))} rows={2} placeholder="Terms of warning, demotion details, commendation citation..." className="mf-input w-full resize-none" />
+            </MField>
+
+            <div className="flex gap-2 pt-2 border-t border-border">
+              <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} File Report
+              </button>
+              <button onClick={() => { setShowForm(false); setForm({...emptyForm, report_date: dtgNow}); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+            </div>
           </div>
         </div>
       )}
 
       {reports.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><UserMinus2 className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No conduct reports filed.</p></div>
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><UserMinus2 className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No admin or conduct reports on record.</p></div>
       ) : (
         <div className="space-y-3">
-          {reports.map((r: any) => {
-            const sev = SEV_CFG[r.severity] ?? SEV_CFG["Minor"];
+          {reports.map((r:any) => {
+            const sev = SEV[r.severity] ?? SEV["Minor"];
+            const isComm = r.category === "Commendation";
             return (
-              <div key={r.id} className={`border ${sev.border} rounded-lg p-4 space-y-3 bg-card`}>
-                <div className="flex items-center justify-between flex-wrap gap-2">
+              <div key={r.id} className={`border ${isComm ? "border-green-500/30" : sev.border} rounded-lg overflow-hidden bg-card`}>
+                <div className={`border-b border-border px-4 py-2 flex items-center justify-between flex-wrap gap-2 ${isComm ? "bg-green-500/5" : "bg-secondary/30"}`}>
                   <div className="flex items-center gap-3">
-                    <UserMinus2 className="w-4 h-4 text-primary shrink-0" />
-                    <span className="font-display font-bold text-sm uppercase tracking-widest">{r.subject_callsign}</span>
+                    <UserMinus2 className={`w-4 h-4 shrink-0 ${isComm ? "text-green-400" : "text-primary"}`} />
+                    <span className="font-display font-black text-sm uppercase tracking-widest">{r.subject_callsign}</span>
                     <span className={`text-xs font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${sev.bg} ${sev.border} ${sev.color}`}>{r.severity}</span>
-                    <span className={`text-xs font-display font-bold uppercase ${CAT_CFG[r.category] ?? "text-muted-foreground"}`}>{r.category}</span>
+                    <span className={`text-xs font-display font-bold uppercase tracking-widest ${CAT_COLOR[r.category] ?? "text-muted-foreground"}`}>{r.category}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`text-xs font-display font-bold uppercase ${OUTCOME_CFG[r.outcome] ?? "text-muted-foreground"}`}>{r.outcome}</span>
-                    <span className="text-xs text-muted-foreground font-sans">{r.filed_by} · {r.report_date ? new Date(r.report_date).toLocaleDateString() : ""}</span>
-                    <button onClick={async () => { if (!confirm("Delete?")) return; await apiFetch("/milsimConductReport?path=delete", { method: "POST", body: JSON.stringify({ id: r.id }) }); load(); }} className="text-muted-foreground hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                    <span className={`text-xs font-display font-bold uppercase tracking-widest ${OUTCOME_COLOR[r.outcome] ?? "text-muted-foreground"}`}>{r.outcome}</span>
+                    <span className="text-xs text-muted-foreground font-mono">{r.report_date || ""}</span>
+                    <span className="text-xs text-muted-foreground font-sans">{r.filed_by}</span>
+                    <button onClick={async () => { if(!confirm("Delete?")) return; await apiFetch("/milsimConductReport?path=delete",{method:"POST",body:JSON.stringify({id:r.id})}); load(); }} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
-                <p className="text-xs font-sans text-muted-foreground">{r.description}</p>
-                {r.outcome_notes && <p className="text-xs font-sans text-muted-foreground border-t border-border pt-2"><span className="font-display font-bold uppercase tracking-wider text-foreground">Outcome: </span>{r.outcome_notes}</p>}
+                <div className="p-3 space-y-1">
+                  <p className="text-sm font-sans">{r.description}</p>
+                  {r.evidence && <p className="text-xs text-muted-foreground font-sans border-t border-border pt-2"><span className="font-display font-bold uppercase tracking-wider text-foreground">Evidence: </span>{r.evidence}</p>}
+                  {r.outcome_notes && <p className="text-xs text-muted-foreground font-sans"><span className="font-display font-bold uppercase tracking-wider text-foreground">Action: </span>{r.outcome_notes}</p>}
+                  {r.reviewed_by && <p className="text-xs text-muted-foreground font-sans text-right">Reviewed by: <span className="text-foreground font-bold">{r.reviewed_by}</span></p>}
+                </div>
               </div>
             );
           })}
@@ -3245,6 +3502,7 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
     </div>
   );
 }
+
 
 function BriefingsTab({ group, showMsg }: any) {
   const [briefings, setBriefings] = useState<any[]>([]);
