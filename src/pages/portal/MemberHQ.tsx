@@ -10,6 +10,7 @@ import {
   GripVertical, Rows3, Save, RefreshCw, Info, Crown
 } from "lucide-react";
 import { Link } from "wouter";
+import { getRibbonModifiers } from '@/lib/ribbonModifiers';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 const CL: Record<string, string> = {
@@ -1140,7 +1141,9 @@ const RIBBON_SLUG_MAP: Record<string, string> = {
   "Superior Unit Award":                        "army_superior_unit_award_ribbon",
 };
 
-function ribbonImageUrl(award: any): string {
+function ribbonImageUrl(award: any, modifierUrl?: string): string {
+  // 0. Modifier override (e.g. w. bar, clasps)
+  if (modifierUrl) return modifierUrl;
   // 1. Custom image uploaded by commander
   if (award.award_image_url) return award.award_image_url;
   // 2. Try mapping name to uniformribbons.com asset
@@ -1163,8 +1166,8 @@ function CssRibbon({ award, size = 40 }: { award: any; size?: number }) {
   );
 }
 
-function RibbonImage({ award, size = 40 }: { award: any; size?: number }) {
-  const url = ribbonImageUrl(award);
+function RibbonImage({ award, size = 40, modifierUrl }: { award: any; size?: number; modifierUrl?: string }) {
+  const url = ribbonImageUrl(award, modifierUrl);
   if (!url) return <CssRibbon award={award} size={size} />;
   return (
     <img
@@ -1181,6 +1184,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
   const [isPro, setIsPro]               = useState<boolean | null>(null);
   const [allRibbons, setAllRibbons]     = useState<any[]>([]); // all awarded ribbons
   const [barIds, setBarIds]             = useState<string[]>([]); // IDs in current bar
+  const [barMods, setBarMods]           = useState<Record<string, Record<string, string>>>({}); // modifier selections per ribbon id
   const [dragging, setDragging]         = useState<string | null>(null);
   const [dragOver, setDragOver]         = useState<string | null>(null);
   const [saving, setSaving]             = useState(false);
@@ -1214,9 +1218,11 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
         const member = rosterData.roster_member ?? null;
         setLocalRoster(member);
         const savedOrder: string[] = member?.ribbon_bar_order ?? [];
+        const savedMods: Record<string, Record<string, string>> = member?.ribbon_bar_mods ?? {};
         // Keep only IDs that still exist in granted ribbons
         const validIds = savedOrder.filter((id: string) => ribbons.some((r: any) => r.id === id));
         setBarIds(validIds);
+        setBarMods(savedMods);
       } catch {}
       setLoading(false);
     };
@@ -1255,7 +1261,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
     try {
       await apiFetch(`/milsimGroups?path=update_roster_member`, {
         method: "POST",
-        body: JSON.stringify({ roster_id: rosterId, ribbon_bar_order: barIds }),
+        body: JSON.stringify({ roster_id: rosterId, ribbon_bar_order: barIds, ribbon_bar_mods: barMods }),
       });
     } catch (e) { console.error('[RibbonBar] saveBar error:', e); }
     setSaving(false);
@@ -1272,6 +1278,46 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
       </p>
     </div>
   );
+
+  // Compute active modifier image URL for a given ribbon
+  const getModifierUrl = (ribbon: any): string | undefined => {
+    const mods = barMods[ribbon.id];
+    if (!mods) return undefined;
+    const baseUrl = ribbonImageUrl(ribbon);
+    const modifiers = getRibbonModifiers(baseUrl);
+    // Select modifiers: find one with a value set
+    for (const mod of modifiers) {
+      if (mod.type === 'select' && mod.options) {
+        const selected = mods[mod.name];
+        if (selected) {
+          const opt = mod.options.find(o => o.value === selected);
+          if (opt?.url) return opt.url;
+        }
+      }
+    }
+    // Checkbox modifiers
+    for (const mod of modifiers) {
+      if (mod.type === 'checkbox' && mod.affectsImage && mods[mod.name] === '1') {
+        return mod.variantUrl;
+      }
+    }
+    return undefined;
+  };
+
+  const setMod = (ribbonId: string, modName: string, value: string) => {
+    setBarMods(prev => ({
+      ...prev,
+      [ribbonId]: { ...(prev[ribbonId] ?? {}), [modName]: value }
+    }));
+  };
+
+  const clearMod = (ribbonId: string, modName: string) => {
+    setBarMods(prev => {
+      const updated = { ...(prev[ribbonId] ?? {}) };
+      delete updated[modName];
+      return { ...prev, [ribbonId]: updated };
+    });
+  };
 
   const barRibbons = barIds.map(id => allRibbons.find(r => r.id === id)).filter(Boolean);
   const availableRibbons = allRibbons.filter(r => !barIds.includes(r.id));
@@ -1337,7 +1383,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
                       onMouseEnter={() => setHovered(ribbon.id)}
                       onMouseLeave={() => setHovered(null)}
                     >
-                      <RibbonImage award={ribbon} size={52} />
+                      <RibbonImage award={ribbon} size={52} modifierUrl={getModifierUrl(ribbon)} />
                       {hovered === ribbon.id && (
                         <button
                           onClick={() => toggleInBar(ribbon.id)}
@@ -1371,31 +1417,71 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {allRibbons.map((ribbon: any) => {
                 const inBar = barIds.includes(ribbon.id);
+                const baseUrl = ribbonImageUrl(ribbon);
+                const modifiers = inBar ? getRibbonModifiers(baseUrl) : [];
+                const currentMods = barMods[ribbon.id] ?? {};
+                const modUrl = inBar ? getModifierUrl(ribbon) : undefined;
                 return (
-                  <button
+                  <div
                     key={ribbon.id}
-                    onClick={() => toggleInBar(ribbon.id)}
                     className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all ${
                       inBar
                         ? "border-primary/60 bg-primary/10 ring-1 ring-primary/30"
                         : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
                     }`}
                   >
-                    <RibbonImage award={ribbon} size={44} />
-                    <div className="text-center">
-                      <p className="text-[10px] font-display font-bold uppercase tracking-wider leading-tight line-clamp-2">
-                        {ribbon.award_name ?? ribbon.name ?? "Ribbon"}
-                      </p>
-                      {ribbon.reason && (
-                        <p className="text-[9px] text-muted-foreground font-sans mt-0.5 line-clamp-1">{ribbon.reason}</p>
-                      )}
-                    </div>
-                    <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
-                      inBar ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
-                    }`}>
-                      {inBar ? "In Rack ✓" : "Add to Rack"}
-                    </span>
-                  </button>
+                    {/* Clickable top area to toggle in/out of rack */}
+                    <button className="flex flex-col items-center gap-2 w-full" onClick={() => toggleInBar(ribbon.id)}>
+                      <RibbonImage award={ribbon} size={44} modifierUrl={modUrl} />
+                      <div className="text-center">
+                        <p className="text-[10px] font-display font-bold uppercase tracking-wider leading-tight line-clamp-2">
+                          {ribbon.award_name ?? ribbon.name ?? "Ribbon"}
+                        </p>
+                        {ribbon.reason && (
+                          <p className="text-[9px] text-muted-foreground font-sans mt-0.5 line-clamp-1">{ribbon.reason}</p>
+                        )}
+                      </div>
+                      <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
+                        inBar ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
+                      }`}>
+                        {inBar ? "In Rack ✓" : "Add to Rack"}
+                      </span>
+                    </button>
+                    {/* Modifier controls — only when ribbon is in rack and has modifiers */}
+                    {inBar && modifiers.length > 0 && (
+                      <div className="w-full border-t border-primary/20 pt-2 space-y-1.5" onClick={e => e.stopPropagation()}>
+                        {modifiers.map((mod) => (
+                          <div key={mod.name} className="flex flex-col gap-0.5">
+                            {mod.type === 'select' && mod.options && (
+                              <>
+                                <label className="text-[8px] text-muted-foreground font-sans uppercase tracking-wider">{mod.label}</label>
+                                <select
+                                  value={currentMods[mod.name] ?? mod.options[0].value}
+                                  onChange={e => setMod(ribbon.id, mod.name, e.target.value)}
+                                  className="text-[9px] bg-background border border-border rounded px-1 py-0.5 w-full font-sans"
+                                >
+                                  {mod.options.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                  ))}
+                                </select>
+                              </>
+                            )}
+                            {mod.type === 'checkbox' && (
+                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={currentMods[mod.name] === '1'}
+                                  onChange={e => e.target.checked ? setMod(ribbon.id, mod.name, '1') : clearMod(ribbon.id, mod.name)}
+                                  className="w-3 h-3 accent-primary"
+                                />
+                                <span className="text-[9px] text-muted-foreground font-sans">{mod.label}</span>
+                              </label>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>

@@ -918,6 +918,7 @@ Deno.serve(async (req) => {
       if (rosterEntry.user_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
       await base44.asServiceRole.entities.MilsimRoster.update(body.roster_id, {
         ribbon_bar_order: body.ribbon_bar_order ?? [],
+        ribbon_bar_mods: body.ribbon_bar_mods ?? {},
       });
       return Response.json({ ok: true });
     }
