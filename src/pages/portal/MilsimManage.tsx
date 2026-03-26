@@ -82,7 +82,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "recognition" | "stream" | "sops" | "orbat" | "questions" | "operations" | "orgchart" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events";
+type Tab = "info" | "roles" | "ranks" | "roster" | "recognition" | "stream" | "sops" | "orbat" | "questions" | "operations" | "orgchart" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events" | "eventhub";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -152,9 +152,7 @@ export default function MilsimManage() {
     {
       label: "Events",
       items: [
-        { id: "events", label: "Events", icon: Siren },
-        { id: "calendar", label: "Activity Calendar", icon: CalendarDays },
-        { id: "campaigns", label: "Campaigns", icon: Zap, pro: true },
+        { id: "eventhub", label: "Events", icon: Siren },
       ],
     },
     {
@@ -255,6 +253,7 @@ export default function MilsimManage() {
               {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "recognition" && <RecognitionTab group={group} showMsg={showMsg} />}
+              {tab === "eventhub" && <EventHubTab group={group} showMsg={showMsg} />}
               {tab === "events" && <EventsTab group={group} showMsg={showMsg} />}
               {tab === "orgchart" && <OrgChartTab group={group} />}
               {tab === "readiness" && <ReadinessTab group={group} />}
@@ -1765,6 +1764,45 @@ function QualsTab({ group, showMsg }: any) {
 
 
 // ─── Operations Tab (Live Ops + AARs + Briefings merged) ─────────────────────
+// ─── Event Hub Tab (Events + Activity Calendar + Campaigns merged) ────────────
+function EventHubTab({ group, showMsg }: any) {
+  type EHSub = "events" | "calendar" | "campaigns";
+  const [sub, setSub] = useState<EHSub>("events");
+
+  const SUBS: { id: EHSub; label: string; icon: React.ReactNode; pro?: boolean }[] = [
+    { id: "events",    label: "Operations", icon: <Siren className="w-3.5 h-3.5" /> },
+    { id: "calendar",  label: "Calendar",   icon: <CalendarDays className="w-3.5 h-3.5" /> },
+    { id: "campaigns", label: "Campaigns",  icon: <Zap className="w-3.5 h-3.5" />, pro: true },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2">
+        {SUBS.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setSub(s.id)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded font-display font-bold uppercase tracking-widest text-xs border transition-colors ${
+              sub === s.id
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+            }`}
+          >
+            {s.icon}
+            {s.label}
+            {s.pro && <span className="ml-1 text-[9px] text-amber-400">★</span>}
+          </button>
+        ))}
+      </div>
+
+      {sub === "events"    && <EventsTab    group={group} showMsg={showMsg} />}
+      {sub === "calendar"  && <ActivityCalendarTab group={group} showMsg={showMsg} />}
+      {sub === "campaigns" && <CampaignsTab group={group} />}
+    </div>
+  );
+}
+
+
 function EventsTab({ group, showMsg }: any) {
   const [sub, setSub] = useState<"ops" | "aars" | "briefings">("ops");
   const SUB_TABS = [
