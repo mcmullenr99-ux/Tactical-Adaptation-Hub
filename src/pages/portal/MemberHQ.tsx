@@ -1186,6 +1186,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
   const [saving, setSaving]             = useState(false);
   const [loading, setLoading]           = useState(true);
   const [hovered, setHovered]           = useState<string | null>(null);
+  const [localRoster, setLocalRoster]   = useState<any | null>(null);
 
   useEffect(() => {
     if (!group?.id || !user?.id) return;
@@ -1210,7 +1211,9 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
         setAllRibbons(ribbons);
 
         // Load saved bar order from roster entry
-        const savedOrder: string[] = rosterData.roster_member?.ribbon_bar_order ?? [];
+        const member = rosterData.roster_member ?? null;
+        setLocalRoster(member);
+        const savedOrder: string[] = member?.ribbon_bar_order ?? [];
         // Keep only IDs that still exist in granted ribbons
         const validIds = savedOrder.filter((id: string) => ribbons.some((r: any) => r.id === id));
         setBarIds(validIds);
@@ -1246,14 +1249,15 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
   };
 
   const saveBar = async () => {
-    if (!rosterEntry?.id) return;
+    const rosterId = localRoster?.id ?? rosterEntry?.id;
+    if (!rosterId) { console.warn('[RibbonBar] saveBar: no roster id available'); return; }
     setSaving(true);
     try {
       await apiFetch(`/milsimGroups?path=update_roster_member`, {
         method: "POST",
-        body: JSON.stringify({ roster_id: rosterEntry.id, ribbon_bar_order: barIds }),
+        body: JSON.stringify({ roster_id: rosterId, ribbon_bar_order: barIds }),
       });
-    } catch {}
+    } catch (e) { console.error('[RibbonBar] saveBar error:', e); }
     setSaving(false);
   };
 
@@ -1403,9 +1407,10 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
       <div className="flex items-start gap-3 p-4 bg-secondary/30 border border-border rounded-lg">
         <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
         <div className="text-xs text-muted-foreground font-sans space-y-1">
-          <p><strong className="text-foreground">Real ribbon assets</strong> — US-standard ribbons are sourced from uniformribbons.com. Custom unit ribbons use the image your commander uploaded.</p>
-          <p><strong className="text-foreground">Drag to reorder</strong> — within the rack preview, drag ribbons left/right to set your precedence order. Rows fill 3 per line, left to right.</p>
-          <p><strong className="text-foreground">Saving</strong> — click Save Bar to persist your arrangement. It will be visible on your public profile.</p>
+          <p><strong className="text-foreground">Ribbon images</strong> — Ribbons are sourced from an international medals database covering UK, Commonwealth, NATO and allied nations. Your unit's custom ribbons use the image uploaded by your commander.</p>
+          <p><strong className="text-foreground">Adding ribbons</strong> — Click any awarded ribbon below to toggle it into your rack. Only awards granted to you by your unit appear here.</p>
+          <p><strong className="text-foreground">Drag to reorder</strong> — Drag ribbons within the rack preview to set your precedence order. Rows fill 3 per line, left to right.</p>
+          <p><strong className="text-foreground">Saving</strong> — Click Save Bar to persist your arrangement. It will be visible on your public profile.</p>
         </div>
       </div>
     </div>
