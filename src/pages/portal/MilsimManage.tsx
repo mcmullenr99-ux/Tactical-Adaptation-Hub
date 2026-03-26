@@ -6138,10 +6138,10 @@ function RecruitPipelineTab({ group, showMsg }: any) {
     setMoving(true);
     const token = localStorage.getItem("tag_auth_token") ?? "";
     try {
-      await fetch(`${PIPELINE_URL}?path=${encodeURIComponent(`/${app.id}/review`)}`, {
-        method: "POST",
+      await fetch(`${PIPELINE_URL}?path=${encodeURIComponent(`/${group.id}/applications/${app.id}`)}`, {
+        method: "PATCH",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus, review_note: note ?? reviewNote }),
+        body: JSON.stringify({ status: newStatus, reviewNote: note ?? reviewNote }),
       });
       const updated = { ...app, status: newStatus, review_note: note ?? reviewNote };
       setApps(prev => prev.map(a => a.id === app.id ? updated : a));
