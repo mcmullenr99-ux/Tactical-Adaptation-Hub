@@ -56,7 +56,7 @@ interface ReadinessData {
   narrative_items: { label: string; text: string; severity: 'green' | 'amber' | 'red' | 'neutral' }[];
 }
 
-type Tab = "overview" | "roles" | "ranks" | "roster" | "stream" | "sops" | "orbat" | "apply" | "capabilities" | "legacy" | "enlist" | "reviews";
+type Tab = "overview" | "roles" | "ranks" | "roster" | "stream" | "sops" | "orbat" | "capabilities" | "legacy" | "enlist" | "reviews";
 
 function getEmbedUrl(url: string): string | null {
   try {
@@ -209,7 +209,6 @@ export default function MilsimGroup() {
     { id: "sops",          label: "SOPs",          icon: BookOpen,   show: !!group.sops },
     { id: "orbat",         label: "ORBAT",         icon: Map,        show: !!group.orbat },
     { id: "enlist",        label: "Enlist",        icon: ClipboardList, show: true },
-    { id: "apply",         label: "Apply",         icon: FileText,   show: questions.length > 0 },
     { id: "legacy",        label: "Unit Legacy",   icon: Archive,    show: isPro },
     { id: "reviews",       label: "Reviews",       icon: Star,       show: true },
   ];
@@ -709,43 +708,7 @@ export default function MilsimGroup() {
             })()
           )}
 
-          {/* ── APPLY ───────────────────────────────────────────────────── */}
-          {tab === "apply" && (
-            <div className="max-w-2xl">
-              {questions.length === 0 ? (
-                <EmptyState icon={FileText} message="No application process set up" />
-              ) : (
-                <>
-                  <div className="bg-card border border-border rounded-lg p-6 mb-6">
-                    <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-2">Application Questions</h2>
-                    <p className="text-sm text-muted-foreground font-sans mb-5">
-                      To apply to <strong className="text-foreground">{group.name}</strong>, reach out via
-                      {group.discordUrl ? (
-                        <> <a href={group.discordUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Discord</a> and </>) : " "}
-                      be ready to answer the following:
-                    </p>
-                    <ol className="space-y-4">
-                      {questions.map((q, i) => (
-                        <li key={q.id} className="flex items-start gap-3">
-                          <span className="w-6 h-6 shrink-0 rounded bg-primary/10 border border-primary/30 flex items-center justify-center font-display font-bold text-xs text-primary">{i + 1}</span>
-                          <span className="font-sans text-muted-foreground leading-relaxed">
-                            {q.question}
-                            {q.required && <span className="ml-2 text-[10px] font-display font-bold uppercase text-accent">Required</span>}
-                          </span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                  {group.discordUrl && (
-                    <a href={group.discordUrl} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-black uppercase tracking-widest text-sm px-8 py-4 rounded clip-angled transition-all active:scale-95">
-                      Apply via Discord <ExternalLink className="w-4 h-4" />
-                    </a>
-                  )}
-                </>
-              )}
-            </div>
-          )}
+
 
           {/* ── ENLIST ─────────────────────────────────────────────────── */}
           {tab === "enlist" && (
