@@ -1122,26 +1122,17 @@ function AwardsTab({ group, showMsg }: any) {
   const [roster, setRoster] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [issuingDefId, setIssuingDefId] = useState<string | null>(null);
 
-  // Create form state
-  const [createMode, setCreateMode] = useState<"library" | "custom">("library");
-  // Library picker
+  // Ribbon picker state
   const [pickerCountry, setPickerCountry] = useState<string>("");
   const [pickerBranch, setPickerBranch] = useState<string>("");
   const [pickerSearch, setPickerSearch] = useState<string>("");
   const [selectedTemplate, setSelectedTemplate] = useState<RibbonTemplate | null>(null);
-  // Custom form
-  const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
-  const [awardType, setAwardType] = useState<"medal" | "ribbon" | "qualification-patch">("ribbon");
-  const [customImageUrl, setCustomImageUrl] = useState<string>("");
-  const [ribbonC1, setRibbonC1] = useState("#3b82f6");
-  const [ribbonC2, setRibbonC2] = useState("#3b82f6");
-  const [ribbonC3, setRibbonC3] = useState("#3b82f6");
   const [creating, setCreating] = useState(false);
 
-  // Issue form
+  // Issue state
+  const [issuingDefId, setIssuingDefId] = useState<string | null>(null);
   const [issueRosterId, setIssueRosterId] = useState("");
   const [issueCitation, setIssueCitation] = useState("");
   const [issuing, setIssuing] = useState(false);
@@ -1163,9 +1154,10 @@ function AwardsTab({ group, showMsg }: any) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Filtered ribbon templates
-  const availableCountries = RIBBON_COUNTRIES;
+  // Derive available branches based on selected country
   const availableBranches = pickerCountry ? (RIBBON_BRANCHES_BY_COUNTRY[pickerCountry] ?? []) : [];
+
+  // Filter ribbon templates
   const filteredTemplates = RIBBON_TEMPLATES.filter(r => {
     if (pickerCountry && r.country !== pickerCountry) return false;
     if (pickerBranch && r.branch !== pickerBranch) return false;
@@ -1176,40 +1168,27 @@ function AwardsTab({ group, showMsg }: any) {
   const resetForm = () => {
     setShowCreate(false);
     setSelectedTemplate(null);
-    setPickerCountry(""); setPickerBranch(""); setPickerSearch("");
-    setName(""); setDesc(""); setCustomImageUrl("");
-    setRibbonC1("#3b82f6"); setRibbonC2("#3b82f6"); setRibbonC3("#3b82f6");
-    setAwardType("ribbon"); setCreateMode("library");
+    setPickerCountry(""); setPickerBranch(""); setPickerSearch(""); setDesc("");
   };
 
   const createDef = async () => {
-    const finalName = createMode === "library" ? selectedTemplate?.name : name.trim();
-    if (!finalName) { showMsg(false, "Award name required."); return; }
+    if (!selectedTemplate) { showMsg(false, "Select a ribbon first."); return; }
     setCreating(true);
     try {
-      const payload: any = {
-        name: finalName,
-        description: desc || undefined,
-        award_type: "ribbon",
-        sort_order: defs.length,
-      };
-      if (createMode === "library" && selectedTemplate) {
-        payload.image_url = selectedTemplate.url;
-        payload.source_country = selectedTemplate.country;
-        payload.source_branch = selectedTemplate.branch;
-      } else {
-        payload.award_type = awardType;
-        payload.image_url = customImageUrl || undefined;
-        payload.ribbon_color_1 = awardType === "ribbon" ? ribbonC1 : undefined;
-        payload.ribbon_color_2 = awardType === "ribbon" ? ribbonC2 : undefined;
-        payload.ribbon_color_3 = awardType === "ribbon" ? ribbonC3 : undefined;
-      }
       await apiFetch(`/milsimAwards?path=${group.id}/award-defs`, {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          name: selectedTemplate.name,
+          description: desc || undefined,
+          award_type: "ribbon",
+          image_url: selectedTemplate.url,
+          source_country: selectedTemplate.country,
+          source_branch: selectedTemplate.branch,
+          sort_order: defs.length,
+        }),
       });
       resetForm();
-      showMsg(true, "Award created.");
+      showMsg(true, "Award added to library.");
       load();
     } catch (e: any) { showMsg(false, e.message || "Failed to create award."); }
     finally { setCreating(false); }
@@ -1218,7 +1197,7 @@ function AwardsTab({ group, showMsg }: any) {
   const deleteDef = async (defId: string) => {
     try {
       await apiFetch(`/milsimAwards?path=${group.id}/award-defs/${defId}`, { method: "DELETE" });
-      showMsg(true, "Award deleted."); load();
+      showMsg(true, "Award removed."); load();
     } catch (e: any) { showMsg(false, e.message); }
   };
 
@@ -1248,6 +1227,7 @@ function AwardsTab({ group, showMsg }: any) {
 
   return (
     <div className="max-w-4xl space-y-5">
+
       {/* Sub-nav */}
       <div className="flex gap-1 border-b border-border">
         {([
@@ -1261,10 +1241,11 @@ function AwardsTab({ group, showMsg }: any) {
         ))}
       </div>
 
-      {/* ── LIBRARY VIEW ── */}
+      {/* ── AWARD LIBRARY ── */}
       {subView === "library" && (
         <div className="space-y-4">
-          {/* Existing defs */}
+
+          {/* Existing award defs */}
           {defs.length > 0 && (
             <div className="space-y-2">
               {defs.map((d: any) => {
@@ -1273,28 +1254,25 @@ function AwardsTab({ group, showMsg }: any) {
                 return (
                   <div key={d.id} className="bg-card border border-border rounded-lg overflow-hidden">
                     <div className="flex items-center gap-4 p-4">
-                      {/* Ribbon image */}
-                      <div className="shrink-0">
-                        {imgUrl ? (
-                          <img src={imgUrl} alt={d.name} className="h-8 w-auto rounded-sm object-fill" style={{ minWidth: 48 }} />
-                        ) : (
-                          <div className="h-8 w-14 rounded-sm" style={{ background: `linear-gradient(to right, ${d.ribbon_color_1 ?? '#4a90e2'}, ${d.ribbon_color_2 ?? '#4a90e2'}, ${d.ribbon_color_3 ?? '#4a90e2'})` }} />
-                        )}
+                      <div className="shrink-0 w-14 flex items-center justify-center">
+                        {imgUrl
+                          ? <img src={imgUrl} alt={d.name} className="h-7 w-auto object-fill rounded-sm" />
+                          : <Medal className="w-6 h-6 text-muted-foreground opacity-40" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-display font-bold uppercase tracking-wider text-sm">{d.name}</p>
-                          <span className="text-[10px] font-display uppercase tracking-widest px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-                            {d.award_type ?? 'ribbon'}
-                          </span>
-                          {d.source_country && (
-                            <span className="text-[10px] font-sans text-muted-foreground">{d.source_country}</span>
-                          )}
-                        </div>
-                        {d.description && <p className="text-xs text-muted-foreground font-sans mt-0.5 line-clamp-1">{d.description}</p>}
+                        <p className="font-display font-bold uppercase tracking-wider text-sm">{d.name}</p>
+                        {(d.source_country || d.source_branch) && (
+                          <p className="text-[10px] font-sans text-muted-foreground mt-0.5">
+                            {d.source_country}{d.source_branch && ` — ${d.source_branch}`}
+                          </p>
+                        )}
+                        {d.description && (
+                          <p className="text-xs text-muted-foreground font-sans mt-0.5 line-clamp-1">{d.description}</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <button onClick={() => { setIssuingDefId(isIssuing ? null : d.id); setIssueRosterId(""); setIssueCitation(""); }}
+                        <button
+                          onClick={() => { setIssuingDefId(isIssuing ? null : d.id); setIssueRosterId(""); setIssueCitation(""); }}
                           className="text-xs font-display font-bold uppercase tracking-widest px-3 py-1.5 bg-accent/10 text-accent border border-accent/30 rounded hover:bg-accent/20 transition-colors">
                           Issue
                         </button>
@@ -1304,28 +1282,30 @@ function AwardsTab({ group, showMsg }: any) {
                         </button>
                       </div>
                     </div>
+
                     {/* Issue panel */}
                     {isIssuing && (
                       <div className="border-t border-border p-4 bg-secondary/20 flex flex-wrap gap-3 items-end">
-                        <div className="flex-1 min-w-[160px]">
-                          <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Member</label>
+                        <div className="flex-1 min-w-[180px]">
+                          <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Recipient</label>
                           <select value={issueRosterId} onChange={e => setIssueRosterId(e.target.value)}
                             className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground">
                             <option value="">Select member...</option>
-                            {roster.filter(r => r.status !== 'Kicked' && r.status !== 'Resigned').map((r: any) => (
-                              <option key={r.id} value={r.id}>{r.rank_name ? `${r.rank_name} ` : ''}{r.callsign}</option>
+                            {roster.filter(r => r.status !== "Kicked" && r.status !== "Resigned").map((r: any) => (
+                              <option key={r.id} value={r.id}>{r.rank_name ? `${r.rank_name} ` : ""}{r.callsign}</option>
                             ))}
                           </select>
                         </div>
-                        <div className="flex-1 min-w-[160px]">
+                        <div className="flex-1 min-w-[180px]">
                           <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Citation (optional)</label>
                           <input value={issueCitation} onChange={e => setIssueCitation(e.target.value)}
                             placeholder="For gallantry in action..."
                             className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground" />
                         </div>
                         <button onClick={() => issueAward(d.id)} disabled={issuing || !issueRosterId}
-                          className="px-4 py-1.5 bg-accent text-accent-foreground rounded font-display text-xs uppercase tracking-widest disabled:opacity-50 hover:bg-accent/90 transition-colors">
-                          {issuing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Confirm Issue"}
+                          className="px-4 py-1.5 bg-accent text-accent-foreground rounded font-display text-xs uppercase tracking-widest disabled:opacity-50 hover:bg-accent/90 transition-colors flex items-center gap-1.5">
+                          {issuing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Award className="w-3.5 h-3.5" />}
+                          Confirm Issue
                         </button>
                       </div>
                     )}
@@ -1335,198 +1315,136 @@ function AwardsTab({ group, showMsg }: any) {
             </div>
           )}
 
-          {/* Create button */}
+          {/* Add award button */}
           {!showCreate && (
             <button onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 px-4 py-2 border border-dashed border-border rounded-lg text-xs font-display uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors w-full justify-center">
+              className="flex items-center gap-2 px-4 py-3 border border-dashed border-border rounded-lg text-xs font-display uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors w-full justify-center">
               <Plus className="w-3.5 h-3.5" /> Add Award to Library
             </button>
           )}
 
-          {/* ── CREATE FORM ── */}
+          {/* ── RIBBON PICKER ── */}
           {showCreate && (
             <div className="border border-primary/30 rounded-lg bg-card overflow-hidden">
               <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center justify-between">
-                <p className="font-display font-black text-xs uppercase tracking-widest text-primary">Create Award</p>
-                <button onClick={resetForm} className="text-muted-foreground hover:text-foreground transition-colors"><XCircle className="w-4 h-4" /></button>
+                <div>
+                  <p className="font-display font-black text-xs uppercase tracking-widest text-primary">Add Award from Ribbon Library</p>
+                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">392 real-world ribbons — US (all branches), UK, Australia, Canada, New Zealand</p>
+                </div>
+                <button onClick={resetForm} className="text-muted-foreground hover:text-foreground transition-colors ml-4 shrink-0">
+                  <XCircle className="w-4 h-4" />
+                </button>
               </div>
 
-              <div className="p-5 space-y-5">
-                {/* Mode toggle */}
-                <div className="flex gap-2">
-                  <button onClick={() => setCreateMode("library")}
-                    className={`flex-1 flex flex-col items-center gap-1 py-3 rounded-lg border text-xs font-display uppercase tracking-widest transition-all ${createMode === "library" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                    <Flag className="w-4 h-4" />
-                    <span>From Library</span>
-                    <span className="text-[9px] normal-case tracking-normal font-sans text-muted-foreground">392 real-world ribbons</span>
-                  </button>
-                  <button onClick={() => setCreateMode("custom")}
-                    className={`flex-1 flex flex-col items-center gap-1 py-3 rounded-lg border text-xs font-display uppercase tracking-widest transition-all ${createMode === "custom" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                    <Award className="w-4 h-4" />
-                    <span>Custom Award</span>
-                    <span className="text-[9px] normal-case tracking-normal font-sans text-muted-foreground">Upload image or CSS stripes</span>
-                  </button>
+              <div className="p-5 space-y-4">
+
+                {/* Filters */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Country</label>
+                    <select value={pickerCountry}
+                      onChange={e => { setPickerCountry(e.target.value); setPickerBranch(""); setSelectedTemplate(null); }}
+                      className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground">
+                      <option value="">All countries</option>
+                      {RIBBON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Branch / Force</label>
+                    <select value={pickerBranch}
+                      onChange={e => { setPickerBranch(e.target.value); setSelectedTemplate(null); }}
+                      disabled={!pickerCountry}
+                      className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground disabled:opacity-40">
+                      <option value="">All branches</option>
+                      {availableBranches.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Search</label>
+                    <input value={pickerSearch}
+                      onChange={e => { setPickerSearch(e.target.value); setSelectedTemplate(null); }}
+                      placeholder="e.g. Bronze Star, Victoria Cross..."
+                      className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground" />
+                  </div>
                 </div>
 
-                {/* ── LIBRARY MODE ── */}
-                {createMode === "library" && (
-                  <div className="space-y-4">
-                    {/* Filters */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Country</label>
-                        <select value={pickerCountry} onChange={e => { setPickerCountry(e.target.value); setPickerBranch(""); setSelectedTemplate(null); }}
-                          className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground">
-                          <option value="">All countries</option>
-                          {availableCountries.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Branch / Force</label>
-                        <select value={pickerBranch} onChange={e => { setPickerBranch(e.target.value); setSelectedTemplate(null); }}
-                          className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground"
-                          disabled={!pickerCountry}>
-                          <option value="">All branches</option>
-                          {availableBranches.map(b => <option key={b} value={b}>{b}</option>)}
-                        </select>
-                      </div>
-                      <div className="col-span-2 sm:col-span-1">
-                        <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Search</label>
-                        <input value={pickerSearch} onChange={e => { setPickerSearch(e.target.value); setSelectedTemplate(null); }}
-                          placeholder="e.g. Bronze Star..."
-                          className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground" />
-                      </div>
+                {/* Selected ribbon preview */}
+                {selectedTemplate && (
+                  <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/30 rounded-lg">
+                    <img src={selectedTemplate.url} alt={selectedTemplate.name}
+                      className="h-8 w-auto object-fill rounded-sm border border-white/10"
+                      onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display font-bold text-sm uppercase tracking-wider text-primary truncate">{selectedTemplate.name}</p>
+                      <p className="text-[10px] text-muted-foreground font-sans">{selectedTemplate.country} — {selectedTemplate.branch}</p>
                     </div>
-
-                    {/* Selected template preview */}
-                    {selectedTemplate && (
-                      <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/30 rounded-lg">
-                        <img src={selectedTemplate.url} alt={selectedTemplate.name}
-                          className="h-8 w-auto object-fill rounded-sm"
-                          onError={(e: any) => { e.currentTarget.style.display = 'none'; }} />
-                        <div className="flex-1">
-                          <p className="font-display font-bold text-xs uppercase tracking-wider text-primary">{selectedTemplate.name}</p>
-                          <p className="text-[10px] text-muted-foreground font-sans">{selectedTemplate.country} — {selectedTemplate.branch}</p>
-                        </div>
-                        <button onClick={() => setSelectedTemplate(null)} className="text-muted-foreground hover:text-foreground"><XCircle className="w-4 h-4" /></button>
-                      </div>
-                    )}
-
-                    {/* Ribbon grid */}
-                    {!selectedTemplate && (
-                      <div className="border border-border rounded-lg overflow-hidden">
-                        <div className="bg-secondary/40 border-b border-border px-3 py-2 flex items-center gap-2">
-                          <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">{filteredTemplates.length} ribbons</p>
-                        </div>
-                        <div className="max-h-64 overflow-y-auto p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                          {filteredTemplates.slice(0, 100).map((r, i) => (
-                            <button key={i} onClick={() => setSelectedTemplate(r)}
-                              className="flex flex-col items-center gap-1 p-1.5 rounded border border-transparent hover:border-primary/40 hover:bg-primary/5 transition-all group">
-                              <img src={r.url} alt={r.name}
-                                className="h-6 w-auto object-fill rounded-sm"
-                                onError={(e: any) => { e.currentTarget.style.opacity = '0.3'; }}
-                                title={r.name} />
-                              <p className="text-[8px] font-sans text-muted-foreground text-center leading-tight line-clamp-2 group-hover:text-foreground">{r.name.split(' (')[0]}</p>
-                            </button>
-                          ))}
-                          {filteredTemplates.length === 0 && (
-                            <div className="col-span-5 text-center py-6 text-xs text-muted-foreground font-sans">No ribbons match your filter</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Optional description */}
-                    <div>
-                      <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Description / Criteria (optional)</label>
-                      <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2}
-                        placeholder="Awarded for..." className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground resize-none" />
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button onClick={resetForm} className="px-4 py-2 border border-border rounded font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
-                      <button onClick={createDef} disabled={creating || !selectedTemplate}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
-                        {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                        Add to Library
-                      </button>
-                    </div>
+                    <button onClick={() => setSelectedTemplate(null)} className="text-muted-foreground hover:text-foreground shrink-0">
+                      <XCircle className="w-4 h-4" />
+                    </button>
                   </div>
                 )}
 
-                {/* ── CUSTOM MODE ── */}
-                {createMode === "custom" && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Award Name *</label>
-                      <input value={name} onChange={e => setName(e.target.value)}
-                        placeholder="e.g. Valour Cross, Unit Citation..."
-                        className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground" />
+                {/* Ribbon grid */}
+                {!selectedTemplate && (
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <div className="bg-secondary/40 border-b border-border px-3 py-2">
+                      <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">
+                        {filteredTemplates.length} ribbons {pickerSearch || pickerCountry ? "matching filters" : "available"} — click to select
+                      </p>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Award Type</label>
-                      <div className="flex gap-2">
-                        {(["medal", "ribbon", "qualification-patch"] as const).map(t => (
-                          <button key={t} onClick={() => setAwardType(t)}
-                            className={`flex-1 py-2 rounded border text-xs font-display uppercase tracking-widest transition-all ${awardType === t ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                            {t === "qualification-patch" ? "Qual. Patch" : t.charAt(0).toUpperCase() + t.slice(1)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {awardType === "ribbon" && (
-                      <div>
-                        <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-2">Ribbon Stripe Colours — up to 3</label>
-                        <div className="flex items-center gap-4">
-                          {[
-                            { label: "Stripe 1", val: ribbonC1, set: setRibbonC1 },
-                            { label: "Stripe 2", val: ribbonC2, set: setRibbonC2 },
-                            { label: "Stripe 3", val: ribbonC3, set: setRibbonC3 },
-                          ].map(s => (
-                            <div key={s.label} className="flex flex-col items-center gap-1">
-                              <span className="text-[9px] font-display uppercase tracking-widest text-muted-foreground">{s.label}</span>
-                              <input type="color" value={s.val} onChange={e => s.set(e.target.value)} className="w-10 h-10 rounded cursor-pointer border border-border" />
-                              <span className="text-[9px] font-mono text-muted-foreground">{s.val}</span>
-                            </div>
-                          ))}
-                          <div className="flex flex-col items-center gap-1">
-                            <span className="text-[9px] font-display uppercase tracking-widest text-muted-foreground">Preview</span>
-                            <div className="h-10 w-16 rounded-sm border border-border" style={{ background: `linear-gradient(to right, ${ribbonC1} 0%, ${ribbonC1} 33%, ${ribbonC2} 33%, ${ribbonC2} 66%, ${ribbonC3} 66%, ${ribbonC3} 100%)` }} />
-                          </div>
+                    <div className="max-h-72 overflow-y-auto p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                      {filteredTemplates.slice(0, 120).map((r, i) => (
+                        <button key={i} onClick={() => setSelectedTemplate(r)}
+                          title={`${r.name} (${r.country})`}
+                          className="flex flex-col items-center gap-1 p-1.5 rounded border border-transparent hover:border-primary/50 hover:bg-primary/5 transition-all group">
+                          <img src={r.url} alt={r.name}
+                            className="h-5 w-auto object-fill rounded-sm"
+                            onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.15"; }} />
+                          <p className="text-[8px] font-sans text-muted-foreground text-center leading-tight line-clamp-2 group-hover:text-foreground w-full">
+                            {r.name.split(" (")[0]}
+                          </p>
+                        </button>
+                      ))}
+                      {filteredTemplates.length === 0 && (
+                        <div className="col-span-6 text-center py-8 text-xs text-muted-foreground font-sans">
+                          No ribbons match — try clearing filters
                         </div>
-                      </div>
-                    )}
-                    <div>
-                      <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Award Image URL (optional)</label>
-                      <input value={customImageUrl} onChange={e => setCustomImageUrl(e.target.value)}
-                        placeholder="https://... (PNG/JPG/WebP)"
-                        className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground font-mono" />
-                      {customImageUrl && (
-                        <img src={customImageUrl} alt="preview" className="mt-2 h-8 rounded-sm object-fill border border-border" />
+                      )}
+                      {filteredTemplates.length > 120 && (
+                        <div className="col-span-6 text-center py-2 text-[10px] text-muted-foreground font-sans">
+                          Showing 120 of {filteredTemplates.length} — use filters to narrow down
+                        </div>
                       )}
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Description / Criteria (optional)</label>
-                      <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2}
-                        placeholder="Awarded for..." className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground resize-none" />
-                    </div>
-                    <div className="flex gap-3">
-                      <button onClick={resetForm} className="px-4 py-2 border border-border rounded font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
-                      <button onClick={createDef} disabled={creating || !name.trim()}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
-                        {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                        Create Award
-                      </button>
-                    </div>
                   </div>
                 )}
+
+                {/* Optional description */}
+                <div>
+                  <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Award Criteria / Description (optional)</label>
+                  <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2}
+                    placeholder="Awarded for acts of gallantry..."
+                    className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground resize-none" />
+                </div>
+
+                <div className="flex gap-3 pt-1">
+                  <button onClick={resetForm}
+                    className="px-4 py-2 border border-border rounded font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
+                    Cancel
+                  </button>
+                  <button onClick={createDef} disabled={creating || !selectedTemplate}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                    {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                    Add to Award Library
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* ── ISSUED VIEW ── */}
+      {/* ── ISSUED AWARDS ── */}
       {subView === "issued" && (
         <div className="space-y-3">
           {issued.length === 0 ? (
@@ -1537,20 +1455,20 @@ function AwardsTab({ group, showMsg }: any) {
           ) : (
             issued.map((a: any) => (
               <div key={a.id} className="flex items-center gap-4 p-4 bg-card border border-border rounded-lg">
-                <div className="shrink-0">
-                  {a.award_image_url ? (
-                    <img src={a.award_image_url} alt={a.award_name} className="h-7 w-auto object-fill rounded-sm" style={{ minWidth: 40 }} />
-                  ) : (
-                    <Award className="w-6 h-6 text-muted-foreground opacity-40" />
-                  )}
+                <div className="shrink-0 w-14 flex justify-center">
+                  {a.award_image_url
+                    ? <img src={a.award_image_url} alt={a.award_name} className="h-7 w-auto object-fill rounded-sm" />
+                    : <Medal className="w-6 h-6 text-muted-foreground opacity-40" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-display font-bold uppercase tracking-wider text-sm">{a.award_name}</p>
-                  <p className="text-xs text-muted-foreground font-sans">To: <span className="text-foreground font-medium">{a.recipient_callsign}</span>
-                    {a.reason && <> — <span className="italic">{a.reason}</span></>}
+                  <p className="text-xs text-muted-foreground font-sans">
+                    To: <span className="text-foreground font-medium">{a.recipient_callsign}</span>
+                    {a.reason && <> · <span className="italic">{a.reason}</span></>}
                   </p>
                 </div>
-                <button onClick={() => revokeAward(a.id)} className="text-xs text-red-400 hover:text-red-300 font-display uppercase tracking-widest px-2 py-1.5 rounded hover:bg-red-500/10 transition-colors shrink-0">
+                <button onClick={() => revokeAward(a.id)}
+                  className="text-xs text-red-400 hover:text-red-300 font-display uppercase tracking-widest px-2 py-1.5 rounded hover:bg-red-500/10 transition-colors shrink-0">
                   Revoke
                 </button>
               </div>
@@ -1558,6 +1476,7 @@ function AwardsTab({ group, showMsg }: any) {
           )}
         </div>
       )}
+
     </div>
   );
 }

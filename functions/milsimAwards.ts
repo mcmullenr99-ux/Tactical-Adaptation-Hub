@@ -39,8 +39,17 @@ Deno.serve(async (req) => {
       if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
       const def = await base44.asServiceRole.entities.MilsimAwardDef.create({
-        group_id: parts[0], name: body.name, description: body.description ?? null,
-        image_url: body.imageUrl ?? null, sort_order: body.sortOrder ?? 0,
+        group_id: parts[0],
+        name: body.name,
+        description: body.description ?? null,
+        image_url: body.image_url ?? body.imageUrl ?? null,
+        award_type: body.award_type ?? body.awardType ?? 'ribbon',
+        ribbon_color_1: body.ribbon_color_1 ?? null,
+        ribbon_color_2: body.ribbon_color_2 ?? null,
+        ribbon_color_3: body.ribbon_color_3 ?? null,
+        source_country: body.source_country ?? null,
+        source_branch: body.source_branch ?? null,
+        sort_order: body.sort_order ?? body.sortOrder ?? 0,
       });
       return Response.json(def, { status: 201 });
     }
@@ -81,11 +90,21 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Accept both camelCase and snake_case recipient fields
+      const recipientRosterId = body.rosterEntryId ?? body.recipientRosterId ?? null;
+      // Resolve callsign from roster entry if not provided
+      let recipientCallsign = body.recipientCallsign ?? null;
+      if (recipientRosterId && !recipientCallsign) {
+        try {
+          const entry = await base44.asServiceRole.entities.MilsimRoster.get(recipientRosterId);
+          recipientCallsign = entry?.callsign ?? null;
+        } catch {}
+      }
       const award = await base44.asServiceRole.entities.MilsimAward.create({
         group_id: parts[0], award_def_id: body.awardDefId ?? null,
         award_name: awardName, award_description: awardDescription, award_image_url: awardImageUrl,
-        recipient_roster_id: body.recipientRosterId, recipient_callsign: body.recipientCallsign,
-        awarded_by: full.id, reason: body.reason ?? null, award_type: body.awardType ?? null,
+        recipient_roster_id: recipientRosterId, recipient_callsign: recipientCallsign,
+        awarded_by: full.id, reason: body.citation ?? body.reason ?? null, award_type: body.awardType ?? null,
       });
       return Response.json(award, { status: 201 });
     }
