@@ -83,12 +83,12 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "recognition" | "stream" | "sops" | "orbat" | "questions" | "operations" | "orgchart" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events" | "eventhub" | "onboarding" | "criteria";
+type Tab = "roles" | "ranks" | "roster" | "recognition" | "stream" | "questions" | "operations" | "readiness" | "analytics" | "campaigns" | "reputation" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events" | "eventhub" | "onboarding" | "criteria" | "doctrine";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
   const [group, setGroup] = useState<GroupDetail | null | undefined>(undefined);
-  const [tab, setTab] = useState<Tab>("info");
+  const [tab, setTab] = useState<Tab>("doctrine");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -137,12 +137,7 @@ export default function MilsimManage() {
 
   // Sidebar nav groups
   const NAV_GROUPS: { label: string; items: { id: Tab; label: string; icon: typeof Shield; pro?: boolean; star?: boolean }[] }[] = [
-    {
-      label: "Setup",
-      items: [
-        { id: "info", label: "Info", icon: Shield },
-      ],
-    },
+
     {
       label: "Onboarding",
       items: [
@@ -172,10 +167,7 @@ export default function MilsimManage() {
     {
       label: "Doctrine",
       items: [
-        { id: "sops", label: "SOPs", icon: BookOpen },
-        { id: "orbat", label: "ORBAT Builder", icon: GitBranch, pro: true },
-        { id: "training", label: "Training Docs", icon: Brain },
-        { id: "orgchart", label: "Org Chart", icon: GitBranch },
+        { id: "doctrine", label: "Doctrine", icon: BookOpen },
       ],
     },
     {
@@ -253,7 +245,6 @@ export default function MilsimManage() {
           {/* Main content */}
           <div className="flex-1 min-w-0">
             <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-              {tab === "info" && <InfoTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
               {tab === "troops" && <TroopManagementTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "roles" && <RolesTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
@@ -262,10 +253,10 @@ export default function MilsimManage() {
               {tab === "eventhub" && <EventHubTab group={group} showMsg={showMsg} />}
               {tab === "onboarding" && <OnboardingTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "events" && <EventsTab group={group} showMsg={showMsg} />}
-              {tab === "orgchart" && <OrgChartTab group={group} />}
+
               {tab === "readiness" && <ReadinessTab group={group} />}
               {tab === "reputation" && <ReputationTab group={group} />}
-              {tab === "training" && <TrainingDocsTab group={group} showMsg={showMsg} />}
+
               {tab === "loa" && <LOATab group={group} showMsg={showMsg} />}
               {tab === "calendar" && <ActivityCalendarTab group={group} showMsg={showMsg} />}
               {tab === "analytics" && <AnalyticsTab group={group} />}
@@ -274,8 +265,7 @@ export default function MilsimManage() {
               {tab === "legacy" && <UnitLegacyTab group={group} />}
               {tab === "developer" && <DeveloperTab group={group} showMsg={showMsg} />}
               {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-              {tab === "sops" && <SopsOnlyTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
-              {tab === "orbat" && <OrbatOnlyTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+              {tab === "doctrine" && <DoctrineTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
               {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
             </motion.div>
           </div>
@@ -459,6 +449,47 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
 
 // Forward ref so OrbatProGate can use it (full const defined near AnalyticsTab)
 const _PRO_STATUS_URL_MANAGE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/getProStatus";
+
+/* ─── Doctrine Tab (Info + SOPs + Org Chart + Training Docs) ──────────────── */
+type DoctrineSubTab = "info" | "sops" | "orgchart" | "training";
+
+function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
+  const [sub, setSub] = useState<DoctrineSubTab>("info");
+
+  const SUB_TABS: { id: DoctrineSubTab; label: string; icon: typeof Shield }[] = [
+    { id: "info",      label: "Unit Info",      icon: Shield },
+    { id: "sops",      label: "SOPs",           icon: BookOpen },
+    { id: "orgchart",  label: "Org Chart",      icon: GitBranch },
+    { id: "training",  label: "Training Docs",  icon: Brain },
+  ];
+
+  return (
+    <div className="space-y-5">
+      {/* Inner sub-tab bar */}
+      <div className="flex items-center gap-1 border-b border-border pb-0 overflow-x-auto">
+        {SUB_TABS.map(t => (
+          <button key={t.id} onClick={() => setSub(t.id)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-display font-bold uppercase tracking-widest border-b-2 transition-all whitespace-nowrap ${
+              sub === t.id
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}>
+            <t.icon className="w-3.5 h-3.5 shrink-0" />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Sub-tab content */}
+      <motion.div key={sub} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.12 }}>
+        {sub === "info"     && <InfoTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+        {sub === "sops"     && <SopsOnlyTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+        {sub === "orgchart" && <OrgChartTab group={group} />}
+        {sub === "training" && <TrainingDocsTab group={group} showMsg={showMsg} />}
+      </motion.div>
+    </div>
+  );
+}
 
 function SopsOnlyTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const [sopsText, setSopsText] = useState(group.sops ?? "");
