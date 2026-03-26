@@ -1,0 +1,73 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "op_id": {
+      "type": "string"
+    },
+    "op_name": {
+      "type": "string"
+    },
+    "callsign": {
+      "type": "string"
+    },
+    "reported_by": {
+      "type": "string"
+    },
+    "report_time": {
+      "type": "string"
+    },
+    "liquid": {
+      "type": "string",
+      "enum": [
+        "Green",
+        "Yellow",
+        "Red",
+        "N/A"
+      ]
+    },
+    "liquid_note": {
+      "type": "string"
+    },
+    "ammo": {
+      "type": "string",
+      "enum": [
+        "Green",
+        "Yellow",
+        "Red",
+        "N/A"
+      ]
+    },
+    "ammo_note": {
+      "type": "string"
+    },
+    "casualty": {
+      "type": "string",
+      "enum": [
+        "Green",
+        "Yellow",
+        "Red",
+        "N/A"
+      ]
+    },
+    "casualty_note": {
+      "type": "string"
+    },
+    "equipment": {
+      "type": "string",
+      "enum": [
+        "Green",
+        "Yellow",
+        "Red",
+        "N/A"
+      ]
+    },
+    "equipment_note": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "MilsimLace"
+}

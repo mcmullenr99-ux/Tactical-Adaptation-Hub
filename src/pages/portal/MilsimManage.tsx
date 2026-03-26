@@ -1972,12 +1972,13 @@ function EventHubTab({ group, showMsg }: any) {
 
 
 function EventsTab({ group, showMsg }: any) {
-  const [sub, setSub] = useState<"ops" | "aars" | "briefings" | "warnos">("ops");
+  const [sub, setSub] = useState<"ops" | "aars" | "briefings" | "warnos" | "lace">("ops");
   const SUB_TABS = [
     { id: "ops" as const,       label: "Operations",  icon: Siren },
     { id: "aars" as const,      label: "AARs",        icon: ClipboardList },
     { id: "briefings" as const, label: "Briefings",   icon: MapPin },
     { id: "warnos" as const,    label: "WARNOs",      icon: AlertTriangle },
+    { id: "lace" as const,      label: "LACE",        icon: Radio },
   ];
   return (
     <div className="space-y-4">
@@ -1995,6 +1996,7 @@ function EventsTab({ group, showMsg }: any) {
       {sub === "aars"      && <AARsTab      group={group} showMsg={showMsg} />}
       {sub === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
       {sub === "warnos"    && <WarnosTab    group={group} showMsg={showMsg} />}
+      {sub === "lace"      && <LaceTab      group={group} showMsg={showMsg} />}
     </div>
   );
 }
@@ -2584,6 +2586,205 @@ function AARsTab({ group, showMsg }: any) {
 }
 
 // ─── Briefings ────────────────────────────────────────────────────────────────
+
+/* ─── LACE Report Tab ─────────────────────────────────────────────────────── */
+function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
+  const { user } = useAuth();
+  const [reports, setReports] = useState<any[]>([]);
+  const [ops, setOps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const emptyForm = {
+    callsign: "", op_id: "", op_name: "", report_time: new Date().toISOString().slice(0, 16),
+    liquid: "Green", liquid_note: "",
+    ammo: "Green", ammo_note: "",
+    casualty: "Green", casualty_note: "",
+    equipment: "Green", equipment_note: "",
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [laceData, opsData] = await Promise.all([
+        apiFetch(`/milsimLace?path=list&group_id=${group.id}`),
+        apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
+      ]);
+      setReports(laceData.lace_reports ?? []);
+      setOps((opsData.events ?? []).filter((o: any) => ["Active", "Confirmed", "Planned"].includes(o.status)));
+    } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [group.id]);
+
+  const saveReport = async () => {
+    if (!form.callsign) { showMsg("Callsign required", "error"); return; }
+    setSaving(true);
+    try {
+      const payload = { ...form, group_id: group.id, reported_by: user?.username ?? "Unknown" };
+      if (payload.op_id) {
+        const op = ops.find((o: any) => o.id === payload.op_id);
+        if (op) payload.op_name = op.title ?? op.name ?? "";
+      }
+      await apiFetch("/milsimLace?path=create", { method: "POST", body: JSON.stringify(payload) });
+      showMsg("LACE report filed", "success");
+      setShowForm(false); setForm(emptyForm); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+    setSaving(false);
+  };
+
+  const deleteReport = async (id: string) => {
+    if (!confirm("Delete this LACE report?")) return;
+    await apiFetch("/milsimLace?path=delete", { method: "POST", body: JSON.stringify({ id }) });
+    showMsg("Deleted", "success"); load();
+  };
+
+  const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; dot: string; desc: string }> = {
+    Green:  { label: "Green",  color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/30",  dot: "bg-green-400",  desc: "All Good" },
+    Yellow: { label: "Yellow", color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30", dot: "bg-yellow-400", desc: "Able to function" },
+    Red:    { label: "Red",    color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/30",    dot: "bg-red-400",    desc: "Requires resupply" },
+    "N/A":  { label: "N/A",   color: "text-muted-foreground", bg: "bg-secondary", border: "border-border", dot: "bg-muted-foreground", desc: "Not applicable" },
+  };
+
+  const LACE_FIELDS: { key: "liquid" | "ammo" | "casualty" | "equipment"; label: string; sublabel: string; noteKey: "liquid_note" | "ammo_note" | "casualty_note" | "equipment_note" }[] = [
+    { key: "liquid",    label: "L — Liquid",    sublabel: "Water supply status",        noteKey: "liquid_note"    },
+    { key: "ammo",      label: "A — Ammo",      sublabel: "Ammunition status",          noteKey: "ammo_note"      },
+    { key: "casualty",  label: "C — Casualty",  sublabel: "Personnel status (WIA/KIA)", noteKey: "casualty_note"  },
+    { key: "equipment", label: "E — Equipment", sublabel: "Mission-essential gear",     noteKey: "equipment_note" },
+  ];
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h2 className="font-display font-bold text-lg uppercase tracking-widest">LACE Reports</h2>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Liquid · Ammo · Casualty · Equipment — section status reports.</p>
+        </div>
+        <button onClick={() => setShowForm(v => !v)}
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> File Report
+        </button>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-3">
+        {Object.values(STATUS_CONFIG).map(s => (
+          <div key={s.label} className={`flex items-center gap-1.5 px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider ${s.bg} ${s.border} ${s.color}`}>
+            <span className={`w-2 h-2 rounded-full ${s.dot}`} />
+            {s.label} — {s.desc}
+          </div>
+        ))}
+      </div>
+
+      {showForm && (
+        <div className="border border-primary/30 rounded-lg p-5 bg-primary/5 space-y-5">
+          <h3 className="font-display font-bold text-sm uppercase tracking-widest text-primary">File LACE Report</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <MField label="Callsign *">
+              <input value={form.callsign} onChange={e => setForm((f: any) => ({ ...f, callsign: e.target.value }))} placeholder="e.g. 1-1D" className="mf-input w-full" />
+            </MField>
+            <MField label="Report Time">
+              <input type="datetime-local" value={form.report_time} onChange={e => setForm((f: any) => ({ ...f, report_time: e.target.value }))} className="mf-input w-full" />
+            </MField>
+            <MField label="Linked Op (optional)">
+              <select value={form.op_id} onChange={e => setForm((f: any) => ({ ...f, op_id: e.target.value }))} className="mf-input w-full">
+                <option value="">— No op —</option>
+                {ops.map((o: any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
+              </select>
+            </MField>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {LACE_FIELDS.map(f => (
+              <div key={f.key} className="border border-border rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="font-display font-bold text-xs uppercase tracking-widest">{f.label}</p>
+                  <p className="text-xs text-muted-foreground font-sans">{f.sublabel}</p>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {(["Green", "Yellow", "Red", "N/A"] as const).map(status => {
+                    const cfg = STATUS_CONFIG[status];
+                    return (
+                      <button key={status} onClick={() => setForm((prev: any) => ({ ...prev, [f.key]: status }))}
+                        className={`px-3 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                          form[f.key] === status ? `${cfg.bg} ${cfg.border} ${cfg.color} ring-1 ring-inset ${cfg.border}` : "border-border text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                        }`}>
+                        <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${form[f.key] === status ? cfg.dot : "bg-muted-foreground/40"}`} />
+                        {status}
+                      </button>
+                    );
+                  })}
+                </div>
+                <input value={form[f.noteKey]} onChange={e => setForm((prev: any) => ({ ...prev, [f.noteKey]: e.target.value }))}
+                  placeholder="Optional notes..." className="mf-input w-full text-xs" />
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={saveReport} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Submit
+            </button>
+            <button onClick={() => { setShowForm(false); setForm(emptyForm); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {reports.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground font-sans text-sm border border-dashed border-border rounded-lg">
+          <Radio className="w-8 h-8 mx-auto mb-2 opacity-30" />
+          <p>No LACE reports filed.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {reports.map((r: any) => {
+            const overall = [r.liquid, r.ammo, r.casualty, r.equipment];
+            const hasRed = overall.some(v => v === "Red");
+            const hasYellow = overall.some(v => v === "Yellow");
+            const borderCls = hasRed ? "border-red-500/40" : hasYellow ? "border-yellow-500/40" : "border-green-500/30";
+            return (
+              <div key={r.id} className={`border ${borderCls} rounded-lg p-4 space-y-3 bg-card`}>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <Radio className="w-4 h-4 text-primary shrink-0" />
+                    <div>
+                      <span className="font-display font-bold text-sm uppercase tracking-widest">{r.callsign}</span>
+                      {r.op_name && <span className="ml-2 text-xs text-muted-foreground font-sans">— {r.op_name}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground font-sans">{r.reported_by} · {r.report_time ? new Date(r.report_time).toLocaleString() : new Date(r.created_date).toLocaleString()}</span>
+                    <button onClick={() => deleteReport(r.id)} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {LACE_FIELDS.map(f => {
+                    const val: string = r[f.key] ?? "N/A";
+                    const cfg = STATUS_CONFIG[val] ?? STATUS_CONFIG["N/A"];
+                    return (
+                      <div key={f.key} className={`rounded border p-2.5 space-y-1 ${cfg.bg} ${cfg.border}`}>
+                        <p className="font-display font-bold text-xs uppercase tracking-widest text-muted-foreground">{f.label.split(" — ")[0]}</p>
+                        <div className={`flex items-center gap-1.5 font-display font-bold text-xs uppercase ${cfg.color}`}>
+                          <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />{val}
+                        </div>
+                        {r[f.noteKey] && <p className="text-xs text-muted-foreground font-sans">{r[f.noteKey]}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BriefingsTab({ group, showMsg }: any) {
   const [briefings, setBriefings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
