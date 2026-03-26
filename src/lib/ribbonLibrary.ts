@@ -12,12 +12,13 @@ export interface RibbonTemplate {
   sku?: string;
 }
 
-export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations'];
+export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom'];
 
 export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'United States': ['US Army', 'US Navy', 'US Marine Corps', 'US Air Force'],
   'United Nations': ['United Nations'],
   'NATO': ['NATO'],
+  'United Kingdom': ['UK Gallantry', 'UK Commendations', 'UK Campaign Medals', 'UK Service Medals', 'UK Jubilee Medals'],
 };
 
 export const RIBBON_TEMPLATES: RibbonTemplate[] = [
@@ -246,4 +247,32 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [
   { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Article 5 - Eagle Assist Operation)', url: 'https://www.medals.org.uk/nato/images/nato012.gif' },
   { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Article 5 - Active Endeavour Operation)', url: 'https://www.medals.org.uk/nato/images/nato010.gif' },
   { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Non-Article 5 - Operations in the Balkans)', url: 'https://www.medals.org.uk/nato/images/nato013.gif' },
+
+  // ── United Kingdom ──────────────────────────────────────────────
+  { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Victoria Cross (VC)', url: 'https://www.medals.pl/bc/r/uk1vc.gif' },
+  { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Conspicuous Gallantry Cross (CGC)', url: 'https://www.medals.pl/bc/r/uk1cgc.gif' },
+  { country: 'United Kingdom', branch: 'UK Commendations', name: 'Queen's Commendation for Bravery (QCB)', url: 'https://www.medals.pl/bc/r/uk1bqcb.gif' },
+  { country: 'United Kingdom', branch: 'UK Commendations', name: 'Queen's Commendation for Bravery in the Air', url: 'https://www.medals.pl/bc/r/uk1bqcba.gif' },
+  { country: 'United Kingdom', branch: 'UK Commendations', name: 'Queen's Commendation for Valuable Service', url: 'https://www.medals.pl/bc/r/uk1bqcvs.gif' },
+  { country: 'United Kingdom', branch: 'UK Commendations', name: 'Mention in Despatches (MID)', url: 'https://www.medals.pl/bc/r/uk1bmid2.gif' },
+  { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'South Atlantic Medal 1982 (Falklands)', url: 'https://www.medals.pl/bc/r/uk1msa1.gif' },
+  { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Gulf Medal 1991', url: 'https://www.medals.pl/bc/r/uk1mgu.gif' },
+  { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Rhodesia Medal 1980', url: 'https://www.medals.pl/bc/r/uk1mro.gif' },
+  { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'International Force East Timor Medal (INTERFET)', url: 'https://www.medals.pl/bc/r/interfet.gif' },
+  { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Operational Service Medal - Sierra Leone', url: 'https://www.medals.pl/bc/r/uk1mos_m2.gif' },
+  { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Operational Service Medal - Afghanistan', url: 'https://www.medals.pl/bc/r/uk1mosaf_m2.gif' },
+  { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Iraq Campaign Medal 2003 (Op Telic)', url: 'https://www.medals.pl/bc/r/uk1miqc_m2.gif' },
+  { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Operational Service Medal - Congo', url: 'https://www.medals.pl/bc/r/uk1mosco_m2.gif' },
+  { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Iraq Reconstruction Service Medal', url: 'https://www.medals.pl/bc/r/uk1mirs.gif' },
+  { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Civilian Service Medal - Afghanistan', url: 'https://www.medals.pl/bc/r/uk1mcsaf.gif' },
+  { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Accumulated Campaign Service Medal (1994-2011)', url: 'https://www.medals.pl/bc/r/uk1mas.gif' },
+  { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Accumulated Campaign Service Medal (2011)', url: 'https://www.medals.pl/bc/r/uk1macb.gif' },
+  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Queen's Volunteer Reserves Medal (QVRM)', url: 'https://www.medals.pl/bc/r/uk1mqvr.gif' },
+  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Volunteer Reserves Service Medal (VRSM)', url: 'https://www.medals.pl/bc/r/uk1mvrs.gif' },
+  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Volunteer Reserves Service Medal - HAC', url: 'https://www.medals.pl/bc/r/uk1mhac.gif' },
+  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Ulster Defence Regiment LS&GCM', url: 'https://www.medals.pl/bc/r/uk1mlsudr.gif' },
+  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Northern Ireland Home Service Medal', url: 'https://www.medals.pl/bc/r/uk1mhsni.gif' },
+  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Royal Fleet Auxiliary Service Medal', url: 'https://www.medals.pl/bc/r/uk1mrfa.gif' },
+  { country: 'United Kingdom', branch: 'UK Jubilee Medals', name: 'Golden Jubilee Medal 2002', url: 'https://www.medals.pl/bc/r/uk1mju2002.gif' },
+  { country: 'United Kingdom', branch: 'UK Jubilee Medals', name: 'Diamond Jubilee Medal 2012', url: 'https://www.medals.pl/bc/r/uk1mju2012.gif' },
 ];
