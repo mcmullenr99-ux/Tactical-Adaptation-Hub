@@ -1202,7 +1202,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
       setLoading(true);
       try {
         // Check pro status
-        const proData = await apiFetch(`/getProStatus?path=status&group_id=${group.id}`);
+        const proData = await apiFetch(`/getProStatus?path=status&group_id=${group.id}`) as any;
         setIsPro(!!proData.is_pro);
         if (!proData.is_pro) { setLoading(false); return; }
 
@@ -1210,7 +1210,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
         const [awardsData, rosterData] = await Promise.all([
           apiFetch(`/milsimAwards?path=member_awards&group_id=${group.id}&user_id=${user.id}`),
           apiFetch(`/milsimGroups?path=roster_member&group_id=${group.id}&user_id=${user.id}`),
-        ]);
+        ]) as any[];
 
         // Only include ribbon-type awards
         const ribbons = (awardsData.awards ?? []).filter((a: any) =>
