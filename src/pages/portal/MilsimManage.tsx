@@ -6,6 +6,7 @@ import { PortalLayout } from "@/components/layout/PortalLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import { BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST as MC_GAMES, type Branch } from "@/lib/milsimConstants";
 import { RIBBON_TEMPLATES, RIBBON_COUNTRIES, RIBBON_BRANCHES_BY_COUNTRY, type RibbonTemplate } from "@/lib/ribbonLibrary";
+import { RibbonBuilder, RibbonPreview, ribbonToSvgDataUri, type RibbonConfig, type StripePattern } from "@/components/RibbonBuilder";
 import {
   Activity,
   AlertCircle,
@@ -1124,6 +1125,9 @@ function AwardsTab({ group, showMsg }: any) {
   const [showCreate, setShowCreate] = useState(false);
 
   // Ribbon picker state
+  const [createMode, setCreateMode] = useState<"build" | "library">("build");
+  const [ribbonConfig, setRibbonConfig] = useState<RibbonConfig>({ colors: ["#1a3a6b","#c8102e","#ffffff"], pattern: "thirds" });
+  const [awardName, setAwardName] = useState("");
   const [pickerCountry, setPickerCountry] = useState<string>("");
   const [pickerBranch, setPickerBranch] = useState<string>("");
   const [pickerSearch, setPickerSearch] = useState<string>("");
@@ -1169,24 +1173,19 @@ function AwardsTab({ group, showMsg }: any) {
     setShowCreate(false);
     setSelectedTemplate(null);
     setPickerCountry(""); setPickerBranch(""); setPickerSearch(""); setDesc("");
+    setAwardName(""); setRibbonConfig({ colors: ["#1a3a6b","#c8102e","#ffffff"], pattern: "thirds" });
+    setCreateMode("build");
   };
 
   const createDef = async () => {
-    if (!selectedTemplate) { showMsg(false, "Select a ribbon first."); return; }
+    if (createMode === "library" && !selectedTemplate) { showMsg(false, "Select a ribbon first."); return; }
+    if (createMode === "build" && !awardName.trim()) { showMsg(false, "Enter an award name."); return; }
     setCreating(true);
     try {
-      await apiFetch(`/milsimAwards?path=${group.id}/award-defs`, {
-        method: "POST",
-        body: JSON.stringify({
-          name: selectedTemplate.name,
-          description: desc || undefined,
-          award_type: "ribbon",
-          image_url: selectedTemplate.url,
-          source_country: selectedTemplate.country,
-          source_branch: selectedTemplate.branch,
-          sort_order: defs.length,
-        }),
-      });
+      const payload = createMode === "library"
+        ? { name: selectedTemplate!.name, description: desc || undefined, award_type: "ribbon", image_url: selectedTemplate!.url, source_country: selectedTemplate!.country, source_branch: selectedTemplate!.branch, sort_order: defs.length }
+        : { name: awardName.trim(), description: desc || undefined, award_type: "ribbon", image_url: ribbonToSvgDataUri(ribbonConfig), sort_order: defs.length };
+      await apiFetch(`/milsimAwards?path=${group.id}/award-defs`, { method: "POST", body: JSON.stringify(payload) });
       resetForm();
       showMsg(true, "Award added to library.");
       load();
