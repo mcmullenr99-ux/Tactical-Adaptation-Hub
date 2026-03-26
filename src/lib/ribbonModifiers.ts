@@ -289,4 +289,68 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'select', name: "natoisaf", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/natoisaf.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/natoisaf_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/natoisaf_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/natoisaf_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/natoisaf_cvs.gif" }] },
   ],
 
+  // ── BELGIUM ──────────────────────────────────────────────────────────────────
+  "https://www.medals.pl/be/r/be1ole4.gif": [
+    { type: 'select', name: "be1ole", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/be/r/be1ole4.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/be/r/be1ole4.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/be/r/be1ole4.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/be/r/be1ole4.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/be/r/be1ole4.gif" }] },
+  ],
+  "https://www.medals.pl/be/r/be1oleii.gif": [
+    { type: 'select', name: "be1oleii", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/be/r/be1oleii.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/be/r/be1oleii1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/be/r/be1oleii2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/be/r/be1oleii3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/be/r/be1oleii4.gif" }] },
+  ],
+
+  // ── FRANCE ───────────────────────────────────────────────────────────────────
+  "https://www.medals.pl/fr/r/fr2olh4.gif": [
+    { type: 'select', name: "fr2olh", label: 'Class', options: [{ value: "1", label: "Grand Croix", url: "https://www.medals.pl/fr/r/fr2olh4.gif" }, { value: "2", label: "Grand Officier", url: "https://www.medals.pl/fr/r/fr2olh4.gif" }, { value: "3", label: "Commandeur", url: "https://www.medals.pl/fr/r/fr2olh4.gif" }, { value: "4", label: "Officier", url: "https://www.medals.pl/fr/r/fr2olh4.gif" }, { value: "5", label: "Chevalier", url: "https://www.medals.pl/fr/r/fr2olh4.gif" }] },
+  ],
+
+  // ── ITALY ────────────────────────────────────────────────────────────────────
+  "https://www.medals.pl/it/r/it1omi.gif": [
+    { type: 'select', name: "it1omi", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/it/r/it1omi.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/it/r/it1omi1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/it/r/it1omi2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/it/r/it1omi3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/it/r/it1omi4.gif" }] },
+  ],
+  "https://www.medals.pl/it/r/it1oml.gif": [
+    { type: 'select', name: "it1oml", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/it/r/it1oml.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/it/r/it1oml1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/it/r/it1oml2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/it/r/it1oml3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/it/r/it1oml4.gif" }] },
+  ],
+  "https://www.medals.pl/it/r/it1ocr.gif": [
+    { type: 'select', name: "it1ocr", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/it/r/it1ocr.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/it/r/it1ocr1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/it/r/it1ocr2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/it/r/it1ocr3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/it/r/it1ocr4.gif" }] },
+  ],
+  "https://www.medals.pl/it/r/it2ome.gif": [
+    { type: 'select', name: "it2ome", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/it/r/it2ome.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/it/r/it2ome1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/it/r/it2ome2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/it/r/it2ome3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/it/r/it2ome4.gif" }] },
+  ],
+  "https://www.medals.pl/it/r/it2mvmi2.gif": [
+    { type: 'select', name: "it2mvmi", label: 'Grade', options: [{ value: "1", label: "Gold", url: "https://www.medals.pl/it/r/it2mvmi2.gif" }, { value: "2", label: "Silver", url: "https://www.medals.pl/it/r/it2mvmi2.gif" }] },
+  ],
+
+  // ── GREECE ───────────────────────────────────────────────────────────────────
+  "https://www.medals.pl/gr/r/gr1ore.gif": [
+    { type: 'select', name: "gr1ore", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/gr/r/gr1ore.gif" }, { value: "2", label: "2nd (Grand Commander)", url: "https://www.medals.pl/gr/r/gr1ore1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/gr/r/gr1ore2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/gr/r/gr1ore3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/gr/r/gr1ore4.gif" }] },
+  ],
+  "https://www.medals.pl/gr/r/gr1oph.gif": [
+    { type: 'select', name: "gr1oph", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/gr/r/gr1oph.gif" }, { value: "2", label: "2nd (Grand Commander)", url: "https://www.medals.pl/gr/r/gr1oph1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/gr/r/gr1oph2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/gr/r/gr1oph3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/gr/r/gr1oph4.gif" }] },
+  ],
+  "https://www.medals.pl/gr/r/gr1oge.gif": [
+    { type: 'select', name: "gr1oge", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/gr/r/gr1oge.gif" }, { value: "2", label: "2nd (Grand Commander)", url: "https://www.medals.pl/gr/r/gr1oge1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/gr/r/gr1oge2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/gr/r/gr1oge3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/gr/r/gr1oge4.gif" }] },
+  ],
+
+  // ── NORWAY ───────────────────────────────────────────────────────────────────
+  "https://www.medals.pl/no/r/no1ool.gif": [
+    { type: 'select', name: "no1ool", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/no/r/no1ool.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/no/r/no1ool1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/no/r/no1ool2.gif" }, { value: "4", label: "4th (Knight, 1st Class)", url: "https://www.medals.pl/no/r/no1ool3.gif" }, { value: "5", label: "5th (Knight)", url: "https://www.medals.pl/no/r/no1ool4.gif" }] },
+  ],
+
+  // ── NETHERLANDS ──────────────────────────────────────────────────────────────
+  "https://www.medals.pl/nl/r/nl1oon.gif": [
+    { type: 'select', name: "nl1oon", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/nl/r/nl1oon.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/nl/r/nl1oon1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/nl/r/nl1oon2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/nl/r/nl1oon3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/nl/r/nl1oon4.gif" }] },
+  ],
+
+  // ── POLAND ───────────────────────────────────────────────────────────────────
+  "https://www.medals.pl/pl/r/pl4opr.gif": [
+    { type: 'select', name: "pl4opr", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/pl/r/pl4opr.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/pl/r/pl4opr1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/pl/r/pl4opr2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/pl/r/pl4opr3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/pl/r/pl4opr4.gif" }] },
+  ],
+  "https://www.medals.pl/pl/r/pl2cvab.gif": [
+    { type: 'select', name: "pl2cvab", label: 'Grade', options: [{ value: "1", label: "Gold", url: "https://www.medals.pl/pl/r/pl2cvab.gif" }, { value: "2", label: "Silver", url: "https://www.medals.pl/pl/r/pl2cvab1.gif" }, { value: "3", label: "Bronze", url: "https://www.medals.pl/pl/r/pl2cvab2.gif" }] },
+  ],
+
+  // ── LUXEMBOURG ───────────────────────────────────────────────────────────────
+  "https://www.medals.pl/lu/r/lu1oan.gif": [
+    { type: 'select', name: "lu1oan", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/lu/r/lu1oan.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/lu/r/lu1oan1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/lu/r/lu1oan2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/lu/r/lu1oan3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/lu/r/lu1oan4.gif" }] },
+  ],
+
 };

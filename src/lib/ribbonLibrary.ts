@@ -12,7 +12,7 @@ export interface RibbonTemplate {
   sku?: string;
 }
 
-export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand'];
+export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand', 'Belgium', 'France', 'Italy', 'Greece', 'Norway', 'Netherlands', 'Russia', 'Poland', 'Luxembourg'];
 
 export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'United States': ['US Army', 'US Navy', 'US Marine Corps', 'US Air Force'],
@@ -22,6 +22,15 @@ export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'Australia': ['Australia Gallantry', 'Australia Orders', 'Australia Commendations', 'Australia Campaign Medals', 'Australia Service Medals', 'Australia Jubilee & Commemorative'],
   'Canada': ['Canada Gallantry', 'Canada Orders', 'Canada Campaign Medals', 'Canada Service Medals', 'Canada Jubilee & Commemorative'],
   'New Zealand': ['New Zealand Gallantry', 'New Zealand Orders', 'New Zealand Campaign Medals', 'New Zealand Service Medals', 'New Zealand Jubilee & Commemorative'],
+  'Belgium': ['Belgium Orders', 'Belgium Gallantry & Crosses', 'Belgium Campaign Medals'],
+  'France': ['France Orders', 'France Gallantry & Crosses', 'France Campaign Medals'],
+  'Italy': ['Italy Orders', 'Italy Gallantry & Crosses', 'Italy Campaign Medals'],
+  'Greece': ['Greece Orders', 'Greece Gallantry & Crosses', 'Greece Campaign Medals'],
+  'Norway': ['Norway Orders', 'Norway Gallantry & Crosses', 'Norway Campaign Medals'],
+  'Netherlands': ['Netherlands Orders', 'Netherlands Gallantry & Crosses', 'Netherlands Campaign Medals'],
+  'Russia': ['Russia Orders'],
+  'Poland': ['Poland Orders', 'Poland Gallantry & Crosses'],
+  'Luxembourg': ['Luxembourg Orders', 'Luxembourg Gallantry & Crosses'],
 };
 
 export const RIBBON_TEMPLATES: RibbonTemplate[] = [
@@ -412,4 +421,75 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [
   { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Army Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsa.gif' },
   { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Naval Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsn.gif' },
   { country: 'United Kingdom', branch: 'UK Service Medals', name: 'RAF Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsaf.gif' },
+  // ─── BELGIUM ────────────────────────────────────────────────────────────────
+  { country: 'Belgium', branch: 'Belgium Orders', name: "Order of Léopold", url: 'https://www.medals.pl/be/r/be1ole4.gif' },
+  { country: 'Belgium', branch: 'Belgium Orders', name: "Order of Léopold II", url: 'https://www.medals.pl/be/r/be1oleii.gif' },
+  { country: 'Belgium', branch: 'Belgium Gallantry & Crosses', name: 'Croix de Guerre 1914-18', url: 'https://www.medals.pl/be/r/be1cg18.gif' },
+  { country: 'Belgium', branch: 'Belgium Gallantry & Crosses', name: 'Croix de Guerre 1940-45', url: 'https://www.medals.pl/be/r/be1cg40.gif' },
+  { country: 'Belgium', branch: 'Belgium Campaign Medals', name: 'Commemorative Medal for the War 1914-1918', url: 'https://www.medals.pl/be/r/be1mc1418.gif' },
+  { country: 'Belgium', branch: 'Belgium Campaign Medals', name: 'Liberation Commemorative Medal', url: 'https://www.medals.pl/be/r/be1mli.gif' },
+
+  // ─── FRANCE ─────────────────────────────────────────────────────────────────
+  { country: 'France', branch: 'France Orders', name: "Légion d'Honneur", url: 'https://www.medals.pl/fr/r/fr2olh4.gif' },
+  { country: 'France', branch: 'France Gallantry & Crosses', name: "Médaille Militaire", url: 'https://www.medals.pl/fr/r/fr2mm.gif' },
+  { country: 'France', branch: 'France Gallantry & Crosses', name: 'Croix de Guerre 1914-18', url: 'https://www.medals.pl/fr/r/fr2cdg14.gif' },
+  { country: 'France', branch: 'France Gallantry & Crosses', name: 'Croix de Guerre 1939-45', url: 'https://www.medals.pl/fr/r/fr2cdg39.gif' },
+  { country: 'France', branch: 'France Gallantry & Crosses', name: "Médaille de la Résistance", url: 'https://www.medals.pl/fr/r/fr2mre.gif' },
+  { country: 'France', branch: 'France Gallantry & Crosses', name: 'Croix du Combattant', url: 'https://www.medals.pl/fr/r/fr2cc.gif' },
+  { country: 'France', branch: 'France Campaign Medals', name: "Médaille de la France Libérée", url: 'https://www.medals.pl/fr/r/fr2mli.gif' },
+  { country: 'France', branch: 'France Gallantry & Crosses', name: 'Croix du Combattant Volontaire 1914-18', url: 'https://www.medals.pl/fr/r/fr2ccv14.gif' },
+  { country: 'France', branch: 'France Gallantry & Crosses', name: 'Croix du Combattant Volontaire de la Résistance', url: 'https://www.medals.pl/fr/r/fr2ccvr.gif' },
+  { country: 'France', branch: 'France Campaign Medals', name: "Médaille commémorative de la Guerre 1939-1945", url: 'https://www.medals.pl/fr/r/fr2mcg39.gif' },
+
+  // ─── ITALY ──────────────────────────────────────────────────────────────────
+  { country: 'Italy', branch: 'Italy Orders', name: 'Military Order of Savoy', url: 'https://www.medals.pl/it/r/it1omi.gif' },
+  { country: 'Italy', branch: 'Italy Orders', name: "Order of St. Maurice & St. Lazarus", url: 'https://www.medals.pl/it/r/it1oml.gif' },
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of the Crown of Italy', url: 'https://www.medals.pl/it/r/it1ocr.gif' },
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Merit of the Italian Republic', url: 'https://www.medals.pl/it/r/it2ome.gif' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal for Military Valor', url: 'https://www.medals.pl/it/r/it2mvmi2.gif' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'War Merit Cross', url: 'https://www.medals.pl/it/r/it2cmg.gif' },
+
+  // ─── GREECE ─────────────────────────────────────────────────────────────────
+  { country: 'Greece', branch: 'Greece Orders', name: 'Order of the Redeemer', url: 'https://www.medals.pl/gr/r/gr1ore.gif' },
+  { country: 'Greece', branch: 'Greece Orders', name: 'Order of the Phoenix', url: 'https://www.medals.pl/gr/r/gr1oph.gif' },
+  { country: 'Greece', branch: 'Greece Orders', name: 'Royal Order of George I', url: 'https://www.medals.pl/gr/r/gr1oge.gif' },
+  { country: 'Greece', branch: 'Greece Gallantry & Crosses', name: 'Cross of Valour', url: 'https://www.medals.pl/gr/r/gr1cva.gif' },
+  { country: 'Greece', branch: 'Greece Gallantry & Crosses', name: 'War Cross 1940', url: 'https://www.medals.pl/gr/r/gr1wc.gif' },
+  { country: 'Greece', branch: 'Greece Gallantry & Crosses', name: 'Medal for Outstanding Acts', url: 'https://www.medals.pl/gr/r/gr1moab.gif' },
+  { country: 'Greece', branch: 'Greece Campaign Medals', name: 'Commemorative Medal of War 1940-1941', url: 'https://www.medals.pl/gr/r/gr1mw4041b.gif' },
+  { country: 'Greece', branch: 'Greece Campaign Medals', name: 'Commemorative Medal of War 1941-1945', url: 'https://www.medals.pl/gr/r/gr1mw4145b.gif' },
+
+  // ─── NORWAY ─────────────────────────────────────────────────────────────────
+  { country: 'Norway', branch: 'Norway Orders', name: 'Order of St. Olaf', url: 'https://www.medals.pl/no/r/no1ool.gif' },
+  { country: 'Norway', branch: 'Norway Gallantry & Crosses', name: 'War Cross', url: 'https://www.medals.pl/no/r/no1cw.gif' },
+  { country: 'Norway', branch: 'Norway Gallantry & Crosses', name: "Haakon VII's Cross of Liberty", url: 'https://www.medals.pl/no/r/no1cfr.gif' },
+  { country: 'Norway', branch: 'Norway Gallantry & Crosses', name: "Haakon VII's Freedom Medal", url: 'https://www.medals.pl/no/r/no1mfr.gif' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'War Medal', url: 'https://www.medals.pl/no/r/no1wam.gif' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Defense Participation Medal 1940-45', url: 'https://www.medals.pl/no/r/no1m4045.gif' },
+  { country: 'Norway', branch: 'Norway Orders', name: "St. Olaf's Medal with Oak Wreath", url: 'https://www.medals.pl/no/r/no1molo.gif' },
+
+  // ─── NETHERLANDS ────────────────────────────────────────────────────────────
+  { country: 'Netherlands', branch: 'Netherlands Orders', name: 'Military Order of William', url: 'https://www.medals.pl/nl/r/nl1owi.gif' },
+  { country: 'Netherlands', branch: 'Netherlands Orders', name: 'Order of Orange-Nassau', url: 'https://www.medals.pl/nl/r/nl1oon.gif' },
+  { country: 'Netherlands', branch: 'Netherlands Gallantry & Crosses', name: 'Bronze Lion', url: 'https://www.medals.pl/nl/r/nl1bli.gif' },
+  { country: 'Netherlands', branch: 'Netherlands Gallantry & Crosses', name: 'Bronze Cross', url: 'https://www.medals.pl/nl/r/nl1cbr.gif' },
+  { country: 'Netherlands', branch: 'Netherlands Gallantry & Crosses', name: 'Flying Cross', url: 'https://www.medals.pl/nl/r/nl1cfl.gif' },
+  { country: 'Netherlands', branch: 'Netherlands Gallantry & Crosses', name: 'Cross of Merit', url: 'https://www.medals.pl/nl/r/nl1cme.gif' },
+
+  // ─── RUSSIA ─────────────────────────────────────────────────────────────────
+  { country: 'Russia', branch: 'Russia Orders', name: 'Cross/Medal of St. George', url: 'https://www.medals.pl/ru/r/ru1ogeo.gif' },
+  { country: 'Russia', branch: 'Russia Orders', name: 'Order of St. Vladimir', url: 'https://www.medals.pl/ru/r/ru1ovla.gif' },
+  { country: 'Russia', branch: 'Russia Orders', name: 'Order of St. Anne', url: 'https://www.medals.pl/ru/r/ru1oann.gif' },
+  { country: 'Russia', branch: 'Russia Orders', name: 'Order of St. Stanislas', url: 'https://www.medals.pl/ru/r/ru1osta.gif' },
+
+  // ─── POLAND ─────────────────────────────────────────────────────────────────
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Virtuti Militari', url: 'https://www.medals.pl/pl/r/pl4ovm.gif' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order of Polonia Restituta', url: 'https://www.medals.pl/pl/r/pl4opr.gif' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Valor', url: 'https://www.medals.pl/pl/r/pl2cvab.gif' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Merit', url: 'https://www.medals.pl/pl/r/pl2cme.gif' },
+
+  // ─── LUXEMBOURG ─────────────────────────────────────────────────────────────
+  { country: 'Luxembourg', branch: 'Luxembourg Orders', name: 'Order of Adolph of Nassau', url: 'https://www.medals.pl/lu/r/lu1oan.gif' },
+  { country: 'Luxembourg', branch: 'Luxembourg Gallantry & Crosses', name: 'Croix de Guerre', url: 'https://www.medals.pl/lu/r/lu1cg.gif' },
+
 ];
