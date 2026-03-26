@@ -1975,7 +1975,7 @@ function EventHubTab({ group, showMsg }: any) {
 
 
 function EventsTab({ group, showMsg }: any) {
-  const [sub, setSub] = useState<"ops" | "aars" | "briefings" | "warnos" | "lace" | "sitrep" | "training" | "conduct">("ops");
+  const [sub, setSub] = useState<"ops" | "aars" | "briefings" | "warnos" | "lace" | "sitrep" | "medevac" | "conduct">("ops");
   const SUB_TABS = [
     { id: "ops" as const,       label: "Operations",  icon: Siren },
     { id: "aars" as const,      label: "AARs",        icon: ClipboardList },
@@ -1983,7 +1983,7 @@ function EventsTab({ group, showMsg }: any) {
     { id: "warnos" as const,    label: "WARNOs",      icon: AlertTriangle },
     { id: "lace" as const,      label: "LACE",        icon: Radio },
     { id: "sitrep" as const,    label: "SITREPs",     icon: Target },
-    { id: "training" as const,  label: "Ex Reviews",  icon: BookCheck },
+    { id: "medevac" as const,   label: "MEDEVAC",     icon: Radio },
     { id: "conduct" as const,   label: "Conduct",     icon: UserMinus2 },
   ];
   return (
@@ -2004,7 +2004,7 @@ function EventsTab({ group, showMsg }: any) {
       {sub === "warnos"    && <WarnosTab    group={group} showMsg={showMsg} />}
       {sub === "lace"      && <LaceTab         group={group} showMsg={showMsg} />}
       {sub === "sitrep"    && <SitrepTab        group={group} showMsg={showMsg} />}
-      {sub === "training"  && <TrainingReviewTab group={group} showMsg={showMsg} />}
+      {sub === "medevac"   && <MedevacTab         group={group} showMsg={showMsg} />}
       {sub === "conduct"   && <ConductReportTab  group={group} showMsg={showMsg} />}
     </div>
   );
@@ -2828,6 +2828,10 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
    NATO SITREP: DTG · FROM · TO · LOCATION · ACTIVITY · REMARKS
    Compact slate card — answers "where are you?" and "what are you doing?"
 ──────────────────────────────────────────────────────────────────────────── */
+/* ─── SITREP Tab — NATO Slate Card (ABCDE format) ────────────────────────────
+   A = When  B = Where  C = What it is  D = What is it doing  E = What are you doing about it
+   Gold/amber table layout matching real slate card
+──────────────────────────────────────────────────────────────────────────── */
 function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
@@ -2842,11 +2846,16 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
   const emptyForm = {
     from_callsign: "", to_callsign: "", op_id: "", op_name: "",
     report_time: dtgNow,
-    position: "", activity: "",
-    enemy_contact: "NONE", enemy_notes: "",
+    // ABCDE
+    field_a: "",  // When (DTG of event/sighting)
+    field_b: "",  // Where (Grid/Location)
+    field_c: "",  // What it is (Description of subject)
+    field_d: "",  // What is it doing (Activity)
+    field_e: "",  // What are you doing about it (Own action)
+    // Supplementary
+    enemy_contact: "NONE",
     friendly_casualties: "NONE", casualty_notes: "",
-    mission_status: "ON TRACK", mission_notes: "",
-    next_action: "", remarks: "",
+    mission_status: "ON TRACK",
   };
   const [form, setForm] = useState<any>(emptyForm);
 
@@ -2866,24 +2875,31 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
 
   const save = async () => {
     if (!form.from_callsign) { showMsg("FROM callsign required", "error"); return; }
-    if (!form.position || !form.activity) { showMsg("Location and Activity are mandatory SITREP fields", "error"); return; }
+    if (!form.field_b) { showMsg("Where (B — Location) is mandatory", "error"); return; }
     setSaving(true);
     try {
       const payload: any = {
         group_id: group.id, reported_by: user?.username ?? "Unknown",
         callsign: form.from_callsign, report_time: form.report_time,
         op_id: form.op_id, op_name: form.op_name,
-        position: form.position,
-        activity: form.activity,
-        enemy_contact: form.enemy_contact, enemy_notes: form.enemy_notes,
+        // Map ABCDE to existing entity fields
+        position: form.field_b,
+        activity: form.field_d,
+        enemy_contact: form.enemy_contact,
         friendly_casualties: form.friendly_casualties, casualty_notes: form.casualty_notes,
-        mission_status: form.mission_status, mission_notes: form.mission_notes,
-        next_action: form.next_action,
-        additional_info: form.remarks,
+        mission_status: form.mission_status,
+        next_action: form.field_e,
+        additional_info: JSON.stringify({
+          a: form.field_a,
+          c: form.field_c,
+          b: form.field_b,
+          d: form.field_d,
+          e: form.field_e,
+        }),
       };
       if (payload.op_id) { const op = ops.find((o:any) => o.id === payload.op_id); if (op) payload.op_name = op.title ?? op.name ?? ""; }
       await apiFetch("/milsimSitrep?path=create", { method: "POST", body: JSON.stringify(payload) });
-      showMsg("SITREP filed", "success"); setShowForm(false); setForm({...emptyForm, report_time: dtgNow}); load();
+      showMsg("SITREP transmitted", "success"); setShowForm(false); setForm({...emptyForm, report_time: dtgNow}); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
   };
@@ -2902,17 +2918,27 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
   };
   const CAS_COLOR: Record<string, string> = { NONE:"text-green-400", MINOR:"text-yellow-400", SIGNIFICANT:"text-orange-400", CRITICAL:"text-red-400" };
 
+  // The 5 ABCDE rows
+  const ROWS: { letter: string; label: string; sublabel: string; field: string; placeholder: string; rows?: number }[] = [
+    { letter: "A", label: "When?",                    sublabel: "DTG of the event / sighting / activity",     field: "field_a", placeholder: `e.g. ${dtgNow}` },
+    { letter: "B", label: "Where?",                   sublabel: "Grid reference or location descriptor",       field: "field_b", placeholder: "e.g. Grid 4523, Compound 6-6, Treeline NE of OBJ" },
+    { letter: "C", label: "What is it?",              sublabel: "Description — type, size, composition",       field: "field_c", placeholder: "e.g. Enemy infantry section, ~8 personnel, light weapons" },
+    { letter: "D", label: "What is it doing?",        sublabel: "Observed activity or direction of movement",  field: "field_d", placeholder: "e.g. Patrolling south along Route AMBER, no apparent awareness" },
+    { letter: "E", label: "What are you doing about it?", sublabel: "Own element's action or intent",         field: "field_e", placeholder: "e.g. Breaking contact, requesting fire support, holding position", rows: 2 },
+  ];
+
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="font-display font-bold text-lg uppercase tracking-widest">SITREP</h2>
-            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded">NATO Standard</span>
+            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-amber-500/15 border border-amber-500/40 text-amber-400 rounded">NATO Slate Card</span>
           </div>
-          <p className="text-xs text-muted-foreground font-sans mt-0.5">Situation Report — Location + Activity to higher command. Mandatory fields: DTG, FROM, LOCATION, ACTIVITY.</p>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Situation Report — A=When · B=Where · C=What is it · D=What is it doing · E=What are you doing about it</p>
         </div>
         <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
           <Plus className="w-3.5 h-3.5" /> Send SITREP
@@ -2920,97 +2946,117 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
       </div>
 
       {showForm && (
-        <div className="border border-primary/40 rounded-lg overflow-hidden">
-          <div className="bg-primary/15 border-b border-primary/30 px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+        <div className="border border-amber-500/50 rounded-lg overflow-hidden">
+          {/* Slate card header — amber to match real card */}
+          <div className="bg-amber-500/20 border-b border-amber-500/40 px-5 py-3 flex items-center justify-between flex-wrap gap-2">
             <div>
-              <p className="font-display font-black text-sm uppercase tracking-widest text-primary">SITUATION REPORT — SLATE CARD</p>
-              <p className="text-xs text-muted-foreground font-sans mt-0.5">Mandatory: DTG · FROM · LOCATION · ACTIVITY. All others are supplementary.</p>
+              <p className="font-display font-black text-sm uppercase tracking-widest text-amber-400">SITREP — SLATE CARD</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">AUTHORITY: NATO Standard · 4IB 2 Signals Regiment Format</p>
             </div>
             <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1 rounded">UNCLASSIFIED</span>
           </div>
-          <div className="p-5 space-y-5 bg-card">
-            {/* Mandatory header */}
-            <div>
-              <p className="font-display font-bold text-xs uppercase tracking-widest text-primary mb-3">— Mandatory Fields —</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <MField label="DTG *">
-                  <input value={form.report_time} onChange={e => setForm((f:any) => ({...f, report_time: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
-                </MField>
-                <MField label="FROM (Callsign) *">
-                  <input value={form.from_callsign} onChange={e => setForm((f:any) => ({...f, from_callsign: e.target.value}))} placeholder="e.g. 1-1 ALPHA" className="mf-input w-full" />
-                </MField>
-                <MField label="TO (Higher Element)">
-                  <input value={form.to_callsign} onChange={e => setForm((f:any) => ({...f, to_callsign: e.target.value}))} placeholder="e.g. PLATOON ACTUAL" className="mf-input w-full" />
-                </MField>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <MField label="LOCATION / GRID *">
-                <input value={form.position} onChange={e => setForm((f:any) => ({...f, position: e.target.value}))} placeholder="e.g. Grid 4523, Compound 6-6, Sector Bravo" className="mf-input w-full" />
-              </MField>
-              <MField label="ACTIVITY *">
-                <input value={form.activity} onChange={e => setForm((f:any) => ({...f, activity: e.target.value}))} placeholder="e.g. Firm, awaiting orders / Advancing to OBJ FALCON" className="mf-input w-full" />
-              </MField>
-            </div>
-            <MField label="Linked Op">
-              <select value={form.op_id} onChange={e => setForm((f:any) => ({...f, op_id: e.target.value}))} className="mf-input w-full">
-                <option value="">— None —</option>
-                {ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
-              </select>
-            </MField>
 
-            {/* Supplementary */}
-            <div className="border-t border-border pt-4">
-              <p className="font-display font-bold text-xs uppercase tracking-widest text-muted-foreground mb-3">— Supplementary (Optional) —</p>
-              <div className="space-y-4">
-                {/* Enemy Contact */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="border border-border rounded-lg p-3 space-y-2">
-                    <p className="font-display font-bold text-xs uppercase tracking-widest">Enemy Contact</p>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {(["NONE","POSSIBLE","CONFIRMED","ENGAGED"] as const).map(v => {
-                        const cfg = CONTACT[v];
-                        return <button key={v} onClick={() => setForm((f:any) => ({...f, enemy_contact: v}))}
-                          className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.enemy_contact === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
-                      })}
-                    </div>
-                    <input value={form.enemy_notes} onChange={e => setForm((f:any) => ({...f, enemy_notes: e.target.value}))} placeholder="Enemy detail, bearing, distance..." className="mf-input w-full text-xs" />
+          <div className="bg-card">
+            {/* FROM / TO / DTG header row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border-b border-amber-500/20">
+              <MField label="DTG (Report Time)">
+                <input value={form.report_time} onChange={e => setForm((f:any) => ({...f, report_time: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
+              </MField>
+              <MField label="FROM (Callsign) *">
+                <input value={form.from_callsign} onChange={e => setForm((f:any) => ({...f, from_callsign: e.target.value}))} placeholder="e.g. 1-1 ALPHA" className="mf-input w-full" />
+              </MField>
+              <MField label="TO (Higher Element)">
+                <input value={form.to_callsign} onChange={e => setForm((f:any) => ({...f, to_callsign: e.target.value}))} placeholder="e.g. PLATOON ACTUAL" className="mf-input w-full" />
+              </MField>
+            </div>
+            <div className="px-4 pb-4 border-b border-amber-500/20">
+              <MField label="Linked Op (Optional)">
+                <select value={form.op_id} onChange={e => setForm((f:any) => ({...f, op_id: e.target.value}))} className="mf-input w-full">
+                  <option value="">— No op —</option>
+                  {ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
+                </select>
+              </MField>
+            </div>
+
+            {/* ABCDE table — styled to match the amber slate card */}
+            <div className="border-b border-amber-500/20">
+              {ROWS.map((row, i) => (
+                <div key={row.letter} className={`flex border-b border-amber-500/20 last:border-0 ${i % 2 === 0 ? "" : ""}`}>
+                  {/* Letter column */}
+                  <div className="w-12 shrink-0 flex items-center justify-center bg-amber-500/15 border-r border-amber-500/30">
+                    <span className="font-display font-black text-lg text-amber-400">{row.letter}</span>
                   </div>
-                  <div className="border border-border rounded-lg p-3 space-y-2">
-                    <p className="font-display font-bold text-xs uppercase tracking-widest">Friendly Casualties</p>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {(["NONE","MINOR","SIGNIFICANT","CRITICAL"] as const).map(v => (
-                        <button key={v} onClick={() => setForm((f:any) => ({...f, friendly_casualties: v}))}
-                          className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.friendly_casualties === v ? `bg-secondary/80 border-primary/50 ${CAS_COLOR[v]}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>
-                      ))}
-                    </div>
-                    <input value={form.casualty_notes} onChange={e => setForm((f:any) => ({...f, casualty_notes: e.target.value}))} placeholder="e.g. 5 up, 1 WIA walking" className="mf-input w-full text-xs" />
+                  {/* Label column */}
+                  <div className="w-44 shrink-0 flex flex-col justify-center px-3 py-3 bg-amber-500/10 border-r border-amber-500/30">
+                    <p className="font-display font-black text-xs uppercase tracking-widest text-amber-300">{row.label}</p>
+                    <p className="text-xs text-muted-foreground font-sans mt-0.5 leading-tight">{row.sublabel}</p>
+                  </div>
+                  {/* Input column */}
+                  <div className="flex-1 p-2.5">
+                    {row.rows ? (
+                      <textarea
+                        value={form[row.field]}
+                        onChange={e => setForm((f:any) => ({...f, [row.field]: e.target.value}))}
+                        rows={row.rows}
+                        placeholder={row.placeholder}
+                        className="mf-input w-full resize-none text-sm"
+                      />
+                    ) : (
+                      <input
+                        value={form[row.field]}
+                        onChange={e => setForm((f:any) => ({...f, [row.field]: e.target.value}))}
+                        placeholder={row.placeholder}
+                        className="mf-input w-full text-sm"
+                      />
+                    )}
                   </div>
                 </div>
-                {/* Mission Status */}
+              ))}
+            </div>
+
+            {/* Supplementary status strip */}
+            <div className="p-4 border-t border-amber-500/20">
+              <p className="font-display font-bold text-xs uppercase tracking-widest text-muted-foreground mb-3">— Supplementary Status (Optional) —</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Enemy Contact */}
+                <div className="border border-border rounded-lg p-3 space-y-2">
+                  <p className="font-display font-bold text-xs uppercase tracking-widest">Enemy Contact</p>
+                  <div className="flex flex-wrap gap-1">
+                    {(["NONE","POSSIBLE","CONFIRMED","ENGAGED"] as const).map(v => {
+                      const cfg = CONTACT[v];
+                      return <button key={v} onClick={() => setForm((f:any) => ({...f, enemy_contact: v}))}
+                        className={`px-2 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.enemy_contact === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
+                    })}
+                  </div>
+                </div>
+                {/* Casualties */}
+                <div className="border border-border rounded-lg p-3 space-y-2">
+                  <p className="font-display font-bold text-xs uppercase tracking-widest">Own Casualties</p>
+                  <div className="flex flex-wrap gap-1">
+                    {(["NONE","MINOR","SIGNIFICANT","CRITICAL"] as const).map(v => (
+                      <button key={v} onClick={() => setForm((f:any) => ({...f, friendly_casualties: v}))}
+                        className={`px-2 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.friendly_casualties === v ? `bg-secondary/80 border-primary/50 ${CAS_COLOR[v]}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>
+                    ))}
+                  </div>
+                  {form.friendly_casualties !== "NONE" && (
+                    <input value={form.casualty_notes} onChange={e => setForm((f:any) => ({...f, casualty_notes: e.target.value}))} placeholder="e.g. 5 up, 1 WIA walking" className="mf-input w-full text-xs" />
+                  )}
+                </div>
+                {/* Mission */}
                 <div className="border border-border rounded-lg p-3 space-y-2">
                   <p className="font-display font-bold text-xs uppercase tracking-widest">Mission Status</p>
-                  <div className="flex gap-1.5 flex-wrap">
+                  <div className="flex flex-wrap gap-1">
                     {(["ON TRACK","DELAYED","COMPROMISED","ABORT"] as const).map(v => {
                       const cfg = MISSION[v];
                       return <button key={v} onClick={() => setForm((f:any) => ({...f, mission_status: v}))}
-                        className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.mission_status === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
+                        className={`px-2 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.mission_status === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
                     })}
                   </div>
-                  <input value={form.mission_notes} onChange={e => setForm((f:any) => ({...f, mission_notes: e.target.value}))} placeholder="Mission detail..." className="mf-input w-full text-xs" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <MField label="Next Action">
-                    <input value={form.next_action} onChange={e => setForm((f:any) => ({...f, next_action: e.target.value}))} placeholder="e.g. Advance to Phase Line BLUE" className="mf-input w-full" />
-                  </MField>
-                  <MField label="Remarks">
-                    <input value={form.remarks} onChange={e => setForm((f:any) => ({...f, remarks: e.target.value}))} placeholder="Any additional info..." className="mf-input w-full" />
-                  </MField>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2 border-t border-border">
+            <div className="flex gap-2 p-4 pt-0">
               <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Transmit SITREP
               </button>
@@ -3020,58 +3066,77 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
         </div>
       )}
 
+      {/* Records */}
       {reports.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><Target className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No SITREPs filed.</p></div>
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg">
+          <Target className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No SITREPs on record.</p>
+        </div>
       ) : (
         <div className="space-y-3">
           {reports.map((r:any) => {
+            // Parse ABCDE from additional_info if stored as JSON
+            let abcde: any = {};
+            try { if (r.additional_info && r.additional_info.startsWith('{')) abcde = JSON.parse(r.additional_info); } catch {}
+            const fieldA = abcde.a ?? r.report_time ?? "";
+            const fieldB = abcde.b ?? r.position ?? "";
+            const fieldC = abcde.c ?? "";
+            const fieldD = abcde.d ?? r.activity ?? "";
+            const fieldE = abcde.e ?? r.next_action ?? "";
             const ec = CONTACT[(r.enemy_contact ?? "NONE").toUpperCase()] ?? CONTACT["NONE"];
             const ms = MISSION[(r.mission_status ?? "ON TRACK").toUpperCase()] ?? MISSION["ON TRACK"];
             const isHot = (r.enemy_contact ?? "").toUpperCase() === "ENGAGED" || (r.mission_status ?? "").toUpperCase() === "ABORT";
-            const isWarm = (r.enemy_contact ?? "").toUpperCase() === "CONFIRMED" || (r.mission_status ?? "").toUpperCase() === "COMPROMISED";
             return (
-              <div key={r.id} className={`border ${isHot ? "border-red-500/50" : isWarm ? "border-orange-500/40" : "border-border"} rounded-lg overflow-hidden bg-card`}>
-                <div className="bg-secondary/30 border-b border-border px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+              <div key={r.id} className={`border ${isHot ? "border-red-500/50" : "border-amber-500/30"} rounded-lg overflow-hidden bg-card`}>
+                {/* Card header */}
+                <div className="bg-amber-500/10 border-b border-amber-500/25 px-4 py-2 flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-3">
-                    <Target className="w-4 h-4 text-primary shrink-0" />
+                    <Target className="w-4 h-4 text-amber-400 shrink-0" />
                     <span className="font-display font-black text-sm uppercase tracking-widest">{r.callsign}</span>
                     {r.op_name && <span className="text-xs text-muted-foreground font-sans">/ {r.op_name}</span>}
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground font-mono">{r.report_time || new Date(r.created_date).toUTCString().slice(5,22)}</span>
+                    <span className="text-xs text-muted-foreground font-mono">{r.report_time || ""}</span>
                     <span className="text-xs text-muted-foreground font-sans">{r.reported_by}</span>
                     <button onClick={async () => { if(!confirm("Delete?")) return; await apiFetch("/milsimSitrep?path=delete",{method:"POST",body:JSON.stringify({id:r.id})}); load(); }} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
-                {/* Core fields: Location + Activity */}
-                <div className="grid grid-cols-1 md:grid-cols-2 border-b border-border">
-                  <div className="p-3 border-r border-border">
-                    <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Location</p>
-                    <p className="text-sm font-sans">{r.position || "—"}</p>
+                {/* ABCDE table in record */}
+                {[
+                  { letter:"A", label:"When",          val: fieldA },
+                  { letter:"B", label:"Where",          val: fieldB },
+                  { letter:"C", label:"What is it",     val: fieldC },
+                  { letter:"D", label:"What doing",     val: fieldD },
+                  { letter:"E", label:"Own action",     val: fieldE },
+                ].filter(row => row.val).map((row, i, arr) => (
+                  <div key={row.letter} className={`flex ${i < arr.length - 1 ? "border-b border-amber-500/15" : ""}`}>
+                    <div className="w-8 shrink-0 flex items-center justify-center bg-amber-500/10 border-r border-amber-500/20">
+                      <span className="font-display font-black text-xs text-amber-400">{row.letter}</span>
+                    </div>
+                    <div className="w-28 shrink-0 flex items-center px-2 py-2 bg-amber-500/5 border-r border-amber-500/15">
+                      <span className="font-display font-bold text-xs uppercase tracking-widest text-amber-300/70">{row.label}</span>
+                    </div>
+                    <div className="flex-1 px-3 py-2">
+                      <p className="text-sm font-sans">{row.val}</p>
+                    </div>
                   </div>
-                  <div className="p-3">
-                    <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Activity</p>
-                    <p className="text-sm font-sans">{r.activity || r.next_action || "—"}</p>
+                ))}
+                {/* Status strip */}
+                {(r.enemy_contact !== "NONE" || r.mission_status !== "ON TRACK" || r.friendly_casualties !== "NONE") && (
+                  <div className="grid grid-cols-3 text-xs border-t border-amber-500/20">
+                    <div className={`p-2 border-r border-border ${ec.bg}`}>
+                      <p className="text-muted-foreground font-display font-bold uppercase tracking-wider text-xs mb-0.5">Enemy</p>
+                      <p className={`font-display font-black uppercase ${ec.color}`}>{r.enemy_contact ?? "NONE"}</p>
+                    </div>
+                    <div className={`p-2 border-r border-border ${ms.bg}`}>
+                      <p className="text-muted-foreground font-display font-bold uppercase tracking-wider text-xs mb-0.5">Mission</p>
+                      <p className={`font-display font-black uppercase ${ms.color}`}>{r.mission_status ?? "ON TRACK"}</p>
+                    </div>
+                    <div className="p-2">
+                      <p className="text-muted-foreground font-display font-bold uppercase tracking-wider text-xs mb-0.5">Casualties</p>
+                      <p className={`font-display font-black uppercase ${CAS_COLOR[(r.friendly_casualties ?? "NONE").toUpperCase()] ?? "text-green-400"}`}>{r.friendly_casualties ?? "NONE"}</p>
+                    </div>
                   </div>
-                </div>
-                {/* Status grid */}
-                <div className="grid grid-cols-3 text-xs">
-                  <div className={`p-2.5 border-r border-border ${ec.bg}`}>
-                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Enemy</p>
-                    <p className={`font-display font-black uppercase ${ec.color}`}>{r.enemy_contact ?? "NONE"}</p>
-                    {r.enemy_notes && <p className="text-muted-foreground font-sans mt-1 text-xs">{r.enemy_notes}</p>}
-                  </div>
-                  <div className={`p-2.5 border-r border-border ${ms.bg}`}>
-                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Mission</p>
-                    <p className={`font-display font-black uppercase ${ms.color}`}>{r.mission_status ?? "ON TRACK"}</p>
-                    {r.mission_notes && <p className="text-muted-foreground font-sans mt-1 text-xs">{r.mission_notes}</p>}
-                  </div>
-                  <div className="p-2.5">
-                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Casualties</p>
-                    <p className={`font-display font-black uppercase ${CAS_COLOR[(r.friendly_casualties ?? "NONE").toUpperCase()] ?? "text-green-400"}`}>{r.friendly_casualties ?? "NONE"}</p>
-                    {r.casualty_notes && <p className="text-muted-foreground font-sans mt-1 text-xs">{r.casualty_notes}</p>}
-                  </div>
-                </div>
+                )}
               </div>
             );
           })}
@@ -3081,15 +3146,14 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
   );
 }
 
-/* ─── Training Review Tab — NATO EXEVAL Style ─────────────────────────────────
-   Based on NATO exercise evaluation structure:
-   Exercise Name · DTG · Conducted By · Participants · Skills · Scores · Gaps
+/* ─── MEDEVAC Tab — NATO 9-Line Request ───────────────────────────────────────
+   Exact fields from the 4IB 2 Signals Regiment MEDEVAC card:
+   1 Callsign & Freq  2 HLS Grid  3 Patients/Precedence  4 Special Equipment
+   5 Patient Type     6 HLS Security  7 HLS Marking  8 Nationality/Status  9 HLS Terrain
 ──────────────────────────────────────────────────────────────────────────── */
-const TRAINING_SKILLS = ["Patrolling","Room Clearing","Fire & Manoeuvre","Bounding Overwatch","Medical/CASEVAC","Comms Procedures","Air Assault","Convoy Ops","Recce","Indirect Fire","Vehicle Ops","NBC / CBRN","Night Ops","Urban Combat","Breaching","Sniper Ops","Logistics","Command & Control","Land Navigation","Orders Process","QBO / TTP"];
-
-function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
+function MedevacTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
   const { user } = useAuth();
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
   const [ops, setOps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -3099,12 +3163,27 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
   const dtgNow = `${String(now.getUTCDate()).padStart(2,'0')}${String(now.getUTCHours()).padStart(2,'0')}${String(now.getUTCMinutes()).padStart(2,'0')}Z ${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][now.getUTCMonth()]} ${now.getUTCFullYear()}`;
 
   const emptyForm = {
-    exercise_name: "", exercise_date: dtgNow, exercise_type: "TRAINING EX",
-    op_id: "", op_name: "",
-    conducted_by: "", reviewed_by: "", participant_count: "",
-    skills_practised: [] as string[],
-    overall_execution: 0, comms_quality: 0, tactics_quality: 0, discipline_quality: 0,
-    notable_gaps: "", highlights: "", repeat_recommended: false,
+    callsign: "", unit: "", dtg: dtgNow, op_id: "", op_name: "",
+    // Line 1
+    l1_callsign_freq: "",
+    // Line 2
+    l2_hls_grid: "",
+    // Line 3 — patients by precedence
+    l3_p1: 0, l3_p2: 0, l3_p3: 0,
+    // Line 4 — special equipment
+    l4_equipment: "A" as "A"|"B"|"C"|"D"|"E",
+    l4_other: "",
+    // Line 5 — patient type
+    l5_stretcher: 0, l5_walking: 0, l5_escort: 0, l5_other: "",
+    // Line 6 — HLS security
+    l6_security: "N" as "N"|"P"|"E"|"X",
+    // Line 7 — HLS marking
+    l7_marking: "C" as "A"|"B"|"C"|"D"|"E",
+    l7_smoke_colour: "",
+    // Line 8 — nationality/status (checkboxes)
+    l8_a: 0, l8_b: 0, l8_c: 0, l8_d: 0, l8_e: 0, l8_f: 0, l8_g: 0, l8_h: 0,
+    // Line 9
+    l9_terrain: "",
   };
   const [form, setForm] = useState<any>(emptyForm);
 
@@ -3112,58 +3191,105 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
     setLoading(true);
     try {
       const [d, opsData] = await Promise.all([
-        apiFetch(`/milsimTrainingReview?path=list&group_id=${group.id}`),
+        apiFetch(`/milsimSitrep?path=medevac_list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
       ]);
-      setReviews(d.reviews ?? []);
-      setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)));
+      setRequests(d.medevacs ?? []);
+      setOps((opsData.events ?? []).filter((o:any) => ["Active","Confirmed","Planned"].includes(o.status)));
     } catch {}
     setLoading(false);
   };
   useEffect(() => { load(); }, [group.id]);
 
-  const toggleSkill = (skill: string) => setForm((f: any) => ({
-    ...f, skills_practised: f.skills_practised.includes(skill)
-      ? f.skills_practised.filter((s: string) => s !== skill)
-      : [...f.skills_practised, skill],
-  }));
-
   const save = async () => {
-    if (!form.exercise_name) { showMsg("Exercise name required", "error"); return; }
-    if (!form.conducted_by) { showMsg("Conducted by required", "error"); return; }
+    if (!form.callsign) { showMsg("Callsign required", "error"); return; }
+    if (!form.l1_callsign_freq) { showMsg("Line 1 (Callsign & Freq) required", "error"); return; }
+    if (!form.l2_hls_grid) { showMsg("Line 2 (HLS Grid) required", "error"); return; }
     setSaving(true);
     try {
-      const trPayload: any = { ...form, group_id: group.id, reviewed_by: form.reviewed_by || user?.username || "Unknown", participant_count: Number(form.participant_count) || 0 };
-      if (trPayload.op_id) { const op = ops.find((o:any) => o.id === trPayload.op_id); if (op) trPayload.op_name = op.title ?? op.name ?? ""; }
-      await apiFetch("/milsimTrainingReview?path=create", { method: "POST", body: JSON.stringify(trPayload) });
-      showMsg("Exercise review saved", "success"); setShowForm(false); setForm({...emptyForm, exercise_date: dtgNow}); load();
+      const payload: any = {
+        group_id: group.id, reported_by: user?.username ?? "Unknown",
+        callsign: form.callsign, report_time: form.dtg,
+        op_id: form.op_id, op_name: form.op_name,
+        // Store as structured JSON in additional_info
+        additional_info: JSON.stringify({
+          type: "MEDEVAC_9LINE",
+          unit: form.unit, dtg: form.dtg,
+          l1: form.l1_callsign_freq,
+          l2: form.l2_hls_grid,
+          l3: { p1: form.l3_p1, p2: form.l3_p2, p3: form.l3_p3 },
+          l4: { code: form.l4_equipment, other: form.l4_other },
+          l5: { s: form.l5_stretcher, w: form.l5_walking, e: form.l5_escort, o: form.l5_other },
+          l6: form.l6_security,
+          l7: { code: form.l7_marking, colour: form.l7_smoke_colour },
+          l8: { a:form.l8_a, b:form.l8_b, c:form.l8_c, d:form.l8_d, e:form.l8_e, f:form.l8_f, g:form.l8_g, h:form.l8_h },
+          l9: form.l9_terrain,
+        }),
+        // Summaries for list view
+        position: form.l2_hls_grid,
+        activity: `MEDEVAC — ${(form.l3_p1||0)+(form.l3_p2||0)+(form.l3_p3||0)} cas, P1:${form.l3_p1||0} P2:${form.l3_p2||0} P3:${form.l3_p3||0}`,
+        enemy_contact: form.l6_security === "X" ? "CONFIRMED" : form.l6_security === "E" ? "POSSIBLE" : "NONE",
+        friendly_casualties: ((form.l3_p1||0)+(form.l3_p2||0)+(form.l3_p3||0)) > 0 ? "SIGNIFICANT" : "NONE",
+        mission_status: "ON TRACK",
+      };
+      if (payload.op_id) { const op = ops.find((o:any) => o.id === payload.op_id); if (op) payload.op_name = op.title ?? op.name ?? ""; }
+      await apiFetch("/milsimSitrep?path=create", { method: "POST", body: JSON.stringify(payload) });
+      showMsg("MEDEVAC 9-Line transmitted", "success"); setShowForm(false); setForm({...emptyForm, dtg: dtgNow}); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
   };
 
-  // NATO grading: 1=Unsatisfactory, 2=Marginal, 3=Satisfactory, 4=Commendable, 5=Outstanding
-  const GRADE: Record<number, { label: string; color: string }> = {
-    0: { label: "—", color: "text-muted-foreground" },
-    1: { label: "UNSAT", color: "text-red-400" },
-    2: { label: "MARGINAL", color: "text-orange-400" },
-    3: { label: "SAT", color: "text-yellow-400" },
-    4: { label: "COMMENDABLE", color: "text-blue-400" },
-    5: { label: "OUTSTANDING", color: "text-green-400" },
-  };
+  const L4_OPTS = [
+    { code: "A", label: "A — NONE" },
+    { code: "B", label: "B — HOIST" },
+    { code: "C", label: "C — EXTRACTION EQUIP" },
+    { code: "D", label: "D — VENTILATOR" },
+    { code: "E", label: "E — OTHER" },
+  ];
+  const L6_OPTS = [
+    { code: "N", label: "N — NO ENEMY",           color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/40" },
+    { code: "P", label: "P — POSSIBLE ENEMY",     color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/40" },
+    { code: "E", label: "E — ENEMY IN AREA",      color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/40" },
+    { code: "X", label: "X — ARMED ESCORT REQ'D", color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/40" },
+  ];
+  const L7_OPTS = [
+    { code: "A", label: "A — PANELS" },
+    { code: "B", label: "B — PYRO" },
+    { code: "C", label: "C — SMOKE (colour?)" },
+    { code: "D", label: "D — NONE" },
+    { code: "E", label: "E — OTHER" },
+  ];
+  const L8_CATS = [
+    { code: "A", label: "A — UK / NATO Military" },
+    { code: "B", label: "B — UK / NATO Civilian" },
+    { code: "C", label: "C — Non-UK / NATO Military" },
+    { code: "D", label: "D — Non-UK / NATO Civilian" },
+    { code: "E", label: "E — Detainees / PW" },
+    { code: "F", label: "F — Embedded Interpreter" },
+    { code: "G", label: "G — Civ Cas caused by FF" },
+    { code: "H", label: "H — Child" },
+  ];
 
-  const ScoreRow = ({ label, field, sublabel }: { label: string; field: string; sublabel?: string }) => (
-    <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
-      <div>
-        <p className="font-display font-bold text-xs uppercase tracking-widest">{label}</p>
-        {sublabel && <p className="text-xs text-muted-foreground font-sans">{sublabel}</p>}
+  // Row renderer for the pink table style
+  const MRow = ({ lineNum, title, children, subrow }: { lineNum: number | string; title: string; children: React.ReactNode; subrow?: React.ReactNode }) => (
+    <div className={`border-b border-pink-500/25 last:border-0`}>
+      <div className="flex min-h-[3.25rem]">
+        <div className="w-10 shrink-0 flex items-center justify-center bg-pink-500/10 border-r border-pink-500/25">
+          <span className="font-display font-black text-sm text-pink-400">{lineNum}</span>
+        </div>
+        <div className="w-52 shrink-0 flex items-center px-3 py-2.5 bg-pink-500/5 border-r border-pink-500/20">
+          <p className="font-display font-black text-xs uppercase tracking-widest text-pink-300">{title}</p>
+        </div>
+        <div className="flex-1 p-2.5 flex items-center">{children}</div>
       </div>
-      <div className="flex gap-1.5 items-center">
-        {[1,2,3,4,5].map(n => (
-          <button key={n} onClick={() => setForm((f:any) => ({...f, [field]: n}))}
-            className={`w-8 h-8 rounded border text-xs font-display font-bold transition-all ${form[field] >= n ? "bg-primary/20 border-primary/50 text-primary" : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{n}</button>
-        ))}
-        <span className={`ml-2 text-xs font-display font-bold uppercase tracking-wider w-20 text-right ${GRADE[form[field]]?.color}`}>{GRADE[form[field]]?.label}</span>
-      </div>
+      {subrow && <div className="border-t border-pink-500/20 bg-secondary/20 px-4 py-2">{subrow}</div>}
+    </div>
+  );
+
+  const NumInput = ({ field, label }: { field: string; label: string }) => (
+    <div className="flex flex-col items-center gap-1">
+      <p className="text-xs text-muted-foreground font-display font-bold uppercase tracking-wider">{label}</p>
+      <input type="number" min={0} max={99} value={form[field]} onChange={e => setForm((f:any) => ({...f, [field]: parseInt(e.target.value)||0}))} className="mf-input w-16 text-center font-mono font-bold" />
     </div>
   );
 
@@ -3171,154 +3297,228 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="font-display font-bold text-lg uppercase tracking-widest">Exercise Reviews</h2>
-            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded">NATO EXEVAL</span>
+            <h2 className="font-display font-bold text-lg uppercase tracking-widest">MEDEVAC</h2>
+            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-pink-500/15 border border-pink-500/40 text-pink-400 rounded">NATO 9-Line</span>
           </div>
-          <p className="text-xs text-muted-foreground font-sans mt-0.5">Post-exercise evaluation — skills, NATO grading (1–5), gaps. Feeds training doctrine score.</p>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Medical Evacuation Request — 9-Line format. AUTHORITY: 4IB 2 Signals Regiment.</p>
         </div>
-        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
-          <Plus className="w-3.5 h-3.5" /> New EXEVAL
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-pink-500/20 border border-pink-500/40 text-pink-400 rounded font-display text-xs uppercase tracking-widest hover:bg-pink-500/30 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> File 9-Line
         </button>
       </div>
 
       {showForm && (
-        <div className="border border-primary/40 rounded-lg overflow-hidden">
-          <div className="bg-primary/15 border-b border-primary/30 px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+        <div className="border border-pink-500/50 rounded-lg overflow-hidden">
+          {/* Header — pink to match real card */}
+          <div className="bg-pink-500/20 border-b border-pink-500/40 px-5 py-3 flex items-center justify-between flex-wrap gap-2">
             <div>
-              <p className="font-display font-black text-sm uppercase tracking-widest text-primary">EXERCISE EVALUATION — EXEVAL</p>
-              <p className="text-xs text-muted-foreground font-sans mt-0.5">NATO grading: 1=Unsatisfactory · 2=Marginal · 3=Satisfactory · 4=Commendable · 5=Outstanding</p>
+              <p className="font-display font-black text-sm uppercase tracking-widest text-pink-400">MEDEVAC — 9-LINE REQUEST</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">Complete all 9 lines before transmitting. Priority 1 = within 60 mins.</p>
             </div>
-            <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1 rounded">UNCLASSIFIED</span>
+            <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1 rounded">URGENT</span>
           </div>
-          <div className="p-5 space-y-5 bg-card">
-            {/* Admin fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b border-border">
-              <MField label="Exercise Name *">
-                <input value={form.exercise_name} onChange={e => setForm((f:any) => ({...f, exercise_name: e.target.value}))} placeholder="e.g. EX IRON ANVIL" className="mf-input w-full" />
+          <div className="bg-card">
+            {/* Admin / header block */}
+            <div className="p-4 border-b border-pink-500/20 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <MField label="DTG">
+                <input value={form.dtg} onChange={e => setForm((f:any) => ({...f, dtg: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
               </MField>
-              <MField label="Exercise Type">
-                <select value={form.exercise_type} onChange={e => setForm((f:any) => ({...f, exercise_type: e.target.value}))} className="mf-input w-full">
-                  {["TRAINING EX","LIVE FIRE EX","COMMAND POST EX (CPX)","FIELD TRAINING EX (FTX)","TABLE TOP EX (TTX)","COMBINED ARMS EX"].map(t => <option key={t} value={t}>{t}</option>)}
+              <MField label="Unit (Callsign) *">
+                <input value={form.callsign} onChange={e => setForm((f:any) => ({...f, callsign: e.target.value}))} placeholder="e.g. 1-2 DELTA" className="mf-input w-full" />
+              </MField>
+              <MField label="Unit Name">
+                <input value={form.unit} onChange={e => setForm((f:any) => ({...f, unit: e.target.value}))} placeholder="e.g. 2 SECTION" className="mf-input w-full" />
+              </MField>
+              <MField label="Linked Op">
+                <select value={form.op_id} onChange={e => setForm((f:any) => ({...f, op_id: e.target.value}))} className="mf-input w-full">
+                  <option value="">— No op —</option>
+                  {ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
                 </select>
               </MField>
-              <MField label="DTG *">
-                <input value={form.exercise_date} onChange={e => setForm((f:any) => ({...f, exercise_date: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
-              </MField>
-              <MField label="Participants">
-                <input type="number" min={1} value={form.participant_count} onChange={e => setForm((f:any) => ({...f, participant_count: e.target.value}))} placeholder="e.g. 12" className="mf-input w-full" />
-              </MField>
-              <MField label="Conducted By *">
-                <input value={form.conducted_by} onChange={e => setForm((f:any) => ({...f, conducted_by: e.target.value}))} placeholder="Rank + Callsign" className="mf-input w-full" />
-              </MField>
-              <MField label="EXEVAL Officer">
-                <input value={form.reviewed_by} onChange={e => setForm((f:any) => ({...f, reviewed_by: e.target.value}))} placeholder="Evaluating officer callsign" className="mf-input w-full" />
-              </MField>
             </div>
 
-            {/* Linked Op */}
-            <MField label="Linked Op (Optional)">
-              <select value={form.op_id} onChange={e => setForm((f:any) => ({...f, op_id: e.target.value}))} className="mf-input w-full">
-                <option value="">— No op —</option>
-                {ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
-              </select>
-            </MField>
-
-            {/* Skills */}
+            {/* 9-Line table */}
             <div>
-              <p className="font-display font-bold text-xs uppercase tracking-widest mb-2">Skills / Tasks Evaluated</p>
-              <div className="flex flex-wrap gap-1.5">
-                {TRAINING_SKILLS.map(skill => (
-                  <button key={skill} onClick={() => toggleSkill(skill)}
-                    className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.skills_practised.includes(skill) ? "bg-primary/20 border-primary/50 text-primary" : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{skill}</button>
-                ))}
-              </div>
+              {/* Line 1 */}
+              <MRow lineNum={1} title="Callsign & Freq">
+                <input value={form.l1_callsign_freq} onChange={e => setForm((f:any) => ({...f, l1_callsign_freq: e.target.value}))} placeholder="e.g. SUNRAY ACTUAL, Freq 46.50" className="mf-input w-full text-sm" />
+              </MRow>
+
+              {/* Line 2 */}
+              <MRow lineNum={2} title="Location (Grid of HLS)">
+                <input value={form.l2_hls_grid} onChange={e => setForm((f:any) => ({...f, l2_hls_grid: e.target.value}))} placeholder="8 or 10 digit grid of HLS" className="mf-input w-full text-sm font-mono" />
+              </MRow>
+
+              {/* Line 3 */}
+              <MRow lineNum={3} title="No. of Patients / Precedence"
+                subrow={
+                  <div className="flex flex-wrap gap-4 text-xs text-muted-foreground font-display font-bold uppercase tracking-wider">
+                    <span className="text-red-400">P1 — within 60 mins</span>
+                    <span className="text-orange-400">P2 — within 4 hrs</span>
+                    <span className="text-yellow-400">P3 — within 24 hrs</span>
+                  </div>
+                }>
+                <div className="flex gap-4 flex-wrap">
+                  <NumInput field="l3_p1" label="P1 (Urgent)" />
+                  <NumInput field="l3_p2" label="P2 (Priority)" />
+                  <NumInput field="l3_p3" label="P3 (Routine)" />
+                </div>
+              </MRow>
+
+              {/* Line 4 */}
+              <MRow lineNum={4} title="Special Equipment Required"
+                subrow={
+                  <div className="flex flex-wrap gap-2">
+                    {L4_OPTS.map(o => (
+                      <button key={o.code} onClick={() => setForm((f:any) => ({...f, l4_equipment: o.code}))}
+                        className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.l4_equipment === o.code ? "bg-pink-500/20 border-pink-500/50 text-pink-400" : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{o.label}</button>
+                    ))}
+                    {form.l4_equipment === "E" && <input value={form.l4_other} onChange={e => setForm((f:any) => ({...f, l4_other: e.target.value}))} placeholder="Specify other equipment..." className="mf-input text-xs" />}
+                  </div>
+                }>
+                <span className={`font-display font-black text-sm text-pink-400`}>{L4_OPTS.find(o => o.code === form.l4_equipment)?.label ?? "—"}</span>
+              </MRow>
+
+              {/* Line 5 */}
+              <MRow lineNum={5} title="No. of Patients / Type"
+                subrow={
+                  <div className="flex flex-wrap gap-4 text-xs text-muted-foreground font-display font-bold uppercase tracking-wider">
+                    <span>S — Stretcher</span><span>W — Walking</span><span>E — Escort</span><span>O — Other (specify)</span>
+                  </div>
+                }>
+                <div className="flex gap-4 flex-wrap items-end">
+                  <NumInput field="l5_stretcher" label="S (Stretcher)" />
+                  <NumInput field="l5_walking" label="W (Walking)" />
+                  <NumInput field="l5_escort" label="E (Escort)" />
+                  <div className="flex flex-col gap-1">
+                    <p className="text-xs text-muted-foreground font-display font-bold uppercase tracking-wider">O (Other)</p>
+                    <input value={form.l5_other} onChange={e => setForm((f:any) => ({...f, l5_other: e.target.value}))} placeholder="Details..." className="mf-input w-32 text-xs" />
+                  </div>
+                </div>
+              </MRow>
+
+              {/* Line 6 */}
+              <MRow lineNum={6} title="Security at HLS"
+                subrow={
+                  <div className="flex flex-wrap gap-2">
+                    {L6_OPTS.map(o => (
+                      <button key={o.code} onClick={() => setForm((f:any) => ({...f, l6_security: o.code}))}
+                        className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.l6_security === o.code ? `${o.bg} ${o.border} ${o.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{o.label}</button>
+                    ))}
+                  </div>
+                }>
+                {(() => { const o = L6_OPTS.find(x => x.code === form.l6_security); return o ? <span className={`font-display font-black text-sm ${o.color}`}>{o.label}</span> : null; })()}
+              </MRow>
+
+              {/* Line 7 */}
+              <MRow lineNum={7} title="HLS Marking Method"
+                subrow={
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {L7_OPTS.map(o => (
+                      <button key={o.code} onClick={() => setForm((f:any) => ({...f, l7_marking: o.code}))}
+                        className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.l7_marking === o.code ? "bg-pink-500/20 border-pink-500/50 text-pink-400" : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{o.label}</button>
+                    ))}
+                    {form.l7_marking === "C" && <input value={form.l7_smoke_colour} onChange={e => setForm((f:any) => ({...f, l7_smoke_colour: e.target.value}))} placeholder="Smoke colour..." className="mf-input text-xs w-36" />}
+                  </div>
+                }>
+                <span className="font-display font-black text-sm text-pink-400">{L7_OPTS.find(o => o.code === form.l7_marking)?.label ?? "—"}{form.l7_smoke_colour && ` — ${form.l7_smoke_colour}`}</span>
+              </MRow>
+
+              {/* Line 8 */}
+              <MRow lineNum={8} title="Patients by Nationality / Status"
+                subrow={
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {L8_CATS.map(cat => (
+                      <div key={cat.code} className="flex items-center gap-2">
+                        <p className="text-xs text-muted-foreground font-display font-bold uppercase tracking-wider w-4">{cat.code}</p>
+                        <input type="number" min={0} max={99} value={form[`l8_${cat.code.toLowerCase()}`]} onChange={e => setForm((f:any) => ({...f, [`l8_${cat.code.toLowerCase()}`]: parseInt(e.target.value)||0}))} className="mf-input w-14 text-center font-mono text-xs font-bold" />
+                        <p className="text-xs text-muted-foreground font-sans">{cat.label.slice(4)}</p>
+                      </div>
+                    ))}
+                  </div>
+                }>
+                <div className="flex gap-3 flex-wrap text-xs font-mono font-bold">
+                  {L8_CATS.map(cat => form[`l8_${cat.code.toLowerCase()}`] > 0 ? <span key={cat.code} className="text-pink-400">{cat.code}: {form[`l8_${cat.code.toLowerCase()}`]}</span> : null)}
+                </div>
+              </MRow>
+
+              {/* Line 9 */}
+              <MRow lineNum={9} title="HLS Terrain / Obstacles">
+                <input value={form.l9_terrain} onChange={e => setForm((f:any) => ({...f, l9_terrain: e.target.value}))} placeholder="e.g. Flat open ground, power lines to north, soft soil, no obstacles" className="mf-input w-full text-sm" />
+              </MRow>
             </div>
 
-            {/* Grading */}
-            <div className="border border-border rounded-lg overflow-hidden">
-              <div className="bg-secondary/40 border-b border-border px-4 py-2">
-                <p className="font-display font-bold text-xs uppercase tracking-widest">Performance Grades (NATO 1–5 Scale)</p>
-              </div>
-              <div className="px-4 py-2">
-                <ScoreRow label="Overall Execution" field="overall_execution" sublabel="General mission accomplishment" />
-                <ScoreRow label="Communications" field="comms_quality" sublabel="Radio discipline, BATCO, reporting" />
-                <ScoreRow label="Tactics & Drills" field="tactics_quality" sublabel="TTP adherence, formations, manoeuvre" />
-                <ScoreRow label="Discipline & Admin" field="discipline_quality" sublabel="Timings, dress, weapon handling" />
-              </div>
-            </div>
-
-            {/* Narrative */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <MField label="Strengths / Highlights">
-                <textarea value={form.highlights} onChange={e => setForm((f:any) => ({...f, highlights: e.target.value}))} rows={3} placeholder="What was executed well..." className="mf-input w-full resize-none" />
-              </MField>
-              <MField label="Areas for Improvement / Gaps">
-                <textarea value={form.notable_gaps} onChange={e => setForm((f:any) => ({...f, notable_gaps: e.target.value}))} rows={3} placeholder="Identified weaknesses, tasks requiring remedial training..." className="mf-input w-full resize-none" />
-              </MField>
-            </div>
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="repeat-rec" checked={form.repeat_recommended} onChange={e => setForm((f:any) => ({...f, repeat_recommended: e.target.checked}))} className="rounded" />
-              <label htmlFor="repeat-rec" className="text-xs font-display font-bold uppercase tracking-widest">Recommend repeat exercise before next deployment</label>
-            </div>
-            <div className="flex gap-2 pt-2 border-t border-border">
-              <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
-                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Submit EXEVAL
+            <div className="flex gap-2 p-4 border-t border-pink-500/20">
+              <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-pink-500/80 hover:bg-pink-500 text-white rounded font-display text-xs uppercase tracking-widest transition-colors">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Transmit 9-Line
               </button>
-              <button onClick={() => { setShowForm(false); setForm({...emptyForm, exercise_date: dtgNow}); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+              <button onClick={() => { setShowForm(false); setForm({...emptyForm, dtg: dtgNow}); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
             </div>
           </div>
         </div>
       )}
 
-      {reviews.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><BookCheck className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No exercise evaluations on record.</p></div>
+      {/* Records */}
+      {requests.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg">
+          <Radio className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No MEDEVAC requests on record.</p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {reviews.map((r:any) => {
-            const scores = [r.overall_execution, r.comms_quality, r.tactics_quality, r.discipline_quality].filter(Boolean);
-            const avg = scores.length ? (scores.reduce((a:number,b:number) => a+b, 0) / scores.length) : 0;
-            const avgGrade = GRADE[Math.round(avg)] ?? GRADE[0];
+          {requests.map((r:any) => {
+            let d: any = {};
+            try { if (r.additional_info) d = JSON.parse(r.additional_info); } catch {}
+            if (d.type !== "MEDEVAC_9LINE") return null;
+            const totalCas = (d.l3?.p1||0) + (d.l3?.p2||0) + (d.l3?.p3||0);
+            const secCfg = L6_OPTS.find(o => o.code === d.l6) ?? L6_OPTS[0];
             return (
-              <div key={r.id} className="border border-border rounded-lg overflow-hidden bg-card">
-                <div className="bg-secondary/30 border-b border-border px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+              <div key={r.id} className="border border-pink-500/40 rounded-lg overflow-hidden bg-card">
+                <div className="bg-pink-500/10 border-b border-pink-500/25 px-4 py-2 flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-3">
-                    <BookCheck className="w-4 h-4 text-primary shrink-0" />
-                    <div>
-                      <span className="font-display font-black text-sm uppercase tracking-widest">{r.exercise_name}</span>
-                      {r.exercise_type && <span className="ml-2 text-xs text-muted-foreground font-display font-bold uppercase">{r.exercise_type}</span>}
-                    {r.op_name && <span className="ml-2 text-xs text-muted-foreground font-sans">/ {r.op_name}</span>}
-                    </div>
+                    <span className="text-xs font-display font-black text-pink-400 border border-pink-500/40 px-2 py-0.5 rounded">MEDEVAC</span>
+                    <span className="font-display font-black text-sm uppercase tracking-widest">{r.callsign}</span>
+                    {r.op_name && <span className="text-xs text-muted-foreground font-sans">/ {r.op_name}</span>}
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`font-display font-black text-xs uppercase tracking-widest ${avgGrade.color}`}>{avgGrade.label}</span>
-                    <span className="font-display font-black text-lg text-primary">{avg > 0 ? avg.toFixed(1) : "—"}<span className="text-xs text-muted-foreground">/5</span></span>
-                    <button onClick={async () => { if(!confirm("Delete?")) return; await apiFetch("/milsimTrainingReview?path=delete",{method:"POST",body:JSON.stringify({id:r.id})}); load(); }} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
+                    <span className="text-xs text-muted-foreground font-mono">{r.report_time || ""}</span>
+                    <span className={`font-display font-black text-xs uppercase ${(d.l3?.p1||0) > 0 ? "text-red-400" : (d.l3?.p2||0) > 0 ? "text-orange-400" : "text-yellow-400"}`}>{totalCas} CASUALTIES</span>
+                    <button onClick={async () => { if(!confirm("Delete?")) return; await apiFetch("/milsimSitrep?path=delete",{method:"POST",body:JSON.stringify({id:r.id})}); load(); }} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
-                <div className="p-3 space-y-3">
-                  <div className="flex flex-wrap gap-1.5">
-                    {(r.skills_practised ?? []).map((s:string) => <span key={s} className="px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded text-xs font-display font-bold uppercase tracking-wider">{s}</span>)}
+                {/* Summary grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-0 text-xs">
+                  <div className="p-3 border-r border-border">
+                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">HLS Grid</p>
+                    <p className="font-mono font-bold">{d.l2 || "—"}</p>
                   </div>
-                  <div className="grid grid-cols-4 gap-2 text-xs">
-                    {[["Overall",r.overall_execution],["Comms",r.comms_quality],["Tactics",r.tactics_quality],["Discipline",r.discipline_quality]].map(([label,val]) => (
-                      <div key={label as string} className="bg-secondary/30 rounded p-2 text-center">
-                        <p className="text-muted-foreground font-display font-bold uppercase tracking-wider text-xs mb-1">{label}</p>
-                        <p className={`font-display font-black text-base ${(GRADE[Number(val)] ?? GRADE[0]).color}`}>{val || "—"}</p>
-                        <p className={`text-xs font-display font-bold uppercase ${(GRADE[Number(val)] ?? GRADE[0]).color}`}>{val ? (GRADE[Number(val)]?.label ?? "") : ""}</p>
-                      </div>
-                    ))}
+                  <div className="p-3 border-r border-border">
+                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Casualties</p>
+                    <p className="font-display font-bold">
+                      {(d.l3?.p1||0) > 0 && <span className="text-red-400 mr-1.5">P1:{d.l3.p1}</span>}
+                      {(d.l3?.p2||0) > 0 && <span className="text-orange-400 mr-1.5">P2:{d.l3.p2}</span>}
+                      {(d.l3?.p3||0) > 0 && <span className="text-yellow-400">P3:{d.l3.p3}</span>}
+                      {totalCas === 0 && "—"}
+                    </p>
                   </div>
-                  {r.notable_gaps && <p className="text-xs font-sans text-muted-foreground border-t border-border pt-2"><span className="font-display font-bold uppercase tracking-wider text-foreground">Gaps: </span>{r.notable_gaps}</p>}
-                  {r.highlights && <p className="text-xs font-sans text-muted-foreground"><span className="font-display font-bold uppercase tracking-wider text-green-400">Strengths: </span>{r.highlights}</p>}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
-                    <span>Conducted by: <span className="text-foreground font-bold">{r.conducted_by}</span></span>
-                    {r.participant_count > 0 && <span>{r.participant_count} participants</span>}
-                    {r.repeat_recommended && <span className="text-yellow-400 font-display font-bold uppercase tracking-wider">⚠ Repeat Recommended</span>}
+                  <div className={`p-3 border-r border-border ${secCfg.bg}`}>
+                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">HLS Security</p>
+                    <p className={`font-display font-bold uppercase ${secCfg.color}`}>{secCfg.label}</p>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Marking</p>
+                    <p className="font-display font-bold">{L7_OPTS.find(o => o.code === d.l7?.code)?.label ?? "—"}{d.l7?.colour && ` — ${d.l7.colour}`}</p>
                   </div>
                 </div>
+                {(d.l9 || d.l1) && (
+                  <div className="px-3 pb-2 text-xs border-t border-border">
+                    {d.l1 && <p className="text-muted-foreground font-sans mt-1.5"><span className="font-display font-bold text-foreground">Line 1: </span>{d.l1}</p>}
+                    {d.l9 && <p className="text-muted-foreground font-sans mt-0.5"><span className="font-display font-bold text-foreground">Terrain: </span>{d.l9}</p>}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -3328,10 +3528,7 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
   );
 }
 
-/* ─── Conduct / Admin Report Tab — Military Admin Standard ────────────────────
-   Used for: disciplinary actions, commendations, absences, admin notices
-   Fields: Subject, DTG, Category, Severity, Description, Evidence, Outcome, Authority
-──────────────────────────────────────────────────────────────────────────── */
+
 function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
