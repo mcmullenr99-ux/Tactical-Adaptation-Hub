@@ -1767,10 +1767,9 @@ function QuestionsTab({ group, onUpdated, showMsg }: any) {
 function CommendationsTab({ group }: any) {
   const [awards, setAwards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const ICONS: Record<string, typeof Medal> = { medal: Medal, star: Star, award: Award, shield: Shield };
   useEffect(() => {
     apiFetch<any[]>(`/api/milsim-groups/${group.id}/awards`)
-      .then(setAwards).catch(() => {}).finally(() => setLoading(false));
+      .then(d => setAwards(Array.isArray(d) ? d : [])).catch(() => setAwards([])).finally(() => setLoading(false));
   }, [group.id]);
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   return (
@@ -1782,23 +1781,27 @@ function CommendationsTab({ group }: any) {
         </div>
       ) : (
         <div className="space-y-3">
-          {awards.map((a: any) => {
-            const IconComp = ICONS[a.icon] ?? Medal;
-            return (
-              <div key={a.id} className="flex items-center gap-4 bg-card border border-border rounded-lg px-5 py-4">
-                <div className="w-11 h-11 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shrink-0"><IconComp className="w-5 h-5" /></div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{a.title}</p>
-                    <span className="text-xs text-muted-foreground">{a.awarded_at ? formatDistanceToNow(new Date(a.awarded_at), { addSuffix: true }) : ""}</span>
-                  </div>
-                  {a.callsign && <p className="text-xs text-primary font-display font-bold mt-0.5">Awarded to {a.callsign}</p>}
-                  {a.description && <p className="text-xs text-muted-foreground font-sans mt-1">{a.description}</p>}
-                  {a.awarded_by && <p className="text-xs text-muted-foreground">By {a.awarded_by}</p>}
-                </div>
+          {awards.map((a: any) => (
+            <div key={a.id} className="flex items-center gap-4 bg-card border border-border rounded-lg px-5 py-4">
+              <div className="w-11 h-11 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shrink-0">
+                {a.award_image_url ? (
+                  <img src={a.award_image_url} alt={a.award_name} className="w-8 h-8 object-contain" />
+                ) : (
+                  <Medal className="w-5 h-5" />
+                )}
               </div>
-            );
-          })}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{a.award_name}</p>
+                  <span className="text-xs text-muted-foreground">{a.created_date ? formatDistanceToNow(new Date(a.created_date), { addSuffix: true }) : ""}</span>
+                </div>
+                {a.recipient_callsign && <p className="text-xs text-primary font-display font-bold mt-0.5">Awarded to {a.recipient_callsign}</p>}
+                {a.award_description && <p className="text-xs text-muted-foreground font-sans mt-1">{a.award_description}</p>}
+                {a.reason && <p className="text-xs text-muted-foreground font-sans mt-0.5 italic">"{a.reason}"</p>}
+                {a.awarded_by && <p className="text-xs text-muted-foreground mt-0.5">By {a.awarded_by}</p>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
