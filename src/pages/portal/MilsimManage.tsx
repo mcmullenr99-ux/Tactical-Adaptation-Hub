@@ -82,7 +82,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "recognition" | "stream" | "sops" | "orbat" | "questions" | "operations" | "orgchart" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops";
+type Tab = "info" | "roles" | "ranks" | "roster" | "recognition" | "stream" | "sops" | "orbat" | "questions" | "operations" | "orgchart" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -150,9 +150,9 @@ export default function MilsimManage() {
       ],
     },
     {
-      label: "Operations",
+      label: "Events",
       items: [
-        { id: "operations", label: "Operations", icon: Siren },
+        { id: "events", label: "Events", icon: Siren },
         { id: "calendar", label: "Activity Calendar", icon: CalendarDays },
         { id: "campaigns", label: "Campaigns", icon: Zap, pro: true },
       ],
@@ -255,7 +255,7 @@ export default function MilsimManage() {
               {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "recognition" && <RecognitionTab group={group} showMsg={showMsg} />}
-              {tab === "operations" && <OperationsTab group={group} showMsg={showMsg} />}
+              {tab === "events" && <EventsTab group={group} showMsg={showMsg} />}
               {tab === "orgchart" && <OrgChartTab group={group} />}
               {tab === "readiness" && <ReadinessTab group={group} />}
               {tab === "reputation" && <ReputationTab group={group} />}
@@ -1765,10 +1765,10 @@ function QualsTab({ group, showMsg }: any) {
 
 
 // ─── Operations Tab (Live Ops + AARs + Briefings merged) ─────────────────────
-function OperationsTab({ group, showMsg }: any) {
+function EventsTab({ group, showMsg }: any) {
   const [sub, setSub] = useState<"ops" | "aars" | "briefings">("ops");
   const SUB_TABS = [
-    { id: "ops" as const,       label: "Live Ops",  icon: Siren },
+    { id: "ops" as const,       label: "Operations",  icon: Siren },
     { id: "aars" as const,      label: "AARs",      icon: ClipboardList },
     { id: "briefings" as const, label: "Briefings", icon: MapPin },
   ];
