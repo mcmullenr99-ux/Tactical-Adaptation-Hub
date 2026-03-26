@@ -1972,11 +1972,12 @@ function EventHubTab({ group, showMsg }: any) {
 
 
 function EventsTab({ group, showMsg }: any) {
-  const [sub, setSub] = useState<"ops" | "aars" | "briefings">("ops");
+  const [sub, setSub] = useState<"ops" | "aars" | "briefings" | "warnos">("ops");
   const SUB_TABS = [
     { id: "ops" as const,       label: "Operations",  icon: Siren },
-    { id: "aars" as const,      label: "AARs",      icon: ClipboardList },
-    { id: "briefings" as const, label: "Briefings", icon: MapPin },
+    { id: "aars" as const,      label: "AARs",        icon: ClipboardList },
+    { id: "briefings" as const, label: "Briefings",   icon: MapPin },
+    { id: "warnos" as const,    label: "WARNOs",      icon: AlertTriangle },
   ];
   return (
     <div className="space-y-4">
@@ -1993,6 +1994,7 @@ function EventsTab({ group, showMsg }: any) {
       {sub === "ops"       && <OpsTab       group={group} showMsg={showMsg} />}
       {sub === "aars"      && <AARsTab      group={group} showMsg={showMsg} />}
       {sub === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
+      {sub === "warnos"    && <WarnosTab    group={group} showMsg={showMsg} />}
     </div>
   );
 }
@@ -2229,6 +2231,276 @@ function OpsTab({ group, showMsg }: any) {
 // ─── AARs ─────────────────────────────────────────────────────────────────────
 function AARField({ label, value }: { label: string; value: string }) {
   return <div><p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">{label}</p><p className="text-sm text-foreground font-sans whitespace-pre-wrap">{value}</p></div>;
+}
+
+
+/* ─── WARNOs Tab ─────────────────────────────────────────────────────────── */
+function WarnosTab({ group, showMsg }: any) {
+  const emptyForm = {
+    title: "", op_date: "", status: "draft",
+    situation_ground: "", situation_enemy: "", situation_friendly: "",
+    mission: "",
+    timings_hh: "", timings_nmb: "", timings_other: "",
+    o_group_time: "", o_group_loc: "", o_group_other: "",
+    css: "",
+    acknowledge_1_sect: "", acknowledge_2_sect: "", acknowledge_3_sect: "", acknowledge_4_sect: "",
+    acknowledge_pl_sgt: "", acknowledge_atts_1: "", acknowledge_atts_2: "", acknowledge_atts_3: "",
+  };
+  const [warnos, setWarnos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState<any>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const load = () => {
+    apiFetch<any[]>(`/api/milsim-groups/${group.id}/warnos`)
+      .then(d => setWarnos(d ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, [group.id]);
+
+  const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm((f: any) => ({ ...f, [k]: e.target.value }));
+
+  const submit = async () => {
+    if (!form.title.trim()) return;
+    setSaving(true);
+    try {
+      if (editId) {
+        await apiFetch(`/api/milsim-groups/${group.id}/warnos/${editId}`, { method: "PATCH", body: JSON.stringify(form) });
+        showMsg(true, "WARNO updated.");
+      } else {
+        await apiFetch(`/api/milsim-groups/${group.id}/warnos`, { method: "POST", body: JSON.stringify(form) });
+        showMsg(true, "WARNO created.");
+      }
+      setCreating(false); setEditId(null); setForm(emptyForm); load();
+    } catch (e: any) { showMsg(false, e.message); } finally { setSaving(false); }
+  };
+
+  const remove = async (id: string) => {
+    try {
+      await apiFetch(`/api/milsim-groups/${group.id}/warnos/${id}`, { method: "DELETE" });
+      showMsg(true, "WARNO deleted."); load();
+    } catch (e: any) { showMsg(false, e.message); }
+  };
+
+  const startEdit = (w: any) => {
+    setEditId(w.id);
+    setForm({
+      title: w.title ?? "", op_date: w.op_date ?? "", status: w.status ?? "draft",
+      situation_ground: w.situation_ground ?? "", situation_enemy: w.situation_enemy ?? "", situation_friendly: w.situation_friendly ?? "",
+      mission: w.mission ?? "",
+      timings_hh: w.timings_hh ?? "", timings_nmb: w.timings_nmb ?? "", timings_other: w.timings_other ?? "",
+      o_group_time: w.o_group_time ?? "", o_group_loc: w.o_group_loc ?? "", o_group_other: w.o_group_other ?? "",
+      css: w.css ?? "",
+      acknowledge_1_sect: w.acknowledge_1_sect ?? "", acknowledge_2_sect: w.acknowledge_2_sect ?? "",
+      acknowledge_3_sect: w.acknowledge_3_sect ?? "", acknowledge_4_sect: w.acknowledge_4_sect ?? "",
+      acknowledge_pl_sgt: w.acknowledge_pl_sgt ?? "",
+      acknowledge_atts_1: w.acknowledge_atts_1 ?? "", acknowledge_atts_2: w.acknowledge_atts_2 ?? "", acknowledge_atts_3: w.acknowledge_atts_3 ?? "",
+    });
+    setCreating(true);
+  };
+
+  const STATUS_STYLE: Record<string, string> = {
+    draft:    "text-muted-foreground bg-secondary border-border",
+    issued:   "text-orange-400 bg-orange-500/10 border-orange-500/30",
+    archived: "text-muted-foreground bg-secondary/40 border-border",
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground font-sans">Warning Orders — issued before an operation to give early notice of upcoming tasks.</p>
+        {!creating && !editId && (
+          <button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-all">
+            <Plus className="w-3.5 h-3.5" /> New WARNO
+          </button>
+        )}
+      </div>
+
+      {/* Create / Edit Form */}
+      {(creating || editId) && (
+        <div className="bg-card border border-primary/30 rounded-lg overflow-hidden">
+          {/* WARNO header bar */}
+          <div className="bg-primary/10 border-b border-primary/20 px-6 py-3 flex items-center gap-3">
+            <AlertTriangle className="w-4 h-4 text-orange-400" />
+            <span className="font-display font-black text-sm uppercase tracking-widest text-foreground">Warning Order</span>
+          </div>
+
+          <div className="p-6 space-y-5">
+            {/* Title + Status + Date row */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2"><label className="mf-label">Title *</label><input value={form.title} onChange={setF("title")} className="mf-input" placeholder="Op IRON FIST — WARNO 1" /></div>
+              <div><label className="mf-label">Op Date</label><input type="datetime-local" value={form.op_date} onChange={setF("op_date")} className="mf-input" /></div>
+            </div>
+            <div className="w-40"><label className="mf-label">Status</label>
+              <select value={form.status} onChange={setF("status")} className="mf-input">
+                <option value="draft">Draft</option>
+                <option value="issued">Issued</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+
+            {/* Section 1 — Situation */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/60 px-4 py-2 border-b border-border"><p className="text-[10px] font-display font-black uppercase tracking-widest text-foreground">1. Situation</p></div>
+              <div className="divide-y divide-border">
+                <div className="px-4 py-3"><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Ground</label><textarea rows={3} value={form.situation_ground} onChange={setF("situation_ground")} className="mf-input resize-none" placeholder="Terrain, weather, visibility..." /></div>
+                <div className="px-4 py-3"><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Enemy</label><textarea rows={3} value={form.situation_enemy} onChange={setF("situation_enemy")} className="mf-input resize-none" placeholder="Enemy strength, disposition, likely COA..." /></div>
+                <div className="px-4 py-3"><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Friendly</label><textarea rows={3} value={form.situation_friendly} onChange={setF("situation_friendly")} className="mf-input resize-none" placeholder="Higher unit intentions, adjacent units..." /></div>
+              </div>
+            </div>
+
+            {/* Section 2 — Mission */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/60 px-4 py-2 border-b border-border"><p className="text-[10px] font-display font-black uppercase tracking-widest text-foreground">2. Mission</p></div>
+              <div className="px-4 py-3"><textarea rows={3} value={form.mission} onChange={setF("mission")} className="mf-input resize-none" placeholder="Who, what, where, when, why..." /></div>
+            </div>
+
+            {/* Section 3 — Timings */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/60 px-4 py-2 border-b border-border"><p className="text-[10px] font-display font-black uppercase tracking-widest text-foreground">3. Timings</p></div>
+              <div className="px-4 py-3 grid grid-cols-3 gap-3">
+                <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">H Hr</label><input value={form.timings_hh} onChange={setF("timings_hh")} className="mf-input" placeholder="e.g. 1800Z" /></div>
+                <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">NMB</label><input value={form.timings_nmb} onChange={setF("timings_nmb")} className="mf-input" placeholder="e.g. 30 mins" /></div>
+                <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Other</label><input value={form.timings_other} onChange={setF("timings_other")} className="mf-input" /></div>
+              </div>
+            </div>
+
+            {/* Section 4 — O Group */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/60 px-4 py-2 border-b border-border"><p className="text-[10px] font-display font-black uppercase tracking-widest text-foreground">4. O Group</p></div>
+              <div className="px-4 py-3 grid grid-cols-3 gap-3">
+                <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Time</label><input value={form.o_group_time} onChange={setF("o_group_time")} className="mf-input" placeholder="e.g. 1700Z" /></div>
+                <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Loc</label><input value={form.o_group_loc} onChange={setF("o_group_loc")} className="mf-input" placeholder="e.g. Grid 123456" /></div>
+                <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Other</label><input value={form.o_group_other} onChange={setF("o_group_other")} className="mf-input" /></div>
+              </div>
+            </div>
+
+            {/* Section 5 — CSS */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/60 px-4 py-2 border-b border-border"><p className="text-[10px] font-display font-black uppercase tracking-widest text-foreground">5. CSS (Combat Service Support)</p></div>
+              <div className="px-4 py-3"><textarea rows={3} value={form.css} onChange={setF("css")} className="mf-input resize-none" placeholder="Ammo, medical, transport, resupply..." /></div>
+            </div>
+
+            {/* Section 6 — Acknowledge */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/60 px-4 py-2 border-b border-border"><p className="text-[10px] font-display font-black uppercase tracking-widest text-foreground">6. Acknowledge (Radio or Sign)</p></div>
+              <div className="px-4 py-3 space-y-3">
+                <div className="grid grid-cols-4 gap-2">
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">1 Sect</label><input value={form.acknowledge_1_sect} onChange={setF("acknowledge_1_sect")} className="mf-input text-xs" /></div>
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">2 Sect</label><input value={form.acknowledge_2_sect} onChange={setF("acknowledge_2_sect")} className="mf-input text-xs" /></div>
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">3 Sect</label><input value={form.acknowledge_3_sect} onChange={setF("acknowledge_3_sect")} className="mf-input text-xs" /></div>
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">4 Sect</label><input value={form.acknowledge_4_sect} onChange={setF("acknowledge_4_sect")} className="mf-input text-xs" /></div>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Pl Sgt</label><input value={form.acknowledge_pl_sgt} onChange={setF("acknowledge_pl_sgt")} className="mf-input text-xs" /></div>
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Atts 1</label><input value={form.acknowledge_atts_1} onChange={setF("acknowledge_atts_1")} className="mf-input text-xs" /></div>
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Atts 2</label><input value={form.acknowledge_atts_2} onChange={setF("acknowledge_atts_2")} className="mf-input text-xs" /></div>
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Atts 3</label><input value={form.acknowledge_atts_3} onChange={setF("acknowledge_atts_3")} className="mf-input text-xs" /></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={submit} disabled={saving || !form.title.trim()}
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                {editId ? "Update WARNO" : "Issue WARNO"}
+              </button>
+              <button onClick={() => { setCreating(false); setEditId(null); setForm(emptyForm); }}
+                className="px-4 py-2 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* List */}
+      {warnos.length === 0 && !creating ? (
+        <div className="text-center py-12 border border-dashed border-border rounded-lg text-muted-foreground">
+          <AlertTriangle className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="font-display text-sm uppercase tracking-widest">No warning orders issued</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {warnos.map((w: any) => (
+            <div key={w.id} className="bg-card border border-border rounded-lg overflow-hidden">
+              <button onClick={() => setExpandedId(expandedId === w.id ? null : w.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary/30 transition-colors">
+                <AlertTriangle className="w-4 h-4 text-orange-400 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-display font-bold text-sm uppercase tracking-wider text-foreground truncate">{w.title}</p>
+                  {w.op_date && <p className="text-xs text-muted-foreground font-sans mt-0.5">{new Date(w.op_date).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}</p>}
+                </div>
+                <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${STATUS_STYLE[w.status] ?? STATUS_STYLE.draft}`}>{w.status}</span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform shrink-0 ${expandedId === w.id ? "rotate-180" : ""}`} />
+              </button>
+
+              {expandedId === w.id && (
+                <div className="border-t border-border px-4 py-4 space-y-4">
+                  {/* Situation */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-display font-black uppercase tracking-widest text-primary border-b border-border pb-1">1. Situation</p>
+                    {w.situation_ground && <WField label="Ground" value={w.situation_ground} />}
+                    {w.situation_enemy && <WField label="Enemy" value={w.situation_enemy} />}
+                    {w.situation_friendly && <WField label="Friendly" value={w.situation_friendly} />}
+                  </div>
+                  {w.mission && <div><p className="text-[10px] font-display font-black uppercase tracking-widest text-primary border-b border-border pb-1 mb-2">2. Mission</p><p className="text-sm text-foreground font-sans whitespace-pre-wrap">{w.mission}</p></div>}
+                  {(w.timings_hh || w.timings_nmb || w.timings_other) && (
+                    <div><p className="text-[10px] font-display font-black uppercase tracking-widest text-primary border-b border-border pb-1 mb-2">3. Timings</p>
+                      <div className="flex gap-6 text-sm font-sans">
+                        {w.timings_hh && <span><span className="text-muted-foreground text-xs">H Hr: </span>{w.timings_hh}</span>}
+                        {w.timings_nmb && <span><span className="text-muted-foreground text-xs">NMB: </span>{w.timings_nmb}</span>}
+                        {w.timings_other && <span>{w.timings_other}</span>}
+                      </div>
+                    </div>
+                  )}
+                  {(w.o_group_time || w.o_group_loc || w.o_group_other) && (
+                    <div><p className="text-[10px] font-display font-black uppercase tracking-widest text-primary border-b border-border pb-1 mb-2">4. O Group</p>
+                      <div className="flex gap-6 text-sm font-sans">
+                        {w.o_group_time && <span><span className="text-muted-foreground text-xs">Time: </span>{w.o_group_time}</span>}
+                        {w.o_group_loc && <span><span className="text-muted-foreground text-xs">Loc: </span>{w.o_group_loc}</span>}
+                        {w.o_group_other && <span>{w.o_group_other}</span>}
+                      </div>
+                    </div>
+                  )}
+                  {w.css && <div><p className="text-[10px] font-display font-black uppercase tracking-widest text-primary border-b border-border pb-1 mb-2">5. CSS</p><p className="text-sm text-foreground font-sans whitespace-pre-wrap">{w.css}</p></div>}
+                  {(w.acknowledge_1_sect || w.acknowledge_2_sect || w.acknowledge_pl_sgt) && (
+                    <div><p className="text-[10px] font-display font-black uppercase tracking-widest text-primary border-b border-border pb-1 mb-2">6. Acknowledge</p>
+                      <div className="grid grid-cols-4 gap-2 text-xs font-sans">
+                        {w.acknowledge_1_sect && <span><span className="text-muted-foreground">1 Sect: </span>{w.acknowledge_1_sect}</span>}
+                        {w.acknowledge_2_sect && <span><span className="text-muted-foreground">2 Sect: </span>{w.acknowledge_2_sect}</span>}
+                        {w.acknowledge_3_sect && <span><span className="text-muted-foreground">3 Sect: </span>{w.acknowledge_3_sect}</span>}
+                        {w.acknowledge_4_sect && <span><span className="text-muted-foreground">4 Sect: </span>{w.acknowledge_4_sect}</span>}
+                        {w.acknowledge_pl_sgt && <span><span className="text-muted-foreground">Pl Sgt: </span>{w.acknowledge_pl_sgt}</span>}
+                        {w.acknowledge_atts_1 && <span><span className="text-muted-foreground">Atts 1: </span>{w.acknowledge_atts_1}</span>}
+                        {w.acknowledge_atts_2 && <span><span className="text-muted-foreground">Atts 2: </span>{w.acknowledge_atts_2}</span>}
+                        {w.acknowledge_atts_3 && <span><span className="text-muted-foreground">Atts 3: </span>{w.acknowledge_atts_3}</span>}
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex gap-2 pt-2 border-t border-border">
+                    <button onClick={() => startEdit(w)} className="inline-flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground border border-border rounded px-3 py-1.5 transition-colors"><Pencil className="w-3 h-3" /> Edit</button>
+                    <button onClick={() => remove(w.id)} className="inline-flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-destructive/70 hover:text-destructive border border-border hover:border-destructive/40 rounded px-3 py-1.5 transition-colors"><Trash2 className="w-3 h-3" /> Delete</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WField({ label, value }: { label: string; value: string }) {
+  return <div><p className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground mb-0.5">{label}</p><p className="text-sm text-foreground font-sans whitespace-pre-wrap pl-2 border-l border-border">{value}</p></div>;
 }
 
 function AARsTab({ group, showMsg }: any) {
