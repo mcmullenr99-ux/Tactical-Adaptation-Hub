@@ -59,6 +59,9 @@ import {
   X,
   UserCheck,
   Archive,
+  FileEdit,
+  UserMinus2,
+  BookCheck,
   Bell,
   ChevronRight,
   Download,
@@ -1972,13 +1975,16 @@ function EventHubTab({ group, showMsg }: any) {
 
 
 function EventsTab({ group, showMsg }: any) {
-  const [sub, setSub] = useState<"ops" | "aars" | "briefings" | "warnos" | "lace">("ops");
+  const [sub, setSub] = useState<"ops" | "aars" | "briefings" | "warnos" | "lace" | "sitrep" | "training" | "conduct">("ops");
   const SUB_TABS = [
     { id: "ops" as const,       label: "Operations",  icon: Siren },
     { id: "aars" as const,      label: "AARs",        icon: ClipboardList },
     { id: "briefings" as const, label: "Briefings",   icon: MapPin },
     { id: "warnos" as const,    label: "WARNOs",      icon: AlertTriangle },
     { id: "lace" as const,      label: "LACE",        icon: Radio },
+    { id: "sitrep" as const,    label: "SITREPs",     icon: Target },
+    { id: "training" as const,  label: "Ex Reviews",  icon: BookCheck },
+    { id: "conduct" as const,   label: "Conduct",     icon: UserMinus2 },
   ];
   return (
     <div className="space-y-4">
@@ -1996,7 +2002,10 @@ function EventsTab({ group, showMsg }: any) {
       {sub === "aars"      && <AARsTab      group={group} showMsg={showMsg} />}
       {sub === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
       {sub === "warnos"    && <WarnosTab    group={group} showMsg={showMsg} />}
-      {sub === "lace"      && <LaceTab      group={group} showMsg={showMsg} />}
+      {sub === "lace"      && <LaceTab         group={group} showMsg={showMsg} />}
+      {sub === "sitrep"    && <SitrepTab        group={group} showMsg={showMsg} />}
+      {sub === "training"  && <TrainingReviewTab group={group} showMsg={showMsg} />}
+      {sub === "conduct"   && <ConductReportTab  group={group} showMsg={showMsg} />}
     </div>
   );
 }
@@ -2776,6 +2785,458 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
                     );
                   })}
                 </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+/* ─── SITREP Tab ─────────────────────────────────────────────────────────── */
+function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
+  const { user } = useAuth();
+  const [reports, setReports] = useState<any[]>([]);
+  const [ops, setOps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const emptyForm = {
+    callsign: "", op_id: "", op_name: "", report_time: new Date().toISOString().slice(0, 16),
+    position: "", enemy_contact: "None", enemy_notes: "",
+    friendly_casualties: "None", casualty_notes: "",
+    mission_status: "On Track", mission_notes: "", next_action: "", additional_info: "",
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [d, opsData] = await Promise.all([
+        apiFetch(`/milsimSitrep?path=list&group_id=${group.id}`),
+        apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
+      ]);
+      setReports(d.sitreps ?? []);
+      setOps((opsData.events ?? []).filter((o: any) => ["Active", "Confirmed", "Planned"].includes(o.status)));
+    } catch {}
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, [group.id]);
+
+  const save = async () => {
+    if (!form.callsign) { showMsg("Callsign required", "error"); return; }
+    setSaving(true);
+    try {
+      const payload = { ...form, group_id: group.id, reported_by: user?.username ?? "Unknown" };
+      if (payload.op_id) { const op = ops.find((o: any) => o.id === payload.op_id); if (op) payload.op_name = op.title ?? op.name ?? ""; }
+      await apiFetch("/milsimSitrep?path=create", { method: "POST", body: JSON.stringify(payload) });
+      showMsg("SITREP filed", "success"); setShowForm(false); setForm(emptyForm); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+    setSaving(false);
+  };
+
+  const ENEMY_CFG: Record<string, { color: string; bg: string; border: string }> = {
+    None:      { color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/30" },
+    Possible:  { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30" },
+    Confirmed: { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30" },
+    Engaged:   { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/30" },
+  };
+  const MISSION_CFG: Record<string, { color: string; bg: string; border: string }> = {
+    "On Track":    { color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/30" },
+    "Delayed":     { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30" },
+    "Compromised": { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30" },
+    "Abort":       { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/30" },
+  };
+  const CAS_CFG: Record<string, { color: string }> = {
+    None: { color: "text-green-400" }, Minor: { color: "text-yellow-400" },
+    Significant: { color: "text-orange-400" }, Critical: { color: "text-red-400" },
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h2 className="font-display font-bold text-lg uppercase tracking-widest">SITREPs</h2>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Situation reports — position, enemy contact, mission status, next action.</p>
+        </div>
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> File SITREP
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="border border-primary/30 rounded-lg p-5 bg-primary/5 space-y-5">
+          <h3 className="font-display font-bold text-sm uppercase tracking-widest text-primary">New SITREP</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <MField label="Callsign *"><input value={form.callsign} onChange={e => setForm((f: any) => ({ ...f, callsign: e.target.value }))} placeholder="e.g. 1-1A" className="mf-input w-full" /></MField>
+            <MField label="Report Time"><input type="datetime-local" value={form.report_time} onChange={e => setForm((f: any) => ({ ...f, report_time: e.target.value }))} className="mf-input w-full" /></MField>
+            <MField label="Linked Op"><select value={form.op_id} onChange={e => setForm((f: any) => ({ ...f, op_id: e.target.value }))} className="mf-input w-full"><option value="">— None —</option>{ops.map((o: any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}</select></MField>
+            <MField label="Position / Grid"><input value={form.position} onChange={e => setForm((f: any) => ({ ...f, position: e.target.value }))} placeholder="e.g. Grid 45N, Sector Charlie" className="mf-input w-full" /></MField>
+          </div>
+
+          {/* Enemy Contact */}
+          <div className="border border-border rounded-lg p-4 space-y-3">
+            <p className="font-display font-bold text-xs uppercase tracking-widest">Enemy Contact</p>
+            <div className="flex gap-2 flex-wrap">
+              {(["None", "Possible", "Confirmed", "Engaged"] as const).map(v => {
+                const cfg = ENEMY_CFG[v];
+                return <button key={v} onClick={() => setForm((f: any) => ({ ...f, enemy_contact: v }))}
+                  className={`px-3 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.enemy_contact === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
+              })}
+            </div>
+            <input value={form.enemy_notes} onChange={e => setForm((f: any) => ({ ...f, enemy_notes: e.target.value }))} placeholder="Enemy notes..." className="mf-input w-full text-xs" />
+          </div>
+
+          {/* Friendly Casualties */}
+          <div className="border border-border rounded-lg p-4 space-y-3">
+            <p className="font-display font-bold text-xs uppercase tracking-widest">Friendly Casualties</p>
+            <div className="flex gap-2 flex-wrap">
+              {(["None", "Minor", "Significant", "Critical"] as const).map(v => {
+                const cfg = CAS_CFG[v];
+                return <button key={v} onClick={() => setForm((f: any) => ({ ...f, friendly_casualties: v }))}
+                  className={`px-3 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.friendly_casualties === v ? `bg-secondary border-primary/50 ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
+              })}
+            </div>
+            <input value={form.casualty_notes} onChange={e => setForm((f: any) => ({ ...f, casualty_notes: e.target.value }))} placeholder="Casualty notes..." className="mf-input w-full text-xs" />
+          </div>
+
+          {/* Mission Status */}
+          <div className="border border-border rounded-lg p-4 space-y-3">
+            <p className="font-display font-bold text-xs uppercase tracking-widest">Mission Status</p>
+            <div className="flex gap-2 flex-wrap">
+              {(["On Track", "Delayed", "Compromised", "Abort"] as const).map(v => {
+                const cfg = MISSION_CFG[v];
+                return <button key={v} onClick={() => setForm((f: any) => ({ ...f, mission_status: v }))}
+                  className={`px-3 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.mission_status === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
+              })}
+            </div>
+            <input value={form.mission_notes} onChange={e => setForm((f: any) => ({ ...f, mission_notes: e.target.value }))} placeholder="Mission notes..." className="mf-input w-full text-xs" />
+          </div>
+
+          <MField label="Next Action"><textarea value={form.next_action} onChange={e => setForm((f: any) => ({ ...f, next_action: e.target.value }))} rows={2} placeholder="What happens next..." className="mf-input w-full resize-none" /></MField>
+          <MField label="Additional Info"><textarea value={form.additional_info} onChange={e => setForm((f: any) => ({ ...f, additional_info: e.target.value }))} rows={2} placeholder="Any other relevant information..." className="mf-input w-full resize-none" /></MField>
+
+          <div className="flex gap-2">
+            <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Submit</button>
+            <button onClick={() => { setShowForm(false); setForm(emptyForm); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {reports.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><Target className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No SITREPs filed.</p></div>
+      ) : (
+        <div className="space-y-3">
+          {reports.map((r: any) => {
+            const ec = ENEMY_CFG[r.enemy_contact] ?? ENEMY_CFG["None"];
+            const ms = MISSION_CFG[r.mission_status] ?? MISSION_CFG["On Track"];
+            return (
+              <div key={r.id} className={`border ${r.enemy_contact === "Engaged" || r.mission_status === "Abort" ? "border-red-500/40" : r.enemy_contact === "Confirmed" || r.mission_status === "Compromised" ? "border-orange-500/40" : "border-border"} rounded-lg p-4 space-y-3 bg-card`}>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <Target className="w-4 h-4 text-primary shrink-0" />
+                    <span className="font-display font-bold text-sm uppercase tracking-widest">{r.callsign}</span>
+                    {r.op_name && <span className="text-xs text-muted-foreground font-sans">— {r.op_name}</span>}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground font-sans">{r.reported_by} · {r.report_time ? new Date(r.report_time).toLocaleString() : new Date(r.created_date).toLocaleString()}</span>
+                    <button onClick={async () => { if (!confirm("Delete?")) return; await apiFetch("/milsimSitrep?path=delete", { method: "POST", body: JSON.stringify({ id: r.id }) }); load(); }} className="text-muted-foreground hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                  <div className={`rounded border p-2 ${ec.bg} ${ec.border}`}><p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Enemy</p><p className={`font-display font-bold uppercase ${ec.color}`}>{r.enemy_contact}</p>{r.enemy_notes && <p className="text-muted-foreground font-sans mt-1">{r.enemy_notes}</p>}</div>
+                  <div className={`rounded border p-2 ${ms.bg} ${ms.border}`}><p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Mission</p><p className={`font-display font-bold uppercase ${ms.color}`}>{r.mission_status}</p>{r.mission_notes && <p className="text-muted-foreground font-sans mt-1">{r.mission_notes}</p>}</div>
+                  <div className="rounded border p-2 border-border bg-secondary/20"><p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Casualties</p><p className={`font-display font-bold uppercase ${(CAS_CFG[r.friendly_casualties] ?? CAS_CFG["None"]).color}`}>{r.friendly_casualties ?? "None"}</p></div>
+                  <div className="rounded border p-2 border-border bg-secondary/20"><p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Position</p><p className="font-sans text-foreground">{r.position || "—"}</p></div>
+                </div>
+                {r.next_action && <p className="text-xs font-sans text-muted-foreground border-t border-border pt-2"><span className="font-display font-bold uppercase tracking-wider text-foreground">Next: </span>{r.next_action}</p>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Training Review Tab ─────────────────────────────────────────────────── */
+const TRAINING_SKILLS = ["Patrolling","Room Clearing","Fire & Manoeuvre","Bounding Overwatch","Medical/CASEVAC","Comms Procedures","Air Assault","Convoy Ops","Recon","Indirect Fire","Vehicle Ops","NBC","Night Ops","Urban Combat","Breaching","Sniper Ops","Logistics","Command & Control"];
+
+function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
+  const { user } = useAuth();
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const emptyForm = {
+    exercise_name: "", exercise_date: new Date().toISOString().slice(0, 10),
+    participant_count: "", conducted_by: "", skills_practised: [] as string[],
+    overall_execution: 3, comms_quality: 3, tactics_quality: 3, discipline_quality: 3,
+    notable_gaps: "", highlights: "", repeat_recommended: false,
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const load = async () => {
+    setLoading(true);
+    try { const d = await apiFetch(`/milsimTrainingReview?path=list&group_id=${group.id}`); setReviews(d.reviews ?? []); } catch {}
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, [group.id]);
+
+  const toggleSkill = (skill: string) => setForm((f: any) => ({
+    ...f, skills_practised: f.skills_practised.includes(skill)
+      ? f.skills_practised.filter((s: string) => s !== skill)
+      : [...f.skills_practised, skill],
+  }));
+
+  const save = async () => {
+    if (!form.exercise_name) { showMsg("Exercise name required", "error"); return; }
+    setSaving(true);
+    try {
+      await apiFetch("/milsimTrainingReview?path=create", { method: "POST", body: JSON.stringify({ ...form, group_id: group.id, reviewed_by: user?.username ?? "Unknown", participant_count: Number(form.participant_count) || 0 }) });
+      showMsg("Exercise review saved", "success"); setShowForm(false); setForm(emptyForm); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+    setSaving(false);
+  };
+
+  const ScoreSelect = ({ label, field }: { label: string; field: string }) => (
+    <MField label={label}>
+      <div className="flex gap-1.5">
+        {[1,2,3,4,5].map(n => (
+          <button key={n} onClick={() => setForm((f: any) => ({ ...f, [field]: n }))}
+            className={`w-8 h-8 rounded border text-xs font-display font-bold transition-all ${form[field] >= n ? "bg-primary/20 border-primary/50 text-primary" : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{n}</button>
+        ))}
+      </div>
+    </MField>
+  );
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h2 className="font-display font-bold text-lg uppercase tracking-widest">Exercise Reviews</h2>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Post-exercise evaluations — skills, scores, gaps. Feeds training doctrine rating.</p>
+        </div>
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> New Review
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="border border-primary/30 rounded-lg p-5 bg-primary/5 space-y-5">
+          <h3 className="font-display font-bold text-sm uppercase tracking-widest text-primary">Exercise Review</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <MField label="Exercise Name *"><input value={form.exercise_name} onChange={e => setForm((f: any) => ({ ...f, exercise_name: e.target.value }))} placeholder="e.g. Ex Iron Anvil" className="mf-input w-full" /></MField>
+            <MField label="Date"><input type="date" value={form.exercise_date} onChange={e => setForm((f: any) => ({ ...f, exercise_date: e.target.value }))} className="mf-input w-full" /></MField>
+            <MField label="Conducted By"><input value={form.conducted_by} onChange={e => setForm((f: any) => ({ ...f, conducted_by: e.target.value }))} placeholder="Callsign / rank" className="mf-input w-full" /></MField>
+            <MField label="Participants"><input type="number" min={1} value={form.participant_count} onChange={e => setForm((f: any) => ({ ...f, participant_count: e.target.value }))} className="mf-input w-full" /></MField>
+          </div>
+
+          <div>
+            <p className="font-display font-bold text-xs uppercase tracking-widest mb-2">Skills Practised</p>
+            <div className="flex flex-wrap gap-1.5">
+              {TRAINING_SKILLS.map(skill => (
+                <button key={skill} onClick={() => toggleSkill(skill)}
+                  className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.skills_practised.includes(skill) ? "bg-primary/20 border-primary/50 text-primary" : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{skill}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <ScoreSelect label="Overall Execution" field="overall_execution" />
+            <ScoreSelect label="Comms Quality" field="comms_quality" />
+            <ScoreSelect label="Tactics Quality" field="tactics_quality" />
+            <ScoreSelect label="Discipline" field="discipline_quality" />
+          </div>
+
+          <MField label="Highlights"><textarea value={form.highlights} onChange={e => setForm((f: any) => ({ ...f, highlights: e.target.value }))} rows={2} placeholder="What went well..." className="mf-input w-full resize-none" /></MField>
+          <MField label="Notable Gaps"><textarea value={form.notable_gaps} onChange={e => setForm((f: any) => ({ ...f, notable_gaps: e.target.value }))} rows={2} placeholder="Areas requiring improvement..." className="mf-input w-full resize-none" /></MField>
+
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="repeat-rec" checked={form.repeat_recommended} onChange={e => setForm((f: any) => ({ ...f, repeat_recommended: e.target.checked }))} className="rounded" />
+            <label htmlFor="repeat-rec" className="text-xs font-display font-bold uppercase tracking-widest">Recommend repeat exercise</label>
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save Review</button>
+            <button onClick={() => { setShowForm(false); setForm(emptyForm); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {reviews.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><BookCheck className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No exercise reviews yet.</p></div>
+      ) : (
+        <div className="space-y-3">
+          {reviews.map((r: any) => {
+            const avg = ((r.overall_execution + r.comms_quality + r.tactics_quality + r.discipline_quality) / 4).toFixed(1);
+            const avgNum = parseFloat(avg);
+            const scoreColor = avgNum >= 4 ? "text-green-400" : avgNum >= 3 ? "text-yellow-400" : "text-red-400";
+            return (
+              <div key={r.id} className="border border-border rounded-lg p-4 space-y-3 bg-card">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <BookCheck className="w-4 h-4 text-primary shrink-0" />
+                    <div>
+                      <span className="font-display font-bold text-sm uppercase tracking-widest">{r.exercise_name}</span>
+                      {r.exercise_date && <span className="ml-2 text-xs text-muted-foreground font-sans">{new Date(r.exercise_date).toLocaleDateString()}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`font-display font-black text-lg ${scoreColor}`}>{avg}<span className="text-xs text-muted-foreground">/5</span></span>
+                    <button onClick={async () => { if (!confirm("Delete?")) return; await apiFetch("/milsimTrainingReview?path=delete", { method: "POST", body: JSON.stringify({ id: r.id }) }); load(); }} className="text-muted-foreground hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {(r.skills_practised ?? []).map((s: string) => <span key={s} className="px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded text-xs font-display font-bold uppercase tracking-wider">{s}</span>)}
+                </div>
+                <div className="grid grid-cols-4 gap-2 text-xs">
+                  {[["Overall", r.overall_execution], ["Comms", r.comms_quality], ["Tactics", r.tactics_quality], ["Discipline", r.discipline_quality]].map(([label, val]) => (
+                    <div key={label as string} className="bg-secondary/30 rounded p-2 text-center">
+                      <p className="text-muted-foreground font-display font-bold uppercase tracking-wider text-xs mb-1">{label}</p>
+                      <p className={`font-display font-black text-base ${Number(val) >= 4 ? "text-green-400" : Number(val) >= 3 ? "text-yellow-400" : "text-red-400"}`}>{val ?? "—"}</p>
+                    </div>
+                  ))}
+                </div>
+                {r.notable_gaps && <p className="text-xs font-sans text-muted-foreground border-t border-border pt-2"><span className="font-display font-bold uppercase tracking-wider text-foreground">Gaps: </span>{r.notable_gaps}</p>}
+                {r.highlights && <p className="text-xs font-sans text-muted-foreground"><span className="font-display font-bold uppercase tracking-wider text-green-400">Highlights: </span>{r.highlights}</p>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Conduct Report Tab ──────────────────────────────────────────────────── */
+function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
+  const { user } = useAuth();
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const emptyForm = {
+    subject_callsign: "", report_date: new Date().toISOString().slice(0, 10),
+    category: "Conduct", severity: "Minor", description: "",
+    evidence: "", outcome: "No Action", outcome_notes: "", reviewed_by: "",
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const load = async () => {
+    setLoading(true);
+    try { const d = await apiFetch(`/milsimConductReport?path=list&group_id=${group.id}`); setReports(d.reports ?? []); } catch {}
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, [group.id]);
+
+  const save = async () => {
+    if (!form.subject_callsign || !form.description) { showMsg("Callsign and description required", "error"); return; }
+    setSaving(true);
+    try {
+      await apiFetch("/milsimConductReport?path=create", { method: "POST", body: JSON.stringify({ ...form, group_id: group.id, filed_by: user?.username ?? "Unknown" }) });
+      showMsg("Conduct report filed", "success"); setShowForm(false); setForm(emptyForm); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+    setSaving(false);
+  };
+
+  const SEV_CFG: Record<string, { color: string; bg: string; border: string }> = {
+    Info:     { color: "text-blue-400",   bg: "bg-blue-500/10",   border: "border-blue-500/30" },
+    Minor:    { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30" },
+    Major:    { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30" },
+    Critical: { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/30" },
+  };
+  const CAT_CFG: Record<string, string> = {
+    Absence: "text-yellow-400", Conduct: "text-orange-400", Insubordination: "text-red-400",
+    Negligence: "text-orange-400", Commendation: "text-green-400", Admin: "text-muted-foreground",
+  };
+  const OUTCOME_CFG: Record<string, string> = {
+    "No Action": "text-muted-foreground", "Verbal Warning": "text-yellow-400", "Written Warning": "text-orange-400",
+    "Strike": "text-red-400", "Demotion": "text-red-400", "Removal": "text-red-500", "Commendation": "text-green-400",
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h2 className="font-display font-bold text-lg uppercase tracking-widest">Conduct Reports</h2>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Disciplinary and admin reports — commendations, warnings, absences, removals.</p>
+        </div>
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> File Report
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="border border-primary/30 rounded-lg p-5 bg-primary/5 space-y-5">
+          <h3 className="font-display font-bold text-sm uppercase tracking-widest text-primary">New Conduct Report</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <MField label="Subject Callsign *"><input value={form.subject_callsign} onChange={e => setForm((f: any) => ({ ...f, subject_callsign: e.target.value }))} placeholder="e.g. Cpl Smith" className="mf-input w-full" /></MField>
+            <MField label="Report Date"><input type="date" value={form.report_date} onChange={e => setForm((f: any) => ({ ...f, report_date: e.target.value }))} className="mf-input w-full" /></MField>
+            <MField label="Category">
+              <select value={form.category} onChange={e => setForm((f: any) => ({ ...f, category: e.target.value }))} className="mf-input w-full">
+                {["Absence", "Conduct", "Insubordination", "Negligence", "Commendation", "Admin"].map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </MField>
+            <MField label="Severity">
+              <div className="flex gap-2 flex-wrap mt-1">
+                {(["Info", "Minor", "Major", "Critical"] as const).map(v => {
+                  const cfg = SEV_CFG[v];
+                  return <button key={v} onClick={() => setForm((f: any) => ({ ...f, severity: v }))}
+                    className={`px-3 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.severity === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
+                })}
+              </div>
+            </MField>
+          </div>
+          <MField label="Description *"><textarea value={form.description} onChange={e => setForm((f: any) => ({ ...f, description: e.target.value }))} rows={3} placeholder="Describe the incident or commendation..." className="mf-input w-full resize-none" /></MField>
+          <MField label="Evidence / Reference"><textarea value={form.evidence} onChange={e => setForm((f: any) => ({ ...f, evidence: e.target.value }))} rows={2} placeholder="Screenshots, witness callsigns, dates..." className="mf-input w-full resize-none" /></MField>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <MField label="Outcome">
+              <select value={form.outcome} onChange={e => setForm((f: any) => ({ ...f, outcome: e.target.value }))} className="mf-input w-full">
+                {["No Action", "Verbal Warning", "Written Warning", "Strike", "Demotion", "Removal", "Commendation"].map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </MField>
+            <MField label="Reviewed By"><input value={form.reviewed_by} onChange={e => setForm((f: any) => ({ ...f, reviewed_by: e.target.value }))} placeholder="Senior officer callsign" className="mf-input w-full" /></MField>
+          </div>
+          <MField label="Outcome Notes"><textarea value={form.outcome_notes} onChange={e => setForm((f: any) => ({ ...f, outcome_notes: e.target.value }))} rows={2} placeholder="Any additional outcome notes..." className="mf-input w-full resize-none" /></MField>
+          <div className="flex gap-2">
+            <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} File Report</button>
+            <button onClick={() => { setShowForm(false); setForm(emptyForm); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {reports.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><UserMinus2 className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No conduct reports filed.</p></div>
+      ) : (
+        <div className="space-y-3">
+          {reports.map((r: any) => {
+            const sev = SEV_CFG[r.severity] ?? SEV_CFG["Minor"];
+            return (
+              <div key={r.id} className={`border ${sev.border} rounded-lg p-4 space-y-3 bg-card`}>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <UserMinus2 className="w-4 h-4 text-primary shrink-0" />
+                    <span className="font-display font-bold text-sm uppercase tracking-widest">{r.subject_callsign}</span>
+                    <span className={`text-xs font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${sev.bg} ${sev.border} ${sev.color}`}>{r.severity}</span>
+                    <span className={`text-xs font-display font-bold uppercase ${CAT_CFG[r.category] ?? "text-muted-foreground"}`}>{r.category}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs font-display font-bold uppercase ${OUTCOME_CFG[r.outcome] ?? "text-muted-foreground"}`}>{r.outcome}</span>
+                    <span className="text-xs text-muted-foreground font-sans">{r.filed_by} · {r.report_date ? new Date(r.report_date).toLocaleDateString() : ""}</span>
+                    <button onClick={async () => { if (!confirm("Delete?")) return; await apiFetch("/milsimConductReport?path=delete", { method: "POST", body: JSON.stringify({ id: r.id }) }); load(); }} className="text-muted-foreground hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+                <p className="text-xs font-sans text-muted-foreground">{r.description}</p>
+                {r.outcome_notes && <p className="text-xs font-sans text-muted-foreground border-t border-border pt-2"><span className="font-display font-bold uppercase tracking-wider text-foreground">Outcome: </span>{r.outcome_notes}</p>}
               </div>
             );
           })}
