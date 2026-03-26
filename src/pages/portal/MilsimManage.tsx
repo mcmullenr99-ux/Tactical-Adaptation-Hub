@@ -1131,6 +1131,7 @@ function AwardsTab({ group, showMsg }: any) {
   const [pickerCountry, setPickerCountry] = useState<string>("");
   const [pickerBranch, setPickerBranch] = useState<string>("US Army");
   const [pickerSearch, setPickerSearch] = useState<string>("");
+  const [pickerPage, setPickerPage] = useState<number>(0);
   const [selectedTemplate, setSelectedTemplate] = useState<RibbonTemplate | null>(null);
   const [desc, setDesc] = useState("");
   const [creating, setCreating] = useState(false);
@@ -1173,11 +1174,14 @@ function AwardsTab({ group, showMsg }: any) {
     }
     return true;
   });
+  const RIBBONS_PER_PAGE = 48;
+  const totalPages = Math.ceil(filteredTemplates.length / RIBBONS_PER_PAGE);
+  const pagedTemplates = filteredTemplates.slice(pickerPage * RIBBONS_PER_PAGE, (pickerPage + 1) * RIBBONS_PER_PAGE);
 
   const resetForm = () => {
     setShowCreate(false);
     setSelectedTemplate(null);
-    setPickerCountry(""); setPickerBranch("US Army"); setPickerSearch(""); setDesc("");
+    setPickerCountry(""); setPickerBranch("US Army"); setPickerSearch(""); setDesc(""); setPickerPage(0);
     setAwardName(""); setRibbonConfig({ colors: ["#1a3a6b","#c8102e","#ffffff"], pattern: "thirds" });
     setCreateMode("build");
   };
@@ -1344,7 +1348,7 @@ function AwardsTab({ group, showMsg }: any) {
                   <div>
                     <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Country</label>
                     <select value={pickerCountry}
-                      onChange={e => { const v = e.target.value; setPickerCountry(v); const brs = RIBBON_BRANCHES_BY_COUNTRY[v] ?? []; setPickerBranch(brs.length === 1 ? brs[0] : ""); setSelectedTemplate(null); }}
+                      onChange={e => { const v = e.target.value; setPickerCountry(v); const brs = RIBBON_BRANCHES_BY_COUNTRY[v] ?? []; setPickerBranch(brs.length === 1 ? brs[0] : ""); setSelectedTemplate(null); setPickerPage(0); }}
                       className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground">
                       <option value="">All countries</option>
                       {RIBBON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -1353,7 +1357,7 @@ function AwardsTab({ group, showMsg }: any) {
                   <div>
                     <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Branch / Force</label>
                     <select value={pickerBranch}
-                      onChange={e => { setPickerBranch(e.target.value); setSelectedTemplate(null); }}
+                      onChange={e => { setPickerBranch(e.target.value); setSelectedTemplate(null); setPickerPage(0); }}
                       disabled={!pickerCountry}
                       className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground disabled:opacity-40">
                       <option value="">All branches</option>
@@ -1363,7 +1367,7 @@ function AwardsTab({ group, showMsg }: any) {
                   <div className="col-span-2 sm:col-span-1">
                     <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Search</label>
                     <input value={pickerSearch}
-                      onChange={e => { setPickerSearch(e.target.value); setSelectedTemplate(null); }}
+                      onChange={e => { setPickerSearch(e.target.value); setSelectedTemplate(null); setPickerPage(0); }}
                       placeholder="e.g. Bronze Star, Victoria Cross..."
                       className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground" />
                   </div>
@@ -1388,14 +1392,37 @@ function AwardsTab({ group, showMsg }: any) {
                 {/* Ribbon grid */}
                 {!selectedTemplate && (
                   <div className="border border-border rounded-lg overflow-hidden">
-                    <div className="bg-secondary/40 border-b border-border px-3 py-2">
+                    <div className="bg-secondary/40 border-b border-border px-3 py-2 flex items-center justify-between gap-2">
                       <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">
-                        {filteredTemplates.length} ribbons {pickerSearch || pickerCountry ? "matching filters" : "available"} — click to select
+                        {filteredTemplates.length} ribbons {pickerSearch || pickerCountry ? "matching filters" : "available"}
+                        {totalPages > 1 && <span className="ml-1 text-primary">— page {pickerPage + 1}/{totalPages}</span>}
                       </p>
+                      {totalPages > 1 && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            disabled={pickerPage === 0}
+                            onClick={() => setPickerPage(p => Math.max(0, p - 1))}
+                            className="w-6 h-6 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs font-bold">
+                            ‹
+                          </button>
+                          {Array.from({ length: totalPages }, (_, i) => (
+                            <button key={i} onClick={() => setPickerPage(i)}
+                              className={`w-6 h-6 flex items-center justify-center rounded border text-[9px] font-display font-bold transition-colors ${pickerPage === i ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}>
+                              {i + 1}
+                            </button>
+                          ))}
+                          <button
+                            disabled={pickerPage >= totalPages - 1}
+                            onClick={() => setPickerPage(p => Math.min(totalPages - 1, p + 1))}
+                            className="w-6 h-6 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs font-bold">
+                            ›
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="max-h-72 overflow-y-auto p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                      {filteredTemplates.slice(0, 200).map((r, i) => (
-                        <button key={i} onClick={() => setSelectedTemplate(r)}
+                      {pagedTemplates.map((r, i) => (
+                        <button key={pickerPage * RIBBONS_PER_PAGE + i} onClick={() => setSelectedTemplate(r)}
                           title={`${r.name} (${r.country})`}
                           className="flex flex-col items-center gap-1 p-1.5 rounded border border-transparent hover:border-primary/50 hover:bg-primary/5 transition-all group">
                           <img src={r.url} alt={r.name}
@@ -1409,11 +1436,6 @@ function AwardsTab({ group, showMsg }: any) {
                       {filteredTemplates.length === 0 && (
                         <div className="col-span-6 text-center py-8 text-xs text-muted-foreground font-sans">
                           No ribbons match — try clearing filters
-                        </div>
-                      )}
-                      {filteredTemplates.length > 200 && (
-                        <div className="col-span-6 text-center py-2 text-[10px] text-muted-foreground font-sans">
-                          Showing 200 of {filteredTemplates.length} — use filters to narrow down
                         </div>
                       )}
                     </div>
