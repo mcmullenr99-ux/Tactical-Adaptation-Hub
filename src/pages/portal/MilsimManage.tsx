@@ -1181,13 +1181,10 @@ function AwardsTab({ group, showMsg }: any) {
   };
 
   const createDef = async () => {
-    if (createMode === "library" && !selectedTemplate) { showMsg(false, "Select a ribbon first."); return; }
-    if (createMode === "build" && !awardName.trim()) { showMsg(false, "Enter an award name."); return; }
+    if (!selectedTemplate) { showMsg(false, "Select a ribbon first."); return; }
     setCreating(true);
     try {
-      const payload = createMode === "library"
-        ? { name: selectedTemplate!.name, description: desc || undefined, award_type: "ribbon", image_url: selectedTemplate!.url, source_country: selectedTemplate!.country, source_branch: selectedTemplate!.branch, sort_order: defs.length }
-        : { name: awardName.trim(), description: desc || undefined, award_type: "ribbon", image_url: ribbonToSvgDataUri(ribbonConfig), sort_order: defs.length };
+      const payload = { name: selectedTemplate!.name, description: desc || undefined, award_type: "ribbon", image_url: selectedTemplate!.url, source_country: selectedTemplate!.country, source_branch: selectedTemplate!.branch, sort_order: defs.length };
       await apiFetch(`/milsimAwards?path=${group.id}/award-defs`, { method: "POST", body: JSON.stringify(payload) });
       resetForm();
       showMsg(true, "Award added to library.");
