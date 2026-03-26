@@ -1771,7 +1771,7 @@ function EventHubTab({ group, showMsg }: any) {
 
   const SUBS: { id: EHSub; label: string; icon: React.ReactNode; pro?: boolean }[] = [
     { id: "events",    label: "Operations", icon: <Siren className="w-3.5 h-3.5" /> },
-    { id: "calendar",  label: "Calendar",   icon: <CalendarDays className="w-3.5 h-3.5" /> },
+    { id: "calendar",  label: "Calendar",   icon: <CalendarDays className="w-3.5 h-3.5" />, pro: true },
     { id: "campaigns", label: "Campaigns",  icon: <Zap className="w-3.5 h-3.5" />, pro: true },
   ];
 
@@ -3401,6 +3401,7 @@ const EV_STYLE: Record<string, string> = {
   Other:    "bg-secondary border-border text-muted-foreground",
   LOA:      "bg-blue-500/10 border-blue-500/30 text-blue-400",
   AAR:      "bg-green-500/10 border-green-500/30 text-green-400",
+  Campaign: "bg-yellow-500/10 border-yellow-500/30 text-yellow-300",
 };
 
 function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success"|"error") => void }) {
@@ -3411,7 +3412,9 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
   const [events, setEvents]   = useState<any[]>([]);
   const [loas, setLoas]       = useState<any[]>([]);
   const [aars, setAars]       = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isProCal, setIsProCal] = useState<boolean | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showForm, setShowForm]   = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
@@ -3424,19 +3427,52 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [opsData, loaData, aarData] = await Promise.all([
+      // Pro check
+      const proRes = await fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`);
+      const proData = await proRes.json();
+      setIsProCal(proData.is_pro);
+      if (!proData.is_pro) { setLoading(false); return; }
+
+      const [opsData, loaData, aarData, campRes] = await Promise.all([
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
         apiFetch(`/loa?path=list&group_id=${group.id}`),
         apiFetch(`/milsimAars?path=list&group_id=${group.id}`),
+        fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`).then(r => r.json()).catch(() => []),
       ]);
       setEvents(opsData.events ?? []);
       setLoas(loaData.loas ?? []);
       setAars(aarData.aars ?? []);
-    } catch { setEvents([]); setLoas([]); setAars([]); }
+      setCampaigns(Array.isArray(campRes) ? campRes : []);
+    } catch { setEvents([]); setLoas([]); setAars([]); setCampaigns([]); }
     setLoading(false);
   }, [group.id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // ── Pro gate ──────────────────────────────────────────────────────────────
+  if (isProCal === null) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-3">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+
+  if (!isProCal) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          The Activity Calendar is a Pro feature. Upgrade to unlock full campaign-linked scheduling, LOA tracking, AAR timelines, and monthly readiness views.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]">
+        <Crown className="w-4 h-4" /> Upgrade to Pro
+      </a>
+    </div>
+  );
 
   const save = async () => {
     if (!form.title || !form.scheduled_at) { showMsg("Title and date required", "error"); return; }
@@ -3507,10 +3543,21 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
     return d.getFullYear() === viewYear && d.getMonth() === viewMonth && d.getDate() === day;
   });
 
+  const campaignsForDay = (day: number) => {
+    const date = dayDate(day);
+    return campaigns.filter(camp => {
+      if (!camp.start_date || !camp.end_date) return false;
+      const start = new Date(camp.start_date);
+      const end = new Date(camp.end_date);
+      return date >= start && date <= end && camp.status !== "Archived";
+    });
+  };
+
   const allItemsForDay = (day: number) => [
     ...opsForDay(day).map(e => ({ kind: e.event_type ?? "Op", label: e.title ?? e.name, raw: e })),
     ...loasForDay(day).map(l => ({ kind: "LOA", label: `LOA: ${l.callsign}`, raw: l })),
     ...aarsForDay(day).map(a => ({ kind: "AAR", label: `AAR: ${a.title ?? a.op_name}`, raw: a })),
+    ...campaignsForDay(day).map(camp => ({ kind: "Campaign", label: `Campaign: ${camp.name}`, raw: camp })),
   ];
 
   const upcomingOps = events
@@ -3525,6 +3572,7 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
     const dayOps = opsForDay(selectedDay);
     const dayLoas = loasForDay(selectedDay);
     const dayAars = aarsForDay(selectedDay);
+    const dayCamps = campaignsForDay(selectedDay);
     return (
       <div className="border border-border rounded-lg bg-card p-5 space-y-4">
         <div className="flex items-center justify-between">
@@ -3603,6 +3651,41 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
             </div>
           </div>
         )}
+        {(() => {
+          const dayCamps = selectedDay !== null ? campaignsForDay(selectedDay) : [];
+          if (dayCamps.length === 0) return null;
+          return (
+            <div>
+              <p className="text-[10px] font-display font-bold uppercase tracking-widest text-yellow-400 mb-2 flex items-center gap-1"><Zap className="w-3 h-3" /> Active Campaigns</p>
+              <div className="space-y-1.5">
+                {dayCamps.map(camp => (
+                  <div key={camp.id} className="rounded border border-yellow-500/20 bg-yellow-500/5 p-3 space-y-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-display font-bold text-xs text-yellow-300">{camp.name}</p>
+                      <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ${
+                        camp.status === "Active" ? "border-green-500/40 text-green-400" :
+                        camp.status === "Planning" ? "border-yellow-500/40 text-yellow-400" :
+                        camp.status === "Completed" ? "border-border text-muted-foreground" :
+                        "border-border text-muted-foreground"
+                      }`}>{camp.status}</span>
+                    </div>
+                    {camp.objective && <p className="text-[10px] font-sans text-muted-foreground line-clamp-2">{camp.objective}</p>}
+                    {camp.tags && camp.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {camp.tags.map((t: string) => <span key={t} className="text-[8px] font-display uppercase tracking-widest px-1 py-0.5 bg-secondary border border-border rounded">{t}</span>)}
+                      </div>
+                    )}
+                    {camp.start_date && camp.end_date && (
+                      <p className="text-[9px] font-sans text-muted-foreground opacity-70">
+                        {new Date(camp.start_date).toLocaleDateString("en-GB")} – {new Date(camp.end_date).toLocaleDateString("en-GB")}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   };
@@ -3656,6 +3739,7 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-yellow-400/60" />Training</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-400/60" />AAR</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-300/60 border border-blue-400/40" />LOA</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-yellow-400/60" />Campaign</span>
             <span className="flex items-center gap-1 text-muted-foreground">Click any day for full review</span>
           </div>
 
