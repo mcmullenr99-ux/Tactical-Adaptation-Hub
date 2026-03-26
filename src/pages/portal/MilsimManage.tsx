@@ -3090,6 +3090,7 @@ const TRAINING_SKILLS = ["Patrolling","Room Clearing","Fire & Manoeuvre","Boundi
 function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
   const { user } = useAuth();
   const [reviews, setReviews] = useState<any[]>([]);
+  const [ops, setOps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -3099,6 +3100,7 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
 
   const emptyForm = {
     exercise_name: "", exercise_date: dtgNow, exercise_type: "TRAINING EX",
+    op_id: "", op_name: "",
     conducted_by: "", reviewed_by: "", participant_count: "",
     skills_practised: [] as string[],
     overall_execution: 0, comms_quality: 0, tactics_quality: 0, discipline_quality: 0,
@@ -3108,7 +3110,14 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
 
   const load = async () => {
     setLoading(true);
-    try { const d = await apiFetch(`/milsimTrainingReview?path=list&group_id=${group.id}`); setReviews(d.reviews ?? []); } catch {}
+    try {
+      const [d, opsData] = await Promise.all([
+        apiFetch(`/milsimTrainingReview?path=list&group_id=${group.id}`),
+        apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
+      ]);
+      setReviews(d.reviews ?? []);
+      setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)));
+    } catch {}
     setLoading(false);
   };
   useEffect(() => { load(); }, [group.id]);
@@ -3124,11 +3133,9 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
     if (!form.conducted_by) { showMsg("Conducted by required", "error"); return; }
     setSaving(true);
     try {
-      await apiFetch("/milsimTrainingReview?path=create", { method: "POST", body: JSON.stringify({
-        ...form, group_id: group.id,
-        reviewed_by: form.reviewed_by || user?.username || "Unknown",
-        participant_count: Number(form.participant_count) || 0,
-      })});
+      const trPayload: any = { ...form, group_id: group.id, reviewed_by: form.reviewed_by || user?.username || "Unknown", participant_count: Number(form.participant_count) || 0 };
+      if (trPayload.op_id) { const op = ops.find((o:any) => o.id === trPayload.op_id); if (op) trPayload.op_name = op.title ?? op.name ?? ""; }
+      await apiFetch("/milsimTrainingReview?path=create", { method: "POST", body: JSON.stringify(trPayload) });
       showMsg("Exercise review saved", "success"); setShowForm(false); setForm({...emptyForm, exercise_date: dtgNow}); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
@@ -3211,6 +3218,14 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
               </MField>
             </div>
 
+            {/* Linked Op */}
+            <MField label="Linked Op (Optional)">
+              <select value={form.op_id} onChange={e => setForm((f:any) => ({...f, op_id: e.target.value}))} className="mf-input w-full">
+                <option value="">— No op —</option>
+                {ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
+              </select>
+            </MField>
+
             {/* Skills */}
             <div>
               <p className="font-display font-bold text-xs uppercase tracking-widest mb-2">Skills / Tasks Evaluated</p>
@@ -3274,6 +3289,7 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
                     <div>
                       <span className="font-display font-black text-sm uppercase tracking-widest">{r.exercise_name}</span>
                       {r.exercise_type && <span className="ml-2 text-xs text-muted-foreground font-display font-bold uppercase">{r.exercise_type}</span>}
+                    {r.op_name && <span className="ml-2 text-xs text-muted-foreground font-sans">/ {r.op_name}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -3319,6 +3335,7 @@ function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string
 function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
+  const [ops, setOps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -3328,6 +3345,7 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
 
   const emptyForm = {
     subject_callsign: "", report_date: dtgNow, filed_by_rank: "",
+    op_id: "", op_name: "",
     category: "Conduct", severity: "Minor",
     description: "", evidence: "",
     outcome: "No Action", outcome_notes: "", reviewed_by: "",
@@ -3336,7 +3354,14 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
 
   const load = async () => {
     setLoading(true);
-    try { const d = await apiFetch(`/milsimConductReport?path=list&group_id=${group.id}`); setReports(d.reports ?? []); } catch {}
+    try {
+      const [d, opsData] = await Promise.all([
+        apiFetch(`/milsimConductReport?path=list&group_id=${group.id}`),
+        apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
+      ]);
+      setReports(d.reports ?? []);
+      setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)));
+    } catch {}
     setLoading(false);
   };
   useEffect(() => { load(); }, [group.id]);
@@ -3346,10 +3371,9 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
     if (!form.description) { showMsg("Description of incident required", "error"); return; }
     setSaving(true);
     try {
-      await apiFetch("/milsimConductReport?path=create", { method: "POST", body: JSON.stringify({
-        ...form, group_id: group.id,
-        filed_by: (form.filed_by_rank ? form.filed_by_rank + " " : "") + (user?.username ?? "Unknown"),
-      })});
+      const crPayload: any = { ...form, group_id: group.id, filed_by: (form.filed_by_rank ? form.filed_by_rank + " " : "") + (user?.username ?? "Unknown") };
+      if (crPayload.op_id) { const op = ops.find((o:any) => o.id === crPayload.op_id); if (op) crPayload.op_name = op.title ?? op.name ?? ""; }
+      await apiFetch("/milsimConductReport?path=create", { method: "POST", body: JSON.stringify(crPayload) });
       showMsg("Admin report filed", "success"); setShowForm(false); setForm({...emptyForm, report_date: dtgNow}); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
@@ -3409,6 +3433,14 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
                 <input value={form.reviewed_by} onChange={e => setForm((f:any) => ({...f, reviewed_by: e.target.value}))} placeholder="e.g. Sgt / Officer callsign" className="mf-input w-full" />
               </MField>
             </div>
+
+            {/* Linked Op */}
+            <MField label="Linked Op (Optional)">
+              <select value={form.op_id} onChange={e => setForm((f:any) => ({...f, op_id: e.target.value}))} className="mf-input w-full">
+                <option value="">— No op —</option>
+                {ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
+              </select>
+            </MField>
 
             {/* Category + Severity */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3478,6 +3510,7 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
                   <div className="flex items-center gap-3">
                     <UserMinus2 className={`w-4 h-4 shrink-0 ${isComm ? "text-green-400" : "text-primary"}`} />
                     <span className="font-display font-black text-sm uppercase tracking-widest">{r.subject_callsign}</span>
+                    {r.op_name && <span className="text-xs text-muted-foreground font-sans">/ {r.op_name}</span>}
                     <span className={`text-xs font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${sev.bg} ${sev.border} ${sev.color}`}>{r.severity}</span>
                     <span className={`text-xs font-display font-bold uppercase tracking-widest ${CAT_COLOR[r.category] ?? "text-muted-foreground"}`}>{r.category}</span>
                   </div>
