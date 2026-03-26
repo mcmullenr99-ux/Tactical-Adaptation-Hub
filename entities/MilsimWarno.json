@@ -1,0 +1,87 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "op_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "issued",
+        "archived"
+      ]
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "situation_ground": {
+      "type": "string"
+    },
+    "situation_enemy": {
+      "type": "string"
+    },
+    "situation_friendly": {
+      "type": "string"
+    },
+    "mission": {
+      "type": "string"
+    },
+    "timings_hh": {
+      "type": "string"
+    },
+    "timings_nmb": {
+      "type": "string"
+    },
+    "timings_other": {
+      "type": "string"
+    },
+    "o_group_time": {
+      "type": "string"
+    },
+    "o_group_loc": {
+      "type": "string"
+    },
+    "o_group_other": {
+      "type": "string"
+    },
+    "css": {
+      "type": "string"
+    },
+    "acknowledge_1_sect": {
+      "type": "string"
+    },
+    "acknowledge_2_sect": {
+      "type": "string"
+    },
+    "acknowledge_3_sect": {
+      "type": "string"
+    },
+    "acknowledge_4_sect": {
+      "type": "string"
+    },
+    "acknowledge_pl_sgt": {
+      "type": "string"
+    },
+    "acknowledge_atts_1": {
+      "type": "string"
+    },
+    "acknowledge_atts_2": {
+      "type": "string"
+    },
+    "acknowledge_atts_3": {
+      "type": "string"
+    },
+    "op_date": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "MilsimWarno"
+}
