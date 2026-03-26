@@ -213,7 +213,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   ],
   "https://www.medals.pl/bc/r/uk1mgu.gif": [
     { type: 'checkbox', name: "w_rosette", label: "w. rosette", variantUrl: "https://www.medals.pl/bc/r/uk1mgu1.gif", affectsImage: true },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/uk1mgu.gif", affectsImage: false },
+    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/uk1mgu_m.gif", affectsImage: true },
   ],
   "https://www.medals.pl/bc/r/uk1mhac.gif": [
     { type: 'select', name: "uk1mhac", label: 'Select variant', tooltip: "uk1mhac", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/uk1mhac.gif" }, { value: "2", label: "1 Clasp", url: "https://www.medals.pl/bc/r/uk1mhac1.gif" }, { value: "3", label: "2 Clasps", url: "https://www.medals.pl/bc/r/uk1mhac2.gif" }, { value: "4", label: "3 Clasps", url: "https://www.medals.pl/bc/r/uk1mhac3.gif" }] },
@@ -235,15 +235,15 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   ],
   "https://www.medals.pl/bc/r/uk1mos_m2.gif": [
     { type: 'select', name: "uk1mos", label: 'Select variant', tooltip: "uk1mos", options: [{ value: "1", label: "plain", url: "https://www.medals.pl/bc/r/uk1mos.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/uk1mos_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/uk1mos_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1mos_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1mos_cvs.gif" }] },
-    { type: 'checkbox', name: "w_rosette", label: "w. rosette", variantUrl: "https://www.medals.pl/bc/r/uk1mos_m2.gif", affectsImage: true },
+    { type: 'checkbox', name: "w_rosette", label: "w. rosette", variantUrl: "https://www.medals.pl/bc/r/uk1mos1.gif", affectsImage: true },
   ],
   "https://www.medals.pl/bc/r/uk1mosaf_m2.gif": [
     { type: 'select', name: "uk1mosaf", label: 'Select variant', tooltip: "uk1mosaf", options: [{ value: "1", label: "plain", url: "https://www.medals.pl/bc/r/uk1mosaf.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/uk1mosaf_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/uk1mosaf_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1mosaf_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1mosaf_cvs.gif" }] },
-    { type: 'checkbox', name: "w_rosette", label: "w. rosette", variantUrl: "https://www.medals.pl/bc/r/uk1mosaf_m2.gif", affectsImage: true },
+    { type: 'checkbox', name: "w_rosette", label: "w. rosette", variantUrl: "https://www.medals.pl/bc/r/uk1mosaf1.gif", affectsImage: true },
   ],
   "https://www.medals.pl/bc/r/uk1mosco_m2.gif": [
     { type: 'select', name: "uk1mosco", label: 'Select variant', tooltip: "uk1mosco", options: [{ value: "1", label: "plain", url: "https://www.medals.pl/bc/r/uk1mosco.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/uk1mosco_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/uk1mosco_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1mosco_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1mosco_cvs.gif" }] },
-    { type: 'checkbox', name: "w_rosette", label: "w. rosette", variantUrl: "https://www.medals.pl/bc/r/uk1mosco_m2.gif", affectsImage: true },
+    { type: 'checkbox', name: "w_rosette", label: "w. rosette", variantUrl: "https://www.medals.pl/bc/r/uk1mosco1.gif", affectsImage: true },
   ],
   "https://www.medals.pl/bc/r/uk1mqg.gif": [
     { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mqg1.gif", affectsImage: true },
