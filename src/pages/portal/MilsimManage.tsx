@@ -48,6 +48,7 @@ import {
   Siren,
   Star,
   Target,
+  Globe,
   Trash2,
   TrendingUp,
   Trophy,
@@ -82,7 +83,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "recognition" | "stream" | "sops" | "orbat" | "questions" | "operations" | "orgchart" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events" | "eventhub";
+type Tab = "info" | "roles" | "ranks" | "roster" | "recognition" | "stream" | "sops" | "orbat" | "questions" | "operations" | "orgchart" | "readiness" | "analytics" | "campaigns" | "reputation" | "training" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events" | "eventhub" | "onboarding" | "criteria";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -140,7 +141,12 @@ export default function MilsimManage() {
       label: "Setup",
       items: [
         { id: "info", label: "Info", icon: Shield },
-        { id: "questions", label: "App Questions", icon: FileText },
+      ],
+    },
+    {
+      label: "Onboarding",
+      items: [
+        { id: "onboarding", label: "Onboarding", icon: ClipboardList },
       ],
     },
     {
@@ -254,6 +260,7 @@ export default function MilsimManage() {
               {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "recognition" && <RecognitionTab group={group} showMsg={showMsg} />}
               {tab === "eventhub" && <EventHubTab group={group} showMsg={showMsg} />}
+              {tab === "onboarding" && <OnboardingTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "events" && <EventsTab group={group} showMsg={showMsg} />}
               {tab === "orgchart" && <OrgChartTab group={group} />}
               {tab === "readiness" && <ReadinessTab group={group} />}
@@ -564,7 +571,7 @@ function TroopManagementTab({ group, onUpdated, showMsg }: any) {
     { id: "roster",     label: "Roster",      icon: <Users className="w-3.5 h-3.5" /> },
     { id: "roles",      label: "Roles",       icon: <Crosshair className="w-3.5 h-3.5" /> },
     { id: "ranks",      label: "Ranks",       icon: <Award className="w-3.5 h-3.5" /> },
-    { id: "pipeline",   label: "Pipeline",    icon: <UserCheck className="w-3.5 h-3.5" />, pro: true },
+    { id: "pipeline",   label: "Pipeline",    icon: <UserCheck className="w-3.5 h-3.5" /> },
     { id: "loa",        label: "LOA Manager", icon: <PlaneTakeoff className="w-3.5 h-3.5" /> },
     { id: "reputation", label: "Reputation",  icon: <Star className="w-3.5 h-3.5" /> },
   ];
@@ -1592,6 +1599,136 @@ function StreamTab({ group, onUpdated, showMsg }: any) {
     </div>
   );
 }
+
+// ─── Onboarding Tab (Selection Criteria + App Questions + Pipeline) ───────────
+function OnboardingTab({ group, onUpdated, showMsg }: any) {
+  type OBSub = "criteria" | "questions" | "pipeline";
+  const [sub, setSub] = useState<OBSub>("criteria");
+
+  const SUBS: { id: OBSub; label: string; icon: React.ReactNode }[] = [
+    { id: "criteria",  label: "Selection Criteria", icon: <Target className="w-3.5 h-3.5" /> },
+    { id: "questions", label: "App Questions",       icon: <FileText className="w-3.5 h-3.5" /> },
+    { id: "pipeline",  label: "Pipeline",            icon: <UserCheck className="w-3.5 h-3.5" /> },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2">
+        {SUBS.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setSub(s.id)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded font-display font-bold uppercase tracking-widest text-xs border transition-colors ${
+              sub === s.id
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+            }`}
+          >
+            {s.icon}
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {sub === "criteria"  && <SelectionCriteriaTab  group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "questions" && <QuestionsTab          group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "pipeline"  && <RecruitPipelineTab    group={group} showMsg={showMsg} />}
+    </div>
+  );
+}
+
+// ─── Selection Criteria Tab ───────────────────────────────────────────────────
+function SelectionCriteriaTab({ group, onUpdated, showMsg }: any) {
+  const [criteria, setCriteria] = useState<string>(group.selection_criteria ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, {
+        method: "PATCH",
+        body: JSON.stringify({ selection_criteria: criteria }),
+      });
+      onUpdated(updated);
+      showMsg("Selection criteria saved", "success");
+    } catch {
+      showMsg("Failed to save", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-display font-black text-lg uppercase tracking-wider text-foreground mb-1">Selection Criteria</h2>
+            <p className="text-xs text-muted-foreground font-sans">
+              Define the standards, requirements, and expectations applicants must meet to join your unit.
+              This is displayed publicly on your unit's profile page.
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-widest text-primary border border-primary/30 bg-primary/10 px-2 py-1 rounded">
+            <Globe className="w-3 h-3" /> Public
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Criteria (Markdown supported)</p>
+          <textarea
+            value={criteria}
+            onChange={(e) => setCriteria(e.target.value)}
+            rows={16}
+            className="mf-input w-full resize-y font-mono text-sm"
+            placeholder={`## Minimum Requirements
+- Age 18+
+- Mic required
+- Available for scheduled ops
+
+## What We Look For
+- Teamwork and communication
+- Ability to take orders under pressure
+- Prior milsim experience preferred
+
+## Selection Process
+1. Submit application
+2. Review by command
+3. Trial op participation
+4. Final acceptance or rejection`}
+          />
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <p className="text-xs text-muted-foreground font-sans">
+            {criteria.length > 0 ? `${criteria.length} characters` : "No criteria set yet — applicants will see an empty page."}
+          </p>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-display font-black uppercase tracking-widest text-xs px-5 py-2.5 rounded transition-all"
+          >
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
+            Save Criteria
+          </button>
+        </div>
+      </div>
+
+      {/* Preview */}
+      {criteria.trim() && (
+        <div className="bg-card border border-border rounded-lg p-6 space-y-3">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+            <Target className="w-3 h-3" /> Public Preview
+          </p>
+          <div className="prose prose-sm prose-invert max-w-none font-sans text-muted-foreground leading-relaxed whitespace-pre-wrap">
+            {criteria}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function QuestionsTab({ group, onUpdated, showMsg }: any) {
   const [questions, setQuestions] = useState<AppQuestion[]>(group.questions);
