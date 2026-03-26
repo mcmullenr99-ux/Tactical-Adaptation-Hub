@@ -456,7 +456,7 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
 const _PRO_STATUS_URL_MANAGE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/getProStatus";
 
 /* ─── Doctrine Tab (Info + SOPs + Org Chart + Training Docs) ──────────────── */
-type DoctrineSubTab = "info" | "sops" | "orgchart" | "training";
+type DoctrineSubTab = "info" | "sops" | "orbat" | "orgchart" | "training";
 
 function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const [sub, setSub] = useState<DoctrineSubTab>("info");
@@ -464,6 +464,7 @@ function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const SUB_TABS: { id: DoctrineSubTab; label: string; icon: typeof Shield }[] = [
     { id: "info",      label: "Unit Info",      icon: Shield },
     { id: "sops",      label: "SOPs",           icon: BookOpen },
+    { id: "orbat",     label: "ORBAT",          icon: GitBranch },
     { id: "orgchart",  label: "Org Chart",      icon: GitBranch },
     { id: "training",  label: "Training Docs",  icon: Brain },
   ];
@@ -489,6 +490,7 @@ function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
       <motion.div key={sub} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.12 }}>
         {sub === "info"     && <InfoTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
         {sub === "sops"     && <SopsOnlyTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+        {sub === "orbat"    && <OrbatOnlyTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
         {sub === "orgchart" && <OrgChartTab group={group} />}
         {sub === "training" && <TrainingDocsTab group={group} showMsg={showMsg} />}
       </motion.div>
