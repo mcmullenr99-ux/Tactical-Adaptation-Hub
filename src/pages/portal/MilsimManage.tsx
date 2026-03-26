@@ -1147,7 +1147,7 @@ function AwardsTab({ group, showMsg }: any) {
       const [defsData, issuedData, rosterData] = await Promise.all([
         apiFetch<any>(`/milsimAwards?path=${group.id}/award-defs`).catch(() => []),
         apiFetch<any>(`/milsimAwards?path=${group.id}/awards`).catch(() => []),
-        apiFetch<any>(`/milsimGroups?path=roster&group_id=${group.id}`).catch(() => ({ roster: [] })),
+        apiFetch<any>(`/milsimGroups?path=mine/own`).catch(() => ({ roster: [] })),
       ]);
       setDefs(Array.isArray(defsData) ? defsData : []);
       setIssued(Array.isArray(issuedData) ? issuedData : []);
@@ -2585,7 +2585,7 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
       const [d, opsData, rosterData] = await Promise.all([
         apiFetch(`/milsimLace?path=list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
-        apiFetch(`/milsimGroups?path=roster&group_id=${group.id}`),
+        apiFetch(`/milsimGroups?path=mine/own`),
       ]);
       setReports(d.lace_reports ?? []);
       setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned"].includes(o.status)));
@@ -2827,7 +2827,7 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
       const [d, opsData, rosterData] = await Promise.all([
         apiFetch(`/milsimSitrep?path=list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
-        apiFetch(`/milsimGroups?path=roster&group_id=${group.id}`),
+        apiFetch(`/milsimGroups?path=mine/own`),
       ]);
       setReports(d.sitreps ?? []);
       setOps((opsData.events ?? []).filter((o:any) => ["Active","Confirmed","Planned"].includes(o.status)));
@@ -3161,7 +3161,7 @@ function MedevacTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "
       const [d, opsData, rosterData] = await Promise.all([
         apiFetch(`/milsimSitrep?path=medevac_list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
-        apiFetch(`/milsimGroups?path=roster&group_id=${group.id}`),
+        apiFetch(`/milsimGroups?path=mine/own`),
       ]);
       setRequests(d.medevacs ?? []);
       setOps((opsData.events ?? []).filter((o:any) => ["Active","Confirmed","Planned"].includes(o.status)));
@@ -3529,7 +3529,7 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
       const [d, opsData, rosterData] = await Promise.all([
         apiFetch(`/milsimConductReport?path=list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
-        apiFetch(`/milsimGroups?path=roster&group_id=${group.id}`),
+        apiFetch(`/milsimGroups?path=mine/own`),
       ]);
       setReports(d.reports ?? []);
       setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)));
