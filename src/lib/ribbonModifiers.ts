@@ -250,7 +250,6 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mqg1.gif", affectsImage: true },
   ],
   "https://www.medals.pl/bc/r/uk1msa1.gif": [
-    { type: 'checkbox', name: "w_rosette", label: "w. rosette", variantUrl: "https://www.medals.pl/bc/r/uk1msa1.gif", affectsImage: true },
     { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/uk1msa1.gif", affectsImage: false },
   ],
   "https://www.medals.pl/bc/r/uk1mvns_m.gif": [

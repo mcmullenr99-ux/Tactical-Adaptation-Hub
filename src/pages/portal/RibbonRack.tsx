@@ -137,16 +137,26 @@ export default function RibbonRack() {
   };
 
   const saveBar = async () => {
-    const rosterId = localRoster?.id;
-    if (!rosterId) { toast({ title: "No roster entry found", variant: "destructive" }); return; }
+    let rosterId = localRoster?.id;
+    // If localRoster not yet hydrated, re-fetch it now
+    if (!rosterId && selectedGroupId && user?.id) {
+      try {
+        const rd = await apiFetch<any>(`/milsimGroups?path=roster_member&group_id=${selectedGroupId}&user_id=${user.id}`);
+        const member = rd?.roster_member ?? null;
+        if (member) { setLocalRoster(member); rosterId = member.id; }
+      } catch {}
+    }
+    if (!rosterId) { toast({ title: "No roster entry found — are you on E-Squadron's roster?", variant: "destructive" }); return; }
     setSaving(true);
     try {
       await apiFetch("/milsimGroups?path=update_roster_member", {
         method: "POST",
         body: JSON.stringify({ roster_id: rosterId, ribbon_bar_order: barIds, ribbon_bar_mods: barMods }),
       });
-      toast({ title: "Ribbon bar saved!" });
-    } catch { toast({ title: "Failed to save", variant: "destructive" }); }
+      toast({ title: "Ribbon bar saved! ✓" });
+    } catch (err: any) {
+      toast({ title: "Save failed", description: err?.message ?? "Unknown error", variant: "destructive" });
+    }
     setSaving(false);
   };
 
@@ -297,9 +307,9 @@ export default function RibbonRack() {
                         </span>
                       </button>
 
-                      {/* Variant / clasp modifiers — only when in rack */}
+                      {/* Variant / clasp modifiers — only when in rack — OUTSIDE the toggle button to prevent click propagation */}
                       {inBar && modifiers.length > 0 && (
-                        <div className="w-full border-t border-primary/20 pt-2 space-y-1.5" onClick={e => e.stopPropagation()}>
+                        <div className="w-full border-t border-primary/20 pt-2 space-y-1.5" onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
                           <p className="text-[8px] font-display font-bold uppercase tracking-widest text-primary mb-1">Variants &amp; Clasps</p>
                           {modifiers.map((mod) => (
                             <div key={mod.name} className="flex flex-col gap-0.5">
@@ -308,7 +318,7 @@ export default function RibbonRack() {
                                   <label className="text-[8px] text-muted-foreground font-sans uppercase tracking-wider">{mod.label}</label>
                                   <select
                                     value={currentMods[mod.name] ?? mod.options[0].value}
-                                    onChange={e => setMod(ribbon.id, mod.name, e.target.value)}
+                                    onChange={e => { e.stopPropagation(); setMod(ribbon.id, mod.name, e.target.value); }}
                                     className="text-[9px] bg-background border border-border rounded px-1 py-0.5 w-full font-sans">
                                     {mod.options.map(opt => (
                                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -317,9 +327,9 @@ export default function RibbonRack() {
                                 </>
                               )}
                               {mod.type === "checkbox" && (
-                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                <label className="flex items-center gap-1.5 cursor-pointer" onClick={e => e.stopPropagation()}>
                                   <input type="checkbox" checked={currentMods[mod.name] === "1"}
-                                    onChange={e => e.target.checked ? setMod(ribbon.id, mod.name, "1") : clearMod(ribbon.id, mod.name)}
+                                    onChange={e => { e.stopPropagation(); e.target.checked ? setMod(ribbon.id, mod.name, "1") : clearMod(ribbon.id, mod.name); }}
                                     className="w-3 h-3 accent-primary" />
                                   <span className="text-[9px] text-muted-foreground font-sans">{mod.label}</span>
                                 </label>
