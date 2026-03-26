@@ -269,4 +269,24 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.medals.pl/bc/r/uk1vc.gif": [
     { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1vc2.gif", affectsImage: true },
   ],
+  // ── NATO medals ──────────────────────────────────────────────
+  "https://www.medals.pl/bc/r/nato.gif": [
+    { type: 'select', name: "nato", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/nato.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/nato_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/nato_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/nato_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/nato_cvs.gif" }] },
+  ],
+  "https://www.medals.pl/bc/r/natok.gif": [
+    { type: 'select', name: "natok", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/natok.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/natok_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/natok_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/natok_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/natok_cvs.gif" }] },
+  ],
+  "https://www.medals.pl/bc/r/natom.gif": [
+    { type: 'select', name: "natom", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/natom.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/natom_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/natom_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/natom_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/natom_cvs.gif" }] },
+  ],
+  "https://www.medals.pl/int/r/natob.gif": [
+    { type: 'select', name: "natob", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/int/r/natob.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/natob_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/natob_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/natob_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/natob_cvs.gif" }] },
+  ],
+  "https://www.medals.pl/bc/r/natoa5.gif": [
+    { type: 'select', name: "natoa5", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/natoa5.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/natoa5_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/natoa5_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/natoa5_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/natoa5_cvs.gif" }] },
+  ],
+  "https://www.medals.pl/bc/r/natoisaf.gif": [
+    { type: 'select', name: "natoisaf", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/natoisaf.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/natoisaf_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/natoisaf_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/natoisaf_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/natoisaf_cvs.gif" }] },
+  ],
+
 };
