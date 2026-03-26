@@ -604,7 +604,7 @@ function TroopManagementTab({ group, onUpdated, showMsg }: any) {
     { id: "ranks",      label: "Ranks",       icon: <Award className="w-3.5 h-3.5" /> },
     { id: "pipeline",   label: "Pipeline",    icon: <UserCheck className="w-3.5 h-3.5" /> },
     { id: "loa",        label: "LOA Manager", icon: <PlaneTakeoff className="w-3.5 h-3.5" /> },
-    { id: "reputation", label: "Reputation",  icon: <Star className="w-3.5 h-3.5" /> },
+    { id: "reputation", label: "Service Files", icon: <Star className="w-3.5 h-3.5" /> },
   ];
 
   return (
