@@ -1,8 +1,8 @@
 // ─── RIBBON LIBRARY ─────────────────────────────────────────────────────────
 // Sources:
 //   - EZRackBuilder / USAMM — 1118 real US awards, all branches + auxiliaries
-//   - medals.org.uk — 1302 international awards across 30 countries
-// Total: 2420 ribbons. Auto-generated. DO NOT hand-edit.
+//   - medals.org.uk — 1347 international awards across 31 countries + UN
+// Total: 2465 ribbons. Auto-generated. DO NOT hand-edit.
 
 export interface RibbonTemplate {
   country: string;
@@ -12,7 +12,7 @@ export interface RibbonTemplate {
   sku?: string;
 }
 
-export const RIBBON_COUNTRIES: string[] = ['United States', 'Albania', 'Australia', 'Austria', 'Belgium', 'Canada', 'Croatia', 'Czech Republic', 'Denmark', 'Estonia', 'Finland', 'France', 'Greece', 'Hungary', 'Iceland', 'Israel', 'Italy', 'Latvia', 'Lithuania', 'NATO', 'Netherlands', 'New Zealand', 'North Korea', 'Norway', 'Poland', 'Romania', 'Russia', 'Slovakia', 'Sweden', 'Ukraine', 'United Kingdom'];
+export const RIBBON_COUNTRIES: string[] = ['United States', 'Albania', 'Australia', 'Austria', 'Belgium', 'Canada', 'Croatia', 'Czech Republic', 'Denmark', 'Estonia', 'Finland', 'France', 'Greece', 'Hungary', 'Iceland', 'Israel', 'Italy', 'Latvia', 'Lithuania', 'NATO', 'Netherlands', 'New Zealand', 'North Korea', 'Norway', 'Poland', 'Romania', 'Russia', 'Slovakia', 'Sweden', 'Ukraine', 'United Kingdom', 'United Nations'];
 
 export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'United States': ["Civil Air Patrol", "Public Health Service", "US Air Force", "US Army", "US Civilian", "US Coast Guard", "US Joint / Other", "US Marine Corps", "US National Guard", "US Navy", "US Space Force", "Young Marines"],
@@ -35,6 +35,7 @@ export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'Latvia': ['Latvian National Armed Forces'],
   'Lithuania': ['Lithuanian Armed Forces'],
   'NATO': ['NATO'],
+  'United Nations': ['UN Peacekeeping'],
   'Netherlands': ['Royal Netherlands Armed Forces'],
   'New Zealand': ['New Zealand Defence Force'],
   'North Korea': ['Korean People\'s Army'],
@@ -2275,15 +2276,7 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [
   { country: 'New Zealand', branch: 'New Zealand Defence Force', name: 'Cadet  Forces Medal', url: 'https://www.medals.org.uk/new-zealand/images/new-zealand008.gif' },
   { country: 'New Zealand', branch: 'New Zealand Defence Force', name: 'Memorial  Cross', url: 'https://www.medals.org.uk/new-zealand/images/new-zealand010.gif' },
   { country: 'New Zealand', branch: 'New Zealand Defence Force', name: 'Medals  Awarded by Organisations', url: 'https://www.medals.org.uk/new-zealand/images/new-zealand019.gif' },
-  { country: 'New Zealand', branch: 'New Zealand Defence Force', name: 'NZ  United Fire Brigades Association Gold Star', url: 'https://www.medals.org.uk/new-zealand/images/new-zealand076.gif' },
-  { country: 'NATO', branch: 'NATO', name: 'OSCE Medal', url: 'https://www.medals.org.uk/nato/images/nato007.gif' },
-  { country: 'NATO', branch: 'NATO', name: 'NATO Meritorious Service Medal', url: 'https://www.medals.org.uk/nato/images/nato004.gif' },
-  { country: 'NATO', branch: 'NATO', name: 'NATO Medal for the Former Yugoslavia', url: 'https://www.medals.org.uk/nato/images/nato005.gif' },
-  { country: 'NATO', branch: 'NATO', name: 'NATO Medal for Kosovo', url: 'https://www.medals.org.uk/nato/images/nato006.gif' },
-  { country: 'NATO', branch: 'NATO', name: 'NATO Medal for Macedonia', url: 'https://www.medals.org.uk/nato/images/nato011.gif' },
-  { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Article 5 - Eagle Assist Operation)', url: 'https://www.medals.org.uk/nato/images/nato012.gif' },
-  { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Article 5 - Active Endeavour Operation)', url: 'https://www.medals.org.uk/nato/images/nato013.gif' },
-  { country: 'Russia', branch: 'Russian Armed Forces', name: 'Hero of the Russian Federation', url: 'https://www.medals.org.uk/russia/rf/images/russia098.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Defence Force', name: 'NZ  United Fire Brigades Association Gold Star', url: 'https://www.medals.org.uk/new-zealand/images/new-zealand076.gif' },  { country: 'Russia', branch: 'Russian Armed Forces', name: 'Hero of the Russian Federation', url: 'https://www.medals.org.uk/russia/rf/images/russia098.gif' },
   { country: 'Russia', branch: 'Russian Armed Forces', name: 'Pilot-Cosmonaut of the Russian Federation', url: 'https://www.medals.org.uk/russia/rf/images/russia098.gif' },
   { country: 'Russia', branch: 'Russian Armed Forces', name: 'Honoured Military Navigator of the Russian Federation', url: 'https://www.medals.org.uk/russia/rf/images/russia098.gif' },
   { country: 'Russia', branch: 'Russian Armed Forces', name: 'Order of St Andrew', url: 'https://www.medals.org.uk/russia/rf/images/russia012.gif' },
@@ -2470,4 +2463,59 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [
   { country: 'Austria', branch: 'Austrian Armed Forces', name: 'Medal for Meritorious Service to Blood Transfusion', url: 'https://www.medals.org.uk/austria/austria-republic/images/austria036r1.gif' },
   { country: 'Austria', branch: 'Austrian Armed Forces', name: 'Gold Medal for Blood Donations', url: 'https://www.medals.org.uk/austria/austria-republic/images/austria037r.gif' },
   { country: 'Austria', branch: 'Austrian Armed Forces', name: 'Fire Service Medal', url: 'https://www.medals.org.uk/austria/austria-republic/images/austria041r.gif' },
+  // ─── NATO ───
+  { country: 'NATO', branch: 'NATO', name: 'OSCE Medal', url: 'https://www.medals.org.uk/nato/images/nato007.gif' },
+  { country: 'NATO', branch: 'NATO', name: 'NATO Meritorious Service Medal', url: 'https://www.medals.org.uk/nato/images/nato004.gif' },
+  { country: 'NATO', branch: 'NATO', name: 'NATO Medal for the Former Yugoslavia', url: 'https://www.medals.org.uk/nato/images/nato005.gif' },
+  { country: 'NATO', branch: 'NATO', name: 'NATO Medal for Kosovo', url: 'https://www.medals.org.uk/nato/images/nato006.gif' },
+  { country: 'NATO', branch: 'NATO', name: 'NATO Medal for Macedonia', url: 'https://www.medals.org.uk/nato/images/nato011.gif' },
+  { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Article 5 - Eagle Assist Operation)', url: 'https://www.medals.org.uk/nato/images/nato012.gif' },
+  { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Article 5 - Active Endeavour Operation)', url: 'https://www.medals.org.uk/nato/images/nato013.gif' },
+  // ─── UNITED NATIONS ───
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UN Korea Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations001.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNEF Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations028.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNTSO Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations032.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNOGIL Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations032.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNMOGIP Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations034.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'ONUC Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations033.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNTEA Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations016.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNYOM Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations038.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNFICYP Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations039.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNEFME Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations045.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNDOF Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations047.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNIFIL Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations018.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNIIMOG Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations052.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNTAG Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations055.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'ONUCA Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations057.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNIKOM Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations059.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNAVEM Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations061.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'MINURSO Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations020.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'ONUSAL Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations062.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNPROFOR Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations065.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNAMIC Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations066.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNTAC Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations067.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNOSOM Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations070.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'ONUMOZ Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations021.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNAMIR Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations072.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'Medals for Haiti', url: 'https://www.medals.org.uk/united-nations/images/united-nations074.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNOMIG Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations075.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNOMIL Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations078.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNOMUR Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations079.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNMOT Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations024.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNMIBHMedal', url: 'https://www.medals.org.uk/united-nations/images/united-nations005.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNMOPMedal', url: 'https://www.medals.org.uk/united-nations/images/united-nations083.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNTAES Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations084.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'MINUGUA Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations006.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'MINURCA Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations087.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNPSG Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations089.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNOMSIL Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations091.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNMIK Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations093.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNAMET Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations094.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNPREDEP Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations097.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'MONUC Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations098.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNMEE Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations104.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNSSM Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations027.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'UNHQ Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations042.gif' },
+  { country: 'United Nations', branch: 'UN Peacekeeping', name: 'Dag Hammarskjold Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations042.gif' },
+
 ];
