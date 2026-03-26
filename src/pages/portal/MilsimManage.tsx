@@ -2190,7 +2190,7 @@ function AARField({ label, value }: { label: string; value: string }) {
 /* ─── WARNOs Tab ─────────────────────────────────────────────────────────── */
 function WarnosTab({ group, showMsg }: any) {
   const emptyForm = {
-    title: "", op_date: "", status: "draft",
+    title: "", op_date: "", op_id: "", status: "draft",
     situation_ground: "", situation_enemy: "", situation_friendly: "",
     mission: "",
     timings_hh: "", timings_nmb: "", timings_other: "",
@@ -2213,6 +2213,11 @@ function WarnosTab({ group, showMsg }: any) {
       .catch(() => {})
       .finally(() => setLoading(false));
   };
+  const [ops, setOps] = useState<any[]>([]);
+  useEffect(() => {
+    apiFetch<any>(`/api/milsim-groups/${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
+  }, [group.id]);
+
   useEffect(() => { load(); }, [group.id]);
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -2291,6 +2296,7 @@ function WarnosTab({ group, showMsg }: any) {
               <div className="col-span-2"><label className="mf-label">Title *</label><input value={form.title} onChange={setF("title")} className="mf-input" placeholder="Op IRON FIST — WARNO 1" /></div>
               <div><label className="mf-label">Op Date</label><input type="datetime-local" value={form.op_date} onChange={setF("op_date")} className="mf-input" /></div>
             </div>
+            <div><label className="mf-label">Linked Op</label><select value={form.op_id ?? ""} onChange={setF("op_id")} className="mf-input"><option value="">— No op —</option>{ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}</select></div>
             <div className="w-40"><label className="mf-label">Status</label>
               <select value={form.status} onChange={setF("status")} className="mf-input">
                 <option value="draft">Draft</option>
@@ -2461,12 +2467,17 @@ function AARsTab({ group, showMsg }: any) {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const emptyForm = { op_name: "", op_date: "", summary: "", objectives_hit: "", objectives_missed: "", casualties: "", commendations: "", recommendations: "", classification: "unclassified" };
+  const emptyForm = { op_name: "", op_date: "", op_id: "", summary: "", objectives_hit: "", objectives_missed: "", casualties: "", commendations: "", recommendations: "", classification: "unclassified" };
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).then(setAars).catch(() => {}).finally(() => setLoading(false)); };
   useEffect(() => { load(); }, [group.id]);
+  const [ops, setOps] = useState<any[]>([]);
+  useEffect(() => {
+    apiFetch<any>(`/api/milsim-groups/${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
+  }, [group.id]);
+
   const submit = async () => {
     if (!form.op_name.trim()) return; setSaving(true);
     try {
@@ -2492,6 +2503,7 @@ function AARsTab({ group, showMsg }: any) {
         <div className="bg-card border border-primary/30 rounded-lg p-6 space-y-4">
           <h3 className="font-display font-bold uppercase tracking-widest text-sm">{editId ? "Edit AAR" : "New AAR"}</h3>
           <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Op Name *</label><input value={form.op_name} onChange={setF("op_name")} className="mf-input" placeholder="Operation Iron Fist" /></div><div><label className="mf-label">Op Date</label><input type="date" value={form.op_date} onChange={setF("op_date")} className="mf-input" /></div></div>
+          <div><label className="mf-label">Linked Op</label><select value={form.op_id ?? ""} onChange={setF("op_id")} className="mf-input"><option value="">— No op —</option>{ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}</select></div>
           <div><label className="mf-label">Classification</label><select value={form.classification} onChange={setF("classification")} className="mf-input">{["unclassified","confidential","classified","top-secret"].map(c => <option key={c} value={c}>{c.replace("-"," ").toUpperCase()}</option>)}</select></div>
           <div><label className="mf-label">Summary</label><textarea rows={3} value={form.summary} onChange={setF("summary")} className="mf-input resize-none" placeholder="Overall mission summary..." /></div>
           <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Objectives Hit</label><textarea rows={3} value={form.objectives_hit} onChange={setF("objectives_hit")} className="mf-input resize-none" /></div><div><label className="mf-label">Objectives Missed</label><textarea rows={3} value={form.objectives_missed} onChange={setF("objectives_missed")} className="mf-input resize-none" /></div></div>
@@ -3708,12 +3720,17 @@ function BriefingsTab({ group, showMsg }: any) {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const emptyForm = { title: "", op_date: "", ao: "", objectives: "", comms_plan: "", roe: "", additional_notes: "", status: "draft" };
+  const emptyForm = { title: "", op_date: "", op_id: "", ao: "", objectives: "", comms_plan: "", roe: "", additional_notes: "", status: "draft" };
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/briefings`).then(setBriefings).catch(() => {}).finally(() => setLoading(false)); };
   useEffect(() => { load(); }, [group.id]);
+  const [ops, setOps] = useState<any[]>([]);
+  useEffect(() => {
+    apiFetch<any>(`/api/milsim-groups/${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
+  }, [group.id]);
+
   const submit = async () => {
     if (!form.title.trim()) return; setSaving(true);
     try {
@@ -3739,6 +3756,7 @@ function BriefingsTab({ group, showMsg }: any) {
         <div className="bg-card border border-primary/30 rounded-lg p-6 space-y-4">
           <h3 className="font-display font-bold uppercase tracking-widest text-sm">{editId ? "Edit Briefing" : "New Briefing"}</h3>
           <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Title *</label><input value={form.title} onChange={setF("title")} className="mf-input" placeholder="Operation Iron Fist — OPORD" /></div><div><label className="mf-label">Op Date / Time</label><input type="datetime-local" value={form.op_date} onChange={setF("op_date")} className="mf-input" /></div></div>
+          <div><label className="mf-label">Linked Op</label><select value={form.op_id ?? ""} onChange={setF("op_id")} className="mf-input"><option value="">— No op —</option>{ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}</select></div>
           <div><label className="mf-label">Status</label><select value={form.status} onChange={setF("status")} className="mf-input"><option value="draft">Draft</option><option value="published">Published (visible to all members)</option><option value="archived">Archived</option></select></div>
           <div><label className="mf-label">Area of Operations (AO)</label><input value={form.ao} onChange={setF("ao")} className="mf-input" placeholder="Grid reference, map name..." /></div>
           <div><label className="mf-label">Objectives</label><textarea rows={4} value={form.objectives} onChange={setF("objectives")} className="mf-input resize-none" placeholder="1. Secure FOB Alpha&#10;2. Eliminate HVT Bravo..." /></div>
