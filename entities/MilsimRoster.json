@@ -47,6 +47,10 @@
         "type": "string"
       },
       "description": "Ordered array of award IDs for the ribbon bar display"
+    },
+    "ribbon_bar_mods": {
+      "type": "object",
+      "description": "Per-ribbon modifier selections: {awardId: {modifierName: value}}"
     }
   },
   "required": [],
