@@ -355,7 +355,7 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [
   { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Distinguished Flying Cross (DFC)', url: 'https://www.medals.pl/bc/r/uk1cdfb.gif' },
   { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Air Force Cross (AFC)', url: 'https://www.medals.pl/bc/r/uk1cafb.gif' },
   { country: 'United Kingdom', branch: 'UK Gallantry', name: 'George Medal (GM)', url: 'https://www.medals.pl/bc/r/uk1mge.gif' },
-  { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Queen\'s/King\'s Gallantry Medal (QGM/KGM)', url: 'https://www.medals.pl/bc/r/uk1mqg.gif' },
+  { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Queen/King Gallantry Medal (QGM/KGM)', url: 'https://www.medals.pl/bc/r/uk1mqg.gif' },
   { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Royal Red Cross (RRC)', url: 'https://www.medals.pl/bc/r/uk1crrc.gif' },
   { country: 'United Kingdom', branch: 'UK Orders', name: 'Order of the British Empire - Military (OBE)', url: 'https://www.medals.pl/bc/r/uk1obemb.gif' },
   { country: 'United Kingdom', branch: 'UK Orders', name: 'Order of the British Empire - Civil (OBE)', url: 'https://www.medals.pl/bc/r/uk1obecb.gif' },
@@ -406,4 +406,7 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [
   { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'New Zealand Antarctic Medal (NZAM)', url: 'https://www.medals.pl/bc/r/nz2manz.gif' },
   { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'NZ Police LS & GC Medal', url: 'https://www.medals.pl/bc/r/nz2mlsp.gif' },
   { country: 'New Zealand', branch: 'New Zealand Jubilee & Commemorative', name: 'NZ Commemorative Medal 1990', url: 'https://www.medals.pl/bc/r/nz2mco90.gif' },
+  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Army Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsa.gif' },
+  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Naval Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsn.gif' },
+  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'RAF Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsaf.gif' },
 ];
