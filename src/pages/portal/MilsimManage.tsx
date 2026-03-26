@@ -1165,7 +1165,10 @@ function AwardsTab({ group, showMsg }: any) {
   const filteredTemplates = RIBBON_TEMPLATES.filter(r => {
     if (pickerCountry && r.country !== pickerCountry) return false;
     if (pickerBranch && r.branch !== pickerBranch) return false;
-    if (pickerSearch && !r.name.toLowerCase().includes(pickerSearch.toLowerCase())) return false;
+    if (pickerSearch) {
+      const q = pickerSearch.toLowerCase();
+      if (!r.name.toLowerCase().includes(q) && !(r.sku ?? '').toLowerCase().includes(q)) return false;
+    }
     return true;
   });
 
@@ -1328,7 +1331,7 @@ function AwardsTab({ group, showMsg }: any) {
               <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="font-display font-black text-xs uppercase tracking-widest text-primary">Add Award from Ribbon Library</p>
-                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">392 real-world ribbons — US (all branches), UK, Australia, Canada, New Zealand</p>
+                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">1,118 real US awards — Army, Navy, Marine Corps, Air Force, Coast Guard, Space Force, National Guard & more</p>
                 </div>
                 <button onClick={resetForm} className="text-muted-foreground hover:text-foreground transition-colors ml-4 shrink-0">
                   <XCircle className="w-4 h-4" />
