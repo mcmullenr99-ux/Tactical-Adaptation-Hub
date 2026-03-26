@@ -206,8 +206,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'checkbox', name: "gallantry_emblem_(1957-74)", label: "gallantry emblem (1957-74)", variantUrl: "https://www.medals.pl/bc/r/uk1mbecg.gif", affectsImage: true },
   ],
   "https://www.medals.pl/bc/r/uk1mcs_m.gif": [
-    { type: 'select', name: "uk1mcs", label: 'Select variant', tooltip: "uk1mcs", options: [{ value: "1", label: "plain", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }] },
-    { type: 'select', name: "uk1mcs_era", label: 'Select variant', tooltip: "uk1mcs_era", options: [{ value: "1", label: "pre-Vietnam", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }, { value: "2", label: "post-Vietnam", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }, { value: "3", label: "post-Falklands", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }, { value: "4", label: "post-Gulf", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }, { value: "5", label: "post-Ex-Yugoslavia", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }] },
+    { type: 'select', name: "uk1mcs", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/uk1mcs.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/uk1mcs_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1mcs_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1mcs_cvs.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mge.gif": [
     { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mge1.gif", affectsImage: true },
@@ -250,7 +249,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mqg1.gif", affectsImage: true },
   ],
   "https://www.medals.pl/bc/r/uk1msa1.gif": [
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/uk1msa1.gif", affectsImage: false },
+    { type: 'select', name: "uk1msa_variant", label: 'Variant', options: [{ value: "1", label: "With Rosette (no MID)", url: "https://www.medals.pl/bc/r/uk1msa.gif" }, { value: "2", label: "With MID emblem", url: "https://www.medals.pl/bc/r/uk1msa1.gif" }, { value: "3", label: "With Rosette + MID", url: "https://www.medals.pl/bc/r/uk1msa_m.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mvns_m.gif": [
     { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/uk1mvns_m.gif", affectsImage: true },
