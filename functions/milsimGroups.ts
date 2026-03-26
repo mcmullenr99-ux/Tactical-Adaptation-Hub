@@ -76,6 +76,9 @@ async function groupFullDetail(base44: any, group: any) {
     // Enrich each roster entry with their quals and awards
     const enrichedRoster = (roster ?? []).map((entry: any) => ({
       ...entry,
+      // Normalise snake_case → camelCase so frontend RosterEntry interface works
+      rankId: entry.rank_id ?? entry.rankId ?? null,
+      roleId: entry.role_id ?? entry.roleId ?? null,
       qualifications: (qualGrants ?? [])
         .filter((g: any) => g.roster_id === entry.id)
         .map((g: any) => {
@@ -378,7 +381,7 @@ Deno.serve(async (req) => {
       if (body.join_date !== undefined) updates.join_date = body.join_date;
       if (body.ops_count !== undefined) updates.ops_count = body.ops_count;
       const updated = await base44.asServiceRole.entities.MilsimRoster.update(parts[2], updates);
-      return Response.json(updated);
+      return Response.json({ ...updated, rankId: updated.rank_id ?? null, roleId: updated.role_id ?? null });
     }
 
     if (method === 'DELETE' && parts.length === 3 && parts[1] === 'roster') {
@@ -688,9 +691,9 @@ Deno.serve(async (req) => {
       // Allow owner OR active roster member
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       if (!group) return Response.json({ error: 'Group not found' }, { status: 404 });
-      const rosterCheck = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id: parts[0], user_id: full.id, status: 'active' });
+      const rosterCheck = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id: parts[0], user_id: full.id });
       const isOwner = group.owner_id === full.id;
-      const isMember = rosterCheck.length > 0;
+      const isMember = rosterCheck.some((r: any) => (r.status ?? 'Active').toLowerCase() === 'active');
       if (!isOwner && !isMember) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
       if (!body.op_name?.trim()) return Response.json({ error: 'op_name required' }, { status: 400 });
@@ -762,9 +765,9 @@ Deno.serve(async (req) => {
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       if (!group) return Response.json({ error: 'Group not found' }, { status: 404 });
-      const rosterCheck = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id: parts[0], user_id: full.id, status: 'active' });
+      const rosterCheck = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id: parts[0], user_id: full.id });
       const isOwner = group.owner_id === full.id;
-      const isMember = rosterCheck.length > 0;
+      const isMember = rosterCheck.some((r: any) => (r.status ?? 'Active').toLowerCase() === 'active');
       if (!isOwner && !isMember) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
       if (!body.title?.trim()) return Response.json({ error: 'title required' }, { status: 400 });
@@ -784,8 +787,9 @@ Deno.serve(async (req) => {
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       if (!group) return Response.json({ error: 'Group not found' }, { status: 404 });
-      const rosterCheck = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id: parts[0], user_id: full.id, status: 'active' });
-      if (group.owner_id !== full.id && rosterCheck.length === 0) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const rosterCheck = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id: parts[0], user_id: full.id });
+      const isBriefMember = rosterCheck.some((r: any) => (r.status ?? 'Active').toLowerCase() === 'active');
+      if (group.owner_id !== full.id && !isBriefMember) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
       const updates: Record<string, any> = {};
       const fields = ['title', 'classification', 'content', 'status', 'ao', 'objectives', 'comms_plan', 'roe', 'additional_notes', 'op_date', 'op_id'];
