@@ -849,6 +849,27 @@ export default function MilsimGroup() {
                   </>
                 )}
               </div>
+              {/* Discord Route */}
+              {group.discord_url && (
+                <div className="bg-card border border-border rounded-lg p-6 flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-display font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
+                      <ExternalLink className="w-4 h-4 text-primary" /> Apply via Discord
+                    </h3>
+                    <p className="text-xs text-muted-foreground font-sans mt-1">
+                      Prefer to apply directly? Join the {group.name} Discord server and speak to a recruiter.
+                    </p>
+                  </div>
+                  <a
+                    href={group.discord_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 inline-flex items-center gap-2 border border-primary/50 text-primary hover:bg-primary/10 font-display font-bold uppercase tracking-widest text-xs px-5 py-2.5 rounded transition-all whitespace-nowrap"
+                  >
+                    Join Discord <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
