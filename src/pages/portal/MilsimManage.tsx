@@ -1145,9 +1145,9 @@ function AwardsTab({ group, showMsg }: any) {
     setLoading(true);
     try {
       const [defsData, issuedData, rosterData] = await Promise.all([
-        apiFetch<any>(`/milsimAwards?path=${group.id}/award-defs`),
-        apiFetch<any>(`/milsimAwards?path=${group.id}/awards`),
-        apiFetch<any>(`/milsimGroups?path=roster&group_id=${group.id}`),
+        apiFetch<any>(`/milsimAwards?path=${group.id}/award-defs`).catch(() => []),
+        apiFetch<any>(`/milsimAwards?path=${group.id}/awards`).catch(() => []),
+        apiFetch<any>(`/milsimGroups?path=roster&group_id=${group.id}`).catch(() => ({ roster: [] })),
       ]);
       setDefs(Array.isArray(defsData) ? defsData : []);
       setIssued(Array.isArray(issuedData) ? issuedData : []);
