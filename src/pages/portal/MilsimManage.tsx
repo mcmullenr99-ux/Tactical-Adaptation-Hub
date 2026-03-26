@@ -1159,7 +1159,9 @@ function AwardsTab({ group, showMsg }: any) {
   useEffect(() => { load(); }, [load]);
 
   // Derive available branches based on selected country
-  const availableBranches = pickerCountry ? (RIBBON_BRANCHES_BY_COUNTRY[pickerCountry] ?? []) : Object.values(RIBBON_BRANCHES_BY_COUNTRY).flat();
+  const availableBranches = pickerCountry
+    ? (RIBBON_BRANCHES_BY_COUNTRY[pickerCountry] ?? [])
+    : [];
 
   // Filter ribbon templates
   const filteredTemplates = RIBBON_TEMPLATES.filter(r => {
@@ -1328,7 +1330,7 @@ function AwardsTab({ group, showMsg }: any) {
               <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="font-display font-black text-xs uppercase tracking-widest text-primary">Add Award from Ribbon Library</p>
-                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">1,118 real US awards — Army, Navy, Marine Corps, Air Force, Coast Guard, Space Force, National Guard & more</p>
+                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">2,420 real-world ribbons — US (all branches), UK, Australia, Canada, France, Poland, Norway, Finland & 23 more nations</p>
                 </div>
                 <button onClick={resetForm} className="text-muted-foreground hover:text-foreground transition-colors ml-4 shrink-0">
                   <XCircle className="w-4 h-4" />
@@ -1342,7 +1344,7 @@ function AwardsTab({ group, showMsg }: any) {
                   <div>
                     <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Country</label>
                     <select value={pickerCountry}
-                      onChange={e => { setPickerCountry(e.target.value); setPickerBranch(""); setSelectedTemplate(null); }}
+                      onChange={e => { const v = e.target.value; setPickerCountry(v); const brs = RIBBON_BRANCHES_BY_COUNTRY[v] ?? []; setPickerBranch(brs.length === 1 ? brs[0] : ""); setSelectedTemplate(null); }}
                       className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground">
                       <option value="">All countries</option>
                       {RIBBON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
