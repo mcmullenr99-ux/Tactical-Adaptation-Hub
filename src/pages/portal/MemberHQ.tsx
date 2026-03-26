@@ -709,162 +709,288 @@ function MemberLOATab({ group, showMsg, user, rosterEntry }: any) {
 
 
 /* ─── Unit Review tab ────────────────────────────────────────────────────── */
-function MemberUnitReviewTab({ group, showMsg, user }: any) {
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState<string | null>(null);
-  const [form, setForm] = useState<Record<string, { activity: number; attitude: number; experience: number; discipline: number; notes: string; blacklisted: boolean; blacklist_reason: string }>>({});
+const REVIEWS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/groupReviews";
 
-  useEffect(() => {
-    apiFetch<any>(`/api/milsim-groups/${group.id}/full`)
-      .then((g: any) => {
-        const roster = g.roster ?? [];
-        // Exclude self
-        const others = roster.filter((r: any) => r.userId !== (user as any)?.id && r.user_id !== (user as any)?.id);
-        setReviews(others);
-        // Init form state
-        const init: typeof form = {};
-        others.forEach((r: any) => {
-          init[r.id] = { activity: 3, attitude: 3, experience: 3, discipline: 3, notes: "", blacklisted: false, blacklist_reason: "" };
+function StarRating({ value, onChange, readonly = false }: { value: number; onChange?: (v: number) => void; readonly?: boolean }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1,2,3,4,5].map(n => (
+        <button key={n} type="button" disabled={readonly}
+          onClick={() => !readonly && onChange?.(n)}
+          className={`transition-colors ${readonly ? "cursor-default" : "cursor-pointer hover:scale-110"}`}>
+          <Star className={`w-5 h-5 ${n <= value ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function SubScoreRow({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  const colours = ["","bg-red-500","bg-orange-500","bg-yellow-500","bg-blue-500","bg-green-500"];
+  const labels  = ["","Poor","Below Avg","Average","Good","Excellent"];
+  return (
+    <div className="flex items-center gap-3 flex-wrap">
+      <span className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground w-28 shrink-0">{label}</span>
+      <div className="flex gap-1">
+        {[1,2,3,4,5].map(n => (
+          <button key={n} type="button" onClick={() => onChange(n)}
+            className={`w-7 h-7 rounded text-xs font-bold border transition-all ${value === n ? `${colours[n]} text-white border-transparent` : "bg-secondary border-border text-muted-foreground hover:border-primary/40"}`}>
+            {n}
+          </button>
+        ))}
+      </div>
+      <span className="text-[9px] text-muted-foreground">{labels[value] ?? ""}</span>
+    </div>
+  );
+}
+
+function MemberUnitReviewTab({ group, showMsg, user }: any) {
+  const [loading, setLoading]       = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [existing, setExisting]     = useState<any | null>(null);
+  const [editing, setEditing]       = useState(false);
+  const [form, setForm] = useState({
+    rating: 4,
+    organisation: 3,
+    communication: 3,
+    gameplay: 3,
+    community: 3,
+    headline: "",
+    body: "",
+    served_months: "" as number | "",
+    recommend: true,
+  });
+
+  // Load the user's existing review for this group
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("tag_token") ?? "";
+      const res = await fetch(`${REVIEWS_URL}?path=%2Fmine&group_id=${group.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data?.id) {
+        setExisting(data);
+        setForm({
+          rating:        data.rating ?? 4,
+          organisation:  data.organisation ?? 3,
+          communication: data.communication ?? 3,
+          gameplay:      data.gameplay ?? 3,
+          community:     data.community ?? 3,
+          headline:      data.headline ?? "",
+          body:          data.body ?? "",
+          served_months: data.served_months ?? "",
+          recommend:     data.recommend ?? true,
         });
-        setForm(init);
-      })
-      .catch(() => setReviews([]))
-      .finally(() => setLoading(false));
+      }
+    } catch {}
+    setLoading(false);
   }, [group.id]);
 
-  const submitReview = async (member: any) => {
-    const f = form[member.id];
-    if (!f) return;
-    setSubmitting(member.id);
+  useEffect(() => { load(); }, [load]);
+
+  const handleSubmit = async () => {
+    if (!form.headline.trim()) { showMsg(false, "Please add a headline for your review"); return; }
+    setSubmitting(true);
     try {
-      await apiFetch("/api/reputation", {
-        method: "POST",
-        body: JSON.stringify({
-          subject_id: member.userId ?? member.user_id,
-          subject_username: member.callsign,
-          group_id: group.id,
-          group_name: group.name,
-          activity: f.activity,
-          attitude: f.attitude,
-          experience: f.experience,
-          discipline: f.discipline,
-          overall_vote: Math.round((f.activity + f.attitude + f.experience + f.discipline) / 4),
-          blacklisted: f.blacklisted,
-          blacklist_reason: f.blacklisted ? f.blacklist_reason : "",
-          notes: f.notes,
-        }),
+      const token = localStorage.getItem("tag_token") ?? "";
+      const isEdit = !!existing;
+      const url = isEdit
+        ? `${REVIEWS_URL}?path=%2Fupdate&id=${existing.id}`
+        : `${REVIEWS_URL}?path=%2Fcreate`;
+      const res = await fetch(url, {
+        method: isEdit ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...form, group_id: group.id, group_name: group.name }),
       });
-      showMsg(true, `Review submitted for ${member.callsign}`);
-      // Mark as reviewed locally
-      setReviews(prev => prev.filter(r => r.id !== member.id));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to submit review");
+      showMsg(true, isEdit ? "Review updated!" : "Review published!");
+      setEditing(false);
+      await load();
     } catch (e: any) {
       showMsg(false, e.message ?? "Failed to submit review");
     }
-    setSubmitting(null);
+    setSubmitting(false);
   };
 
-  const setScore = (memberId: string, field: string, val: number) => {
-    setForm(prev => ({ ...prev, [memberId]: { ...prev[memberId], [field]: val } }));
+  const handleDelete = async () => {
+    if (!existing || !confirm("Delete your review? This cannot be undone.")) return;
+    try {
+      const token = localStorage.getItem("tag_token") ?? "";
+      await fetch(`${REVIEWS_URL}?path=%2Fdelete&id=${existing.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      showMsg(true, "Review deleted");
+      setExisting(null);
+      setEditing(false);
+      setForm({ rating:4, organisation:3, communication:3, gameplay:3, community:3, headline:"", body:"", served_months:"", recommend:true });
+    } catch { showMsg(false, "Failed to delete review"); }
   };
 
-  const ScoreRow = ({ memberId, field, label }: { memberId: string; field: string; label: string }) => {
-    const val = form[memberId]?.[field as keyof typeof form[string]] as number ?? 3;
-    const colours = ["", "bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-blue-500", "bg-green-500"];
-    const labels = ["", "Poor", "Below Avg", "Average", "Good", "Excellent"];
-    return (
-      <div className="flex items-center gap-3">
-        <span className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground w-24 shrink-0">{label}</span>
-        <div className="flex items-center gap-1">
-          {[1,2,3,4,5].map(n => (
-            <button key={n} onClick={() => setScore(memberId, field, n)}
-              className={`w-7 h-7 rounded text-xs font-bold border transition-all ${val === n ? `${colours[n]} text-white border-transparent` : "bg-secondary border-border text-muted-foreground hover:border-border/80"}`}>
-              {n}
-            </button>
-          ))}
-        </div>
-        <span className="text-[10px] text-muted-foreground">{labels[val]}</span>
-      </div>
-    );
-  };
+  const RATING_LABEL: Record<number,string> = { 1:"Terrible", 2:"Poor", 3:"Okay", 4:"Good", 5:"Outstanding" };
+  const RATING_COLOR: Record<number,string> = { 1:"text-red-400", 2:"text-orange-400", 3:"text-yellow-400", 4:"text-blue-400", 5:"text-green-400" };
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
+  // ── Existing review display ───────────────────────────────────────────────
+  if (existing && !editing) return (
+    <div className="space-y-6 max-w-2xl">
+      <div className="bg-secondary/40 border border-border rounded-lg p-4 text-xs font-sans text-muted-foreground">
+        <p className="font-display font-bold uppercase tracking-widest text-xs text-foreground mb-1">Your Review is Live</p>
+        <p>This review is visible on <strong className="text-foreground">{group.name}</strong>'s public registry page. You can edit or delete it at any time.</p>
+      </div>
+
+      <div className="border border-border bg-card rounded-xl p-5 space-y-4">
+        {/* Stars + headline */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <StarRating value={existing.rating} readonly />
+            <p className={`text-sm font-display font-bold mt-1 ${RATING_COLOR[existing.rating] ?? "text-foreground"}`}>{RATING_LABEL[existing.rating]}</p>
+          </div>
+          {existing.recommend !== undefined && (
+            <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border flex items-center gap-1 ${existing.recommend ? "border-green-500/40 text-green-400 bg-green-500/5" : "border-red-500/40 text-red-400 bg-red-500/5"}`}>
+              {existing.recommend ? <ThumbsUp className="w-3 h-3" /> : <ThumbsDown className="w-3 h-3" />}
+              {existing.recommend ? "Recommended" : "Not Recommended"}
+            </span>
+          )}
+        </div>
+        <div>
+          <p className="font-display font-bold text-sm text-foreground">{existing.headline}</p>
+          {existing.body && <p className="text-xs font-sans text-muted-foreground mt-1.5 leading-relaxed">{existing.body}</p>}
+        </div>
+        {/* Sub-scores */}
+        {(existing.organisation || existing.communication || existing.gameplay || existing.community) && (
+          <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 border-t border-border pt-3">
+            {[["Organisation", existing.organisation],["Communication", existing.communication],["Gameplay",existing.gameplay],["Community",existing.community]].map(([l,v]) =>
+              v ? (
+                <div key={l} className="flex items-center justify-between">
+                  <span className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">{l}</span>
+                  <span className="text-xs font-display font-bold text-foreground">{v}/5</span>
+                </div>
+              ) : null
+            )}
+          </div>
+        )}
+        {existing.served_months && (
+          <p className="text-[10px] font-sans text-muted-foreground border-t border-border pt-2">Served approx. {existing.served_months} month{existing.served_months !== 1 ? "s" : ""}</p>
+        )}
+      </div>
+
+      <div className="flex gap-3">
+        <button onClick={() => setEditing(true)} className="flex items-center gap-2 px-4 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+          Edit Review
+        </button>
+        <button onClick={handleDelete} className="flex items-center gap-2 px-4 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded font-display text-xs uppercase tracking-widest hover:bg-red-500/20 transition-colors">
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── Write / Edit form ─────────────────────────────────────────────────────
   return (
     <div className="space-y-6 max-w-2xl">
       {/* Info banner */}
       <div className="bg-secondary/40 border border-border rounded-lg p-4 text-xs font-sans text-muted-foreground leading-relaxed">
-        <p className="font-display font-bold uppercase tracking-widest text-xs text-foreground mb-1">How Unit Reviews Work</p>
-        <p>Rate your fellow operators from <strong className="text-foreground">{group.name}</strong>. Scores feed into their overall reputation across the TAG registry. Be honest — these scores matter to commanders reviewing applications.</p>
+        <p className="font-display font-bold uppercase tracking-widest text-xs text-foreground mb-1">
+          {editing ? "Edit Your Review" : "Write a Unit Review"}
+        </p>
+        <p>
+          Your review of <strong className="text-foreground">{group.name}</strong> will be publicly visible on their registry listing page. Only current or former roster members can submit reviews. Be honest — this helps other operators make informed decisions.
+        </p>
       </div>
 
-      {reviews.length === 0 ? (
-        <div className="border border-dashed border-border rounded-lg p-10 text-center">
-          <Shield className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
-          <p className="text-sm font-display uppercase tracking-widest text-muted-foreground">No members left to review</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">You've reviewed all active roster members in this unit.</p>
+      <div className="border border-border bg-card rounded-xl p-5 space-y-5">
+        {/* Overall rating */}
+        <div>
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Overall Rating *</p>
+          <StarRating value={form.rating} onChange={v => setForm(f => ({ ...f, rating: v }))} />
+          <p className={`text-xs font-display font-bold mt-1 ${RATING_COLOR[form.rating] ?? "text-foreground"}`}>{RATING_LABEL[form.rating]}</p>
         </div>
-      ) : (
-        <div className="space-y-4">
-          {reviews.map(member => {
-            const f = form[member.id];
-            if (!f) return null;
-            const avg = Math.round((f.activity + f.attitude + f.experience + f.discipline) / 4);
-            const avgColour = avg >= 4 ? "text-green-400" : avg === 3 ? "text-yellow-400" : "text-red-400";
-            return (
-              <div key={member.id} className="border border-border bg-card rounded-xl p-4 space-y-4">
-                {/* Member header */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-                      <span className="text-xs font-display font-bold text-primary">{member.callsign?.charAt(0).toUpperCase()}</span>
-                    </div>
-                    <div>
-                      <p className="font-display font-bold text-sm text-foreground">{member.callsign}</p>
-                      {member.rank && <p className="text-[10px] text-muted-foreground">{member.rank}</p>}
-                    </div>
-                  </div>
-                  <div className={`text-lg font-display font-black ${avgColour}`}>{avg}<span className="text-xs text-muted-foreground font-normal">/5</span></div>
-                </div>
 
-                {/* Score rows */}
-                <div className="space-y-2.5 pl-1">
-                  <ScoreRow memberId={member.id} field="activity" label="Activity" />
-                  <ScoreRow memberId={member.id} field="attitude" label="Attitude" />
-                  <ScoreRow memberId={member.id} field="experience" label="Experience" />
-                  <ScoreRow memberId={member.id} field="discipline" label="Discipline" />
-                </div>
-
-                {/* Notes */}
-                <textarea value={f.notes} onChange={e => setForm(prev => ({ ...prev, [member.id]: { ...prev[member.id], notes: e.target.value } }))}
-                  placeholder="Optional notes for this operator (visible to commanders)..."
-                  rows={2}
-                  className="w-full bg-secondary border border-border rounded px-3 py-2 text-xs font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none" />
-
-                {/* Blacklist toggle */}
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setForm(prev => ({ ...prev, [member.id]: { ...prev[member.id], blacklisted: !prev[member.id].blacklisted } }))}
-                    className={`text-[10px] font-display font-bold uppercase tracking-wider px-2.5 py-1 rounded border transition-all ${f.blacklisted ? "bg-red-500/20 border-red-500/60 text-red-400" : "bg-secondary border-border text-muted-foreground hover:border-red-500/30 hover:text-red-400"}`}>
-                    {f.blacklisted ? "⚑ Blacklist flagged" : "Flag for Blacklist"}
-                  </button>
-                  {f.blacklisted && (
-                    <input value={f.blacklist_reason} onChange={e => setForm(prev => ({ ...prev, [member.id]: { ...prev[member.id], blacklist_reason: e.target.value } }))}
-                      placeholder="Reason (required for blacklist)"
-                      className="flex-1 bg-secondary border border-red-500/40 rounded px-2.5 py-1 text-xs font-sans text-foreground placeholder:text-muted-foreground focus:outline-none" />
-                  )}
-                </div>
-
-                {/* Submit */}
-                <button onClick={() => submitReview(member)} disabled={submitting === member.id}
-                  className="w-full flex items-center justify-center gap-2 bg-primary/20 border border-primary/40 text-primary hover:bg-primary/30 rounded py-2 font-display text-xs uppercase tracking-widest transition-all disabled:opacity-50">
-                  {submitting === member.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Star className="w-3.5 h-3.5" />}
-                  Submit Review for {member.callsign}
-                </button>
-              </div>
-            );
-          })}
+        {/* Headline */}
+        <div>
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Headline *</p>
+          <input
+            value={form.headline}
+            onChange={e => setForm(f => ({ ...f, headline: e.target.value }))}
+            placeholder='e.g. "Outstanding unit, highly professional command structure"'
+            maxLength={120}
+            className="w-full bg-secondary border border-border rounded px-3 py-2 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+          />
         </div>
-      )}
+
+        {/* Body */}
+        <div>
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Full Review <span className="font-normal normal-case">(optional)</span></p>
+          <textarea
+            value={form.body}
+            onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+            placeholder="Share your experience — ops quality, leadership, community atmosphere, training standards..."
+            rows={4}
+            className="w-full bg-secondary border border-border rounded px-3 py-2 text-xs font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none"
+          />
+        </div>
+
+        {/* Sub-scores */}
+        <div>
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Category Scores <span className="font-normal normal-case">(optional)</span></p>
+          <div className="space-y-2.5">
+            <SubScoreRow label="Organisation" value={form.organisation} onChange={v => setForm(f => ({ ...f, organisation: v }))} />
+            <SubScoreRow label="Communication" value={form.communication} onChange={v => setForm(f => ({ ...f, communication: v }))} />
+            <SubScoreRow label="Gameplay" value={form.gameplay} onChange={v => setForm(f => ({ ...f, gameplay: v }))} />
+            <SubScoreRow label="Community" value={form.community} onChange={v => setForm(f => ({ ...f, community: v }))} />
+          </div>
+        </div>
+
+        {/* Time served + recommend */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-border pt-4">
+          <div>
+            <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Time Served (months)</p>
+            <input
+              type="number" min="1" max="120"
+              value={form.served_months}
+              onChange={e => setForm(f => ({ ...f, served_months: e.target.value === "" ? "" : Number(e.target.value) }))}
+              placeholder="e.g. 6"
+              className="w-full bg-secondary border border-border rounded px-3 py-2 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+            />
+          </div>
+          <div>
+            <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Would you recommend?</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setForm(f => ({ ...f, recommend: true }))}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-widest transition-all ${form.recommend ? "bg-green-500/20 border-green-500/50 text-green-400" : "bg-secondary border-border text-muted-foreground hover:border-green-500/30"}`}>
+                <ThumbsUp className="w-3.5 h-3.5" /> Yes
+              </button>
+              <button type="button" onClick={() => setForm(f => ({ ...f, recommend: false }))}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-widest transition-all ${!form.recommend ? "bg-red-500/20 border-red-500/50 text-red-400" : "bg-secondary border-border text-muted-foreground hover:border-red-500/30"}`}>
+                <ThumbsDown className="w-3.5 h-3.5" /> No
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 pt-1">
+          <button onClick={handleSubmit} disabled={submitting || !form.headline.trim()}
+            className="flex items-center gap-2 px-5 py-2 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90 transition-all disabled:opacity-50">
+            {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            {editing ? "Save Changes" : "Publish Review"}
+          </button>
+          {editing && (
+            <button onClick={() => setEditing(false)} className="px-4 py-2 border border-border rounded font-display text-xs uppercase tracking-widest text-muted-foreground hover:border-primary/40 transition-colors">
+              Cancel
+            </button>
+          )}
+        </div>
+      </div>
+
+      <p className="text-[10px] text-muted-foreground font-sans">
+        Reviews are moderated. Abusive, misleading, or spam reviews will be removed. One review per unit.
+      </p>
     </div>
   );
 }

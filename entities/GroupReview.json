@@ -1,0 +1,46 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "group_name": {
+      "type": "string"
+    },
+    "reviewer_id": {
+      "type": "string"
+    },
+    "reviewer_username": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number"
+    },
+    "organisation": {
+      "type": "number"
+    },
+    "communication": {
+      "type": "number"
+    },
+    "gameplay": {
+      "type": "number"
+    },
+    "community": {
+      "type": "number"
+    },
+    "headline": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "served_months": {
+      "type": "number"
+    },
+    "recommend": {
+      "type": "boolean"
+    }
+  },
+  "required": [],
+  "name": "GroupReview"
+}

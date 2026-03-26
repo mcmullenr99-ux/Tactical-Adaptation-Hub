@@ -55,7 +55,7 @@ interface ReadinessData {
   narrative_items: { label: string; text: string; severity: 'green' | 'amber' | 'red' | 'neutral' }[];
 }
 
-type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "capabilities" | "legacy" | "enlist";
+type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "capabilities" | "legacy" | "enlist" | "reviews";
 
 function getEmbedUrl(url: string): string | null {
   try {
@@ -213,6 +213,7 @@ export default function MilsimGroup() {
     { id: "enlist",        label: "Enlist",        icon: ClipboardList, show: true },
     { id: "apply",         label: "Apply",         icon: FileText,   show: questions.length > 0 },
     { id: "legacy",        label: "Unit Legacy",   icon: Archive,    show: isPro },
+    { id: "reviews",       label: "Reviews",       icon: Star,       show: true },
   ];
 
   return (
@@ -807,9 +808,133 @@ export default function MilsimGroup() {
             <PublicLegacyTab group={group} />
           )}
 
+          {tab === "reviews" && (
+            <PublicReviewsTab group={group} />
+          )}
+
         </motion.div>
       </div>
     </MainLayout>
+  );
+}
+
+// ─── Public Reviews Tab ───────────────────────────────────────────────────────
+const REVIEWS_URL_PUB = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/groupReviews";
+
+function StarDisplay({ value, small = false }: { value: number; small?: boolean }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1,2,3,4,5].map(n => (
+        <Star key={n} className={`${small ? "w-3.5 h-3.5" : "w-4 h-4"} ${n <= value ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/20"}`} />
+      ))}
+    </div>
+  );
+}
+
+function PublicReviewsTab({ group }: { group: any }) {
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${REVIEWS_URL_PUB}?path=%2Flist&group_id=${group.id}`)
+      .then(r => r.json())
+      .then(data => setReviews(Array.isArray(data) ? data : []))
+      .catch(() => setReviews([]))
+      .finally(() => setLoading(false));
+  }, [group.id]);
+
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((s, r) => s + (r.rating ?? 0), 0) / reviews.length).toFixed(1)
+    : null;
+  const recommendPct = reviews.length > 0
+    ? Math.round((reviews.filter(r => r.recommend).length / reviews.length) * 100)
+    : null;
+
+  const RATING_LABEL: Record<number, string> = { 1:"Terrible", 2:"Poor", 3:"Okay", 4:"Good", 5:"Outstanding" };
+  const RATING_COLOR: Record<number, string> = { 1:"text-red-400", 2:"text-orange-400", 3:"text-yellow-400", 4:"text-blue-400", 5:"text-green-400" };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Summary bar */}
+      {reviews.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-card border border-border rounded-lg p-4 text-center">
+            <p className="text-4xl font-display font-black text-yellow-400">{avgRating}</p>
+            <StarDisplay value={Math.round(Number(avgRating))} />
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-1">{reviews.length} Review{reviews.length !== 1 ? "s" : ""}</p>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-4 text-center">
+            <p className="text-4xl font-display font-black text-green-400">{recommendPct}%</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-2">Would Recommend</p>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-4 space-y-1.5">
+            {["organisation","communication","gameplay","community"].map(key => {
+              const vals = reviews.map(r => r[key]).filter(Boolean);
+              const avg = vals.length ? (vals.reduce((a: number, b: number) => a + b, 0) / vals.length).toFixed(1) : null;
+              if (!avg) return null;
+              return (
+                <div key={key} className="flex items-center justify-between">
+                  <span className="text-[9px] font-display uppercase tracking-widest text-muted-foreground capitalize">{key}</span>
+                  <span className="text-xs font-display font-bold text-foreground">{avg}/5</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Review cards */}
+      {reviews.length === 0 ? (
+        <div className="border border-dashed border-border rounded-lg p-12 text-center">
+          <Star className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+          <p className="text-sm font-display uppercase tracking-widest text-muted-foreground">No reviews yet</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Roster members can submit reviews from their Member HQ.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {reviews.map(r => (
+            <div key={r.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <StarDisplay value={r.rating} small />
+                  <p className={`text-xs font-display font-bold mt-0.5 ${RATING_COLOR[r.rating] ?? "text-foreground"}`}>{RATING_LABEL[r.rating]}</p>
+                </div>
+                <div className="flex items-center gap-3 text-[10px] font-display uppercase tracking-widest text-muted-foreground">
+                  {r.recommend !== undefined && (
+                    <span className={r.recommend ? "text-green-400" : "text-red-400"}>
+                      {r.recommend ? "✓ Recommended" : "✗ Not Recommended"}
+                    </span>
+                  )}
+                  {r.served_months && <span>{r.served_months}mo served</span>}
+                </div>
+              </div>
+              <div>
+                <p className="font-display font-bold text-sm text-foreground">{r.headline}</p>
+                {r.body && <p className="text-xs font-sans text-muted-foreground mt-1.5 leading-relaxed">{r.body}</p>}
+              </div>
+              {(r.organisation || r.communication || r.gameplay || r.community) && (
+                <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-border/50 pt-2">
+                  {[["Organisation",r.organisation],["Communication",r.communication],["Gameplay",r.gameplay],["Community",r.community]].map(([l,v]) =>
+                    v ? (
+                      <div key={l} className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-display uppercase tracking-widest text-muted-foreground">{l}</span>
+                        <span className="text-[10px] font-display font-bold text-foreground">{v}/5</span>
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              )}
+              <div className="flex items-center justify-between border-t border-border/30 pt-2">
+                <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">{r.reviewer_username}</p>
+                <p className="text-[10px] font-sans text-muted-foreground/50">{r.created_date ? new Date(r.created_date).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }) : ""}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
