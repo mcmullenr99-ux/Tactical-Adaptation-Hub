@@ -1330,7 +1330,7 @@ function AwardsTab({ group, showMsg }: any) {
               <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="font-display font-black text-xs uppercase tracking-widest text-primary">Add Award from Ribbon Library</p>
-                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">2,420 real-world ribbons — US (all branches), UK, Australia, Canada, France, Poland, Norway, Finland & 23 more nations</p>
+                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">1,172 curated military ribbons — US, UK, Australia, Canada, NATO & 23 nations</p>
                 </div>
                 <button onClick={resetForm} className="text-muted-foreground hover:text-foreground transition-colors ml-4 shrink-0">
                   <XCircle className="w-4 h-4" />
