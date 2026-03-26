@@ -55,7 +55,7 @@ interface ReadinessData {
   narrative_items: { label: string; text: string; severity: 'green' | 'amber' | 'red' | 'neutral' }[];
 }
 
-type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "capabilities" | "legacy";
+type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "capabilities" | "legacy" | "enlist";
 
 function getEmbedUrl(url: string): string | null {
   try {
@@ -210,6 +210,7 @@ export default function MilsimGroup() {
     { id: "awards",        label: "Commendations", icon: Medal,      show: true },
     { id: "sops",          label: "SOPs",          icon: BookOpen,   show: !!group.sops },
     { id: "orbat",         label: "ORBAT",         icon: Map,        show: !!group.orbat },
+    { id: "enlist",        label: "Enlist",        icon: ClipboardList, show: true },
     { id: "apply",         label: "Apply",         icon: FileText,   show: questions.length > 0 },
     { id: "legacy",        label: "Unit Legacy",   icon: Archive,    show: isPro },
   ];
@@ -293,6 +294,12 @@ export default function MilsimGroup() {
                     <Globe className="w-3.5 h-3.5" /> Website <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
+                <button
+                  onClick={() => setTab("enlist")}
+                  className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2 rounded text-xs font-display font-black uppercase tracking-widest transition-all active:scale-95"
+                >
+                  <ClipboardList className="w-3.5 h-3.5" /> Enlist
+                </button>
                 <span className="text-xs text-muted-foreground font-sans">{roster.length} member{roster.length !== 1 ? "s" : ""}</span>
               </div>
             </div>
@@ -727,6 +734,72 @@ export default function MilsimGroup() {
                   )}
                 </>
               )}
+            </div>
+          )}
+
+          {/* ── ENLIST ─────────────────────────────────────────────────── */}
+          {tab === "enlist" && (
+            <div className="max-w-3xl space-y-6">
+              {/* Selection Criteria */}
+              <div className="bg-card border border-border rounded-lg p-6">
+                <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-1 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-primary" /> Selection Criteria
+                </h2>
+                <p className="text-xs text-muted-foreground font-sans mb-5">
+                  Read and understand what {group.name} expects from its operators before applying.
+                </p>
+                {(group as any).selection_criteria ? (
+                  <div className="prose prose-sm prose-invert max-w-none font-sans text-muted-foreground leading-relaxed whitespace-pre-wrap border-t border-border pt-4">
+                    {(group as any).selection_criteria}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground font-sans italic">No selection criteria posted yet. Contact the unit via Discord for details.</p>
+                )}
+              </div>
+
+              {/* Application */}
+              <div className="bg-card border border-border rounded-lg p-6">
+                <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-1 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" /> Application
+                </h2>
+                {questions.length === 0 ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground font-sans">This unit has not set up an application form. Reach out directly via Discord.</p>
+                    {group.discordUrl && (
+                      <a href={group.discordUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-black uppercase tracking-widest text-sm px-6 py-3 rounded transition-all active:scale-95">
+                        Contact via Discord <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    <p className="text-sm text-muted-foreground font-sans">
+                      Answer the following questions when you apply. Reach out via{" "}
+                      {group.discordUrl
+                        ? <a href={group.discordUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Discord</a>
+                        : "Discord"} with your responses.
+                    </p>
+                    <ol className="space-y-4">
+                      {questions.map((q, i) => (
+                        <li key={q.id} className="flex items-start gap-3">
+                          <span className="w-6 h-6 shrink-0 rounded bg-primary/10 border border-primary/30 flex items-center justify-center font-display font-bold text-xs text-primary">{i + 1}</span>
+                          <span className="font-sans text-muted-foreground leading-relaxed">
+                            {q.question}
+                            {q.required && <span className="ml-2 text-[10px] font-display font-bold uppercase text-accent">Required</span>}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                    {group.discordUrl && (
+                      <a href={group.discordUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-black uppercase tracking-widest text-sm px-8 py-4 rounded transition-all active:scale-95">
+                        Apply via Discord <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

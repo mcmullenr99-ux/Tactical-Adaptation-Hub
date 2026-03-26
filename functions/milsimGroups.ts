@@ -235,6 +235,7 @@ Deno.serve(async (req) => {
       if (body.logoUrl !== undefined) updates.logo_url = body.logoUrl;
       if (body.sops !== undefined) updates.sops = body.sops;
       if (body.orbat !== undefined) updates.orbat = body.orbat;
+      if (body.selection_criteria !== undefined) updates.selection_criteria = body.selection_criteria;
       if (body.visibility !== undefined) updates.visibility = JSON.stringify(body.visibility);
       if (body.country !== undefined) updates.country = body.country;
       if (body.language !== undefined) updates.language = body.language;
