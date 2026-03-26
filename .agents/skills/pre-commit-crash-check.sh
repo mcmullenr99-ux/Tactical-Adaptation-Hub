@@ -1,7 +1,6 @@
 #!/bin/bash
 # ============================================================
-# PRE-COMMIT CRASH CHECK  v5
-# Focused on the specific crash patterns we've actually hit.
+# PRE-COMMIT CRASH CHECK  v6
 # ============================================================
 
 ERRORS=0
@@ -40,11 +39,21 @@ for FILE in "${FILES[@]}"; do
     fi
   done
 
-  # CHECK 3: Hooks
+  # CHECK 3: Auth/toast hooks
   for HOOK in useAuth useToast; do
     if echo "$CONTENT" | grep -qE "= ${HOOK}\(|const.*${HOOK}\("; then
       if ! echo "$CONTENT" | grep -qE "import.*\b${HOOK}\b"; then
         ISSUES+=("❌ '${HOOK}()' called but not imported")
+      fi
+    fi
+  done
+
+  # CHECK 3b: React hooks used but not in import
+  REACT_IMPORT_LINE=$(echo "$CONTENT" | grep -E "^import \{.*\} from ['\"]react['\"]" | head -1)
+  for HOOK in useMemo useCallback useRef useReducer useContext useLayoutEffect useImperativeHandle; do
+    if echo "$CONTENT" | grep -qE "\b${HOOK}\("; then
+      if ! echo "$REACT_IMPORT_LINE" | grep -q "$HOOK"; then
+        ISSUES+=("❌ '${HOOK}' used but not in React import")
       fi
     fi
   done
@@ -89,22 +98,20 @@ for FILE in "${FILES[@]}"; do
     ISSUES+=("❌ 'MC_GAMES' used but not defined — import GAMES_LIST as MC_GAMES")
   fi
 
-
   # CHECK 9: Wrong localStorage token key
-  if echo "$CONTENT" | grep -qE "localStorage\.getItem\(['"]auth_token['"]\)"; then
+  if echo "$CONTENT" | grep -qE "localStorage\.getItem\(['\"]auth_token['\"]\)"; then
     ISSUES+=("❌ Wrong token key: use 'tag_auth_token' not 'auth_token'")
   fi
-  if echo "$CONTENT" | grep -qE "localStorage\.setItem\(['"]auth_token['"]"; then
+  if echo "$CONTENT" | grep -qE "localStorage\.setItem\(['\"]auth_token['\"]"; then
     ISSUES+=("❌ Wrong token key on setItem: use 'tag_auth_token' not 'auth_token'")
   fi
 
-  # CHECK 10: localStorage.getItem("auth_token") vs tag_auth_token — alias check
   # Report
   if [ "${#ISSUES[@]}" -eq 0 ]; then
     echo "  ✅ $BASENAME"
   else
     echo "  🚨 $BASENAME — ${#ISSUES[@]} issue(s):"
-    for I in "${ISSUES[@]}"; do echo "       $I"; done
+    for ISSUE in "${ISSUES[@]}"; do echo "       $ISSUE"; done
     ERRORS=$((ERRORS + 1))
   fi
 done
