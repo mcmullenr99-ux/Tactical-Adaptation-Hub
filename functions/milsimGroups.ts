@@ -260,6 +260,8 @@ Deno.serve(async (req) => {
       const updates: Record<string, any> = {};
       if (body.discordUrl !== undefined) updates.discord_url = body.discordUrl;
       if (body.websiteUrl !== undefined) updates.website_url = body.websiteUrl;
+      if (body.streamUrl !== undefined) updates.stream_url = body.streamUrl;
+      if (body.isLive !== undefined) updates.is_live = body.isLive;
       await base44.asServiceRole.entities.MilsimGroup.update(parts[0], updates);
       const updated = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       return Response.json(await groupFullDetail(base44, updated));

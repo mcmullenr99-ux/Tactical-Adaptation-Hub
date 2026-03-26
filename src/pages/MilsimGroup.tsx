@@ -156,7 +156,7 @@ export default function MilsimGroup() {
   useEffect(() => {
     if (!slug) return;
     apiFetch<GroupDetail>(`/api/milsim-groups/${slug}`)
-      .then(g => { setGroup(g); if (g?.is_live) setTab("stream"); })
+      .then(g => { setGroup(g); })
       .catch(() => setGroup(null))
       .finally(() => setLoading(false));
   }, [slug]);
@@ -202,7 +202,7 @@ export default function MilsimGroup() {
   const TABS: { id: Tab; label: string; icon: typeof Shield; show: boolean }[] = [
     { id: "overview",      label: "Overview",      icon: Shield,     show: true },
     { id: "capabilities",  label: "Capabilities",  icon: Zap,        show: true },
-    { id: "stream",        label: "Stream",        icon: Radio,      show: !!group.stream_url },
+    { id: "stream",        label: "Stream",        icon: Radio,      show: true },
     { id: "roles",         label: "Roles",         icon: Crosshair,  show: roles.length > 0 },
     { id: "ranks",         label: "Ranks",         icon: Award,      show: ranks.length > 0 },
     { id: "roster",        label: "Roster",        icon: Users,      show: roster.length > 0 },
