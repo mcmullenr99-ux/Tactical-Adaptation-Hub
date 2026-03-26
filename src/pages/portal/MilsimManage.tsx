@@ -4077,7 +4077,7 @@ function ReputationTab({ group }: any) {
   useEffect(() => {
     Promise.all([
       apiFetch<any>(`/api/milsim-groups/${group.id}/full`),
-      apiFetch<any>(`/api/milsim-groups/${group.id}/pro-status`).catch(() => ({ is_pro: false })),
+      apiFetch<any>(`/getProStatus?group_id=${group.id}`).catch(() => ({ is_pro: false })),
     ]).then(([g, proStatus]) => {
       setRoster(g.roster ?? []);
       setIsProUnit(!!proStatus?.is_pro);
@@ -4361,7 +4361,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
     try {
       const [data, proStatus] = await Promise.all([
         apiFetch<any[]>(`/api/training-docs/${group.id}`),
-        apiFetch<any>(`/api/milsim-groups/${group.id}/pro-status`).catch(() => ({ is_pro: false })),
+        apiFetch<any>(`/getProStatus?group_id=${group.id}`).catch(() => ({ is_pro: false })),
       ]);
       setDocs(data ?? []);
       setIsProUnit(!!proStatus?.is_pro);
@@ -6344,7 +6344,7 @@ function UnitLegacyTab({ group }: any) {
       apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`).catch(() => []),
       apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).catch(() => []),
       fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`, { headers }).then(r => r.json()).catch(() => []),
-      apiFetch<any>(`/api/milsim-groups/${group.id}/pro-status`).catch(() => ({ is_pro: false })),
+      apiFetch<any>(`/getProStatus?group_id=${group.id}`).catch(() => ({ is_pro: false })),
     ]).then(([o, a, c, proStatus]) => {
       setOps(Array.isArray(o) ? o : []);
       setAars(Array.isArray(a) ? a : []);
