@@ -12,13 +12,16 @@ export interface RibbonTemplate {
   sku?: string;
 }
 
-export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom'];
+export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand'];
 
 export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'United States': ['US Army', 'US Navy', 'US Marine Corps', 'US Air Force'],
   'United Nations': ['United Nations'],
   'NATO': ['NATO'],
   'United Kingdom': ['UK Gallantry', 'UK Commendations', 'UK Campaign Medals', 'UK Service Medals', 'UK Jubilee Medals'],
+  'Australia': ['Australia Gallantry', 'Australia Orders', 'Australia Commendations', 'Australia Campaign Medals', 'Australia Service Medals', 'Australia Jubilee & Commemorative'],
+  'Canada': ['Canada Gallantry', 'Canada Orders', 'Canada Campaign Medals', 'Canada Service Medals', 'Canada Jubilee & Commemorative'],
+  'New Zealand': ['New Zealand Gallantry', 'New Zealand Orders', 'New Zealand Campaign Medals', 'New Zealand Service Medals', 'New Zealand Jubilee & Commemorative'],
 };
 
 export const RIBBON_TEMPLATES: RibbonTemplate[] = [
@@ -275,4 +278,78 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [
   { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Royal Fleet Auxiliary Service Medal', url: 'https://www.medals.pl/bc/r/uk1mrfa.gif' },
   { country: 'United Kingdom', branch: 'UK Jubilee Medals', name: 'Golden Jubilee Medal 2002', url: 'https://www.medals.pl/bc/r/uk1mju2002.gif' },
   { country: 'United Kingdom', branch: 'UK Jubilee Medals', name: 'Diamond Jubilee Medal 2012', url: 'https://www.medals.pl/bc/r/uk1mju2012.gif' },
+
+  // ── Australia ────────────────────────────────────────────────────
+  { country: 'Australia', branch: 'Australia Gallantry', name: 'Star of Gallantry (SG)', url: 'https://www.medals.pl/bc/r/au2sga.gif' },
+  { country: 'Australia', branch: 'Australia Gallantry', name: 'Medal for Gallantry (MG)', url: 'https://www.medals.pl/bc/r/au2mga.gif' },
+  { country: 'Australia', branch: 'Australia Commendations', name: 'Commendation for Gallantry', url: 'https://www.medals.pl/bc/r/au2coga.gif' },
+  { country: 'Australia', branch: 'Australia Commendations', name: 'Commendation for Distinguished Service', url: 'https://www.medals.pl/bc/r/au2cods.gif' },
+  { country: 'Australia', branch: 'Australia Service Medals', name: 'Distinguished Service Cross (DSC)', url: 'https://www.medals.pl/bc/r/au2cds.gif' },
+  { country: 'Australia', branch: 'Australia Service Medals', name: 'Conspicuous Service Cross (CSC)', url: 'https://www.medals.pl/bc/r/au2ccs.gif' },
+  { country: 'Australia', branch: 'Australia Service Medals', name: 'Distinguished Service Medal (DSM)', url: 'https://www.medals.pl/bc/r/au2mds.gif' },
+  { country: 'Australia', branch: 'Australia Service Medals', name: 'Conspicuous Service Medal (CSM)', url: 'https://www.medals.pl/bc/r/au2mcs.gif' },
+  { country: 'Australia', branch: 'Australia Service Medals', name: 'Australian Defence Force Long Service Medal', url: 'https://www.medals.pl/bc/r/au2mlsd.gif' },
+  { country: 'Australia', branch: 'Australia Service Medals', name: 'Reserve Force Decoration (RFD)', url: 'https://www.medals.pl/bc/r/au2drf.gif' },
+  { country: 'Australia', branch: 'Australia Service Medals', name: 'Reserve Force Medal', url: 'https://www.medals.pl/bc/r/au2mrf.gif' },
+  { country: 'Australia', branch: 'Australia Service Medals', name: 'Australian Defence Medal', url: 'https://www.medals.pl/bc/r/au2mad.gif' },
+  { country: 'Australia', branch: 'Australia Campaign Medals', name: 'Australian Active Service Medal', url: 'https://www.medals.pl/bc/r/au2maas.gif' },
+  { country: 'Australia', branch: 'Australia Campaign Medals', name: 'Afghanistan Medal', url: 'https://www.medals.pl/bc/r/au2maf.gif' },
+  { country: 'Australia', branch: 'Australia Campaign Medals', name: 'Iraq Medal', url: 'https://www.medals.pl/bc/r/au2miq.gif' },
+  { country: 'Australia', branch: 'Australia Campaign Medals', name: 'International Force East Timor Medal (INTERFET)', url: 'https://www.medals.pl/bc/r/interfet.gif' },
+  { country: 'Australia', branch: 'Australia Jubilee & Commemorative', name: 'Golden Jubilee Medal 2002', url: 'https://www.medals.pl/bc/r/uk1mju2002.gif' },
+  { country: 'Australia', branch: 'Australia Jubilee & Commemorative', name: 'Diamond Jubilee Medal 2012', url: 'https://www.medals.pl/bc/r/uk1mju2012.gif' },
+  { country: 'Australia', branch: 'Australia Jubilee & Commemorative', name: 'Australian Centenary Medal 2000', url: 'https://www.medals.pl/bc/r/au2mce.gif' },
+  { country: 'Australia', branch: 'Australia Service Medals', name: 'Unit Citation for Gallantry', url: 'https://www.medals.pl/bc/r/au2ucga1.gif' },
+  { country: 'Australia', branch: 'Australia Service Medals', name: 'Meritorious Unit Citation', url: 'https://www.medals.pl/bc/r/au2ucms1.gif' },
+
+  // ── Canada ───────────────────────────────────────────────────────
+  { country: 'Canada', branch: 'Canada Gallantry', name: 'Star of Military Valour (SMV)', url: 'https://www.medals.pl/bc/r/ca2smv.gif' },
+  { country: 'Canada', branch: 'Canada Gallantry', name: 'Medal of Military Valour (MMV)', url: 'https://www.medals.pl/bc/r/ca2mmv.gif' },
+  { country: 'Canada', branch: 'Canada Service Medals', name: 'Meritorious Service Cross - Military (MSC)', url: 'https://www.medals.pl/bc/r/ca2cmsm.gif' },
+  { country: 'Canada', branch: 'Canada Service Medals', name: 'Meritorious Service Medal - Military (MSM)', url: 'https://www.medals.pl/bc/r/ca2mmsm.gif' },
+  { country: 'Canada', branch: 'Canada Campaign Medals', name: 'Gulf and Kuwait Medal', url: 'https://www.medals.pl/bc/r/ca2mgk1.gif' },
+  { country: 'Canada', branch: 'Canada Campaign Medals', name: 'Somalia Medal', url: 'https://www.medals.pl/bc/r/ca2mso.gif' },
+  { country: 'Canada', branch: 'Canada Campaign Medals', name: 'South West Asia Service Medal (SWASM)', url: 'https://www.medals.pl/bc/r/ca2mswass.gif' },
+  { country: 'Canada', branch: 'Canada Campaign Medals', name: 'General Campaign Star - Afghanistan', url: 'https://www.medals.pl/bc/r/ca2sgcaf.gif' },
+  { country: 'Canada', branch: 'Canada Campaign Medals', name: 'General Campaign Star - SW Asia', url: 'https://www.medals.pl/bc/r/ca2sgcswa.gif' },
+  { country: 'Canada', branch: 'Canada Campaign Medals', name: 'Operational Service Medal - Expedition', url: 'https://www.medals.pl/bc/r/ca2mosexp.gif' },
+  { country: 'Canada', branch: 'Canada Campaign Medals', name: 'Operational Service Medal - SW Asia', url: 'https://www.medals.pl/bc/r/ca2mosswa.gif' },
+  { country: 'Canada', branch: 'Canada Campaign Medals', name: 'Special Service Medal (SSM)', url: 'https://www.medals.pl/bc/r/ca2mss.gif' },
+  { country: 'Canada', branch: 'Canada Campaign Medals', name: 'Canadian Peacekeeping Service Medal (CPSM)', url: 'https://www.medals.pl/bc/r/ca2mpe.gif' },
+  { country: 'Canada', branch: 'Canada Campaign Medals', name: 'International Force East Timor Medal (INTERFET)', url: 'https://www.medals.pl/bc/r/interfet.gif' },
+  { country: 'Canada', branch: 'Canada Jubilee & Commemorative', name: '125th Anniversary of Confederation Medal 1992', url: 'https://www.medals.pl/bc/r/ca2m125.gif' },
+  { country: 'Canada', branch: 'Canada Jubilee & Commemorative', name: 'Golden Jubilee Medal 2002', url: 'https://www.medals.pl/bc/r/uk1mju2002.gif' },
+  { country: 'Canada', branch: 'Canada Jubilee & Commemorative', name: 'Diamond Jubilee Medal 2012', url: 'https://www.medals.pl/bc/r/uk1mju2012.gif' },
+
+  // ── New Zealand ──────────────────────────────────────────────────
+  { country: 'New Zealand', branch: 'New Zealand Gallantry', name: 'New Zealand Cross (NZC)', url: 'https://www.medals.pl/bc/r/nz2nzc.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Gallantry', name: 'NZ Gallantry Star (NZGS)', url: 'https://www.medals.pl/bc/r/nz2nzgs.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Gallantry', name: 'NZ Bravery Star (NZBS)', url: 'https://www.medals.pl/bc/r/nz2nzbs.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Gallantry', name: 'NZ Gallantry Decoration (NZGD)', url: 'https://www.medals.pl/bc/r/nz2nzgd.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Gallantry', name: 'NZ Bravery Decoration (NZBD)', url: 'https://www.medals.pl/bc/r/nz2nzbd.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Gallantry', name: 'NZ Gallantry Medal (NZGM)', url: 'https://www.medals.pl/bc/r/nz2nzgm.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Gallantry', name: 'NZ Bravery Medal (NZBM)', url: 'https://www.medals.pl/bc/r/nz2nzbm.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Orders', name: 'Order of New Zealand (ONZ)', url: 'https://www.medals.pl/bc/r/nz2onz.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Orders', name: 'New Zealand Order of Merit', url: 'https://www.medals.pl/bc/r/nz2nzom.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'Distinguished Service Decoration (DSD)', url: 'https://www.medals.pl/bc/r/nz2dsd.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'NZ Meritorious Service Medal', url: 'https://www.medals.pl/bc/r/nz2mms.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'NZ Armed Forces Award', url: 'https://www.medals.pl/bc/r/nz2aarf.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'Operational Service Medal (NZ)', url: 'https://www.medals.pl/bc/r/nz2mos.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'General Service Medal - Afghanistan', url: 'https://www.medals.pl/bc/r/nz2mgsaf.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'GSM - Afghanistan (secondary area)', url: 'https://www.medals.pl/bc/r/nz2mgsafb.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'General Service Medal - Iraq 2003', url: 'https://www.medals.pl/bc/r/nz2mgsiq.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'NZ East Timor Medal', url: 'https://www.medals.pl/bc/r/nz2met.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'General Service Medal - Solomon Islands', url: 'https://www.medals.pl/bc/r/nz2mgssi.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'General Service Medal - Timor Leste', url: 'https://www.medals.pl/bc/r/nz2mgstl.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'NZ General Service Medal (Warlike)', url: 'https://www.medals.pl/bc/r/nz2mgsw.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'NZ General Service Medal (Non-Warlike)', url: 'https://www.medals.pl/bc/r/nz2mgsp.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'International Force East Timor Medal (INTERFET)', url: 'https://www.medals.pl/bc/r/interfet.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'Rhodesia Medal 1980', url: 'https://www.medals.pl/bc/r/uk1mro.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'NZ Army LS & GC Medal', url: 'https://www.medals.pl/bc/r/uk1mlsa.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'NZ Navy LS & GC Medal', url: 'https://www.medals.pl/bc/r/uk1mlsn.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'NZ Air Force LS & GC Medal', url: 'https://www.medals.pl/bc/r/uk1mlsaf.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Jubilee & Commemorative', name: 'NZ Commemorative Medal 1990', url: 'https://www.medals.pl/bc/r/nz2mco90.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Jubilee & Commemorative', name: 'Golden Jubilee Medal 2002', url: 'https://www.medals.pl/bc/r/uk1mju2002.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Jubilee & Commemorative', name: 'Diamond Jubilee Medal 2012', url: 'https://www.medals.pl/bc/r/uk1mju2012.gif' },
+  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'Special Service Medal - Asian Tsunami', url: 'https://www.medals.pl/bc/r/nz2mssat.gif' },
 ];
