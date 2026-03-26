@@ -1129,7 +1129,7 @@ function AwardsTab({ group, showMsg }: any) {
   const [ribbonConfig, setRibbonConfig] = useState<RibbonConfig>({ colors: ["#1a3a6b","#c8102e","#ffffff"], pattern: "thirds" });
   const [awardName, setAwardName] = useState("");
   const [pickerCountry, setPickerCountry] = useState<string>("");
-  const [pickerBranch, setPickerBranch] = useState<string>("");
+  const [pickerBranch, setPickerBranch] = useState<string>("US Army");
   const [pickerSearch, setPickerSearch] = useState<string>("");
   const [selectedTemplate, setSelectedTemplate] = useState<RibbonTemplate | null>(null);
   const [desc, setDesc] = useState("");
@@ -1159,7 +1159,7 @@ function AwardsTab({ group, showMsg }: any) {
   useEffect(() => { load(); }, [load]);
 
   // Derive available branches based on selected country
-  const availableBranches = pickerCountry ? (RIBBON_BRANCHES_BY_COUNTRY[pickerCountry] ?? []) : [];
+  const availableBranches = pickerCountry ? (RIBBON_BRANCHES_BY_COUNTRY[pickerCountry] ?? []) : Object.values(RIBBON_BRANCHES_BY_COUNTRY).flat();
 
   // Filter ribbon templates
   const filteredTemplates = RIBBON_TEMPLATES.filter(r => {
@@ -1175,7 +1175,7 @@ function AwardsTab({ group, showMsg }: any) {
   const resetForm = () => {
     setShowCreate(false);
     setSelectedTemplate(null);
-    setPickerCountry(""); setPickerBranch(""); setPickerSearch(""); setDesc("");
+    setPickerCountry(""); setPickerBranch("US Army"); setPickerSearch(""); setDesc("");
     setAwardName(""); setRibbonConfig({ colors: ["#1a3a6b","#c8102e","#ffffff"], pattern: "thirds" });
     setCreateMode("build");
   };
@@ -1392,7 +1392,7 @@ function AwardsTab({ group, showMsg }: any) {
                       </p>
                     </div>
                     <div className="max-h-72 overflow-y-auto p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                      {filteredTemplates.slice(0, 120).map((r, i) => (
+                      {filteredTemplates.slice(0, 200).map((r, i) => (
                         <button key={i} onClick={() => setSelectedTemplate(r)}
                           title={`${r.name} (${r.country})`}
                           className="flex flex-col items-center gap-1 p-1.5 rounded border border-transparent hover:border-primary/50 hover:bg-primary/5 transition-all group">
@@ -1409,9 +1409,9 @@ function AwardsTab({ group, showMsg }: any) {
                           No ribbons match — try clearing filters
                         </div>
                       )}
-                      {filteredTemplates.length > 120 && (
+                      {filteredTemplates.length > 200 && (
                         <div className="col-span-6 text-center py-2 text-[10px] text-muted-foreground font-sans">
-                          Showing 120 of {filteredTemplates.length} — use filters to narrow down
+                          Showing 200 of {filteredTemplates.length} — use filters to narrow down
                         </div>
                       )}
                     </div>

@@ -182,8 +182,9 @@ Deno.serve(async (req) => {
       return Response.json(awards);
     }
 
-    // GET /:slug — public group by slug
-    if (method === 'GET' && parts.length === 1) {
+    // GET /:slug — public group by slug (must not be a reserved keyword)
+    const RESERVED_PATHS = ['roster', 'roster_member', 'mine', 'search', 'registry', 'upvote', 'review', 'fire', 'analytics', 'leaderboard'];
+    if (method === 'GET' && parts.length === 1 && !RESERVED_PATHS.includes(parts[0])) {
       const all = await base44.asServiceRole.entities.MilsimGroup.filter({ slug: parts[0] });
       const group = all[0];
       if (!group) return Response.json({ error: 'Group not found' }, { status: 404 });
