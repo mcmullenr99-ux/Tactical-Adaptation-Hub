@@ -1,0 +1,70 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "op_id": {
+      "type": "string"
+    },
+    "op_name": {
+      "type": "string"
+    },
+    "callsign": {
+      "type": "string"
+    },
+    "reported_by": {
+      "type": "string"
+    },
+    "report_time": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string"
+    },
+    "enemy_contact": {
+      "type": "string",
+      "enum": [
+        "None",
+        "Possible",
+        "Confirmed",
+        "Engaged"
+      ]
+    },
+    "enemy_notes": {
+      "type": "string"
+    },
+    "friendly_casualties": {
+      "type": "string",
+      "enum": [
+        "None",
+        "Minor",
+        "Significant",
+        "Critical"
+      ]
+    },
+    "casualty_notes": {
+      "type": "string"
+    },
+    "mission_status": {
+      "type": "string",
+      "enum": [
+        "On Track",
+        "Delayed",
+        "Compromised",
+        "Abort"
+      ]
+    },
+    "mission_notes": {
+      "type": "string"
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "additional_info": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "MilsimSitrep"
+}

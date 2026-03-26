@@ -1,58 +1,58 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 
-const MONTHLY_PRICE_ID = 'price_1TEv0BQgAkBXMuJkdH6kMQ6h';
-const ANNUAL_PRICE_ID = 'price_1TEv0BQgAkBXMuJkVwLPFhFG';
+const MONTHLY_PRICE_ID = 'price_1TEv5xQgAkBXMuJkXoprXgSV';
+const ANNUAL_PRICE_ID  = 'price_1TEv5yQgAkBXMuJk8rp1b2UQ';
 const SUCCESS_URL = 'https://tacticaladaptationgroup.co.uk/commander-pro?success=true';
-const CANCEL_URL = 'https://tacticaladaptationgroup.co.uk/commander-pro?cancelled=true';
-const APP_ID = '69bf52c997cae5d4cff87ae4';
+const CANCEL_URL  = 'https://tacticaladaptationgroup.co.uk/commander-pro?cancelled=true';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
 
   try {
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-    const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN');
-    if (!stripeKey) return new Response(JSON.stringify({ error: 'Stripe not configured' }), { status: 500 });
+    if (!stripeKey) return json({ error: 'Stripe not configured' }, 500);
 
+    const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
-    const { group_id, group_name, user_id, username, email, billing } = body;
+    const { group_id, billing } = body;
 
-    if (!group_id || !user_id || !email) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
-    }
+    if (!group_id) return json({ error: 'group_id required' }, 400);
+
+    // Load group
+    const group = await base44.asServiceRole.entities.MilsimGroup.get(group_id);
+    if (!group) return json({ error: 'Group not found' }, 404);
 
     const priceId = billing === 'annual' ? ANNUAL_PRICE_ID : MONTHLY_PRICE_ID;
 
-    // Check if already has a subscription
-    const existingRes = await fetch(
-      `https://api.base44.com/api/apps/${APP_ID}/entities/CommanderPro/query`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceToken}` },
-        body: JSON.stringify({ group_id }),
-      }
-    );
-    const existing = await existingRes.json();
-    const activeRecord = (existing?.data || []).find((r: any) => r.status === 'active' || r.status === 'trialing');
-    if (activeRecord) {
-      return new Response(JSON.stringify({ error: 'Group already has an active Commander Pro subscription' }), { status: 409 });
+    // Check if existing Stripe customer
+    const existing = await base44.asServiceRole.entities.CommanderPro.filter({ group_id });
+    let customerId: string | undefined;
+    if (existing.length > 0 && existing[0].stripe_customer_id && !existing[0].stripe_customer_id.startsWith('dev_')) {
+      customerId = existing[0].stripe_customer_id;
     }
 
-    // Create Stripe checkout session
     const params = new URLSearchParams({
       mode: 'subscription',
       'line_items[0][price]': priceId,
       'line_items[0][quantity]': '1',
-      customer_email: email,
-      success_url: `${SUCCESS_URL}&group_id=${group_id}&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: SUCCESS_URL,
       cancel_url: CANCEL_URL,
       'metadata[group_id]': group_id,
-      'metadata[group_name]': group_name || '',
-      'metadata[user_id]': user_id,
-      'metadata[username]': username || '',
-      'subscription_data[metadata][group_id]': group_id,
-      'subscription_data[metadata][user_id]': user_id,
+      'metadata[group_name]': group.name || '',
+      'metadata[owner_id]': group.owner_id || '',
     });
+
+    if (customerId) {
+      params.set('customer', customerId);
+    } else if (group.owner_id) {
+      // Try to find user email
+      try {
+        const users = await base44.asServiceRole.entities.User.filter({ id: group.owner_id });
+        if (users.length > 0 && users[0].email) {
+          params.set('customer_email', users[0].email);
+        }
+      } catch { /* noop */ }
+    }
 
     const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
@@ -64,13 +64,15 @@ Deno.serve(async (req) => {
     });
 
     const session = await res.json();
-    if (!res.ok) return new Response(JSON.stringify({ error: session.error?.message }), { status: 400 });
+    if (!res.ok) return json({ error: session.error?.message || 'Stripe error' }, 500);
 
-    return new Response(JSON.stringify({ url: session.url, session_id: session.id }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ url: session.url });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+    return json({ error: e.message }, 500);
   }
 });
+
+function cors() { return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' }; }
+function json(data: any, status = 200) {
+  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...cors() } });
+}

@@ -99,6 +99,24 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ ok: true }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
+    // ── MEMBER REQUEST ─────────────────────────────────────────
+    if (path === "create" && req.method === "POST") {
+      const body = await req.json();
+      const { group_id, roster_id, user_id, callsign, reason_category, reason_detail, start_date, end_date } = body;
+      if (!group_id || !roster_id || !start_date || !end_date)
+        return new Response(JSON.stringify({ error: "group_id, roster_id, start_date, end_date required" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+      const loa = await asAdmin.entities.MilsimLOA.create({
+        group_id, roster_id, user_id: user_id ?? "",
+        callsign: callsign ?? "",
+        reason_category: reason_category ?? "Other",
+        reason_detail: reason_detail ?? "",
+        start_date, end_date,
+        status: "Pending",
+        granted_by: "", granted_by_username: "",
+      });
+      return new Response(JSON.stringify({ loa }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown path" }), { status: 404, headers: { ...cors, "Content-Type": "application/json" } });
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });

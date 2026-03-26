@@ -2,6 +2,17 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+const WEBHOOKS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/webhooks";
+
+async function fireEvent(groupId: string, event: string, payload: object) {
+  try {
+    await fetch(`${WEBHOOKS_URL}?path=%2Ffire`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ group_id: groupId, event, payload }),
+    });
+  } catch (_) {}
+}
 
 async function getCallerUser(base44: any, req: Request) {
   const authHeader = req.headers.get('Authorization') ?? '';
@@ -89,6 +100,25 @@ Deno.serve(async (req) => {
           await base44.asServiceRole.entities.MilsimRoster.create({
             group_id: parts[0], user_id: app.applicant_id,
             callsign: app.applicant_username,
+          });
+          await fireEvent(parts[0], "application.approved", {
+            applicant_username: app.applicant_username,
+            group_id: parts[0],
+            application_id: parts[2],
+          });
+          await fireEvent(parts[0], "roster.member_joined", {
+            callsign: app.applicant_username,
+            user_id: app.applicant_id,
+            group_id: parts[0],
+          });
+        }
+      } else if (body.status === 'rejected') {
+        const app2 = await base44.asServiceRole.entities.MilsimApplication.get(parts[2]);
+        if (app2) {
+          await fireEvent(parts[0], "application.rejected", {
+            applicant_username: app2.applicant_username,
+            group_id: parts[0],
+            application_id: parts[2],
           });
         }
       }

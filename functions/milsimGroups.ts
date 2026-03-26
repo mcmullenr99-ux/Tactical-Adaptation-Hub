@@ -2,6 +2,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+const WEBHOOKS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/webhooks";
+async function fireEvent(groupId: string, event: string, payload: object) {
+  try { await fetch(`${WEBHOOKS_URL}?path=%2Ffire`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ group_id: groupId, event, payload }) }); } catch (_) {}
+}
 
 async function getCallerUser(base44: any, req: Request) {
   const authHeader = req.headers.get('Authorization') ?? '';
@@ -117,9 +121,13 @@ Deno.serve(async (req) => {
     if (method === 'GET' && parts.length === 0) {
       const all = await base44.asServiceRole.entities.MilsimGroup.list();
       const visible = all.filter((g: any) => g.status === 'approved' || g.status === 'featured');
+      // Fetch all active Pro subscriptions to stamp is_pro on groups
+      const proSubs = await base44.asServiceRole.entities.CommanderPro.filter({ status: 'active' }).catch(() => []);
+      const proGroupIds = new Set(proSubs.map((p: any) => String(p.group_id)));
       // Normalise snake_case → camelCase so frontend filters work
       const normalised = visible.map((g: any) => ({
         ...g,
+        is_pro:       proGroupIds.has(String(g.id)),
         unitType:     g.unit_type     ?? g.unitType     ?? null,
         tagLine:      g.tag_line      ?? g.tagLine      ?? null,
         discordUrl:   g.discord_url   ?? g.discordUrl   ?? null,
@@ -227,6 +235,7 @@ Deno.serve(async (req) => {
       if (body.logoUrl !== undefined) updates.logo_url = body.logoUrl;
       if (body.sops !== undefined) updates.sops = body.sops;
       if (body.orbat !== undefined) updates.orbat = body.orbat;
+      if (body.selection_criteria !== undefined) updates.selection_criteria = body.selection_criteria;
       if (body.visibility !== undefined) updates.visibility = JSON.stringify(body.visibility);
       if (body.country !== undefined) updates.country = body.country;
       if (body.language !== undefined) updates.language = body.language;
@@ -604,8 +613,8 @@ Deno.serve(async (req) => {
       const body = await req.json().catch(() => ({}));
       if (!body.name?.trim()) return Response.json({ error: 'name is required' }, { status: 400 });
       const op = await base44.asServiceRole.entities.MilsimOp.create({
-        group_id: parts[0], name: body.name, description: body.description ?? null,
-        game: body.game ?? null, status: 'active', created_by: full.id,
+        group_id: parts[0], name: body.name, description: body.description ?? '',
+        game: body.game ?? '', status: 'active', created_by: full.id,
         scheduled_at: new Date().toISOString(), participants: [],
       });
       return Response.json(op, { status: 201 });
@@ -673,22 +682,33 @@ Deno.serve(async (req) => {
     if (method === 'POST' && parts.length === 2 && parts[1] === 'aars') {
       const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      // Allow owner OR active roster member
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
-      if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      if (!group) return Response.json({ error: 'Group not found' }, { status: 404 });
+      const rosterCheck = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id: parts[0], user_id: full.id, status: 'active' });
+      const isOwner = group.owner_id === full.id;
+      const isMember = rosterCheck.length > 0;
+      if (!isOwner && !isMember) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
       if (!body.op_name?.trim()) return Response.json({ error: 'op_name required' }, { status: 400 });
       const aar = await base44.asServiceRole.entities.MilsimAAR.create({
         group_id: parts[0], op_id: body.op_id ?? null, op_name: body.op_name,
         author_id: full.id, author_username: full.username ?? full.email,
-        title: body.op_name, content: body.summary ?? null,
-        outcome: body.outcome ?? null, lessons_learned: body.recommendations ?? null,
+        title: body.op_name, content: body.summary ?? '',
+        outcome: body.outcome ?? '', lessons_learned: body.recommendations ?? '',
         participants: Array.isArray(body.participants) ? body.participants : [],
+        classification: body.classification ?? 'unclassified',
+        objectives_hit: body.objectives_hit ?? '',
+        objectives_missed: body.objectives_missed ?? '',
+        casualties: body.casualties ?? '',
+        commendations: body.commendations ?? '',
+        op_date: body.op_date ?? '',
       });
       await base44.asServiceRole.entities.MilsimGroup.update(parts[0], { last_aar_date: new Date().toISOString() }).catch(() => {});
-      // Stamp activity dates for all participants
       if (Array.isArray(body.participants) && body.participants.length > 0) {
         recordActivityDateForRoster(base44, body.participants).catch(() => {});
       }
+      await fireEvent(parts[0], "aar.posted", { aar_id: aar.id, op_name: aar.op_name, outcome: aar.outcome, author_username: aar.author_username, participant_count: (aar.participants ?? []).length });
       return Response.json(aar, { status: 201 });
     }
 
@@ -738,22 +758,20 @@ Deno.serve(async (req) => {
       const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
-      if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      if (!group) return Response.json({ error: 'Group not found' }, { status: 404 });
+      const rosterCheck = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id: parts[0], user_id: full.id, status: 'active' });
+      const isOwner = group.owner_id === full.id;
+      const isMember = rosterCheck.length > 0;
+      if (!isOwner && !isMember) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
       if (!body.title?.trim()) return Response.json({ error: 'title required' }, { status: 400 });
-      // Build structured content from form fields
-      const contentParts: string[] = [];
-      if (body.ao) contentParts.push(`**Area of Operations:** ${body.ao}`);
-      if (body.objectives) contentParts.push(`**Objectives:**
-${body.objectives}`);
-      if (body.comms_plan) contentParts.push(`**Comms Plan:**
-${body.comms_plan}`);
-      if (body.additional_notes) contentParts.push(`**Additional Notes:**
-${body.additional_notes}`);
-      const content = body.content ?? contentParts.join('\n\n');
       const briefing = await base44.asServiceRole.entities.MilsimBriefing.create({
         group_id: parts[0], op_id: body.op_id ?? null, title: body.title.trim(),
-        content, classification: body.classification ?? 'unclassified', created_by: full.id,
+        content: body.content ?? '', classification: body.classification ?? 'unclassified',
+        created_by: full.id, status: body.status ?? 'draft',
+        ao: body.ao ?? '', objectives: body.objectives ?? '',
+        comms_plan: body.comms_plan ?? '', roe: body.roe ?? '',
+        additional_notes: body.additional_notes ?? '', op_date: body.op_date ?? '',
       });
       return Response.json(briefing, { status: 201 });
     }
@@ -762,25 +780,13 @@ ${body.additional_notes}`);
       const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
-      if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      if (!group) return Response.json({ error: 'Group not found' }, { status: 404 });
+      const rosterCheck = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id: parts[0], user_id: full.id, status: 'active' });
+      if (group.owner_id !== full.id && rosterCheck.length === 0) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
       const updates: Record<string, any> = {};
-      if (body.title !== undefined) updates.title = body.title;
-      if (body.classification !== undefined) updates.classification = body.classification;
-      // Rebuild content from fields if present
-      if (body.content !== undefined) {
-        updates.content = body.content;
-      } else {
-        const contentParts: string[] = [];
-        if (body.ao) contentParts.push(`**Area of Operations:** ${body.ao}`);
-        if (body.objectives) contentParts.push(`**Objectives:**
-${body.objectives}`);
-        if (body.comms_plan) contentParts.push(`**Comms Plan:**
-${body.comms_plan}`);
-        if (body.additional_notes) contentParts.push(`**Additional Notes:**
-${body.additional_notes}`);
-        if (contentParts.length > 0) updates.content = contentParts.join('\n\n');
-      }
+      const fields = ['title', 'classification', 'content', 'status', 'ao', 'objectives', 'comms_plan', 'roe', 'additional_notes', 'op_date', 'op_id'];
+      for (const f of fields) { if (body[f] !== undefined) updates[f] = body[f]; }
       const updated = await base44.asServiceRole.entities.MilsimBriefing.update(parts[2], updates);
       return Response.json(updated);
     }
@@ -792,6 +798,81 @@ ${body.additional_notes}`);
       if (!group || group.owner_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
       await base44.asServiceRole.entities.MilsimBriefing.delete(parts[2]);
       return new Response(null, { status: 204 });
+    }
+
+    // ── WARNOs ───────────────────────────────────────────────────────────────
+
+    // GET /:id/warnos
+    if (method === 'GET' && parts.length === 2 && parts[1] === 'warnos') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
+      if (!group || (group.owner_id !== full.id && full.role !== 'admin')) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const warnos = await base44.asServiceRole.entities.MilsimWarno.filter({ group_id: parts[0] });
+      return Response.json(warnos);
+    }
+
+    // POST /:id/warnos
+    if (method === 'POST' && parts.length === 2 && parts[1] === 'warnos') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const body = await req.json().catch(() => ({}));
+      const warno = await base44.asServiceRole.entities.MilsimWarno.create({
+        group_id: parts[0],
+        op_id: body.op_id ?? null,
+        title: body.title ?? 'Untitled WARNO',
+        status: body.status ?? 'draft',
+        created_by: full.id,
+        situation_ground: body.situation_ground ?? null,
+        situation_enemy: body.situation_enemy ?? null,
+        situation_friendly: body.situation_friendly ?? null,
+        mission: body.mission ?? null,
+        timings_hh: body.timings_hh ?? null,
+        timings_nmb: body.timings_nmb ?? null,
+        timings_other: body.timings_other ?? null,
+        o_group_time: body.o_group_time ?? null,
+        o_group_loc: body.o_group_loc ?? null,
+        o_group_other: body.o_group_other ?? null,
+        css: body.css ?? null,
+        acknowledge_1_sect: body.acknowledge_1_sect ?? null,
+        acknowledge_2_sect: body.acknowledge_2_sect ?? null,
+        acknowledge_3_sect: body.acknowledge_3_sect ?? null,
+        acknowledge_4_sect: body.acknowledge_4_sect ?? null,
+        acknowledge_pl_sgt: body.acknowledge_pl_sgt ?? null,
+        acknowledge_atts_1: body.acknowledge_atts_1 ?? null,
+        acknowledge_atts_2: body.acknowledge_atts_2 ?? null,
+        acknowledge_atts_3: body.acknowledge_atts_3 ?? null,
+        op_date: body.op_date ?? null,
+      });
+      return Response.json(warno, { status: 201 });
+    }
+
+    // PATCH /:id/warnos/:warnoId
+    if (method === 'PATCH' && parts.length === 3 && parts[1] === 'warnos') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const body = await req.json().catch(() => ({}));
+      const warno = await base44.asServiceRole.entities.MilsimWarno.get(parts[2]);
+      if (!warno) return Response.json({ error: 'Not found' }, { status: 404 });
+      const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
+      if (warno.created_by !== full.id && group?.owner_id !== full.id && full.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const allowed = ['title','status','op_id','op_date','situation_ground','situation_enemy','situation_friendly','mission','timings_hh','timings_nmb','timings_other','o_group_time','o_group_loc','o_group_other','css','acknowledge_1_sect','acknowledge_2_sect','acknowledge_3_sect','acknowledge_4_sect','acknowledge_pl_sgt','acknowledge_atts_1','acknowledge_atts_2','acknowledge_atts_3'];
+      const updates: Record<string, any> = {};
+      for (const k of allowed) { if (body[k] !== undefined) updates[k] = body[k]; }
+      const updated = await base44.asServiceRole.entities.MilsimWarno.update(parts[2], updates);
+      return Response.json(updated);
+    }
+
+    // DELETE /:id/warnos/:warnoId
+    if (method === 'DELETE' && parts.length === 3 && parts[1] === 'warnos') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const warno = await base44.asServiceRole.entities.MilsimWarno.get(parts[2]);
+      if (!warno) return Response.json({ error: 'Not found' }, { status: 404 });
+      const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
+      if (warno.created_by !== full.id && group?.owner_id !== full.id && full.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
+      await base44.asServiceRole.entities.MilsimWarno.delete(parts[2]);
+      return Response.json({ ok: true });
     }
 
     return Response.json({ error: 'Not found' }, { status: 404 });

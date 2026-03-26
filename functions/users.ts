@@ -114,7 +114,57 @@ Deno.serve(async (req) => {
       return Response.json({ on_duty_status: body.status });
     }
 
-    return Response.json({ error: 'Not found' }, { status: 404 });
+    // GET /users/profile/:username — public profile by username
+    if (method === 'GET' && parts.length === 2 && parts[0] === 'profile') {
+      const username = parts[1];
+      const users = await base44.asServiceRole.entities.User.list();
+      const user = users.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
+      if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
+      return Response.json({
+        id: user.id, username: user.username, role: user.role,
+        bio: user.bio ?? null, nationality: user.nationality ?? null,
+        discordTag: user.discord_tag ?? null,
+        on_duty_status: computeDutyStatus(user.activity_dates),
+        createdAt: user.created_date,
+      });
+    }
+
+    // GET /users/profile/:username/ribbons — public ribbon rack for a user
+    if (method === 'GET' && parts.length === 3 && parts[0] === 'profile' && parts[2] === 'ribbons') {
+      const username = parts[1];
+      const users = await base44.asServiceRole.entities.User.list();
+      const user = users.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
+      if (!user) return Response.json([]);
+      // Get rosters for this user
+      const rosters = await base44.asServiceRole.entities.MilsimRoster.filter({ user_id: user.id });
+      const rosterIds = rosters.map((r: any) => r.id);
+      if (rosterIds.length === 0) return Response.json([]);
+      // Get all awards
+      const allAwards: any[] = [];
+      for (const rid of rosterIds) {
+        const awards = await base44.asServiceRole.entities.MilsimAward.filter({ recipient_roster_id: rid });
+        allAwards.push(...awards);
+      }
+      // Filter to ribbons only and enrich
+      const enriched = await Promise.all(allAwards.map(async (a: any) => {
+        let color1 = null, color2 = null, color3 = null, awardType = 'medal';
+        if (a.award_def_id) {
+          try {
+            const def = await base44.asServiceRole.entities.MilsimAwardDef.get(a.award_def_id);
+            if (def) { color1 = def.ribbon_color_1; color2 = def.ribbon_color_2; color3 = def.ribbon_color_3; awardType = def.award_type ?? 'medal'; }
+          } catch {}
+        }
+        let groupName = '';
+        if (a.group_id) {
+          try { const g = await base44.asServiceRole.entities.MilsimGroup.get(a.group_id); groupName = g?.name ?? ''; } catch {}
+        }
+        return { ...a, ribbon_color_1: color1, ribbon_color_2: color2, ribbon_color_3: color3, award_type: awardType, group_name: groupName };
+      }));
+      const ribbonsOnly = enriched.filter((a: any) => a.award_type === 'ribbon');
+      return Response.json(ribbonsOnly);
+    }
+
+        return Response.json({ error: 'Not found' }, { status: 404 });
   } catch (error) {
     console.error('[users]', error);
     return Response.json({ error: error.message }, { status: 500 });

@@ -34,14 +34,11 @@
     "orbat": {
       "type": "string"
     },
+    "selection_criteria": {
+      "type": "string"
+    },
     "status": {
-      "type": "string",
-      "enum": [
-        "pending",
-        "approved",
-        "rejected"
-      ],
-      "default": "pending"
+      "type": "string"
     },
     "owner_id": {
       "type": "string"
@@ -50,12 +47,7 @@
       "type": "string"
     },
     "visibility": {
-      "type": "string",
-      "enum": [
-        "public",
-        "private"
-      ],
-      "default": "public"
+      "type": "string"
     },
     "games": {
       "type": "array",
@@ -85,8 +77,7 @@
       "type": "string"
     },
     "is_live": {
-      "type": "boolean",
-      "default": false
+      "type": "boolean"
     },
     "last_page_update": {
       "type": "string"
@@ -99,6 +90,18 @@
     },
     "last_training_date": {
       "type": "string"
+    },
+    "is_verified": {
+      "type": "boolean"
+    },
+    "verified_at": {
+      "type": "string"
+    },
+    "verification_score": {
+      "type": "number"
+    },
+    "verify_override": {
+      "type": "boolean"
     }
   },
   "required": [],

@@ -355,6 +355,17 @@ Deno.serve(async (req) => {
           }, { status: 409 });
         }
 
+        // ── PRO GATE: TRAINING DOC LIMIT ────────────────────────────────────
+        const FREE_DOC_LIMIT = 5;
+        const proRecords = await base44.asServiceRole.entities.CommanderPro.filter({ group_id: groupId });
+        const isPro = proRecords.some((p: any) => p.status === 'active');
+        if (!isPro && (existingDocs ?? []).length >= FREE_DOC_LIMIT) {
+          return Response.json({
+            error: `Free units are limited to ${FREE_DOC_LIMIT} training documents. Upgrade to Commander Pro for unlimited uploads.`,
+            pro_required: true,
+          }, { status: 403 });
+        }
+
         // ── FIX 1: AI CONTENT VALIDATION ────────────────────────────────────
         const textSample = await extractTextSample(arrayBuf, file.type, file.name);
         const aiResult = await validateDocContent(textSample, docType, title.trim());

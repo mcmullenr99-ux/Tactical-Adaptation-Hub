@@ -30,6 +30,37 @@
     },
     "participants": {
       "type": "array"
+    },
+    "lb_flagged": {
+      "type": "boolean"
+    },
+    "lb_flag_reason": {
+      "type": "string"
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "unclassified",
+        "confidential",
+        "classified",
+        "top-secret"
+      ],
+      "default": "unclassified"
+    },
+    "objectives_hit": {
+      "type": "string"
+    },
+    "objectives_missed": {
+      "type": "string"
+    },
+    "casualties": {
+      "type": "string"
+    },
+    "commendations": {
+      "type": "string"
+    },
+    "op_date": {
+      "type": "string"
     }
   },
   "required": [],

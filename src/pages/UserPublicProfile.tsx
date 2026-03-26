@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
-import { User, Shield, MessageSquare, Loader2 } from "lucide-react";
+import { User, MessageSquare, Loader2, Award } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { countryFlag, countryName } from "@/lib/countries";
@@ -18,6 +19,19 @@ interface PublicProfile {
   createdAt: string;
 }
 
+interface EarnedRibbon {
+  id: string;
+  award_name: string;
+  award_description: string;
+  award_image_url: string | null;
+  ribbon_color_1: string | null;
+  ribbon_color_2: string | null;
+  ribbon_color_3: string | null;
+  group_name: string;
+  reason: string;
+  created_date: string;
+}
+
 const ROLE_COLORS: Record<string, string> = {
   member: "text-muted-foreground border-border",
   staff: "text-blue-400 border-blue-400/40",
@@ -25,9 +39,35 @@ const ROLE_COLORS: Record<string, string> = {
   admin: "text-destructive border-destructive/40",
 };
 
+const RIBBONS_PER_ROW = 4;
+
+function RibbonStripe({ ribbon, selected, onClick }: { ribbon: EarnedRibbon; selected?: boolean; onClick?: () => void }) {
+  const c1 = ribbon.ribbon_color_1 || "#3b82f6";
+  const c2 = ribbon.ribbon_color_2 || c1;
+  const c3 = ribbon.ribbon_color_3 || c2;
+  return (
+    <div
+      onClick={onClick}
+      title={ribbon.award_name}
+      className={`w-11 h-7 rounded-sm overflow-hidden cursor-pointer border-2 transition-all flex-shrink-0 ${selected ? "border-primary" : "border-transparent hover:border-primary/50"}`}
+    >
+      {ribbon.award_image_url ? (
+        <img src={ribbon.award_image_url} alt={ribbon.award_name} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex">
+          <div className="flex-1" style={{ background: c1 }} />
+          {c2 !== c1 && <div className="flex-1" style={{ background: c2 }} />}
+          {c3 !== c2 && <div className="flex-1" style={{ background: c3 }} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function UserPublicProfile() {
   const params = useParams<{ username: string }>();
   const username = params.username;
+  const [selRibbon, setSelRibbon] = useState<EarnedRibbon | null>(null);
 
   const { data: profile, isLoading, isError } = useQuery<PublicProfile>({
     queryKey: ["public-profile", username],
@@ -35,10 +75,19 @@ export default function UserPublicProfile() {
     enabled: !!username,
   });
 
+  const { data: ribbons = [] } = useQuery<EarnedRibbon[]>({
+    queryKey: ["public-ribbons", username],
+    queryFn: () => apiFetch(`/api/users/profile/${username}/ribbons`),
+    enabled: !!username && !!profile,
+  });
+
   useSEO({
     title: profile ? `${profile.username}'s Profile` : "Operator Profile",
     description: profile?.bio ?? `View ${username}'s TAG profile`,
   });
+
+  const ribbonRows: EarnedRibbon[][] = [];
+  for (let i = 0; i < ribbons.length; i += RIBBONS_PER_ROW) ribbonRows.push(ribbons.slice(i, i + RIBBONS_PER_ROW));
 
   return (
     <MainLayout>
@@ -58,6 +107,7 @@ export default function UserPublicProfile() {
           ) : (
             <div className="space-y-6">
 
+              {/* Profile card */}
               <div className="bg-card border border-border rounded-lg overflow-hidden clip-angled">
                 <div className="bg-secondary/40 border-b border-border px-6 py-8 flex items-center gap-5 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-[60px]" />
@@ -119,6 +169,51 @@ export default function UserPublicProfile() {
                   </Link>
                 </div>
               </div>
+
+              {/* Ribbon Rack */}
+              {ribbons.length > 0 && (
+                <div className="bg-card border border-border rounded-lg overflow-hidden">
+                  <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+                    <Award className="w-4 h-4 text-primary" />
+                    <h2 className="font-display font-bold text-sm uppercase tracking-widest">Service Ribbons</h2>
+                    <span className="text-[10px] text-muted-foreground font-sans ml-auto">{ribbons.length} awarded</span>
+                  </div>
+                  <div className="p-6">
+                    <div className="flex flex-col gap-1 mb-4">
+                      {ribbonRows.map((row, ri) => (
+                        <div key={ri} className="flex gap-1">
+                          {row.map(r => (
+                            <RibbonStripe
+                              key={r.id}
+                              ribbon={r}
+                              selected={selRibbon?.id === r.id}
+                              onClick={() => setSelRibbon(selRibbon?.id === r.id ? null : r)}
+                            />
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+
+                    {selRibbon && (
+                      <div className="bg-secondary/40 border border-border rounded-lg p-4 mt-4 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <RibbonStripe ribbon={selRibbon} />
+                          <div>
+                            <p className="font-display font-black text-sm uppercase tracking-widest">{selRibbon.award_name}</p>
+                            <p className="text-[10px] text-muted-foreground font-sans">{selRibbon.group_name}</p>
+                          </div>
+                        </div>
+                        {selRibbon.award_description && (
+                          <p className="text-xs font-sans text-muted-foreground">{selRibbon.award_description}</p>
+                        )}
+                        {selRibbon.reason && (
+                          <p className="text-xs font-sans text-foreground border-l-2 border-primary/40 pl-2 italic">"{selRibbon.reason}"</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
             </div>
           )}

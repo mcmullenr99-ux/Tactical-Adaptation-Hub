@@ -1,46 +1,97 @@
-import { useEffect, useState, useCallback, useRef, type ElementType } from "react";
+import React, { useEffect, useState, useCallback, useRef, type ElementType } from "react";
 import { useUpload } from "@/stubs/object-storage-web";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { apiFetch } from "@/lib/apiFetch";
+import { BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST as MC_GAMES, type Branch } from "@/lib/milsimConstants";
 import {
-  BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST as MC_GAMES, type Branch,
-} from "@/lib/milsimConstants";
-import {
-  Shield, Crosshair, Award, Users, FileText, BookOpen,
-  Plus, Trash2, Loader2, Save, CheckCircle2, AlertCircle, ExternalLink,
-  Pencil, Check, X, Radio, Star, Medal, Wifi, WifiOff,
-  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp, Upload, FileCheck, Brain, AlertTriangle, Eye,
-  CalendarDays, PlaneTakeoff, Clock, RefreshCw, Ban
+  Activity,
+  AlertCircle,
+  AlertTriangle,
+  Award,
+  Ban,
+  BarChart3,
+  BookOpen,
+  Brain,
+  Calendar,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  ClipboardList,
+  Clock,
+  Crosshair,
+  Crown,
+  ExternalLink,
+  Eye,
+  FileCheck,
+  FileText,
+  Flag,
+  GitBranch,
+  GraduationCap,
+  Link2,
+  Loader2,
+  MapPin,
+  Medal,
+  Megaphone,
+  Pencil,
+  PlaneTakeoff,
+  Plus,
+  Radio,
+  RefreshCw,
+  Zap,
+  Save,
+  Shield,
+  Siren,
+  Star,
+  Target,
+  Globe,
+  Trash2,
+  TrendingUp,
+  Trophy,
+  Upload,
+  Users,
+  Wifi,
+  WifiOff,
+  X,
+  UserCheck,
+  Archive,
+  FileEdit,
+  UserMinus2,
+  BookCheck,
+  Bell,
+  ChevronRight,
+  Download,
+  Zap
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
-import { useAuth } from "@/components/auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/auth/AuthContext";
 
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
 interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
-interface RosterEntry { id: number; callsign: string; rankId: number | null; roleId: number | null; notes: string | null }
+interface RosterEntry { id: number; callsign: string; rankId: number | null; roleId: number | null; notes: string | null; status?: string; specialisations?: string[]; join_date?: string | null; ops_count?: number | null; }
 interface AppQuestion { id: number; question: string; sortOrder: number; required: boolean }
 interface MilsimAward { id: number; title: string; description: string | null; icon: string; awarded_by: string | null; awarded_at: string; roster_entry_id: number; callsign: string | null }
 
 interface GroupDetail {
   id: number; name: string; slug: string; tagLine: string | null;
   description: string | null; discordUrl: string | null; websiteUrl: string | null;
-  steamGroupUrl: string | null;
   logoUrl: string | null; sops: string | null; orbat: string | null; status: string;
   stream_url: string | null; is_live: boolean;
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "reputation" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "training" | "loa" | "calendar";
+type Tab = "roles" | "ranks" | "roster" | "recognition" | "stream" | "questions" | "operations" | "readiness" | "analytics" | "campaigns" | "reputation" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events" | "eventhub" | "onboarding" | "criteria" | "doctrine";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
   const [group, setGroup] = useState<GroupDetail | null | undefined>(undefined);
-  const [tab, setTab] = useState<Tab>("info");
+  const [tab, setTab] = useState<Tab>("doctrine");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -72,36 +123,70 @@ export default function MilsimManage() {
     </PortalLayout>
   );
 
-  const showMsg = (ok: boolean, text: string) => {
+  const showMsg = (okOrText: boolean | string, textOrType?: string) => {
+    // Accept both (ok: boolean, text: string) and (text: string, type: "success"|"error")
+    let ok: boolean;
+    let text: string;
+    if (typeof okOrText === "boolean") {
+      ok = okOrText;
+      text = textOrType ?? "";
+    } else {
+      ok = textOrType !== "error";
+      text = okOrText;
+    }
     setSaveMsg({ ok, text });
     setTimeout(() => setSaveMsg(null), 3500);
   };
 
-  const TABS: { id: Tab; label: string; icon: typeof Shield }[] = [
-    { id: "info", label: "Info", icon: Shield },
-    { id: "roles", label: "Roles", icon: Crosshair },
-    { id: "ranks", label: "Ranks", icon: Award },
-    { id: "roster", label: "Roster", icon: Users },
-    { id: "awards", label: "Awards", icon: Medal },
-    { id: "reputation", label: "Service Files", icon: Star },
-    { id: "commendations", label: "Commendations", icon: Megaphone },
-    { id: "quals", label: "Qualifications", icon: GraduationCap },
-    { id: "ops", label: "Live Ops", icon: Siren },
-    { id: "aars", label: "AARs", icon: ClipboardList },
-    { id: "briefings", label: "Briefings", icon: MapPin },
-    { id: "orgchart", label: "Org Chart", icon: GitBranch },
-    { id: "readiness", label: "Readiness", icon: Activity },
-    { id: "stream", label: "Stream", icon: Radio },
-    { id: "sops", label: "SOPs / ORBAT", icon: BookOpen },
-    { id: "questions", label: "App Questions", icon: FileText },
-    { id: "training", label: "Training Docs", icon: Brain },
-    { id: "loa", label: "LOA Manager", icon: PlaneTakeoff },
-    { id: "calendar", label: "Activity Calendar", icon: CalendarDays },
+  // Sidebar nav groups
+  const NAV_GROUPS: { label: string; items: { id: Tab; label: string; icon: typeof Shield; pro?: boolean; star?: boolean }[] }[] = [
+
+    {
+      label: "Onboarding",
+      items: [
+        { id: "onboarding", label: "Onboarding", icon: ClipboardList },
+      ],
+    },
+    {
+      label: "Personnel",
+      items: [
+        { id: "troops", label: "Troop Management", icon: Users },
+      ],
+    },
+    {
+      label: "Events",
+      items: [
+        { id: "eventhub", label: "Events", icon: Siren },
+      ],
+    },
+    {
+      label: "Recognition",
+      items: [
+        { id: "recognition", label: "Recognition", icon: Medal },
+        { id: "legacy", label: "Unit Legacy", icon: Archive, pro: true },
+        { id: "developer", label: "API & Webhooks", icon: GitBranch, pro: true },
+      ],
+    },
+    {
+      label: "Doctrine",
+      items: [
+        { id: "doctrine", label: "Doctrine", icon: BookOpen },
+      ],
+    },
+    {
+      label: "Command",
+      items: [
+        { id: "readiness", label: "Readiness", icon: Activity },
+        { id: "analytics", label: "Analytics", icon: BarChart3, pro: true },
+        { id: "stream", label: "Stream", icon: Radio, pro: true },
+      ],
+    },
   ];
 
   return (
     <PortalLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
+        {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-3 mb-1">
@@ -132,38 +217,62 @@ export default function MilsimManage() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-1 border-b border-border">
-          {TABS.map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 font-display font-bold uppercase tracking-wider text-xs rounded-t border-b-2 transition-all ${
-                tab === t.id ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}>
-              <t.icon className="w-3.5 h-3.5" />{t.label}
-            </button>
-          ))}
-        </div>
+        {/* Sidebar + Content layout */}
+        <div className="flex gap-6 min-h-[600px]">
+          {/* Sidebar */}
+          <nav className="w-52 shrink-0 space-y-5">
+            {NAV_GROUPS.map((group_nav) => (
+              <div key={group_nav.label}>
+                <p className="text-[9px] font-display font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-3 mb-1.5">{group_nav.label}</p>
+                <div className="space-y-0.5">
+                  {group_nav.items.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setTab(item.id)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-left text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                        tab === item.id
+                          ? "bg-primary/10 text-primary border border-primary/20"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/60 border border-transparent"
+                      }`}
+                    >
+                      <item.icon className="w-3.5 h-3.5 shrink-0" />
+                      <span className="flex-1">{item.label}</span>
+                      {item.pro && <Crown className="w-3 h-3 text-yellow-400 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </nav>
 
-        <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-          {tab === "info" && <InfoTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
-          {tab === "roles" && <RolesTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-          {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-          {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-          {tab === "reputation" && <ReputationTab group={group} />}
-          {tab === "awards" && <AwardsTab group={group} showMsg={showMsg} />}
-          {tab === "commendations" && <CommendationsTab group={group} />}
-          {tab === "quals" && <QualsTab group={group} showMsg={showMsg} />}
-          {tab === "ops" && <OpsTab group={group} showMsg={showMsg} />}
-          {tab === "aars" && <AARsTab group={group} showMsg={showMsg} />}
-          {tab === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
-          {tab === "orgchart" && <OrgChartTab group={group} />}
-          {tab === "readiness" && <ReadinessTab group={group} />}
-          {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-          {tab === "sops" && <SopsTab group={group} roster={group.roster} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
-          {tab === "training" && <TrainingDocsTab group={group} showMsg={showMsg} />}
-          {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-          {tab === "loa" && <LOATab group={group} showMsg={showMsg} />}
-          {tab === "calendar" && <ActivityCalendarTab group={group} showMsg={showMsg} />}
-        </motion.div>
+          {/* Main content */}
+          <div className="flex-1 min-w-0">
+            <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
+              {tab === "troops" && <TroopManagementTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+              {tab === "roles" && <RolesTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+              {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+              {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+              {tab === "recognition" && <RecognitionTab group={group} showMsg={showMsg} />}
+              {tab === "eventhub" && <EventHubTab group={group} showMsg={showMsg} />}
+              {tab === "onboarding" && <OnboardingTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+              {tab === "events" && <EventsTab group={group} showMsg={showMsg} />}
+
+              {tab === "readiness" && <ReadinessTab group={group} />}
+              {tab === "reputation" && <ReputationTab group={group} />}
+
+              {tab === "loa" && <LOATab group={group} showMsg={showMsg} />}
+              {tab === "calendar" && <ActivityCalendarTab group={group} showMsg={showMsg} />}
+              {tab === "analytics" && <AnalyticsTab group={group} />}
+              {tab === "campaigns" && <CampaignsTab group={group} />}
+              {tab === "pipeline" && <RecruitPipelineTab group={group} showMsg={showMsg} />}
+              {tab === "legacy" && <UnitLegacyTab group={group} />}
+              {tab === "developer" && <DeveloperTab group={group} showMsg={showMsg} />}
+              {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+              {tab === "doctrine" && <DoctrineTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+              {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+            </motion.div>
+          </div>
+        </div>
       </div>
     </PortalLayout>
   );
@@ -178,25 +287,52 @@ function MField({ label, children }: { label: string; children: React.ReactNode 
   );
 }
 
-
 const MC_COUNTRIES = [
-  "🇬🇧 United Kingdom", "🇺🇸 United States", "🇨🇦 Canada",
-  "🇦🇺 Australia", "🇳🇿 New Zealand", "🇩🇪 Germany", "🇫🇷 France",
-  "🇮🇹 Italy", "🇵🇱 Poland", "🇳🇱 Netherlands", "🇳🇴 Norway",
-  "🇸🇪 Sweden", "🇩🇰 Denmark", "🇧🇪 Belgium", "🇪🇸 Spain",
-  "🇵🇹 Portugal", "🇹🇷 Turkey", "🇯🇵 Japan", "🇰🇷 South Korea",
-  "🇧🇷 Brazil", "International", "Other",
+  // Europe
+  "🇬🇧 United Kingdom", "🇩🇪 Germany", "🇫🇷 France", "🇮🇹 Italy",
+  "🇵🇱 Poland", "🇳🇱 Netherlands", "🇳🇴 Norway", "🇸🇪 Sweden",
+  "🇩🇰 Denmark", "🇧🇪 Belgium", "🇪🇸 Spain", "🇵🇹 Portugal",
+  "🇨🇿 Czech Republic", "🇸🇰 Slovakia", "🇭🇺 Hungary", "🇷🇴 Romania",
+  "🇧🇬 Bulgaria", "🇬🇷 Greece", "🇭🇷 Croatia", "🇷🇸 Serbia",
+  "🇺🇦 Ukraine", "🇫🇮 Finland", "🇦🇹 Austria", "🇨🇭 Switzerland",
+  "🇱🇺 Luxembourg", "🇮🇪 Ireland", "🇱🇹 Lithuania", "🇱🇻 Latvia",
+  "🇪🇪 Estonia", "🇸🇮 Slovenia",
+  // North America
+  "🇺🇸 United States", "🇨🇦 Canada", "🇲🇽 Mexico",
+  // South America
+  "🇧🇷 Brazil", "🇦🇷 Argentina", "🇨🇱 Chile", "🇨🇴 Colombia",
+  "🇵🇪 Peru", "🇻🇪 Venezuela", "🇺🇾 Uruguay", "🇪🇨 Ecuador", "🇧🇴 Bolivia",
+  // Middle East
+  "🇹🇷 Turkey", "🇸🇦 Saudi Arabia", "🇮🇱 Israel", "🇦🇪 UAE",
+  "🇶🇦 Qatar", "🇰🇼 Kuwait", "🇮🇶 Iraq", "🇮🇷 Iran",
+  "🇯🇴 Jordan", "🇱🇧 Lebanon", "🇪🇬 Egypt", "🇲🇦 Morocco",
+  // Africa
+  "🇿🇦 South Africa", "🇳🇬 Nigeria", "🇰🇪 Kenya", "🇬🇭 Ghana",
+  "🇪🇹 Ethiopia", "🇹🇿 Tanzania",
+  // Asia
+  "🇯🇵 Japan", "🇰🇷 South Korea", "🇨🇳 China", "🇮🇳 India",
+  "🇵🇰 Pakistan", "🇧🇩 Bangladesh", "🇻🇳 Vietnam", "🇹🇭 Thailand",
+  "🇵🇭 Philippines", "🇮🇩 Indonesia", "🇲🇾 Malaysia", "🇸🇬 Singapore",
+  "🇹🇼 Taiwan", "🇭🇰 Hong Kong",
+  // Oceania
+  "🇦🇺 Australia", "🇳🇿 New Zealand", "🇵🇬 Papua New Guinea", "🇫🇯 Fiji",
+  // Other
+  "International", "Other",
 ];
 const MC_LANGS = [
   "English", "German", "French", "Spanish", "Italian", "Polish",
-  "Dutch", "Portuguese", "Norwegian", "Swedish", "Danish", "Turkish",
-  "Japanese", "Korean", "Other",
+  "Dutch", "Portuguese", "Norwegian", "Swedish", "Danish", "Finnish",
+  "Turkish", "Arabic", "Hebrew", "Japanese", "Korean", "Chinese (Mandarin)",
+  "Tagalog", "Vietnamese", "Thai", "Malay", "Indonesian",
+  "Ukrainian", "Romanian", "Czech", "Slovak", "Hungarian", "Greek",
+  "Croatian", "Serbian", "Bulgarian", "Estonian", "Latvian", "Lithuanian",
+  "Hindi", "Other",
 ];
 
 function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const { register, handleSubmit, watch, setValue } = useForm({ defaultValues: {
     name: group.name, tagLine: group.tagLine ?? "", description: group.description ?? "",
-    discordUrl: group.discordUrl ?? "", websiteUrl: group.websiteUrl ?? "", steamGroupUrl: group.steamGroupUrl ?? "", logoUrl: group.logoUrl ?? "",
+    discordUrl: group.discordUrl ?? "", websiteUrl: group.websiteUrl ?? "", steamGroupUrl: group.steamGroupUrl ?? "", logoUrl: group.logoUrl ?? "", bannerUrl: group.banner_url ?? "",
     country: group.country ?? "", language: group.language ?? "",
     branch: group.branch ?? "", unitType: group.unitType ?? "",
     games: (group.games ?? []) as string[],
@@ -207,7 +343,7 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const onSubmit = async (data: any) => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify(data) });
+      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ ...data, banner_url: data.bannerUrl }) });
       onSaved(updated);
       showMsg(true, "Group info saved.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -218,7 +354,22 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
       <MField label="Unit Name"><input {...register("name")} className="mf-input" /></MField>
       <MField label="Tag Line"><input {...register("tagLine")} className="mf-input" /></MField>
       <MField label="Description"><textarea {...register("description")} rows={5} className="mf-input resize-none" /></MField>
-      <MField label="Logo URL"><input {...register("logoUrl")} className="mf-input" placeholder="https://i.imgur.com/..." /></MField>
+      {/* Logo Upload */}
+      <MField label="Logo Image">
+        <div className="space-y-2">
+          <LogoUploadField value={watch("logoUrl") ?? ""} onChange={(url) => setValue("logoUrl", url)} />
+          <p className="text-[10px] text-muted-foreground font-sans">Upload a PNG/JPG (recommended: 256×256px square). Or paste a URL below.</p>
+          <input {...register("logoUrl")} className="mf-input text-xs" placeholder="https://i.imgur.com/..." />
+        </div>
+      </MField>
+      {/* Banner Upload */}
+      <MField label="Banner Image">
+        <div className="space-y-2">
+          <BannerUploadField value={watch("bannerUrl") ?? ""} onChange={(url) => setValue("bannerUrl", url)} />
+          <p className="text-[10px] text-muted-foreground font-sans">Upload a wide banner image (recommended: 1200×400px). Or paste a URL below.</p>
+          <input {...register("bannerUrl")} className="mf-input text-xs" placeholder="https://i.imgur.com/..." />
+        </div>
+      </MField>
       <MField label="Discord URL"><input {...register("discordUrl")} className="mf-input" placeholder="https://discord.gg/invite" /></MField>
       <MField label="Website URL"><input {...register("websiteUrl")} className="mf-input" placeholder="https://yourunit.com" /></MField>
       <MField label="Steam Group URL"><input {...register("steamGroupUrl")} className="mf-input" placeholder="https://steamcommunity.com/groups/..." /></MField>
@@ -299,53 +450,197 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   );
 }
 
-function SopsTab({ group, onSaved, setSaving, saving, showMsg, roster }: any) {
-  const { register, handleSubmit, setValue, watch } = useForm({ defaultValues: { sops: group.sops ?? "", orbat: group.orbat ?? "" } });
-  const orbatValue = watch("orbat");
+// Forward ref so OrbatProGate can use it (full const defined near AnalyticsTab)
+const _PRO_STATUS_URL_MANAGE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/getProStatus";
 
-  const onSubmit = async (data: any) => {
+/* ─── Doctrine Tab (Info + SOPs + Org Chart + Training Docs) ──────────────── */
+type DoctrineSubTab = "info" | "sops" | "orgchart" | "training";
+
+function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
+  const [sub, setSub] = useState<DoctrineSubTab>("info");
+
+  const SUB_TABS: { id: DoctrineSubTab; label: string; icon: typeof Shield }[] = [
+    { id: "info",      label: "Unit Info",      icon: Shield },
+    { id: "sops",      label: "SOPs",           icon: BookOpen },
+    { id: "orgchart",  label: "Org Chart",      icon: GitBranch },
+    { id: "training",  label: "Training Docs",  icon: Brain },
+  ];
+
+  return (
+    <div className="space-y-5">
+      {/* Inner sub-tab bar */}
+      <div className="flex items-center gap-1 border-b border-border pb-0 overflow-x-auto">
+        {SUB_TABS.map(t => (
+          <button key={t.id} onClick={() => setSub(t.id)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-display font-bold uppercase tracking-widest border-b-2 transition-all whitespace-nowrap ${
+              sub === t.id
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}>
+            <t.icon className="w-3.5 h-3.5 shrink-0" />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Sub-tab content */}
+      <motion.div key={sub} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.12 }}>
+        {sub === "info"     && <InfoTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+        {sub === "sops"     && <SopsOnlyTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+        {sub === "orgchart" && <OrgChartTab group={group} />}
+        {sub === "training" && <TrainingDocsTab group={group} showMsg={showMsg} />}
+      </motion.div>
+    </div>
+  );
+}
+
+function SopsOnlyTab({ group, onSaved, setSaving, saving, showMsg }: any) {
+  const [sopsText, setSopsText] = useState(group.sops ?? "");
+
+  const saveSops = async () => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify(data) });
+      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: sopsText, orbat: group.orbat }) });
       onSaved(updated);
-      showMsg(true, "Doctrine saved.");
+      showMsg(true, "SOPs saved.");
     } catch (e: any) { showMsg(false, e.message); }
     finally { setSaving(false); }
   };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <MField label="Standard Operating Procedures (SOPs)">
-        <textarea {...register("sops")} rows={10} className="mf-input resize-y font-mono text-sm max-w-3xl"
+    <div className="space-y-4 max-w-3xl">
+      <div className="flex items-center gap-3 mb-2">
+        <BookOpen className="w-5 h-5 text-primary" />
+        <h2 className="font-display font-black text-lg uppercase tracking-wider text-foreground">Standard Operating Procedures</h2>
+      </div>
+      <MField label="SOPs">
+        <textarea value={sopsText} onChange={e => setSopsText(e.target.value)} rows={20}
+          className="mf-input resize-y font-mono text-sm"
           placeholder="1. Comms discipline — PTT only when necessary&#10;2. Movement protocols..." />
       </MField>
-
-      <div>
-        <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
-          Order of Battle (ORBAT) — Visual Builder
-        </label>
-        <p className="text-xs text-muted-foreground font-sans mb-3">
-          Build your unit structure using NATO APP-6 standard symbology. Hover over a unit and click <strong>+</strong> to add subordinate units. Click the unit to edit its type, echelon, and slot count.
-        </p>
-        <OrbatBuilder
-          value={orbatValue}
-          onChange={(json) => setValue("orbat", json)}
-          groupName={group.name}
-          roster={(roster ?? []).map((r: any) => ({
-            id: r.id,
-            callsign: r.callsign,
-            rank: group.ranks?.find((rk: any) => rk.id === r.rankId)?.name ?? undefined,
-            role: group.roles?.find((ro: any) => ro.id === r.roleId)?.name ?? undefined,
-          }))}
-        />
-      </div>
-
-      <button type="submit" disabled={saving}
+      <button onClick={saveSops} disabled={saving}
         className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Doctrine
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save SOPs
       </button>
-    </form>
+    </div>
   );
 }
+
+function OrbatOnlyTab({ group, onSaved, setSaving, saving, showMsg }: any) {
+  const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
+
+  const saveOrbat = async () => {
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
+      onSaved(updated);
+      showMsg(true, "ORBAT saved.");
+    } catch (e: any) { showMsg(false, e.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 mb-2">
+        <GitBranch className="w-5 h-5 text-primary" />
+        <h2 className="font-display font-black text-lg uppercase tracking-wider text-foreground">ORBAT Builder</h2>
+        <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30">
+          <Crown className="w-2.5 h-2.5" /> Pro
+        </span>
+      </div>
+      <OrbatProGate group={group} orbatJson={orbatJson} setOrbatJson={setOrbatJson} saveOrbat={saveOrbat} saving={saving} />
+    </div>
+  );
+}
+
+function OrbatProGate({ group, orbatJson, setOrbatJson, saveOrbat, saving }: any) {
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch(`${_PRO_STATUS_URL_MANAGE}?group_id=${group.id}`)
+      .then(r => r.json())
+      .then(s => setIsPro(!!s.is_pro))
+      .catch(() => setIsPro(false));
+  }, [group.id]);
+
+  if (isPro === null) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          The visual ORBAT Builder is a Pro feature. Build your command structure with NATO APP-6 symbology, drag-and-drop hierarchy, echelon markers, and print-ready PDF export.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]">
+        <Crown className="w-4 h-4" /> Upgrade to Pro — £10/mo
+      </a>
+      <p className="text-xs text-muted-foreground font-sans">SOPs remain free — ORBAT is a Pro visual tool.</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <OrbatBuilder value={orbatJson} onChange={setOrbatJson} groupName={group.name} />
+      <div className="flex justify-end pt-2">
+        <button onClick={saveOrbat} disabled={saving}
+          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save ORBAT
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Troop Management Tab (Roles + Ranks + Roster + Pipeline + LOA + Reputation) ──
+function TroopManagementTab({ group, onUpdated, showMsg }: any) {
+  type TTSub = "roster" | "roles" | "ranks" | "pipeline" | "loa" | "reputation";
+  const [sub, setSub] = useState<TTSub>("roster");
+
+  const SUBS: { id: TTSub; label: string; icon: React.ReactNode; pro?: boolean }[] = [
+    { id: "roster",     label: "Roster",      icon: <Users className="w-3.5 h-3.5" /> },
+    { id: "roles",      label: "Roles",       icon: <Crosshair className="w-3.5 h-3.5" /> },
+    { id: "ranks",      label: "Ranks",       icon: <Award className="w-3.5 h-3.5" /> },
+    { id: "pipeline",   label: "Pipeline",    icon: <UserCheck className="w-3.5 h-3.5" /> },
+    { id: "loa",        label: "LOA Manager", icon: <PlaneTakeoff className="w-3.5 h-3.5" /> },
+    { id: "reputation", label: "Service Files", icon: <Star className="w-3.5 h-3.5" /> },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Sub-tab pills */}
+      <div className="flex flex-wrap gap-2">
+        {SUBS.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setSub(s.id)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded font-display font-bold uppercase tracking-widest text-xs border transition-colors ${
+              sub === s.id
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+            }`}
+          >
+            {s.icon}
+            {s.label}
+            {s.pro && <span className="ml-1 text-[9px] text-amber-400">★</span>}
+          </button>
+        ))}
+      </div>
+
+      {sub === "roster"     && <RosterTab     group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "roles"      && <RolesTab      group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "ranks"      && <RanksTab      group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "pipeline"   && <RecruitPipelineTab group={group} showMsg={showMsg} />}
+      {sub === "loa"        && <LOATab        group={group} showMsg={showMsg} />}
+      {sub === "reputation" && <ReputationTab group={group} />}
+    </div>
+  );
+}
+
 
 function RolesTab({ group, onUpdated, showMsg }: any) {
   const [roles, setRoles] = useState<Role[]>(group.roles);
@@ -456,43 +751,54 @@ function RanksTab({ group, onUpdated, showMsg }: any) {
 
 function RosterTab({ group, onUpdated, showMsg }: any) {
   const [roster, setRoster] = useState<RosterEntry[]>(group.roster);
-  const [editId, setEditId] = useState<number | null>(null);
-  const [editData, setEditData] = useState<Partial<RosterEntry>>({});
-  const [callsign, setCallsign] = useState(""); const [rankId, setRankId] = useState(""); const [roleId, setRoleId] = useState(""); const [notes, setNotes] = useState("");
+  const [editEntry, setEditEntry] = useState<RosterEntry | null>(null);
+  const [editData, setEditData] = useState<Partial<RosterEntry & { specInput: string }>>({});
   const [adding, setAdding] = useState(false);
+  const [newCallsign, setNewCallsign] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const rankById = Object.fromEntries(group.ranks.map((r: Rank) => [r.id, r]));
-  const roleById = Object.fromEntries(group.roles.map((r: Role) => [r.id, r]));
+  const STATUSES = ["Active", "Reserve", "AWOL", "MIA", "KIA", "Discharged"];
 
-  const startEdit = (e: RosterEntry) => {
-    setEditId(e.id);
-    setEditData({ callsign: e.callsign, rankId: e.rankId ?? undefined, roleId: e.roleId ?? undefined, notes: e.notes ?? "" });
+  const openEdit = (e: RosterEntry) => {
+    setEditEntry(e);
+    setEditData({ ...e, specInput: "" });
   };
 
-  const saveEdit = async (entryId: number) => {
+  const saveEdit = async () => {
+    if (!editEntry) return;
+    setSaving(true);
     try {
-      const updated = await apiFetch<RosterEntry>(`/api/milsim-groups/${group.id}/roster/${entryId}`, {
+      const updated = await apiFetch<RosterEntry>(`/api/milsim-groups/${group.id}/roster/${editEntry.id}`, {
         method: "PATCH",
         body: JSON.stringify({
           callsign: editData.callsign,
           rankId: editData.rankId ? Number(editData.rankId) : null,
           roleId: editData.roleId ? Number(editData.roleId) : null,
-          notes: editData.notes || undefined,
+          notes: editData.notes || null,
+          status: editData.status || "Active",
+          specialisations: editData.specialisations ?? [],
+          join_date: editData.join_date || null,
+          ops_count: editData.ops_count ?? null,
         }),
       });
-      const newRoster = roster.map(r => r.id === entryId ? updated : r);
+      const newRoster = roster.map(r => r.id === editEntry.id ? { ...updated, qualifications: (editEntry as any).qualifications ?? [], awards: (editEntry as any).awards ?? [] } : r);
       setRoster(newRoster); onUpdated({ ...group, roster: newRoster });
-      setEditId(null); showMsg(true, "Member updated.");
+      setEditEntry(null); showMsg(true, "Operator record updated.");
     } catch (e: any) { showMsg(false, e.message); }
+    finally { setSaving(false); }
   };
 
-  const add = async () => {
-    if (!callsign.trim()) return;
+  const enlist = async () => {
+    if (!newCallsign.trim()) return;
     setAdding(true);
     try {
-      const entry = await apiFetch<RosterEntry>(`/api/milsim-groups/${group.id}/roster`, { method: "POST", body: JSON.stringify({ callsign, rankId: rankId ? parseInt(rankId) : null, roleId: roleId ? parseInt(roleId) : null, notes: notes || undefined }) });
-      const updated = [...roster, entry]; setRoster(updated); onUpdated({ ...group, roster: updated });
-      setCallsign(""); setRankId(""); setRoleId(""); setNotes(""); showMsg(true, "Member added.");
+      const entry = await apiFetch<RosterEntry>(`/api/milsim-groups/${group.id}/roster`, {
+        method: "POST",
+        body: JSON.stringify({ callsign: newCallsign, status: "Active" }),
+      });
+      const updated = [...roster, { ...entry, qualifications: [], awards: [] }];
+      setRoster(updated); onUpdated({ ...group, roster: updated });
+      setNewCallsign(""); showMsg(true, "Operator enlisted.");
     } catch (e: any) { showMsg(false, e.message); }
     finally { setAdding(false); }
   };
@@ -501,80 +807,180 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
     try {
       await apiFetch(`/api/milsim-groups/${group.id}/roster/${id}`, { method: "DELETE" });
       const updated = roster.filter((r) => r.id !== id); setRoster(updated); onUpdated({ ...group, roster: updated });
-      showMsg(true, "Member removed.");
+      showMsg(true, "Operator removed.");
     } catch (e: any) { showMsg(false, e.message); }
   };
 
+  const addSpec = () => {
+    const val = (editData.specInput ?? "").trim().toUpperCase();
+    if (!val) return;
+    setEditData(d => ({ ...d, specialisations: [...(d.specialisations ?? []), val], specInput: "" }));
+  };
+
+  const statusColour = (s: string) =>
+    s === "Active"     ? "bg-green-500/15 text-green-400 border-green-500/30" :
+    s === "Reserve"    ? "bg-blue-500/15 text-blue-400 border-blue-500/30" :
+    s === "AWOL"       ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30" :
+    s === "MIA"        ? "bg-orange-500/15 text-orange-400 border-orange-500/30" :
+    s === "KIA"        ? "bg-red-500/15 text-red-400 border-red-500/30" :
+    s === "Discharged" ? "bg-secondary text-muted-foreground border-border" :
+    "bg-green-500/15 text-green-400 border-green-500/30";
+
   return (
     <div className="max-w-4xl space-y-6">
-      <div className="overflow-x-auto rounded-lg border border-border">
-        {roster.length === 0 ? <p className="text-muted-foreground font-sans text-sm p-6">Roster is empty.</p> : (
-          <table className="w-full text-sm">
-            <thead className="bg-secondary/40">
-              <tr>{["Callsign","Rank","Role","Notes","Actions"].map((h) => <th key={h} className="text-left py-3 px-4 font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">{h}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {roster.map((e) => editId === e.id ? (
-                <tr key={e.id} className="bg-primary/5">
-                  <td className="px-3 py-2"><input value={editData.callsign ?? ""} onChange={ev => setEditData(d => ({...d, callsign: ev.target.value}))} className="mf-input text-xs py-1.5 w-32" /></td>
-                  <td className="px-3 py-2">
-                    <select value={editData.rankId ?? ""} onChange={ev => setEditData(d => ({...d, rankId: ev.target.value ? Number(ev.target.value) : undefined}))} className="mf-input text-xs py-1.5">
-                      <option value="">—</option>
-                      {group.ranks.map((r: Rank) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </select>
-                  </td>
-                  <td className="px-3 py-2">
-                    <select value={editData.roleId ?? ""} onChange={ev => setEditData(d => ({...d, roleId: ev.target.value ? Number(ev.target.value) : undefined}))} className="mf-input text-xs py-1.5">
-                      <option value="">—</option>
-                      {group.roles.map((r: Role) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </select>
-                  </td>
-                  <td className="px-3 py-2"><input value={editData.notes ?? ""} onChange={ev => setEditData(d => ({...d, notes: ev.target.value}))} className="mf-input text-xs py-1.5 w-32" placeholder="Notes..." /></td>
-                  <td className="px-3 py-2">
-                    <div className="flex gap-1">
-                      <button onClick={() => saveEdit(e.id)} className="p-1.5 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors"><Check className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => setEditId(null)} className="p-1.5 rounded bg-secondary text-muted-foreground hover:text-foreground transition-colors"><X className="w-3.5 h-3.5" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                <tr key={e.id} className="hover:bg-secondary/20 transition-colors">
-                  <td className="py-3 px-4 font-display font-bold uppercase tracking-wider text-sm text-foreground">{e.callsign}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{e.rankId ? rankById[e.rankId]?.name ?? "—" : "—"}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{e.roleId ? roleById[e.roleId]?.name ?? "—" : "—"}</td>
-                  <td className="py-3 px-4 text-muted-foreground">{e.notes ?? "—"}</td>
-                  <td className="py-3 px-4">
-                    <div className="flex gap-1">
-                      <button onClick={() => startEdit(e)} className="p-1.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => remove(e.id)} className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Remove"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      {/* Roster list */}
+      <div className="space-y-2">
+        {roster.length === 0 && <p className="text-muted-foreground font-sans text-sm p-4 bg-card border border-border rounded-lg">Roster is empty. Enlist your first operator below.</p>}
+        {roster.map((e) => {
+          const rank = e.rankId ? group.ranks.find((r: any) => r.id === e.rankId) : null;
+          const role = e.roleId ? group.roles.find((r: any) => r.id === e.roleId) : null;
+          return (
+            <div key={e.id} className="flex items-center gap-3 bg-card border border-border rounded-lg px-4 py-3 hover:border-primary/20 transition-colors">
+              <div className="w-8 h-8 rounded bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                <span className="font-display font-black text-[10px] text-primary">{e.callsign.slice(0,2).toUpperCase()}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{e.callsign}</span>
+                  <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ${statusColour(e.status ?? "Active")}`}>
+                    {e.status ?? "Active"}
+                  </span>
+                  {rank && <span className="text-[9px] text-primary font-display font-bold uppercase tracking-widest">{rank.name}</span>}
+                  {role && <span className="text-[9px] text-muted-foreground font-display uppercase tracking-widest bg-secondary border border-border px-1.5 py-0.5 rounded">{role.name}</span>}
+                </div>
+                {(e.specialisations ?? []).length > 0 && (
+                  <div className="flex gap-1 mt-1 flex-wrap">
+                    {(e.specialisations ?? []).map((s, i) => (
+                      <span key={i} className="text-[8px] font-display font-bold uppercase tracking-widest bg-accent/10 border border-accent/25 text-accent px-1 py-0.5 rounded">{s}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-1 shrink-0">
+                <button onClick={() => openEdit(e)} className="p-1.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Edit Operator Record">
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => remove(e.id)} className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Remove">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
+      {/* Enlist form */}
       <div className="bg-card border border-border rounded-lg p-5 space-y-3">
-        <h3 className="font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">Enlist Member</h3>
-        <input value={callsign} onChange={(e) => setCallsign(e.target.value)} className="mf-input" placeholder="Callsign" />
-        <div className="grid grid-cols-2 gap-3">
-          <select value={rankId} onChange={(e) => setRankId(e.target.value)} className="mf-input">
-            <option value="">No Rank</option>
-            {group.ranks.map((r: Rank) => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
-          <select value={roleId} onChange={(e) => setRoleId(e.target.value)} className="mf-input">
-            <option value="">No Role</option>
-            {group.roles.map((r: Role) => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
+        <h3 className="font-display font-bold uppercase tracking-wider text-xs text-muted-foreground">Enlist Operator</h3>
+        <div className="flex gap-3">
+          <input value={newCallsign} onChange={(e) => setNewCallsign(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") enlist(); }}
+            className="mf-input flex-1" placeholder="Callsign" />
+          <button onClick={enlist} disabled={adding || !newCallsign.trim()}
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded clip-angled-sm transition-all disabled:opacity-50">
+            {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Enlist
+          </button>
         </div>
-        <input value={notes} onChange={(e) => setNotes(e.target.value)} className="mf-input" placeholder="Notes (optional)" />
-        <button onClick={add} disabled={adding || !callsign.trim()}
-          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded clip-angled-sm transition-all disabled:opacity-50">
-          {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Enlist
-        </button>
+        <p className="text-xs text-muted-foreground font-sans">Use the edit button to set rank, role, status, specialisations, and more.</p>
       </div>
+
+      {/* Edit Modal */}
+      {editEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setEditEntry(null)}>
+          <div className="bg-card border border-border rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <h2 className="font-display font-black uppercase tracking-widest text-sm text-foreground">Operator Record — {editEntry.callsign}</h2>
+              <button onClick={() => setEditEntry(null)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-5 space-y-4">
+
+              {/* Callsign */}
+              <div>
+                <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Callsign</label>
+                <input value={editData.callsign ?? ""} onChange={e => setEditData(d => ({...d, callsign: e.target.value}))} className="mf-input w-full" />
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Duty Status</label>
+                <div className="flex flex-wrap gap-2">
+                  {STATUSES.map(s => (
+                    <button key={s} onClick={() => setEditData(d => ({...d, status: s}))}
+                      className={`text-[10px] font-display font-bold uppercase tracking-widest px-3 py-1.5 rounded border transition-colors ${editData.status === s ? statusColour(s) : "bg-secondary border-border text-muted-foreground hover:border-primary/30"}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rank + Role */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Rank</label>
+                  <select value={editData.rankId ?? ""} onChange={e => setEditData(d => ({...d, rankId: e.target.value ? Number(e.target.value) : null}))} className="mf-input w-full">
+                    <option value="">No Rank</option>
+                    {group.ranks.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Role</label>
+                  <select value={editData.roleId ?? ""} onChange={e => setEditData(d => ({...d, roleId: e.target.value ? Number(e.target.value) : null}))} className="mf-input w-full">
+                    <option value="">No Role</option>
+                    {group.roles.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Specialisations */}
+              <div>
+                <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Specialisations / MOS Tags</label>
+                <div className="flex gap-2 mb-2">
+                  <input value={editData.specInput ?? ""} onChange={e => setEditData(d => ({...d, specInput: e.target.value}))}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSpec(); } }}
+                    className="mf-input flex-1" placeholder="e.g. CQB, JTAC, Medic, Sniper, EOD..." />
+                  <button onClick={addSpec} className="px-3 py-2 bg-secondary border border-border rounded text-xs font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {(editData.specialisations ?? []).map((s, i) => (
+                    <span key={i} className="text-[10px] font-display font-bold uppercase tracking-widest bg-accent/10 border border-accent/25 text-accent px-2 py-0.5 rounded flex items-center gap-1">
+                      {s}
+                      <button onClick={() => setEditData(d => ({...d, specialisations: (d.specialisations ?? []).filter((_, j) => j !== i)}))} className="hover:text-destructive ml-0.5">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Join date + Ops count */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Date Enlisted</label>
+                  <input type="date" value={editData.join_date ?? ""} onChange={e => setEditData(d => ({...d, join_date: e.target.value || null}))} className="mf-input w-full" />
+                </div>
+                <div>
+                  <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Ops Participated</label>
+                  <input type="number" min={0} value={editData.ops_count ?? ""} onChange={e => setEditData(d => ({...d, ops_count: e.target.value ? parseInt(e.target.value) : null}))} className="mf-input w-full" placeholder="0" />
+                </div>
+              </div>
+
+              {/* Notes / biog */}
+              <div>
+                <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Commander Notes / Bio</label>
+                <textarea value={editData.notes ?? ""} onChange={e => setEditData(d => ({...d, notes: e.target.value}))}
+                  className="mf-input w-full min-h-[80px] resize-y" placeholder="Conduct record, background, notable service..." />
+              </div>
+
+              <button onClick={saveEdit} disabled={saving}
+                className="w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-3 rounded clip-angled-sm transition-all disabled:opacity-50">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Save Operator Record
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -598,6 +1004,116 @@ function AwardImage({ path, fallbackIcon: FIcon }: { path: string | null | undef
   );
 }
 
+
+
+// ─── Recognition Tab (Awards + Commendations + Qualifications merged) ────────
+function RecognitionTab({ group, showMsg }: any) {
+  const [sub, setSub] = useState<"awards" | "commendations" | "quals">("awards");
+  const SUB_TABS = [
+    { id: "awards" as const,        label: "Awards",         icon: Medal },
+    { id: "commendations" as const, label: "Commendations",  icon: Megaphone },
+    { id: "quals" as const,         label: "Qualifications", icon: GraduationCap },
+  ];
+  return (
+    <div className="space-y-4">
+      {/* Sub-tab pills */}
+      <div className="flex items-center gap-2 border-b border-border pb-3">
+        {SUB_TABS.map(({ id, label, icon: Icon }) => (
+          <button key={id} onClick={() => setSub(id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-display font-bold uppercase tracking-wider transition-all border ${
+              sub === id ? "bg-primary/15 border-primary/50 text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            }`}>
+            <Icon className="w-3.5 h-3.5" />{label}
+          </button>
+        ))}
+      </div>
+      {sub === "awards"        && <AwardsTab        group={group} showMsg={showMsg} />}
+      {sub === "commendations" && <CommendationsTab group={group} />}
+      {sub === "quals"         && <QualsTab         group={group} showMsg={showMsg} />}
+    </div>
+  );
+}
+
+// ─── Image Upload Helper Components ─────────────────────────────────────────
+const UPLOAD_API = "https://api.base44.com/api/apps/" + (import.meta.env.VITE_BASE44_APP_ID ?? "69bf52c997cae5d4cff87ae4") + "/files/upload";
+const SERVICE_TOKEN = import.meta.env.VITE_BASE44_SERVICE_TOKEN ?? "";
+
+async function uploadImageToStorage(file: File): Promise<string | null> {
+  const token = localStorage.getItem("auth_token") ?? "";
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(UPLOAD_API, {
+    method: "POST",
+    headers: { "x-api-key": token || SERVICE_TOKEN },
+    body: fd,
+  });
+  if (!res.ok) {
+    // Fallback: try via our backend function
+    const fd2 = new FormData();
+    fd2.append("file", file);
+    const res2 = await fetch("/api/storage/upload", { method: "POST", body: fd2, credentials: "include" });
+    if (!res2.ok) throw new Error("Upload failed");
+    const d2 = await res2.json();
+    return d2.url ?? d2.file_url ?? null;
+  }
+  const data = await res.json();
+  return data.file_url ?? data.url ?? null;
+}
+
+function ImageUploadField({ value, onChange, aspectHint, label }: { value: string; onChange: (url: string) => void; aspectHint?: string; label?: string }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setError("Please select an image file."); return; }
+    if (file.size > 5 * 1024 * 1024) { setError("Max file size is 5MB."); return; }
+    setError(null);
+    setUploading(true);
+    try {
+      const url = await uploadImageToStorage(file);
+      if (url) onChange(url);
+      else setError("Upload returned no URL.");
+    } catch (err: any) {
+      setError(err.message ?? "Upload failed.");
+    }
+    setUploading(false);
+    e.target.value = "";
+  };
+
+  return (
+    <div className="space-y-2">
+      <div
+        onClick={() => !uploading && inputRef.current?.click()}
+        className={`relative flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg cursor-pointer transition-all ${aspectHint === "banner" ? "h-24" : "h-20"} ${uploading ? "border-primary/60 bg-primary/5" : value ? "border-green-500/40 bg-green-500/5" : "border-border hover:border-primary/40 bg-secondary/20"}`}>
+        {value && !uploading && (
+          <img src={value} alt="preview" className={`absolute inset-0 w-full h-full object-cover rounded-lg opacity-50`} />
+        )}
+        <div className="relative z-10 flex flex-col items-center gap-1">
+          {uploading ? (
+            <><Loader2 className="w-5 h-5 animate-spin text-primary" /><p className="text-[10px] font-display uppercase tracking-wider text-primary">Uploading...</p></>
+          ) : value ? (
+            <><Upload className="w-4 h-4 text-green-400" /><p className="text-[10px] font-display uppercase tracking-wider text-green-400">✓ Uploaded — click to replace</p></>
+          ) : (
+            <><Upload className="w-5 h-5 text-muted-foreground" /><p className="text-[10px] font-display uppercase tracking-wider text-muted-foreground">Click to upload {label ?? "image"}</p><p className="text-[9px] text-muted-foreground/60">{aspectHint === "banner" ? "1200×400px recommended" : "256×256px recommended"} · PNG/JPG · Max 5MB</p></>
+          )}
+        </div>
+      </div>
+      {error && <p className="text-[10px] text-red-400 font-sans">{error}</p>}
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+    </div>
+  );
+}
+
+function LogoUploadField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  return <ImageUploadField value={value} onChange={onChange} aspectHint="logo" label="logo" />;
+}
+function BannerUploadField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  return <ImageUploadField value={value} onChange={onChange} aspectHint="banner" label="banner" />;
+}
+
 function AwardsTab({ group, showMsg }: any) {
   const [subView, setSubView] = useState<"library" | "issued">("library");
   const [defs, setDefs] = useState<any[]>([]);
@@ -614,6 +1130,9 @@ function AwardsTab({ group, showMsg }: any) {
   const [qualifiers, setQualifiers] = useState<string[]>([]);
   const [qualInput, setQualInput] = useState("");
   const [creating, setCreating] = useState(false);
+  const [ribbonC1, setRibbonC1] = useState("#3b82f6");
+  const [ribbonC2, setRibbonC2] = useState("#3b82f6");
+  const [ribbonC3, setRibbonC3] = useState("#3b82f6");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [issueRosterId, setIssueRosterId] = useState("");
@@ -665,6 +1184,7 @@ function AwardsTab({ group, showMsg }: any) {
     setName(""); setDesc(""); setAwardType("medal");
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImagePath(null); setImagePreview(null); setQualifiers([]); setQualInput("");
+    setRibbonC1("#3b82f6"); setRibbonC2("#3b82f6"); setRibbonC3("#3b82f6");
     setShowCreate(false);
   };
 
@@ -674,7 +1194,7 @@ function AwardsTab({ group, showMsg }: any) {
     try {
       await apiFetch(`/api/milsim-groups/${group.id}/award-defs`, {
         method: "POST",
-        body: JSON.stringify({ name: name.trim(), description: desc || undefined, type: awardType, image_path: imagePath || undefined, qualifiers }),
+        body: JSON.stringify({ name: name.trim(), description: desc || undefined, awardType, imagePath: imagePath || undefined, qualifiers, ribbonColor1: awardType === 'ribbon' ? ribbonC1 : undefined, ribbonColor2: awardType === 'ribbon' ? ribbonC2 : undefined, ribbonColor3: awardType === 'ribbon' ? ribbonC3 : undefined }),
       });
       resetCreateForm();
       showMsg(true, "Award created.");
@@ -842,6 +1362,36 @@ function AwardsTab({ group, showMsg }: any) {
                 </div>
               </div>
 
+              {/* Ribbon color picker — only shown when type is ribbon */}
+              {awardType === "ribbon" && (
+                <div>
+                  <label className="mf-label">Ribbon Stripe Colours <span className="font-normal normal-case text-muted-foreground">— up to 3 stripe colours</span></label>
+                  <div className="flex items-center gap-4 mt-2">
+                    {([
+                      { label: "Stripe 1", val: ribbonC1, set: setRibbonC1 },
+                      { label: "Stripe 2", val: ribbonC2, set: setRibbonC2 },
+                      { label: "Stripe 3", val: ribbonC3, set: setRibbonC3 },
+                    ] as const).map(({ label, val, set }) => (
+                      <div key={label} className="flex flex-col items-center gap-1.5">
+                        <span className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">{label}</span>
+                        <input type="color" value={val} onChange={e => set(e.target.value)}
+                          className="w-10 h-10 rounded border border-border cursor-pointer bg-secondary" />
+                        <span className="text-[9px] font-mono text-muted-foreground">{val}</span>
+                      </div>
+                    ))}
+                    {/* Live preview */}
+                    <div className="flex-1 ml-4">
+                      <span className="text-[10px] font-display uppercase tracking-widest text-muted-foreground block mb-1.5">Preview</span>
+                      <div className="w-14 h-9 rounded-sm overflow-hidden flex border border-border/60">
+                        <div className="flex-1" style={{ background: ribbonC1 }} />
+                        <div className="flex-1" style={{ background: ribbonC2 }} />
+                        <div className="flex-1" style={{ background: ribbonC3 }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="mf-label">Description</label>
                 <textarea rows={2} value={desc} onChange={e => setDesc(e.target.value)} className="mf-input resize-none" placeholder="Criteria or description for this award..." />
@@ -956,9 +1506,33 @@ function AwardsTab({ group, showMsg }: any) {
                       {a.awarded_at && <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(a.awarded_at), { addSuffix: true })}</p>}
                     </div>
                   </div>
-                  <button onClick={() => revokeAward(a.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors shrink-0">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={async () => {
+                        try {
+                          const token = localStorage.getItem("auth_token");
+                          const res = await fetch("https://agent-tag-lead-developer-cff87ae4.base44.app/functions/generateAwardCertificate", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                            body: JSON.stringify({ award_id: a.id, group_id: group.id }),
+                          });
+                          if (!res.ok) { const e = await res.json(); showMsg(false, e.error ?? "Failed to generate certificate"); return; }
+                          const blob = await res.blob();
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url; link.download = `certificate_${a.callsign ?? "award"}.pdf`; link.click();
+                          URL.revokeObjectURL(url);
+                        } catch { showMsg(false, "Certificate generation failed"); }
+                      }}
+                      title="Download Certificate (Pro)"
+                      className="p-1.5 text-accent hover:text-accent/80 transition-colors"
+                    >
+                      <FileDown className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => revokeAward(a.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               );
             })
@@ -1059,6 +1633,136 @@ function StreamTab({ group, onUpdated, showMsg }: any) {
     </div>
   );
 }
+
+// ─── Onboarding Tab (Selection Criteria + App Questions + Pipeline) ───────────
+function OnboardingTab({ group, onUpdated, showMsg }: any) {
+  type OBSub = "criteria" | "questions" | "pipeline";
+  const [sub, setSub] = useState<OBSub>("criteria");
+
+  const SUBS: { id: OBSub; label: string; icon: React.ReactNode }[] = [
+    { id: "criteria",  label: "Selection Criteria", icon: <Target className="w-3.5 h-3.5" /> },
+    { id: "questions", label: "App Questions",       icon: <FileText className="w-3.5 h-3.5" /> },
+    { id: "pipeline",  label: "Pipeline",            icon: <UserCheck className="w-3.5 h-3.5" /> },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2">
+        {SUBS.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setSub(s.id)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded font-display font-bold uppercase tracking-widest text-xs border transition-colors ${
+              sub === s.id
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+            }`}
+          >
+            {s.icon}
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {sub === "criteria"  && <SelectionCriteriaTab  group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "questions" && <QuestionsTab          group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "pipeline"  && <RecruitPipelineTab    group={group} showMsg={showMsg} />}
+    </div>
+  );
+}
+
+// ─── Selection Criteria Tab ───────────────────────────────────────────────────
+function SelectionCriteriaTab({ group, onUpdated, showMsg }: any) {
+  const [criteria, setCriteria] = useState<string>(group.selection_criteria ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, {
+        method: "PATCH",
+        body: JSON.stringify({ selection_criteria: criteria }),
+      });
+      onUpdated(updated);
+      showMsg("Selection criteria saved", "success");
+    } catch {
+      showMsg("Failed to save", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-display font-black text-lg uppercase tracking-wider text-foreground mb-1">Selection Criteria</h2>
+            <p className="text-xs text-muted-foreground font-sans">
+              Define the standards, requirements, and expectations applicants must meet to join your unit.
+              This is displayed publicly on your unit's profile page.
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-widest text-primary border border-primary/30 bg-primary/10 px-2 py-1 rounded">
+            <Globe className="w-3 h-3" /> Public
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Criteria (Markdown supported)</p>
+          <textarea
+            value={criteria}
+            onChange={(e) => setCriteria(e.target.value)}
+            rows={16}
+            className="mf-input w-full resize-y font-mono text-sm"
+            placeholder={`## Minimum Requirements
+- Age 18+
+- Mic required
+- Available for scheduled ops
+
+## What We Look For
+- Teamwork and communication
+- Ability to take orders under pressure
+- Prior milsim experience preferred
+
+## Selection Process
+1. Submit application
+2. Review by command
+3. Trial op participation
+4. Final acceptance or rejection`}
+          />
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <p className="text-xs text-muted-foreground font-sans">
+            {criteria.length > 0 ? `${criteria.length} characters` : "No criteria set yet — applicants will see an empty page."}
+          </p>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-display font-black uppercase tracking-widest text-xs px-5 py-2.5 rounded transition-all"
+          >
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
+            Save Criteria
+          </button>
+        </div>
+      </div>
+
+      {/* Preview */}
+      {criteria.trim() && (
+        <div className="bg-card border border-border rounded-lg p-6 space-y-3">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+            <Target className="w-3 h-3" /> Public Preview
+          </p>
+          <div className="prose prose-sm prose-invert max-w-none font-sans text-muted-foreground leading-relaxed whitespace-pre-wrap">
+            {criteria}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function QuestionsTab({ group, onUpdated, showMsg }: any) {
   const [questions, setQuestions] = useState<AppQuestion[]>(group.questions);
@@ -1230,7 +1934,83 @@ function QualsTab({ group, showMsg }: any) {
 }
 
 
-// ─── Live Ops ─────────────────────────────────────────────────────────────────
+// ─── Operations Tab (Live Ops + AARs + Briefings merged) ─────────────────────
+// ─── Event Hub Tab (Events + Activity Calendar + Campaigns merged) ────────────
+function EventHubTab({ group, showMsg }: any) {
+  type EHSub = "events" | "calendar" | "campaigns";
+  const [sub, setSub] = useState<EHSub>("events");
+
+  const SUBS: { id: EHSub; label: string; icon: React.ReactNode; pro?: boolean }[] = [
+    { id: "events",    label: "Operations", icon: <Siren className="w-3.5 h-3.5" /> },
+    { id: "calendar",  label: "Calendar",   icon: <CalendarDays className="w-3.5 h-3.5" />, pro: true },
+    { id: "campaigns", label: "Campaigns",  icon: <Zap className="w-3.5 h-3.5" />, pro: true },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2">
+        {SUBS.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setSub(s.id)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded font-display font-bold uppercase tracking-widest text-xs border transition-colors ${
+              sub === s.id
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+            }`}
+          >
+            {s.icon}
+            {s.label}
+            {s.pro && <span className="ml-1 text-[9px] text-amber-400">★</span>}
+          </button>
+        ))}
+      </div>
+
+      {sub === "events"    && <EventsTab    group={group} showMsg={showMsg} />}
+      {sub === "calendar"  && <ActivityCalendarTab group={group} showMsg={showMsg} />}
+      {sub === "campaigns" && <CampaignsTab group={group} />}
+    </div>
+  );
+}
+
+
+function EventsTab({ group, showMsg }: any) {
+  const [sub, setSub] = useState<"ops" | "aars" | "briefings" | "warnos" | "lace" | "sitrep" | "training" | "conduct">("ops");
+  const SUB_TABS = [
+    { id: "ops" as const,       label: "Operations",  icon: Siren },
+    { id: "aars" as const,      label: "AARs",        icon: ClipboardList },
+    { id: "briefings" as const, label: "Briefings",   icon: MapPin },
+    { id: "warnos" as const,    label: "WARNOs",      icon: AlertTriangle },
+    { id: "lace" as const,      label: "LACE",        icon: Radio },
+    { id: "sitrep" as const,    label: "SITREPs",     icon: Target },
+    { id: "training" as const,  label: "Ex Reviews",  icon: BookCheck },
+    { id: "conduct" as const,   label: "Conduct",     icon: UserMinus2 },
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 border-b border-border pb-3">
+        {SUB_TABS.map(({ id, label, icon: Icon }) => (
+          <button key={id} onClick={() => setSub(id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-display font-bold uppercase tracking-wider transition-all border ${
+              sub === id ? "bg-primary/15 border-primary/50 text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            }`}>
+            <Icon className="w-3.5 h-3.5" />{label}
+          </button>
+        ))}
+      </div>
+      {sub === "ops"       && <OpsTab       group={group} showMsg={showMsg} />}
+      {sub === "aars"      && <AARsTab      group={group} showMsg={showMsg} />}
+      {sub === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
+      {sub === "warnos"    && <WarnosTab    group={group} showMsg={showMsg} />}
+      {sub === "lace"      && <LaceTab         group={group} showMsg={showMsg} />}
+      {sub === "sitrep"    && <SitrepTab        group={group} showMsg={showMsg} />}
+      {sub === "training"  && <TrainingReviewTab group={group} showMsg={showMsg} />}
+      {sub === "conduct"   && <ConductReportTab  group={group} showMsg={showMsg} />}
+    </div>
+  );
+}
+
+// ─── Live Ops / Check-In ──────────────────────────────────────────────────────
 function OpsTab({ group, showMsg }: any) {
   const { user } = useAuth();
   const [ops, setOps] = useState<any[]>([]);
@@ -1464,88 +2244,319 @@ function AARField({ label, value }: { label: string; value: string }) {
   return <div><p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">{label}</p><p className="text-sm text-foreground font-sans whitespace-pre-wrap">{value}</p></div>;
 }
 
-function AARsTab({ group, showMsg }: any) {
-  const { user } = useAuth();
-  const [aars, setAars] = useState<any[]>([]);
-  const [ops, setOps] = useState<any[]>([]);
+
+/* ─── WARNOs Tab ─────────────────────────────────────────────────────────── */
+function WarnosTab({ group, showMsg }: any) {
+  const emptyForm = {
+    title: "", op_date: "", status: "draft",
+    situation_ground: "", situation_enemy: "", situation_friendly: "",
+    mission: "",
+    timings_hh: "", timings_nmb: "", timings_other: "",
+    o_group_time: "", o_group_loc: "", o_group_other: "",
+    css: "",
+    acknowledge_1_sect: "", acknowledge_2_sect: "", acknowledge_3_sect: "", acknowledge_4_sect: "",
+    acknowledge_pl_sgt: "", acknowledge_atts_1: "", acknowledge_atts_2: "", acknowledge_atts_3: "",
+  };
+  const [warnos, setWarnos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const emptyForm = { title: "", op_name: "", op_id: "", outcome: "", lessons_learned: "", content: "", participants: [] as string[] };
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [aarsData, opsData] = await Promise.all([
-        apiFetch(`/milsimAars?path=list&group_id=${group.id}`),
-        apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
-      ]);
-      setAars(aarsData.aars ?? []);
-      setOps(opsData.events ?? []);
-    } catch { }
-    setLoading(false);
-  }, [group.id]);
+  const load = () => {
+    apiFetch<any[]>(`/api/milsim-groups/${group.id}/warnos`)
+      .then(d => setWarnos(d ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { load(); }, [group.id]);
 
-  useEffect(() => { load(); }, [load]);
+  const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm((f: any) => ({ ...f, [k]: e.target.value }));
 
   const submit = async () => {
-    if (!form.title?.trim()) { showMsg("Title required", "error"); return; }
+    if (!form.title.trim()) return;
     setSaving(true);
     try {
       if (editId) {
-        await apiFetch("/milsimAars?path=update", { method: "POST", body: JSON.stringify({ id: editId, ...form }) });
-        showMsg("AAR updated", "success");
+        await apiFetch(`/api/milsim-groups/${group.id}/warnos/${editId}`, { method: "PATCH", body: JSON.stringify(form) });
+        showMsg(true, "WARNO updated.");
       } else {
-        await apiFetch("/milsimAars?path=create", { method: "POST", body: JSON.stringify({ group_id: group.id, author_id: user?.id, author_username: user?.username, ...form }) });
-        showMsg("AAR filed", "success");
+        await apiFetch(`/api/milsim-groups/${group.id}/warnos`, { method: "POST", body: JSON.stringify(form) });
+        showMsg(true, "WARNO created.");
       }
       setCreating(false); setEditId(null); setForm(emptyForm); load();
-    } catch (e: any) { showMsg(e.message, "error"); }
-    setSaving(false);
+    } catch (e: any) { showMsg(false, e.message); } finally { setSaving(false); }
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Delete this AAR?")) return;
-    try { await apiFetch("/milsimAars?path=delete", { method: "POST", body: JSON.stringify({ id }) }); showMsg("Deleted", "success"); load(); }
-    catch (e: any) { showMsg(e.message, "error"); }
+    try {
+      await apiFetch(`/api/milsim-groups/${group.id}/warnos/${id}`, { method: "DELETE" });
+      showMsg(true, "WARNO deleted."); load();
+    } catch (e: any) { showMsg(false, e.message); }
   };
 
-  const setF = (k: string) => (e: any) => setForm((f: any) => ({ ...f, [k]: e.target.value }));
+  const startEdit = (w: any) => {
+    setEditId(w.id);
+    setForm({
+      title: w.title ?? "", op_date: w.op_date ?? "", status: w.status ?? "draft",
+      situation_ground: w.situation_ground ?? "", situation_enemy: w.situation_enemy ?? "", situation_friendly: w.situation_friendly ?? "",
+      mission: w.mission ?? "",
+      timings_hh: w.timings_hh ?? "", timings_nmb: w.timings_nmb ?? "", timings_other: w.timings_other ?? "",
+      o_group_time: w.o_group_time ?? "", o_group_loc: w.o_group_loc ?? "", o_group_other: w.o_group_other ?? "",
+      css: w.css ?? "",
+      acknowledge_1_sect: w.acknowledge_1_sect ?? "", acknowledge_2_sect: w.acknowledge_2_sect ?? "",
+      acknowledge_3_sect: w.acknowledge_3_sect ?? "", acknowledge_4_sect: w.acknowledge_4_sect ?? "",
+      acknowledge_pl_sgt: w.acknowledge_pl_sgt ?? "",
+      acknowledge_atts_1: w.acknowledge_atts_1 ?? "", acknowledge_atts_2: w.acknowledge_atts_2 ?? "", acknowledge_atts_3: w.acknowledge_atts_3 ?? "",
+    });
+    setCreating(true);
+  };
+
+  const STATUS_STYLE: Record<string, string> = {
+    draft:    "text-muted-foreground bg-secondary border-border",
+    issued:   "text-orange-400 bg-orange-500/10 border-orange-500/30",
+    archived: "text-muted-foreground bg-secondary/40 border-border",
+  };
+
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground font-sans">After Action Reports — link to ops from the Live Ops tab or here.</p>
+        <p className="text-xs text-muted-foreground font-sans">Warning Orders — issued before an operation to give early notice of upcoming tasks.</p>
+        {!creating && !editId && (
+          <button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-all">
+            <Plus className="w-3.5 h-3.5" /> New WARNO
+          </button>
+        )}
+      </div>
+
+      {/* Create / Edit Form */}
+      {(creating || editId) && (
+        <div className="bg-card border border-primary/30 rounded-lg overflow-hidden">
+          {/* WARNO header bar */}
+          <div className="bg-primary/10 border-b border-primary/20 px-6 py-3 flex items-center gap-3">
+            <AlertTriangle className="w-4 h-4 text-orange-400" />
+            <span className="font-display font-black text-sm uppercase tracking-widest text-foreground">Warning Order</span>
+          </div>
+
+          <div className="p-6 space-y-5">
+            {/* Title + Status + Date row */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2"><label className="mf-label">Title *</label><input value={form.title} onChange={setF("title")} className="mf-input" placeholder="Op IRON FIST — WARNO 1" /></div>
+              <div><label className="mf-label">Op Date</label><input type="datetime-local" value={form.op_date} onChange={setF("op_date")} className="mf-input" /></div>
+            </div>
+            <div className="w-40"><label className="mf-label">Status</label>
+              <select value={form.status} onChange={setF("status")} className="mf-input">
+                <option value="draft">Draft</option>
+                <option value="issued">Issued</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+
+            {/* Section 1 — Situation */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/60 px-4 py-2 border-b border-border"><p className="text-[10px] font-display font-black uppercase tracking-widest text-foreground">1. Situation</p></div>
+              <div className="divide-y divide-border">
+                <div className="px-4 py-3"><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Ground</label><textarea rows={3} value={form.situation_ground} onChange={setF("situation_ground")} className="mf-input resize-none" placeholder="Terrain, weather, visibility..." /></div>
+                <div className="px-4 py-3"><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Enemy</label><textarea rows={3} value={form.situation_enemy} onChange={setF("situation_enemy")} className="mf-input resize-none" placeholder="Enemy strength, disposition, likely COA..." /></div>
+                <div className="px-4 py-3"><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Friendly</label><textarea rows={3} value={form.situation_friendly} onChange={setF("situation_friendly")} className="mf-input resize-none" placeholder="Higher unit intentions, adjacent units..." /></div>
+              </div>
+            </div>
+
+            {/* Section 2 — Mission */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/60 px-4 py-2 border-b border-border"><p className="text-[10px] font-display font-black uppercase tracking-widest text-foreground">2. Mission</p></div>
+              <div className="px-4 py-3"><textarea rows={3} value={form.mission} onChange={setF("mission")} className="mf-input resize-none" placeholder="Who, what, where, when, why..." /></div>
+            </div>
+
+            {/* Section 3 — Timings */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/60 px-4 py-2 border-b border-border"><p className="text-[10px] font-display font-black uppercase tracking-widest text-foreground">3. Timings</p></div>
+              <div className="px-4 py-3 grid grid-cols-3 gap-3">
+                <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">H Hr</label><input value={form.timings_hh} onChange={setF("timings_hh")} className="mf-input" placeholder="e.g. 1800Z" /></div>
+                <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">NMB</label><input value={form.timings_nmb} onChange={setF("timings_nmb")} className="mf-input" placeholder="e.g. 30 mins" /></div>
+                <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Other</label><input value={form.timings_other} onChange={setF("timings_other")} className="mf-input" /></div>
+              </div>
+            </div>
+
+            {/* Section 4 — O Group */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/60 px-4 py-2 border-b border-border"><p className="text-[10px] font-display font-black uppercase tracking-widest text-foreground">4. O Group</p></div>
+              <div className="px-4 py-3 grid grid-cols-3 gap-3">
+                <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Time</label><input value={form.o_group_time} onChange={setF("o_group_time")} className="mf-input" placeholder="e.g. 1700Z" /></div>
+                <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Loc</label><input value={form.o_group_loc} onChange={setF("o_group_loc")} className="mf-input" placeholder="e.g. Grid 123456" /></div>
+                <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Other</label><input value={form.o_group_other} onChange={setF("o_group_other")} className="mf-input" /></div>
+              </div>
+            </div>
+
+            {/* Section 5 — CSS */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/60 px-4 py-2 border-b border-border"><p className="text-[10px] font-display font-black uppercase tracking-widest text-foreground">5. CSS (Combat Service Support)</p></div>
+              <div className="px-4 py-3"><textarea rows={3} value={form.css} onChange={setF("css")} className="mf-input resize-none" placeholder="Ammo, medical, transport, resupply..." /></div>
+            </div>
+
+            {/* Section 6 — Acknowledge */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/60 px-4 py-2 border-b border-border"><p className="text-[10px] font-display font-black uppercase tracking-widest text-foreground">6. Acknowledge (Radio or Sign)</p></div>
+              <div className="px-4 py-3 space-y-3">
+                <div className="grid grid-cols-4 gap-2">
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">1 Sect</label><input value={form.acknowledge_1_sect} onChange={setF("acknowledge_1_sect")} className="mf-input text-xs" /></div>
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">2 Sect</label><input value={form.acknowledge_2_sect} onChange={setF("acknowledge_2_sect")} className="mf-input text-xs" /></div>
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">3 Sect</label><input value={form.acknowledge_3_sect} onChange={setF("acknowledge_3_sect")} className="mf-input text-xs" /></div>
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">4 Sect</label><input value={form.acknowledge_4_sect} onChange={setF("acknowledge_4_sect")} className="mf-input text-xs" /></div>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Pl Sgt</label><input value={form.acknowledge_pl_sgt} onChange={setF("acknowledge_pl_sgt")} className="mf-input text-xs" /></div>
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Atts 1</label><input value={form.acknowledge_atts_1} onChange={setF("acknowledge_atts_1")} className="mf-input text-xs" /></div>
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Atts 2</label><input value={form.acknowledge_atts_2} onChange={setF("acknowledge_atts_2")} className="mf-input text-xs" /></div>
+                  <div><label className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground block mb-1">Atts 3</label><input value={form.acknowledge_atts_3} onChange={setF("acknowledge_atts_3")} className="mf-input text-xs" /></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={submit} disabled={saving || !form.title.trim()}
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                {editId ? "Update WARNO" : "Issue WARNO"}
+              </button>
+              <button onClick={() => { setCreating(false); setEditId(null); setForm(emptyForm); }}
+                className="px-4 py-2 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* List */}
+      {warnos.length === 0 && !creating ? (
+        <div className="text-center py-12 border border-dashed border-border rounded-lg text-muted-foreground">
+          <AlertTriangle className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="font-display text-sm uppercase tracking-widest">No warning orders issued</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {warnos.map((w: any) => (
+            <div key={w.id} className="bg-card border border-border rounded-lg overflow-hidden">
+              <button onClick={() => setExpandedId(expandedId === w.id ? null : w.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary/30 transition-colors">
+                <AlertTriangle className="w-4 h-4 text-orange-400 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-display font-bold text-sm uppercase tracking-wider text-foreground truncate">{w.title}</p>
+                  {w.op_date && <p className="text-xs text-muted-foreground font-sans mt-0.5">{new Date(w.op_date).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}</p>}
+                </div>
+                <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${STATUS_STYLE[w.status] ?? STATUS_STYLE.draft}`}>{w.status}</span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform shrink-0 ${expandedId === w.id ? "rotate-180" : ""}`} />
+              </button>
+
+              {expandedId === w.id && (
+                <div className="border-t border-border px-4 py-4 space-y-4">
+                  {/* Situation */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-display font-black uppercase tracking-widest text-primary border-b border-border pb-1">1. Situation</p>
+                    {w.situation_ground && <WField label="Ground" value={w.situation_ground} />}
+                    {w.situation_enemy && <WField label="Enemy" value={w.situation_enemy} />}
+                    {w.situation_friendly && <WField label="Friendly" value={w.situation_friendly} />}
+                  </div>
+                  {w.mission && <div><p className="text-[10px] font-display font-black uppercase tracking-widest text-primary border-b border-border pb-1 mb-2">2. Mission</p><p className="text-sm text-foreground font-sans whitespace-pre-wrap">{w.mission}</p></div>}
+                  {(w.timings_hh || w.timings_nmb || w.timings_other) && (
+                    <div><p className="text-[10px] font-display font-black uppercase tracking-widest text-primary border-b border-border pb-1 mb-2">3. Timings</p>
+                      <div className="flex gap-6 text-sm font-sans">
+                        {w.timings_hh && <span><span className="text-muted-foreground text-xs">H Hr: </span>{w.timings_hh}</span>}
+                        {w.timings_nmb && <span><span className="text-muted-foreground text-xs">NMB: </span>{w.timings_nmb}</span>}
+                        {w.timings_other && <span>{w.timings_other}</span>}
+                      </div>
+                    </div>
+                  )}
+                  {(w.o_group_time || w.o_group_loc || w.o_group_other) && (
+                    <div><p className="text-[10px] font-display font-black uppercase tracking-widest text-primary border-b border-border pb-1 mb-2">4. O Group</p>
+                      <div className="flex gap-6 text-sm font-sans">
+                        {w.o_group_time && <span><span className="text-muted-foreground text-xs">Time: </span>{w.o_group_time}</span>}
+                        {w.o_group_loc && <span><span className="text-muted-foreground text-xs">Loc: </span>{w.o_group_loc}</span>}
+                        {w.o_group_other && <span>{w.o_group_other}</span>}
+                      </div>
+                    </div>
+                  )}
+                  {w.css && <div><p className="text-[10px] font-display font-black uppercase tracking-widest text-primary border-b border-border pb-1 mb-2">5. CSS</p><p className="text-sm text-foreground font-sans whitespace-pre-wrap">{w.css}</p></div>}
+                  {(w.acknowledge_1_sect || w.acknowledge_2_sect || w.acknowledge_pl_sgt) && (
+                    <div><p className="text-[10px] font-display font-black uppercase tracking-widest text-primary border-b border-border pb-1 mb-2">6. Acknowledge</p>
+                      <div className="grid grid-cols-4 gap-2 text-xs font-sans">
+                        {w.acknowledge_1_sect && <span><span className="text-muted-foreground">1 Sect: </span>{w.acknowledge_1_sect}</span>}
+                        {w.acknowledge_2_sect && <span><span className="text-muted-foreground">2 Sect: </span>{w.acknowledge_2_sect}</span>}
+                        {w.acknowledge_3_sect && <span><span className="text-muted-foreground">3 Sect: </span>{w.acknowledge_3_sect}</span>}
+                        {w.acknowledge_4_sect && <span><span className="text-muted-foreground">4 Sect: </span>{w.acknowledge_4_sect}</span>}
+                        {w.acknowledge_pl_sgt && <span><span className="text-muted-foreground">Pl Sgt: </span>{w.acknowledge_pl_sgt}</span>}
+                        {w.acknowledge_atts_1 && <span><span className="text-muted-foreground">Atts 1: </span>{w.acknowledge_atts_1}</span>}
+                        {w.acknowledge_atts_2 && <span><span className="text-muted-foreground">Atts 2: </span>{w.acknowledge_atts_2}</span>}
+                        {w.acknowledge_atts_3 && <span><span className="text-muted-foreground">Atts 3: </span>{w.acknowledge_atts_3}</span>}
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex gap-2 pt-2 border-t border-border">
+                    <button onClick={() => startEdit(w)} className="inline-flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground border border-border rounded px-3 py-1.5 transition-colors"><Pencil className="w-3 h-3" /> Edit</button>
+                    <button onClick={() => remove(w.id)} className="inline-flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-destructive/70 hover:text-destructive border border-border hover:border-destructive/40 rounded px-3 py-1.5 transition-colors"><Trash2 className="w-3 h-3" /> Delete</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WField({ label, value }: { label: string; value: string }) {
+  return <div><p className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground mb-0.5">{label}</p><p className="text-sm text-foreground font-sans whitespace-pre-wrap pl-2 border-l border-border">{value}</p></div>;
+}
+
+function AARsTab({ group, showMsg }: any) {
+  const [aars, setAars] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const emptyForm = { op_name: "", op_date: "", summary: "", objectives_hit: "", objectives_missed: "", casualties: "", commendations: "", recommendations: "", classification: "unclassified" };
+  const [form, setForm] = useState<any>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).then(setAars).catch(() => {}).finally(() => setLoading(false)); };
+  useEffect(() => { load(); }, [group.id]);
+  const submit = async () => {
+    if (!form.op_name.trim()) return; setSaving(true);
+    try {
+      if (editId) { await apiFetch(`/api/milsim-groups/${group.id}/aars/${editId}`, { method: "PATCH", body: JSON.stringify(form) }); showMsg(true, "AAR updated."); }
+      else { await apiFetch(`/api/milsim-groups/${group.id}/aars`, { method: "POST", body: JSON.stringify(form) }); showMsg(true, "AAR filed."); }
+      setCreating(false); setEditId(null); setForm(emptyForm); load();
+    } catch (e: any) { showMsg(false, e.message); } finally { setSaving(false); }
+  };
+  const remove = async (id: number) => {
+    try { await apiFetch(`/api/milsim-groups/${group.id}/aars/${id}`, { method: "DELETE" }); showMsg(true, "AAR deleted."); load(); }
+    catch (e: any) { showMsg(false, e.message); }
+  };
+  const CL: Record<string, string> = { "unclassified": "text-green-400 bg-green-500/10 border-green-500/30", "confidential": "text-blue-400 bg-blue-500/10 border-blue-500/30", "classified": "text-yellow-400 bg-yellow-500/10 border-yellow-500/30", "top-secret": "text-red-400 bg-red-500/10 border-red-500/30" };
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  const setF = (k: string) => (e: any) => setForm((f: any) => ({...f, [k]: e.target.value}));
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground font-sans">After Action Reports — filed post-op.</p>
         {!creating && !editId && <button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-all"><Plus className="w-3.5 h-3.5" /> File AAR</button>}
       </div>
       {(creating || editId !== null) && (
         <div className="bg-card border border-primary/30 rounded-lg p-6 space-y-4">
           <h3 className="font-display font-bold uppercase tracking-widest text-sm">{editId ? "Edit AAR" : "New AAR"}</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2"><label className="mf-label">Title *</label><input value={form.title} onChange={setF("title")} className="mf-input w-full" placeholder="AAR — Operation Iron Fist" /></div>
-            <div><label className="mf-label">Op Name (reference)</label><input value={form.op_name} onChange={setF("op_name")} className="mf-input w-full" placeholder="Operation name..." /></div>
-            <div><label className="mf-label">Link to Scheduled Op</label><select value={form.op_id ?? ""} onChange={setF("op_id")} className="mf-input w-full"><option value="">— None —</option>{ops.map((o: any) => <option key={o.id} value={o.id}>{o.name ?? o.title}</option>)}</select></div>
-          </div>
-          <div><label className="mf-label">Outcome</label><input value={form.outcome} onChange={setF("outcome")} className="mf-input w-full" placeholder="Success / Partial / Failure..." /></div>
-          <div><label className="mf-label">Report Content</label><textarea rows={5} value={form.content} onChange={setF("content")} className="mf-input resize-none w-full" placeholder="Full AAR narrative..." /></div>
-          <div><label className="mf-label">Lessons Learned</label><textarea rows={3} value={form.lessons_learned} onChange={setF("lessons_learned")} className="mf-input resize-none w-full" /></div>
-          <div>
-            <label className="mf-label">Participants</label>
-            {group.roster?.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mt-1 max-h-40 overflow-y-auto p-2 bg-secondary/20 border border-border rounded">
-                {group.roster.map((r: any) => {
-                  const checked = (form.participants ?? []).includes(r.id);
-                  return (<label key={r.id} className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${checked ? "bg-primary/15 border border-primary/30" : "hover:bg-secondary/60"}`}><input type="checkbox" className="accent-primary" checked={checked} onChange={e => setForm((f: any) => ({ ...f, participants: e.target.checked ? [...(f.participants ?? []), r.id] : (f.participants ?? []).filter((id: string) => id !== r.id) }))} /><span className="text-xs font-display font-bold uppercase tracking-wider">{r.callsign}</span></label>);
-                })}
-              </div>
-            ) : <p className="text-xs text-muted-foreground mt-1 font-sans">No roster members yet.</p>}
-          </div>
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Op Name *</label><input value={form.op_name} onChange={setF("op_name")} className="mf-input" placeholder="Operation Iron Fist" /></div><div><label className="mf-label">Op Date</label><input type="date" value={form.op_date} onChange={setF("op_date")} className="mf-input" /></div></div>
+          <div><label className="mf-label">Classification</label><select value={form.classification} onChange={setF("classification")} className="mf-input">{["unclassified","confidential","classified","top-secret"].map(c => <option key={c} value={c}>{c.replace("-"," ").toUpperCase()}</option>)}</select></div>
+          <div><label className="mf-label">Summary</label><textarea rows={3} value={form.summary} onChange={setF("summary")} className="mf-input resize-none" placeholder="Overall mission summary..." /></div>
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Objectives Hit</label><textarea rows={3} value={form.objectives_hit} onChange={setF("objectives_hit")} className="mf-input resize-none" /></div><div><label className="mf-label">Objectives Missed</label><textarea rows={3} value={form.objectives_missed} onChange={setF("objectives_missed")} className="mf-input resize-none" /></div></div>
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Casualties</label><textarea rows={2} value={form.casualties} onChange={setF("casualties")} className="mf-input resize-none" /></div><div><label className="mf-label">Commendations</label><textarea rows={2} value={form.commendations} onChange={setF("commendations")} className="mf-input resize-none" /></div></div>
+          <div><label className="mf-label">Recommendations</label><textarea rows={3} value={form.recommendations} onChange={setF("recommendations")} className="mf-input resize-none" /></div>
           <div className="flex gap-2">
-            <button onClick={submit} disabled={saving || !form.title?.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editId ? "Update" : "File AAR"}</button>
+            <button onClick={submit} disabled={saving || !form.op_name.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editId ? "Update" : "File AAR"}</button>
             <button onClick={() => { setCreating(false); setEditId(null); setForm(emptyForm); }} className="px-4 py-2 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground">Cancel</button>
           </div>
         </div>
@@ -1554,32 +2565,256 @@ function AARsTab({ group, showMsg }: any) {
         <div className="text-center py-12 border border-dashed border-border rounded-lg text-muted-foreground"><ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30" /><p className="font-display text-sm uppercase tracking-widest">No AARs filed</p></div>
       ) : (
         <div className="space-y-3">
-          {aars.map((a: any) => {
-            const linkedOp = ops.find((o: any) => o.id === a.op_id);
+          {aars.map((a: any) => (
+            <div key={a.id} className="bg-card border border-border rounded-lg overflow-hidden">
+              <button onClick={() => setExpandedId(expandedId === a.id ? null : a.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
+                <div className="flex items-center gap-3 flex-wrap"><span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${CL[a.classification] ?? ""}`}>{(a.classification ?? "unclassified").replace("-"," ")}</span><span className="font-display font-bold text-sm text-foreground">{a.op_name}</span>{a.op_date && <span className="text-xs text-muted-foreground">{format(new Date(a.op_date + "T00:00:00"), "MMM dd, yyyy")}</span>}</div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ op_name: a.op_name, op_date: a.op_date?.split("T")[0] ?? "", summary: a.summary ?? a.content ?? "", objectives_hit: a.objectives_hit ?? "", objectives_missed: a.objectives_missed ?? "", casualties: a.casualties ?? "", commendations: a.commendations ?? "", recommendations: a.recommendations ?? "", classification: a.classification }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={e => { e.stopPropagation(); remove(a.id); }} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                  {expandedId === a.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                </div>
+              </button>
+              {expandedId === a.id && (
+                <div className="border-t border-border p-5 space-y-4 bg-secondary/10">
+                  {(a.summary ?? a.content) && <AARField label="Summary" value={a.summary ?? a.content} />}
+                  {a.objectives_hit && <AARField label="Objectives Hit" value={a.objectives_hit} />}
+                  {a.objectives_missed && <AARField label="Objectives Missed" value={a.objectives_missed} />}
+                  {a.casualties && <AARField label="Casualties" value={a.casualties} />}
+                  {a.commendations && <AARField label="Commendations" value={a.commendations} />}
+                  {a.recommendations && <AARField label="Recommendations" value={a.recommendations} />}
+                  <p className="text-xs text-muted-foreground">Filed by {a.created_by} · {formatDistanceToNow(new Date(a.created_date ?? a.created_at ?? Date.now()), { addSuffix: true })}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Briefings ────────────────────────────────────────────────────────────────
+
+/* ─── LACE Report Tab ─────────────────────────────────────────────────────── */
+/* ─── LACE Report Tab — NATO Standard ───────────────────────────────────────
+   LACE: Liquid · Ammo · Casualty · Equipment
+   Colour codes: GREEN (good — shown for visibility), ORANGE (low/degraded), RED (out/critical)
+   DTG format, FROM/TO callsigns, slate-card layout
+──────────────────────────────────────────────────────────────────────────── */
+function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
+  const { user } = useAuth();
+  const [reports, setReports] = useState<any[]>([]);
+  const [ops, setOps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const now = new Date();
+  const dtgNow = `${String(now.getUTCDate()).padStart(2,'0')}${String(now.getUTCHours()).padStart(2,'0')}${String(now.getUTCMinutes()).padStart(2,'0')}Z ${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][now.getUTCMonth()]} ${now.getUTCFullYear()}`;
+
+  const emptyForm = {
+    from_callsign: "", to_callsign: "", op_id: "", op_name: "",
+    report_time: dtgNow,
+    liquid: "GREEN", liquid_note: "",
+    ammo: "GREEN", ammo_note: "",
+    casualty: "GREEN", casualty_note: "",
+    equipment: "GREEN", equipment_note: "",
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [d, opsData] = await Promise.all([
+        apiFetch(`/milsimLace?path=list&group_id=${group.id}`),
+        apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
+      ]);
+      setReports(d.lace_reports ?? []);
+      setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned"].includes(o.status)));
+    } catch {}
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, [group.id]);
+
+  const save = async () => {
+    if (!form.from_callsign) { showMsg("FROM callsign required", "error"); return; }
+    setSaving(true);
+    try {
+      const payload = {
+        group_id: group.id, reported_by: user?.username ?? "Unknown",
+        callsign: form.from_callsign,
+        report_time: form.report_time,
+        op_id: form.op_id, op_name: form.op_name,
+        liquid: form.liquid, liquid_note: form.liquid_note,
+        ammo: form.ammo, ammo_note: form.ammo_note,
+        casualty: form.casualty, casualty_note: form.casualty_note,
+        equipment: form.equipment, equipment_note: form.equipment_note,
+      };
+      if (payload.op_id) { const op = ops.find((o:any) => o.id === payload.op_id); if (op) payload.op_name = op.title ?? op.name ?? ""; }
+      await apiFetch("/milsimLace?path=create", { method: "POST", body: JSON.stringify(payload) });
+      showMsg("LACE filed", "success"); setShowForm(false); setForm({ ...emptyForm, report_time: dtgNow }); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+    setSaving(false);
+  };
+
+  const STATUS: Record<string, { color: string; bg: string; border: string; dot: string; desc: string }> = {
+    GREEN:  { color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/40",  dot: "bg-green-400",  desc: "All Good / Fully Operational" },
+    ORANGE: { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/40", dot: "bg-orange-400", desc: "Low / Degraded — able to continue" },
+    RED:    { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/40",    dot: "bg-red-400",    desc: "Out / Critical — resupply required" },
+  };
+
+  const FIELDS: { key: "liquid"|"ammo"|"casualty"|"equipment"; letter: string; label: string; sublabel: string; noteKey: "liquid_note"|"ammo_note"|"casualty_note"|"equipment_note"; notePlaceholder: string }[] = [
+    { key: "liquid",    letter: "L", label: "LIQUID",    sublabel: "Water / hydration supply",          noteKey: "liquid_note",    notePlaceholder: "e.g. 2x water bottles remaining per man" },
+    { key: "ammo",      letter: "A", label: "AMMO",      sublabel: "Ammunition across all weapons",     noteKey: "ammo_note",      notePlaceholder: "e.g. Orange 5.56, Red AT4" },
+    { key: "casualty",  letter: "C", label: "CASUALTY",  sublabel: "# up / # WIA / # KIA",             noteKey: "casualty_note",  notePlaceholder: "e.g. 4 up, 1 WIA (walking)" },
+    { key: "equipment", letter: "E", label: "EQUIPMENT", sublabel: "Mission-critical gear status",       noteKey: "equipment_note", notePlaceholder: "e.g. Orange bandages, Red NVG" },
+  ];
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display font-bold text-lg uppercase tracking-widest">LACE Report</h2>
+            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded">NATO Standard</span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Liquid · Ammo · Casualty · Equipment — section status to higher command.</p>
+        </div>
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> File LACE
+        </button>
+      </div>
+
+      {/* Colour Legend */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        {Object.entries(STATUS).map(([k, s]) => (
+          <div key={k} className={`flex items-start gap-2.5 p-2.5 rounded border ${s.bg} ${s.border}`}>
+            <span className={`w-2.5 h-2.5 rounded-full ${s.dot} mt-0.5 shrink-0`} />
+            <div><p className={`font-display font-black text-xs uppercase tracking-widest ${s.color}`}>{k}</p><p className="text-xs text-muted-foreground font-sans">{s.desc}</p></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Form — styled as slate card */}
+      {showForm && (
+        <div className="border border-primary/40 rounded-lg overflow-hidden">
+          {/* Slate card header */}
+          <div className="bg-primary/15 border-b border-primary/30 px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="font-display font-black text-sm uppercase tracking-widest text-primary">LACE REPORT — SLATE CARD</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">Complete all fields. Report to next higher element.</p>
+            </div>
+            <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1 rounded">UNCLASSIFIED</span>
+          </div>
+
+          <div className="p-5 space-y-5 bg-card">
+            {/* Header fields */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b border-border">
+              <MField label="DTG (Date-Time Group)">
+                <input value={form.report_time} onChange={e => setForm((f:any) => ({...f, report_time: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
+              </MField>
+              <MField label="FROM (Callsign) *">
+                <input value={form.from_callsign} onChange={e => setForm((f:any) => ({...f, from_callsign: e.target.value}))} placeholder="e.g. 1-1 DELTA" className="mf-input w-full" />
+              </MField>
+              <MField label="TO (Higher Element)">
+                <input value={form.to_callsign} onChange={e => setForm((f:any) => ({...f, to_callsign: e.target.value}))} placeholder="e.g. 1-0 BRAVO / PLATOON ACTUAL" className="mf-input w-full" />
+              </MField>
+            </div>
+            <MField label="Linked Op (Optional)">
+              <select value={form.op_id} onChange={e => setForm((f:any) => ({...f, op_id: e.target.value}))} className="mf-input w-full">
+                <option value="">— No op —</option>
+                {ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
+              </select>
+            </MField>
+
+            {/* LACE fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {FIELDS.map(f => (
+                <div key={f.key} className="border border-border rounded-lg overflow-hidden">
+                  <div className="bg-secondary/40 px-4 py-2 border-b border-border flex items-center gap-2">
+                    <span className={`w-7 h-7 rounded flex items-center justify-center font-display font-black text-sm ${STATUS[form[f.key]]?.bg} ${STATUS[form[f.key]]?.color} border ${STATUS[form[f.key]]?.border}`}>{f.letter}</span>
+                    <div>
+                      <p className="font-display font-black text-xs uppercase tracking-widest">{f.label}</p>
+                      <p className="text-xs text-muted-foreground font-sans">{f.sublabel}</p>
+                    </div>
+                  </div>
+                  <div className="p-3 space-y-2.5">
+                    <div className="flex gap-2">
+                      {(["GREEN","ORANGE","RED"] as const).map(status => {
+                        const cfg = STATUS[status];
+                        const active = form[f.key] === status;
+                        return (
+                          <button key={status} onClick={() => setForm((prev:any) => ({...prev, [f.key]: status}))}
+                            className={`flex-1 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${active ? `${cfg.bg} ${cfg.border} ${cfg.color} ring-1 ring-inset ${cfg.border}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>
+                            <span className={`w-2 h-2 rounded-full ${active ? cfg.dot : "bg-muted-foreground/30"}`} />{status}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <input value={form[f.noteKey]} onChange={e => setForm((prev:any) => ({...prev, [f.noteKey]: e.target.value}))} placeholder={f.notePlaceholder} className="mf-input w-full text-xs font-sans" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-border">
+              <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Transmit Report
+              </button>
+              <button onClick={() => { setShowForm(false); setForm({...emptyForm, report_time: dtgNow}); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Records */}
+      {reports.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><Radio className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No LACE reports filed.</p></div>
+      ) : (
+        <div className="space-y-3">
+          {reports.map((r:any) => {
+            const vals = [r.liquid, r.ammo, r.casualty, r.equipment];
+            const hasRed = vals.some(v => v === "RED");
+            const hasOrange = vals.some(v => v === "ORANGE");
+            const bCls = hasRed ? "border-red-500/50" : hasOrange ? "border-orange-500/40" : "border-green-500/30";
             return (
-              <div key={a.id} className="bg-card border border-border rounded-lg overflow-hidden">
-                <button onClick={() => setExpandedId(expandedId === a.id ? null : a.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    {linkedOp && <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest text-primary border border-primary/30 bg-primary/10 px-2 py-0.5 rounded"><Siren className="w-2.5 h-2.5" />{linkedOp.name ?? linkedOp.title}</span>}
-                    <span className="font-display font-bold text-sm text-foreground">{a.title ?? a.op_name}</span>
-                    {a.outcome && <span className="text-xs text-muted-foreground font-sans">{a.outcome}</span>}
+              <div key={r.id} className={`border ${bCls} rounded-lg overflow-hidden bg-card`}>
+                <div className="bg-secondary/30 border-b border-border px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <Radio className="w-4 h-4 text-primary shrink-0" />
+                    <div>
+                      <span className="font-display font-black text-sm uppercase tracking-widest">{r.callsign}</span>
+                      {r.op_name && <span className="ml-2 text-xs text-muted-foreground font-sans">/ {r.op_name}</span>}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ title:a.title??"", op_name:a.op_name??"", op_id:a.op_id??"", outcome:a.outcome??"", lessons_learned:a.lessons_learned??"", content:a.content??"", participants:a.participants??[] }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                    <button onClick={e => { e.stopPropagation(); remove(a.id); }} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                    {expandedId === a.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground font-mono">{r.report_time || new Date(r.created_date).toUTCString().slice(5,22)}</span>
+                    <span className="text-xs text-muted-foreground font-sans">{r.reported_by}</span>
+                    <button onClick={async () => { if(!confirm("Delete?")) return; await apiFetch("/milsimLace?path=delete",{method:"POST",body:JSON.stringify({id:r.id})}); load(); }} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
                   </div>
-                </button>
-                {expandedId === a.id && (
-                  <div className="border-t border-border p-5 space-y-4 bg-secondary/10">
-                    {a.content && <AARField label="Report" value={a.content} />}
-                    {a.lessons_learned && <AARField label="Lessons Learned" value={a.lessons_learned} />}
-                    {a.participants?.length > 0 && (
-                      <div><p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Attendees</p><div className="flex flex-wrap gap-1.5">{a.participants.map((pid: string) => { const m = group.roster?.find((r: any) => r.id === pid); return m ? <span key={pid} className="text-[10px] font-display font-bold uppercase px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded">{m.callsign}</span> : null; })}</div></div>
-                    )}
-                    <p className="text-xs text-muted-foreground font-sans">By {a.author_username ?? a.created_by} · {formatDistanceToNow(new Date(a.created_date ?? a.created_at ?? Date.now()), { addSuffix: true })}</p>
-                  </div>
-                )}
+                </div>
+                <div className="grid grid-cols-4">
+                  {FIELDS.map((f,i) => {
+                    const val:string = (r[f.key] ?? "GREEN").toUpperCase();
+                    const cfg = STATUS[val] ?? STATUS["GREEN"];
+                    return (
+                      <div key={f.key} className={`p-3 space-y-1 ${i < 3 ? "border-r border-border" : ""}`}>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-6 h-6 rounded flex items-center justify-center font-display font-black text-xs ${cfg.bg} ${cfg.color} border ${cfg.border}`}>{f.letter}</span>
+                          <span className="text-xs text-muted-foreground font-display font-bold uppercase tracking-wider">{f.label}</span>
+                        </div>
+                        <div className={`flex items-center gap-1.5 font-display font-black text-xs uppercase tracking-widest ${cfg.color}`}>
+                          <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />{val}
+                        </div>
+                        {r[f.noteKey] && <p className="text-xs text-muted-foreground font-sans">{r[f.noteKey]}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
@@ -1589,78 +2824,762 @@ function AARsTab({ group, showMsg }: any) {
   );
 }
 
-// ─── Briefings ────────────────────────────────────────────────────────────────
-function BriefingsTab({ group, showMsg }: any) {
+/* ─── SITREP Tab — NATO Standard ─────────────────────────────────────────────
+   NATO SITREP: DTG · FROM · TO · LOCATION · ACTIVITY · REMARKS
+   Compact slate card — answers "where are you?" and "what are you doing?"
+──────────────────────────────────────────────────────────────────────────── */
+function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
   const { user } = useAuth();
-  const [briefings, setBriefings] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
   const [ops, setOps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const emptyForm = { title: "", op_id: "", content: "", classification: "unclassified" as const };
-  const [form, setForm] = useState<any>(emptyForm);
+  const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const now = new Date();
+  const dtgNow = `${String(now.getUTCDate()).padStart(2,'0')}${String(now.getUTCHours()).padStart(2,'0')}${String(now.getUTCMinutes()).padStart(2,'0')}Z ${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][now.getUTCMonth()]} ${now.getUTCFullYear()}`;
+
+  const emptyForm = {
+    from_callsign: "", to_callsign: "", op_id: "", op_name: "",
+    report_time: dtgNow,
+    position: "", activity: "",
+    enemy_contact: "NONE", enemy_notes: "",
+    friendly_casualties: "NONE", casualty_notes: "",
+    mission_status: "ON TRACK", mission_notes: "",
+    next_action: "", remarks: "",
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const load = async () => {
     setLoading(true);
     try {
-      const [briefs, opsData] = await Promise.all([
-        apiFetch(`/milsimBriefings?path=list&group_id=${group.id}`),
+      const [d, opsData] = await Promise.all([
+        apiFetch(`/milsimSitrep?path=list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
       ]);
-      setBriefings(briefs.briefings ?? []);
-      setOps(opsData.events ?? []);
-    } catch { }
+      setReports(d.sitreps ?? []);
+      setOps((opsData.events ?? []).filter((o:any) => ["Active","Confirmed","Planned"].includes(o.status)));
+    } catch {}
     setLoading(false);
-  }, [group.id]);
+  };
+  useEffect(() => { load(); }, [group.id]);
 
-  useEffect(() => { load(); }, [load]);
-
-  const submit = async () => {
-    if (!form.title?.trim()) { showMsg("Title required", "error"); return; }
+  const save = async () => {
+    if (!form.from_callsign) { showMsg("FROM callsign required", "error"); return; }
+    if (!form.position || !form.activity) { showMsg("Location and Activity are mandatory SITREP fields", "error"); return; }
     setSaving(true);
     try {
-      if (editId) {
-        await apiFetch("/milsimBriefings?path=update", { method: "POST", body: JSON.stringify({ id: editId, ...form }) });
-        showMsg("Briefing updated", "success");
-      } else {
-        await apiFetch("/milsimBriefings?path=create", { method: "POST", body: JSON.stringify({ group_id: group.id, created_by: user?.username, ...form }) });
-        showMsg("Briefing created", "success");
-      }
-      setCreating(false); setEditId(null); setForm(emptyForm); load();
+      const payload: any = {
+        group_id: group.id, reported_by: user?.username ?? "Unknown",
+        callsign: form.from_callsign, report_time: form.report_time,
+        op_id: form.op_id, op_name: form.op_name,
+        position: form.position,
+        activity: form.activity,
+        enemy_contact: form.enemy_contact, enemy_notes: form.enemy_notes,
+        friendly_casualties: form.friendly_casualties, casualty_notes: form.casualty_notes,
+        mission_status: form.mission_status, mission_notes: form.mission_notes,
+        next_action: form.next_action,
+        additional_info: form.remarks,
+      };
+      if (payload.op_id) { const op = ops.find((o:any) => o.id === payload.op_id); if (op) payload.op_name = op.title ?? op.name ?? ""; }
+      await apiFetch("/milsimSitrep?path=create", { method: "POST", body: JSON.stringify(payload) });
+      showMsg("SITREP filed", "success"); setShowForm(false); setForm({...emptyForm, report_time: dtgNow}); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Delete this briefing?")) return;
-    try { await apiFetch("/milsimBriefings?path=delete", { method: "POST", body: JSON.stringify({ id }) }); showMsg("Deleted", "success"); load(); }
-    catch (e: any) { showMsg(e.message, "error"); }
+  const CONTACT: Record<string, { color: string; bg: string; border: string }> = {
+    NONE:      { color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/40" },
+    POSSIBLE:  { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/40" },
+    CONFIRMED: { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/40" },
+    ENGAGED:   { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/40" },
   };
-
-  const setF = (k: string) => (e: any) => setForm((f: any) => ({ ...f, [k]: e.target.value }));
-  const CL: Record<string, string> = { unclassified:"text-green-400 bg-green-500/10 border-green-500/30", confidential:"text-blue-400 bg-blue-500/10 border-blue-500/30", classified:"text-yellow-400 bg-yellow-500/10 border-yellow-500/30", "top-secret":"text-red-400 bg-red-500/10 border-red-500/30" };
+  const MISSION: Record<string, { color: string; bg: string; border: string }> = {
+    "ON TRACK":    { color: "text-green-400",  bg: "bg-green-500/10",  border: "border-green-500/40" },
+    "DELAYED":     { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/40" },
+    "COMPROMISED": { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/40" },
+    "ABORT":       { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/40" },
+  };
+  const CAS_COLOR: Record<string, string> = { NONE:"text-green-400", MINOR:"text-yellow-400", SIGNIFICANT:"text-orange-400", CRITICAL:"text-red-400" };
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display font-bold text-lg uppercase tracking-widest">SITREP</h2>
+            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded">NATO Standard</span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Situation Report — Location + Activity to higher command. Mandatory fields: DTG, FROM, LOCATION, ACTIVITY.</p>
+        </div>
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> Send SITREP
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="border border-primary/40 rounded-lg overflow-hidden">
+          <div className="bg-primary/15 border-b border-primary/30 px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="font-display font-black text-sm uppercase tracking-widest text-primary">SITUATION REPORT — SLATE CARD</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">Mandatory: DTG · FROM · LOCATION · ACTIVITY. All others are supplementary.</p>
+            </div>
+            <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1 rounded">UNCLASSIFIED</span>
+          </div>
+          <div className="p-5 space-y-5 bg-card">
+            {/* Mandatory header */}
+            <div>
+              <p className="font-display font-bold text-xs uppercase tracking-widest text-primary mb-3">— Mandatory Fields —</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <MField label="DTG *">
+                  <input value={form.report_time} onChange={e => setForm((f:any) => ({...f, report_time: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
+                </MField>
+                <MField label="FROM (Callsign) *">
+                  <input value={form.from_callsign} onChange={e => setForm((f:any) => ({...f, from_callsign: e.target.value}))} placeholder="e.g. 1-1 ALPHA" className="mf-input w-full" />
+                </MField>
+                <MField label="TO (Higher Element)">
+                  <input value={form.to_callsign} onChange={e => setForm((f:any) => ({...f, to_callsign: e.target.value}))} placeholder="e.g. PLATOON ACTUAL" className="mf-input w-full" />
+                </MField>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <MField label="LOCATION / GRID *">
+                <input value={form.position} onChange={e => setForm((f:any) => ({...f, position: e.target.value}))} placeholder="e.g. Grid 4523, Compound 6-6, Sector Bravo" className="mf-input w-full" />
+              </MField>
+              <MField label="ACTIVITY *">
+                <input value={form.activity} onChange={e => setForm((f:any) => ({...f, activity: e.target.value}))} placeholder="e.g. Firm, awaiting orders / Advancing to OBJ FALCON" className="mf-input w-full" />
+              </MField>
+            </div>
+            <MField label="Linked Op">
+              <select value={form.op_id} onChange={e => setForm((f:any) => ({...f, op_id: e.target.value}))} className="mf-input w-full">
+                <option value="">— None —</option>
+                {ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
+              </select>
+            </MField>
+
+            {/* Supplementary */}
+            <div className="border-t border-border pt-4">
+              <p className="font-display font-bold text-xs uppercase tracking-widest text-muted-foreground mb-3">— Supplementary (Optional) —</p>
+              <div className="space-y-4">
+                {/* Enemy Contact */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-border rounded-lg p-3 space-y-2">
+                    <p className="font-display font-bold text-xs uppercase tracking-widest">Enemy Contact</p>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {(["NONE","POSSIBLE","CONFIRMED","ENGAGED"] as const).map(v => {
+                        const cfg = CONTACT[v];
+                        return <button key={v} onClick={() => setForm((f:any) => ({...f, enemy_contact: v}))}
+                          className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.enemy_contact === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
+                      })}
+                    </div>
+                    <input value={form.enemy_notes} onChange={e => setForm((f:any) => ({...f, enemy_notes: e.target.value}))} placeholder="Enemy detail, bearing, distance..." className="mf-input w-full text-xs" />
+                  </div>
+                  <div className="border border-border rounded-lg p-3 space-y-2">
+                    <p className="font-display font-bold text-xs uppercase tracking-widest">Friendly Casualties</p>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {(["NONE","MINOR","SIGNIFICANT","CRITICAL"] as const).map(v => (
+                        <button key={v} onClick={() => setForm((f:any) => ({...f, friendly_casualties: v}))}
+                          className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.friendly_casualties === v ? `bg-secondary/80 border-primary/50 ${CAS_COLOR[v]}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>
+                      ))}
+                    </div>
+                    <input value={form.casualty_notes} onChange={e => setForm((f:any) => ({...f, casualty_notes: e.target.value}))} placeholder="e.g. 5 up, 1 WIA walking" className="mf-input w-full text-xs" />
+                  </div>
+                </div>
+                {/* Mission Status */}
+                <div className="border border-border rounded-lg p-3 space-y-2">
+                  <p className="font-display font-bold text-xs uppercase tracking-widest">Mission Status</p>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {(["ON TRACK","DELAYED","COMPROMISED","ABORT"] as const).map(v => {
+                      const cfg = MISSION[v];
+                      return <button key={v} onClick={() => setForm((f:any) => ({...f, mission_status: v}))}
+                        className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.mission_status === v ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>;
+                    })}
+                  </div>
+                  <input value={form.mission_notes} onChange={e => setForm((f:any) => ({...f, mission_notes: e.target.value}))} placeholder="Mission detail..." className="mf-input w-full text-xs" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <MField label="Next Action">
+                    <input value={form.next_action} onChange={e => setForm((f:any) => ({...f, next_action: e.target.value}))} placeholder="e.g. Advance to Phase Line BLUE" className="mf-input w-full" />
+                  </MField>
+                  <MField label="Remarks">
+                    <input value={form.remarks} onChange={e => setForm((f:any) => ({...f, remarks: e.target.value}))} placeholder="Any additional info..." className="mf-input w-full" />
+                  </MField>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-border">
+              <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Transmit SITREP
+              </button>
+              <button onClick={() => { setShowForm(false); setForm({...emptyForm, report_time: dtgNow}); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reports.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><Target className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No SITREPs filed.</p></div>
+      ) : (
+        <div className="space-y-3">
+          {reports.map((r:any) => {
+            const ec = CONTACT[(r.enemy_contact ?? "NONE").toUpperCase()] ?? CONTACT["NONE"];
+            const ms = MISSION[(r.mission_status ?? "ON TRACK").toUpperCase()] ?? MISSION["ON TRACK"];
+            const isHot = (r.enemy_contact ?? "").toUpperCase() === "ENGAGED" || (r.mission_status ?? "").toUpperCase() === "ABORT";
+            const isWarm = (r.enemy_contact ?? "").toUpperCase() === "CONFIRMED" || (r.mission_status ?? "").toUpperCase() === "COMPROMISED";
+            return (
+              <div key={r.id} className={`border ${isHot ? "border-red-500/50" : isWarm ? "border-orange-500/40" : "border-border"} rounded-lg overflow-hidden bg-card`}>
+                <div className="bg-secondary/30 border-b border-border px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <Target className="w-4 h-4 text-primary shrink-0" />
+                    <span className="font-display font-black text-sm uppercase tracking-widest">{r.callsign}</span>
+                    {r.op_name && <span className="text-xs text-muted-foreground font-sans">/ {r.op_name}</span>}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground font-mono">{r.report_time || new Date(r.created_date).toUTCString().slice(5,22)}</span>
+                    <span className="text-xs text-muted-foreground font-sans">{r.reported_by}</span>
+                    <button onClick={async () => { if(!confirm("Delete?")) return; await apiFetch("/milsimSitrep?path=delete",{method:"POST",body:JSON.stringify({id:r.id})}); load(); }} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+                {/* Core fields: Location + Activity */}
+                <div className="grid grid-cols-1 md:grid-cols-2 border-b border-border">
+                  <div className="p-3 border-r border-border">
+                    <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Location</p>
+                    <p className="text-sm font-sans">{r.position || "—"}</p>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Activity</p>
+                    <p className="text-sm font-sans">{r.activity || r.next_action || "—"}</p>
+                  </div>
+                </div>
+                {/* Status grid */}
+                <div className="grid grid-cols-3 text-xs">
+                  <div className={`p-2.5 border-r border-border ${ec.bg}`}>
+                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Enemy</p>
+                    <p className={`font-display font-black uppercase ${ec.color}`}>{r.enemy_contact ?? "NONE"}</p>
+                    {r.enemy_notes && <p className="text-muted-foreground font-sans mt-1 text-xs">{r.enemy_notes}</p>}
+                  </div>
+                  <div className={`p-2.5 border-r border-border ${ms.bg}`}>
+                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Mission</p>
+                    <p className={`font-display font-black uppercase ${ms.color}`}>{r.mission_status ?? "ON TRACK"}</p>
+                    {r.mission_notes && <p className="text-muted-foreground font-sans mt-1 text-xs">{r.mission_notes}</p>}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-muted-foreground font-display font-bold uppercase tracking-wider mb-1">Casualties</p>
+                    <p className={`font-display font-black uppercase ${CAS_COLOR[(r.friendly_casualties ?? "NONE").toUpperCase()] ?? "text-green-400"}`}>{r.friendly_casualties ?? "NONE"}</p>
+                    {r.casualty_notes && <p className="text-muted-foreground font-sans mt-1 text-xs">{r.casualty_notes}</p>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Training Review Tab — NATO EXEVAL Style ─────────────────────────────────
+   Based on NATO exercise evaluation structure:
+   Exercise Name · DTG · Conducted By · Participants · Skills · Scores · Gaps
+──────────────────────────────────────────────────────────────────────────── */
+const TRAINING_SKILLS = ["Patrolling","Room Clearing","Fire & Manoeuvre","Bounding Overwatch","Medical/CASEVAC","Comms Procedures","Air Assault","Convoy Ops","Recce","Indirect Fire","Vehicle Ops","NBC / CBRN","Night Ops","Urban Combat","Breaching","Sniper Ops","Logistics","Command & Control","Land Navigation","Orders Process","QBO / TTP"];
+
+function TrainingReviewTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
+  const { user } = useAuth();
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [ops, setOps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const now = new Date();
+  const dtgNow = `${String(now.getUTCDate()).padStart(2,'0')}${String(now.getUTCHours()).padStart(2,'0')}${String(now.getUTCMinutes()).padStart(2,'0')}Z ${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][now.getUTCMonth()]} ${now.getUTCFullYear()}`;
+
+  const emptyForm = {
+    exercise_name: "", exercise_date: dtgNow, exercise_type: "TRAINING EX",
+    op_id: "", op_name: "",
+    conducted_by: "", reviewed_by: "", participant_count: "",
+    skills_practised: [] as string[],
+    overall_execution: 0, comms_quality: 0, tactics_quality: 0, discipline_quality: 0,
+    notable_gaps: "", highlights: "", repeat_recommended: false,
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [d, opsData] = await Promise.all([
+        apiFetch(`/milsimTrainingReview?path=list&group_id=${group.id}`),
+        apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
+      ]);
+      setReviews(d.reviews ?? []);
+      setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)));
+    } catch {}
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, [group.id]);
+
+  const toggleSkill = (skill: string) => setForm((f: any) => ({
+    ...f, skills_practised: f.skills_practised.includes(skill)
+      ? f.skills_practised.filter((s: string) => s !== skill)
+      : [...f.skills_practised, skill],
+  }));
+
+  const save = async () => {
+    if (!form.exercise_name) { showMsg("Exercise name required", "error"); return; }
+    if (!form.conducted_by) { showMsg("Conducted by required", "error"); return; }
+    setSaving(true);
+    try {
+      const trPayload: any = { ...form, group_id: group.id, reviewed_by: form.reviewed_by || user?.username || "Unknown", participant_count: Number(form.participant_count) || 0 };
+      if (trPayload.op_id) { const op = ops.find((o:any) => o.id === trPayload.op_id); if (op) trPayload.op_name = op.title ?? op.name ?? ""; }
+      await apiFetch("/milsimTrainingReview?path=create", { method: "POST", body: JSON.stringify(trPayload) });
+      showMsg("Exercise review saved", "success"); setShowForm(false); setForm({...emptyForm, exercise_date: dtgNow}); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+    setSaving(false);
+  };
+
+  // NATO grading: 1=Unsatisfactory, 2=Marginal, 3=Satisfactory, 4=Commendable, 5=Outstanding
+  const GRADE: Record<number, { label: string; color: string }> = {
+    0: { label: "—", color: "text-muted-foreground" },
+    1: { label: "UNSAT", color: "text-red-400" },
+    2: { label: "MARGINAL", color: "text-orange-400" },
+    3: { label: "SAT", color: "text-yellow-400" },
+    4: { label: "COMMENDABLE", color: "text-blue-400" },
+    5: { label: "OUTSTANDING", color: "text-green-400" },
+  };
+
+  const ScoreRow = ({ label, field, sublabel }: { label: string; field: string; sublabel?: string }) => (
+    <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
+      <div>
+        <p className="font-display font-bold text-xs uppercase tracking-widest">{label}</p>
+        {sublabel && <p className="text-xs text-muted-foreground font-sans">{sublabel}</p>}
+      </div>
+      <div className="flex gap-1.5 items-center">
+        {[1,2,3,4,5].map(n => (
+          <button key={n} onClick={() => setForm((f:any) => ({...f, [field]: n}))}
+            className={`w-8 h-8 rounded border text-xs font-display font-bold transition-all ${form[field] >= n ? "bg-primary/20 border-primary/50 text-primary" : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{n}</button>
+        ))}
+        <span className={`ml-2 text-xs font-display font-bold uppercase tracking-wider w-20 text-right ${GRADE[form[field]]?.color}`}>{GRADE[form[field]]?.label}</span>
+      </div>
+    </div>
+  );
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display font-bold text-lg uppercase tracking-widest">Exercise Reviews</h2>
+            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded">NATO EXEVAL</span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Post-exercise evaluation — skills, NATO grading (1–5), gaps. Feeds training doctrine score.</p>
+        </div>
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> New EXEVAL
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="border border-primary/40 rounded-lg overflow-hidden">
+          <div className="bg-primary/15 border-b border-primary/30 px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="font-display font-black text-sm uppercase tracking-widest text-primary">EXERCISE EVALUATION — EXEVAL</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">NATO grading: 1=Unsatisfactory · 2=Marginal · 3=Satisfactory · 4=Commendable · 5=Outstanding</p>
+            </div>
+            <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1 rounded">UNCLASSIFIED</span>
+          </div>
+          <div className="p-5 space-y-5 bg-card">
+            {/* Admin fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b border-border">
+              <MField label="Exercise Name *">
+                <input value={form.exercise_name} onChange={e => setForm((f:any) => ({...f, exercise_name: e.target.value}))} placeholder="e.g. EX IRON ANVIL" className="mf-input w-full" />
+              </MField>
+              <MField label="Exercise Type">
+                <select value={form.exercise_type} onChange={e => setForm((f:any) => ({...f, exercise_type: e.target.value}))} className="mf-input w-full">
+                  {["TRAINING EX","LIVE FIRE EX","COMMAND POST EX (CPX)","FIELD TRAINING EX (FTX)","TABLE TOP EX (TTX)","COMBINED ARMS EX"].map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </MField>
+              <MField label="DTG *">
+                <input value={form.exercise_date} onChange={e => setForm((f:any) => ({...f, exercise_date: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
+              </MField>
+              <MField label="Participants">
+                <input type="number" min={1} value={form.participant_count} onChange={e => setForm((f:any) => ({...f, participant_count: e.target.value}))} placeholder="e.g. 12" className="mf-input w-full" />
+              </MField>
+              <MField label="Conducted By *">
+                <input value={form.conducted_by} onChange={e => setForm((f:any) => ({...f, conducted_by: e.target.value}))} placeholder="Rank + Callsign" className="mf-input w-full" />
+              </MField>
+              <MField label="EXEVAL Officer">
+                <input value={form.reviewed_by} onChange={e => setForm((f:any) => ({...f, reviewed_by: e.target.value}))} placeholder="Evaluating officer callsign" className="mf-input w-full" />
+              </MField>
+            </div>
+
+            {/* Linked Op */}
+            <MField label="Linked Op (Optional)">
+              <select value={form.op_id} onChange={e => setForm((f:any) => ({...f, op_id: e.target.value}))} className="mf-input w-full">
+                <option value="">— No op —</option>
+                {ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
+              </select>
+            </MField>
+
+            {/* Skills */}
+            <div>
+              <p className="font-display font-bold text-xs uppercase tracking-widest mb-2">Skills / Tasks Evaluated</p>
+              <div className="flex flex-wrap gap-1.5">
+                {TRAINING_SKILLS.map(skill => (
+                  <button key={skill} onClick={() => toggleSkill(skill)}
+                    className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.skills_practised.includes(skill) ? "bg-primary/20 border-primary/50 text-primary" : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{skill}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Grading */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary/40 border-b border-border px-4 py-2">
+                <p className="font-display font-bold text-xs uppercase tracking-widest">Performance Grades (NATO 1–5 Scale)</p>
+              </div>
+              <div className="px-4 py-2">
+                <ScoreRow label="Overall Execution" field="overall_execution" sublabel="General mission accomplishment" />
+                <ScoreRow label="Communications" field="comms_quality" sublabel="Radio discipline, BATCO, reporting" />
+                <ScoreRow label="Tactics & Drills" field="tactics_quality" sublabel="TTP adherence, formations, manoeuvre" />
+                <ScoreRow label="Discipline & Admin" field="discipline_quality" sublabel="Timings, dress, weapon handling" />
+              </div>
+            </div>
+
+            {/* Narrative */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <MField label="Strengths / Highlights">
+                <textarea value={form.highlights} onChange={e => setForm((f:any) => ({...f, highlights: e.target.value}))} rows={3} placeholder="What was executed well..." className="mf-input w-full resize-none" />
+              </MField>
+              <MField label="Areas for Improvement / Gaps">
+                <textarea value={form.notable_gaps} onChange={e => setForm((f:any) => ({...f, notable_gaps: e.target.value}))} rows={3} placeholder="Identified weaknesses, tasks requiring remedial training..." className="mf-input w-full resize-none" />
+              </MField>
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="repeat-rec" checked={form.repeat_recommended} onChange={e => setForm((f:any) => ({...f, repeat_recommended: e.target.checked}))} className="rounded" />
+              <label htmlFor="repeat-rec" className="text-xs font-display font-bold uppercase tracking-widest">Recommend repeat exercise before next deployment</label>
+            </div>
+            <div className="flex gap-2 pt-2 border-t border-border">
+              <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Submit EXEVAL
+              </button>
+              <button onClick={() => { setShowForm(false); setForm({...emptyForm, exercise_date: dtgNow}); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reviews.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><BookCheck className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No exercise evaluations on record.</p></div>
+      ) : (
+        <div className="space-y-3">
+          {reviews.map((r:any) => {
+            const scores = [r.overall_execution, r.comms_quality, r.tactics_quality, r.discipline_quality].filter(Boolean);
+            const avg = scores.length ? (scores.reduce((a:number,b:number) => a+b, 0) / scores.length) : 0;
+            const avgGrade = GRADE[Math.round(avg)] ?? GRADE[0];
+            return (
+              <div key={r.id} className="border border-border rounded-lg overflow-hidden bg-card">
+                <div className="bg-secondary/30 border-b border-border px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <BookCheck className="w-4 h-4 text-primary shrink-0" />
+                    <div>
+                      <span className="font-display font-black text-sm uppercase tracking-widest">{r.exercise_name}</span>
+                      {r.exercise_type && <span className="ml-2 text-xs text-muted-foreground font-display font-bold uppercase">{r.exercise_type}</span>}
+                    {r.op_name && <span className="ml-2 text-xs text-muted-foreground font-sans">/ {r.op_name}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`font-display font-black text-xs uppercase tracking-widest ${avgGrade.color}`}>{avgGrade.label}</span>
+                    <span className="font-display font-black text-lg text-primary">{avg > 0 ? avg.toFixed(1) : "—"}<span className="text-xs text-muted-foreground">/5</span></span>
+                    <button onClick={async () => { if(!confirm("Delete?")) return; await apiFetch("/milsimTrainingReview?path=delete",{method:"POST",body:JSON.stringify({id:r.id})}); load(); }} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+                <div className="p-3 space-y-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {(r.skills_practised ?? []).map((s:string) => <span key={s} className="px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded text-xs font-display font-bold uppercase tracking-wider">{s}</span>)}
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    {[["Overall",r.overall_execution],["Comms",r.comms_quality],["Tactics",r.tactics_quality],["Discipline",r.discipline_quality]].map(([label,val]) => (
+                      <div key={label as string} className="bg-secondary/30 rounded p-2 text-center">
+                        <p className="text-muted-foreground font-display font-bold uppercase tracking-wider text-xs mb-1">{label}</p>
+                        <p className={`font-display font-black text-base ${(GRADE[Number(val)] ?? GRADE[0]).color}`}>{val || "—"}</p>
+                        <p className={`text-xs font-display font-bold uppercase ${(GRADE[Number(val)] ?? GRADE[0]).color}`}>{val ? (GRADE[Number(val)]?.label ?? "") : ""}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {r.notable_gaps && <p className="text-xs font-sans text-muted-foreground border-t border-border pt-2"><span className="font-display font-bold uppercase tracking-wider text-foreground">Gaps: </span>{r.notable_gaps}</p>}
+                  {r.highlights && <p className="text-xs font-sans text-muted-foreground"><span className="font-display font-bold uppercase tracking-wider text-green-400">Strengths: </span>{r.highlights}</p>}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
+                    <span>Conducted by: <span className="text-foreground font-bold">{r.conducted_by}</span></span>
+                    {r.participant_count > 0 && <span>{r.participant_count} participants</span>}
+                    {r.repeat_recommended && <span className="text-yellow-400 font-display font-bold uppercase tracking-wider">⚠ Repeat Recommended</span>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Conduct / Admin Report Tab — Military Admin Standard ────────────────────
+   Used for: disciplinary actions, commendations, absences, admin notices
+   Fields: Subject, DTG, Category, Severity, Description, Evidence, Outcome, Authority
+──────────────────────────────────────────────────────────────────────────── */
+function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
+  const { user } = useAuth();
+  const [reports, setReports] = useState<any[]>([]);
+  const [ops, setOps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const now = new Date();
+  const dtgNow = `${String(now.getUTCDate()).padStart(2,'0')}${String(now.getUTCHours()).padStart(2,'0')}${String(now.getUTCMinutes()).padStart(2,'0')}Z ${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][now.getUTCMonth()]} ${now.getUTCFullYear()}`;
+
+  const emptyForm = {
+    subject_callsign: "", report_date: dtgNow, filed_by_rank: "",
+    op_id: "", op_name: "",
+    category: "Conduct", severity: "Minor",
+    description: "", evidence: "",
+    outcome: "No Action", outcome_notes: "", reviewed_by: "",
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [d, opsData] = await Promise.all([
+        apiFetch(`/milsimConductReport?path=list&group_id=${group.id}`),
+        apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
+      ]);
+      setReports(d.reports ?? []);
+      setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)));
+    } catch {}
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, [group.id]);
+
+  const save = async () => {
+    if (!form.subject_callsign) { showMsg("Subject callsign required", "error"); return; }
+    if (!form.description) { showMsg("Description of incident required", "error"); return; }
+    setSaving(true);
+    try {
+      const crPayload: any = { ...form, group_id: group.id, filed_by: (form.filed_by_rank ? form.filed_by_rank + " " : "") + (user?.username ?? "Unknown") };
+      if (crPayload.op_id) { const op = ops.find((o:any) => o.id === crPayload.op_id); if (op) crPayload.op_name = op.title ?? op.name ?? ""; }
+      await apiFetch("/milsimConductReport?path=create", { method: "POST", body: JSON.stringify(crPayload) });
+      showMsg("Admin report filed", "success"); setShowForm(false); setForm({...emptyForm, report_date: dtgNow}); load();
+    } catch (e: any) { showMsg(e.message, "error"); }
+    setSaving(false);
+  };
+
+  const SEV: Record<string, { color: string; bg: string; border: string }> = {
+    Info:     { color: "text-blue-400",   bg: "bg-blue-500/10",   border: "border-blue-500/30" },
+    Minor:    { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30" },
+    Major:    { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30" },
+    Critical: { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/30" },
+  };
+  const CAT_COLOR: Record<string, string> = {
+    Absence:"text-yellow-400", Conduct:"text-orange-400", Insubordination:"text-red-400",
+    Negligence:"text-orange-400", Commendation:"text-green-400", Admin:"text-muted-foreground",
+  };
+  const OUTCOME_COLOR: Record<string, string> = {
+    "No Action":"text-muted-foreground", "Verbal Warning":"text-yellow-400", "Written Warning":"text-orange-400",
+    "Strike":"text-red-400", "Demotion":"text-red-400", "Removal":"text-red-500", "Commendation":"text-green-400",
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display font-bold text-lg uppercase tracking-widest">Admin / Conduct Reports</h2>
+            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded">Military Admin</span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Disciplinary notices, commendations, absences, admin actions. Filed by chain of command.</p>
+        </div>
+        <button onClick={() => setShowForm(v => !v)} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> File Report
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="border border-primary/40 rounded-lg overflow-hidden">
+          <div className="bg-primary/15 border-b border-primary/30 px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="font-display font-black text-sm uppercase tracking-widest text-primary">ADMIN / CONDUCT REPORT</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">To be raised by chain of command only. Filed reports are permanent record.</p>
+            </div>
+            <span className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1 rounded">RESTRICTED</span>
+          </div>
+          <div className="p-5 space-y-5 bg-card">
+            {/* Header */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b border-border">
+              <MField label="DTG (Date-Time Group)">
+                <input value={form.report_date} onChange={e => setForm((f:any) => ({...f, report_date: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
+              </MField>
+              <MField label="Subject (Rank / Callsign) *">
+                <input value={form.subject_callsign} onChange={e => setForm((f:any) => ({...f, subject_callsign: e.target.value}))} placeholder="e.g. Cpl CALLSIGN" className="mf-input w-full" />
+              </MField>
+              <MField label="Reviewing Authority">
+                <input value={form.reviewed_by} onChange={e => setForm((f:any) => ({...f, reviewed_by: e.target.value}))} placeholder="e.g. Sgt / Officer callsign" className="mf-input w-full" />
+              </MField>
+            </div>
+
+            {/* Linked Op */}
+            <MField label="Linked Op (Optional)">
+              <select value={form.op_id} onChange={e => setForm((f:any) => ({...f, op_id: e.target.value}))} className="mf-input w-full">
+                <option value="">— No op —</option>
+                {ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}
+              </select>
+            </MField>
+
+            {/* Category + Severity */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="border border-border rounded-lg p-3 space-y-2">
+                <p className="font-display font-bold text-xs uppercase tracking-widest">Report Category</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(["Absence","Conduct","Insubordination","Negligence","Commendation","Admin"] as const).map(cat => (
+                    <button key={cat} onClick={() => setForm((f:any) => ({...f, category: cat}))}
+                      className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.category === cat ? `bg-secondary/80 border-primary/50 ${CAT_COLOR[cat]}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{cat}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="border border-border rounded-lg p-3 space-y-2">
+                <p className="font-display font-bold text-xs uppercase tracking-widest">Severity</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {(["Info","Minor","Major","Critical"] as const).map(sev => {
+                    const cfg = SEV[sev];
+                    return <button key={sev} onClick={() => setForm((f:any) => ({...f, severity: sev}))}
+                      className={`px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.severity === sev ? `${cfg.bg} ${cfg.border} ${cfg.color}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{sev}</button>;
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Incident detail */}
+            <MField label="Description of Incident / Conduct *">
+              <textarea value={form.description} onChange={e => setForm((f:any) => ({...f, description: e.target.value}))} rows={4} placeholder="Detailed account of the incident, conduct, absence, or commendation..." className="mf-input w-full resize-none" />
+            </MField>
+            <MField label="Evidence / Supporting References">
+              <textarea value={form.evidence} onChange={e => setForm((f:any) => ({...f, evidence: e.target.value}))} rows={2} placeholder="Witness callsigns, timestamps, screenshots, prior reports..." className="mf-input w-full resize-none" />
+            </MField>
+
+            {/* Outcome */}
+            <div className="border border-border rounded-lg p-3 space-y-2">
+              <p className="font-display font-bold text-xs uppercase tracking-widest">Outcome / Action Taken</p>
+              <div className="flex flex-wrap gap-1.5">
+                {(["No Action","Verbal Warning","Written Warning","Strike","Demotion","Removal","Commendation"] as const).map(o => (
+                  <button key={o} onClick={() => setForm((f:any) => ({...f, outcome: o}))}
+                    className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.outcome === o ? `bg-secondary/80 border-primary/50 ${OUTCOME_COLOR[o]}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{o}</button>
+                ))}
+              </div>
+            </div>
+            <MField label="Outcome Notes / Instructions">
+              <textarea value={form.outcome_notes} onChange={e => setForm((f:any) => ({...f, outcome_notes: e.target.value}))} rows={2} placeholder="Terms of warning, demotion details, commendation citation..." className="mf-input w-full resize-none" />
+            </MField>
+
+            <div className="flex gap-2 pt-2 border-t border-border">
+              <button onClick={save} disabled={saving} className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} File Report
+              </button>
+              <button onClick={() => { setShowForm(false); setForm({...emptyForm, report_date: dtgNow}); }} className="px-4 py-1.5 border border-border rounded font-display text-xs uppercase tracking-widest">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reports.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg"><UserMinus2 className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-sans">No admin or conduct reports on record.</p></div>
+      ) : (
+        <div className="space-y-3">
+          {reports.map((r:any) => {
+            const sev = SEV[r.severity] ?? SEV["Minor"];
+            const isComm = r.category === "Commendation";
+            return (
+              <div key={r.id} className={`border ${isComm ? "border-green-500/30" : sev.border} rounded-lg overflow-hidden bg-card`}>
+                <div className={`border-b border-border px-4 py-2 flex items-center justify-between flex-wrap gap-2 ${isComm ? "bg-green-500/5" : "bg-secondary/30"}`}>
+                  <div className="flex items-center gap-3">
+                    <UserMinus2 className={`w-4 h-4 shrink-0 ${isComm ? "text-green-400" : "text-primary"}`} />
+                    <span className="font-display font-black text-sm uppercase tracking-widest">{r.subject_callsign}</span>
+                    {r.op_name && <span className="text-xs text-muted-foreground font-sans">/ {r.op_name}</span>}
+                    <span className={`text-xs font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${sev.bg} ${sev.border} ${sev.color}`}>{r.severity}</span>
+                    <span className={`text-xs font-display font-bold uppercase tracking-widest ${CAT_COLOR[r.category] ?? "text-muted-foreground"}`}>{r.category}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs font-display font-bold uppercase tracking-widest ${OUTCOME_COLOR[r.outcome] ?? "text-muted-foreground"}`}>{r.outcome}</span>
+                    <span className="text-xs text-muted-foreground font-mono">{r.report_date || ""}</span>
+                    <span className="text-xs text-muted-foreground font-sans">{r.filed_by}</span>
+                    <button onClick={async () => { if(!confirm("Delete?")) return; await apiFetch("/milsimConductReport?path=delete",{method:"POST",body:JSON.stringify({id:r.id})}); load(); }} className="text-muted-foreground hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+                <div className="p-3 space-y-1">
+                  <p className="text-sm font-sans">{r.description}</p>
+                  {r.evidence && <p className="text-xs text-muted-foreground font-sans border-t border-border pt-2"><span className="font-display font-bold uppercase tracking-wider text-foreground">Evidence: </span>{r.evidence}</p>}
+                  {r.outcome_notes && <p className="text-xs text-muted-foreground font-sans"><span className="font-display font-bold uppercase tracking-wider text-foreground">Action: </span>{r.outcome_notes}</p>}
+                  {r.reviewed_by && <p className="text-xs text-muted-foreground font-sans text-right">Reviewed by: <span className="text-foreground font-bold">{r.reviewed_by}</span></p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+function BriefingsTab({ group, showMsg }: any) {
+  const [briefings, setBriefings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const emptyForm = { title: "", op_date: "", ao: "", objectives: "", comms_plan: "", roe: "", additional_notes: "", status: "draft" };
+  const [form, setForm] = useState<any>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/briefings`).then(setBriefings).catch(() => {}).finally(() => setLoading(false)); };
+  useEffect(() => { load(); }, [group.id]);
+  const submit = async () => {
+    if (!form.title.trim()) return; setSaving(true);
+    try {
+      if (editId) { await apiFetch(`/api/milsim-groups/${group.id}/briefings/${editId}`, { method: "PATCH", body: JSON.stringify(form) }); showMsg(true, "Briefing updated."); }
+      else { await apiFetch(`/api/milsim-groups/${group.id}/briefings`, { method: "POST", body: JSON.stringify(form) }); showMsg(true, "Briefing created."); }
+      setCreating(false); setEditId(null); setForm(emptyForm); load();
+    } catch (e: any) { showMsg(false, e.message); } finally { setSaving(false); }
+  };
+  const remove = async (id: number) => {
+    try { await apiFetch(`/api/milsim-groups/${group.id}/briefings/${id}`, { method: "DELETE" }); showMsg(true, "Deleted."); load(); }
+    catch (e: any) { showMsg(false, e.message); }
+  };
+  const SC: Record<string, string> = { draft: "text-muted-foreground bg-secondary border-border", published: "text-primary bg-primary/10 border-primary/30", archived: "text-muted-foreground bg-secondary/40 border-border" };
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  const setF = (k: string) => (e: any) => setForm((f: any) => ({...f, [k]: e.target.value}));
+  return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground font-sans">Op briefings — attach to ops from the Live Ops tab or link here.</p>
+        <p className="text-xs text-muted-foreground font-sans">Op briefings — distributed to members before an operation.</p>
         {!creating && !editId && <button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-all"><Plus className="w-3.5 h-3.5" /> New Briefing</button>}
       </div>
       {(creating || editId !== null) && (
         <div className="bg-card border border-primary/30 rounded-lg p-6 space-y-4">
           <h3 className="font-display font-bold uppercase tracking-widest text-sm">{editId ? "Edit Briefing" : "New Briefing"}</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2"><label className="mf-label">Title *</label><input value={form.title} onChange={setF("title")} className="mf-input w-full" placeholder="Operation Iron Fist — OPORD" /></div>
-            <div><label className="mf-label">Link to Op</label><select value={form.op_id ?? ""} onChange={setF("op_id")} className="mf-input w-full"><option value="">— None —</option>{ops.map((o: any) => <option key={o.id} value={o.id}>{o.name ?? o.title}</option>)}</select></div>
-            <div><label className="mf-label">Classification</label><select value={form.classification} onChange={setF("classification")} className="mf-input w-full">{["unclassified","confidential","classified","top-secret"].map(c => <option key={c} value={c}>{c.replace("-"," ").toUpperCase()}</option>)}</select></div>
-          </div>
-          <div><label className="mf-label">Content</label><textarea rows={8} value={form.content} onChange={setF("content")} className="mf-input resize-none w-full" placeholder="Full briefing content — objectives, AO, comms plan, ROE..." /></div>
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Title *</label><input value={form.title} onChange={setF("title")} className="mf-input" placeholder="Operation Iron Fist — OPORD" /></div><div><label className="mf-label">Op Date / Time</label><input type="datetime-local" value={form.op_date} onChange={setF("op_date")} className="mf-input" /></div></div>
+          <div><label className="mf-label">Status</label><select value={form.status} onChange={setF("status")} className="mf-input"><option value="draft">Draft</option><option value="published">Published (visible to all members)</option><option value="archived">Archived</option></select></div>
+          <div><label className="mf-label">Area of Operations (AO)</label><input value={form.ao} onChange={setF("ao")} className="mf-input" placeholder="Grid reference, map name..." /></div>
+          <div><label className="mf-label">Objectives</label><textarea rows={4} value={form.objectives} onChange={setF("objectives")} className="mf-input resize-none" placeholder="1. Secure FOB Alpha&#10;2. Eliminate HVT Bravo..." /></div>
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Comms Plan</label><textarea rows={3} value={form.comms_plan} onChange={setF("comms_plan")} className="mf-input resize-none" placeholder="Primary: CH1&#10;Secondary: CH2..." /></div><div><label className="mf-label">ROE</label><textarea rows={3} value={form.roe} onChange={setF("roe")} className="mf-input resize-none" placeholder="Weapons free in AO..." /></div></div>
+          <div><label className="mf-label">Additional Notes</label><textarea rows={3} value={form.additional_notes} onChange={setF("additional_notes")} className="mf-input resize-none" /></div>
           <div className="flex gap-2">
-            <button onClick={submit} disabled={saving || !form.title?.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editId ? "Update" : "Create"}</button>
+            <button onClick={submit} disabled={saving || !form.title.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editId ? "Update" : "Create"}</button>
             <button onClick={() => { setCreating(false); setEditId(null); setForm(emptyForm); }} className="px-4 py-2 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground">Cancel</button>
           </div>
         </div>
@@ -1669,31 +3588,28 @@ function BriefingsTab({ group, showMsg }: any) {
         <div className="text-center py-12 border border-dashed border-border rounded-lg text-muted-foreground"><MapPin className="w-10 h-10 mx-auto mb-3 opacity-30" /><p className="font-display text-sm uppercase tracking-widest">No briefings created</p></div>
       ) : (
         <div className="space-y-3">
-          {briefings.map((b: any) => {
-            const linkedOp = ops.find((o: any) => o.id === b.op_id);
-            return (
-              <div key={b.id} className="bg-card border border-border rounded-lg overflow-hidden">
-                <button onClick={() => setExpandedId(expandedId === b.id ? null : b.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    {linkedOp && <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest text-primary border border-primary/30 bg-primary/10 px-2 py-0.5 rounded"><Siren className="w-2.5 h-2.5" />{linkedOp.name ?? linkedOp.title}</span>}
-                    <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${CL[b.classification] ?? ""}`}>{(b.classification ?? "unclassified").replace("-"," ")}</span>
-                    <span className="font-display font-bold text-sm text-foreground">{b.title}</span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={e => { e.stopPropagation(); setEditId(b.id); setForm({ title:b.title, op_id:b.op_id??"", content:b.content??"", classification:b.classification??"unclassified" }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                    <button onClick={e => { e.stopPropagation(); remove(b.id); }} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                    {expandedId === b.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                  </div>
-                </button>
-                {expandedId === b.id && (
-                  <div className="border-t border-border p-5 space-y-4 bg-secondary/10">
-                    {b.content && <AARField label="Content" value={b.content} />}
-                    <p className="text-xs text-muted-foreground font-sans">By {b.created_by} · {formatDistanceToNow(new Date(b.created_date ?? b.created_at ?? Date.now()), { addSuffix: true })}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {briefings.map((b: any) => (
+            <div key={b.id} className="bg-card border border-border rounded-lg overflow-hidden">
+              <button onClick={() => setExpandedId(expandedId === b.id ? null : b.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
+                <div className="flex items-center gap-3 flex-wrap"><span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${SC[b.status] ?? ""}`}>{b.status}</span><span className="font-display font-bold text-sm text-foreground">{b.title}</span>{b.op_date && <span className="text-xs text-muted-foreground">{format(new Date(b.op_date), "MMM dd, yyyy HH:mm")}</span>}</div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={e => { e.stopPropagation(); setEditId(b.id); setForm({ title: b.title, op_date: b.op_date ? b.op_date.slice(0,16) : "", ao: b.ao ?? "", objectives: b.objectives ?? "", comms_plan: b.comms_plan ?? "", roe: b.roe ?? "", additional_notes: b.additional_notes ?? "", status: b.status }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={e => { e.stopPropagation(); remove(b.id); }} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                  {expandedId === b.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                </div>
+              </button>
+              {expandedId === b.id && (
+                <div className="border-t border-border p-5 space-y-4 bg-secondary/10">
+                  {b.ao && <AARField label="Area of Operations" value={b.ao} />}
+                  {b.objectives && <AARField label="Objectives" value={b.objectives} />}
+                  {b.comms_plan && <AARField label="Comms Plan" value={b.comms_plan} />}
+                  {b.roe && <AARField label="ROE" value={b.roe} />}
+                  {b.additional_notes && <AARField label="Additional Notes" value={b.additional_notes} />}
+                  <p className="text-xs text-muted-foreground font-sans">By {b.created_by} · {formatDistanceToNow(new Date(b.created_date ?? b.created_at ?? Date.now()), { addSuffix: true })}</p>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -1962,21 +3878,26 @@ function ReadinessTab({ group }: any) {
   );
 }
 
-// ─── Reputation / Service Files Tab ──────────────────────────────────────────
+// ─── Restored Tabs ───
 function ReputationTab({ group }: any) {
   const [roster, setRoster] = useState<any[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
   const [repData, setRepData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isProUnit, setIsProUnit] = useState(false);
   const [form, setForm] = useState({ activity: 7, attitude: 7, experience: 5, discipline: 7, overall_vote: "commend", blacklisted: false, blacklist_reason: "", notes: "" });
   const [saved, setSaved] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    apiFetch<any>(`/api/milsim-groups/${group.id}/full`)
-      .then(g => setRoster(g.roster ?? []))
-      .catch(() => {})
+    Promise.all([
+      apiFetch<any>(`/api/milsim-groups/${group.id}/full`),
+      apiFetch<any>(`/api/milsim-groups/${group.id}/pro-status`).catch(() => ({ is_pro: false })),
+    ]).then(([g, proStatus]) => {
+      setRoster(g.roster ?? []);
+      setIsProUnit(!!proStatus?.is_pro);
+    }).catch(() => {})
       .finally(() => setLoading(false));
   }, [group.id]);
 
@@ -2089,14 +4010,68 @@ function ReputationTab({ group }: any) {
                 )}
               </div>
 
-              {/* Existing reviews summary */}
-              {repData[selected.userId] && (
-                <div className="text-xs text-muted-foreground font-sans">
-                  {repData[selected.userId].reviews?.length ?? 0} review(s) on record —{" "}
-                  {repData[selected.userId].score?.commends ?? 0} commend(s),{" "}
-                  {repData[selected.userId].score?.flags ?? 0} flag(s)
-                </div>
-              )}
+              {/* Existing reviews summary — Pro: full detail | Free: summary only */}
+              {repData[selected.userId] && (() => {
+                const rd = repData[selected.userId];
+                const isPro = isProUnit;
+                const reviewCount = rd.reviews?.length ?? 0;
+                const commends = rd.score?.commends ?? 0;
+                const flags = rd.score?.flags ?? 0;
+                return isPro ? (
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground font-sans">
+                      {reviewCount} review(s) on record — {commends} commend(s), {flags} flag(s)
+                    </div>
+                    {rd.reviews && rd.reviews.length > 0 && (
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                        {rd.reviews.map((rev: any, i: number) => (
+                          <div key={i} className="text-[10px] bg-secondary/40 border border-border rounded px-2.5 py-1.5">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="font-display font-bold uppercase tracking-widest text-foreground">{rev.group_name ?? "Unknown Unit"}</span>
+                              <span className={`font-bold uppercase ${rev.overall_vote === "commend" ? "text-green-400" : rev.overall_vote === "flag" ? "text-red-400" : "text-muted-foreground"}`}>
+                                {rev.overall_vote === "commend" ? "✓ Commend" : rev.overall_vote === "flag" ? "⚑ Flag" : "— Neutral"}
+                              </span>
+                            </div>
+                            <div className="flex gap-3 text-muted-foreground">
+                              <span>Activity: {rev.activity}/10</span>
+                              <span>Attitude: {rev.attitude}/10</span>
+                              <span>Experience: {rev.experience}/10</span>
+                              <span>Discipline: {rev.discipline}/10</span>
+                            </div>
+                            {rev.notes && <p className="mt-0.5 text-muted-foreground italic">"{rev.notes}"</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {rd.reviews && rd.reviews.length > 0 && (
+                      <button
+                        onClick={() => {
+                          const rows = [["Unit","Vote","Activity","Attitude","Experience","Discipline","Notes"]];
+                          rd.reviews.forEach((rev: any) => rows.push([rev.group_name ?? "", rev.overall_vote, rev.activity, rev.attitude, rev.experience, rev.discipline, rev.notes ?? ""]));
+                          const csv = rows.map(r => r.map((v: any) => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+                          const blob = new Blob([csv], { type: "text/csv" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a"); a.href = url; a.download = `${selected.callsign ?? "operator"}-reputation.csv`; a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="text-[10px] font-display font-bold uppercase tracking-widest text-primary border border-primary/30 bg-primary/5 hover:bg-primary/10 px-2.5 py-1 rounded transition-all flex items-center gap-1"
+                      >
+                        <Download className="w-3 h-3" /> Export CSV
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground font-sans">
+                      {reviewCount} review(s) on record — {commends} commend(s), {flags} flag(s)
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-yellow-400 border border-yellow-500/30 bg-yellow-500/5 rounded px-2.5 py-1.5">
+                      <Crown className="w-3 h-3 shrink-0" />
+                      <span className="font-sans">Full review history + export available with <a href="/commander-pro" className="underline font-bold">Commander Pro</a></span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="border-t border-border pt-4 space-y-3">
                 <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Your Assessment</p>
@@ -2187,6 +4162,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [isProUnit, setIsProUnit] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [assessment, setAssessment] = useState<any | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2199,8 +4175,12 @@ function TrainingDocsTab({ group, showMsg }: any) {
   const loadDocs = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiFetch<any[]>(`/api/training-docs/${group.id}`);
+      const [data, proStatus] = await Promise.all([
+        apiFetch<any[]>(`/api/training-docs/${group.id}`),
+        apiFetch<any>(`/api/milsim-groups/${group.id}/pro-status`).catch(() => ({ is_pro: false })),
+      ]);
       setDocs(data ?? []);
+      setIsProUnit(!!proStatus?.is_pro);
     } catch { setDocs([]); } finally { setLoading(false); }
   }, [group.id]);
 
@@ -2246,8 +4226,16 @@ function TrainingDocsTab({ group, showMsg }: any) {
         setShowForm(false);
         showMsg(true, "Training document uploaded.");
         loadAssessment();
+      } else if (result?.pro_required) {
+        showMsg(false, "You've reached the 5-document limit for free units. Upgrade to Commander Pro for unlimited uploads.");
       } else { showMsg(false, "Upload failed — try again."); }
-    } catch (e: any) { showMsg(false, e.message ?? "Upload failed."); } finally { setUploading(false); }
+    } catch (e: any) {
+      if (e?.pro_required || e?.message?.includes("Commander Pro")) {
+        showMsg(false, "You've reached the 5-document limit. Upgrade to Commander Pro for unlimited uploads.");
+      } else {
+        showMsg(false, e.message ?? "Upload failed.");
+      }
+    } finally { setUploading(false); }
   };
 
   const deleteDoc = async (id: string) => {
@@ -2398,7 +4386,17 @@ function TrainingDocsTab({ group, showMsg }: any) {
               className="px-4 py-2 border border-border hover:border-destructive/50 text-muted-foreground hover:text-destructive font-display font-bold uppercase tracking-wider text-xs rounded transition-all">
               Cancel
             </button>
-            <button onClick={uploadDoc} disabled={uploading}
+            {!isProUnit && docs.length >= 5 && (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 text-xs font-sans text-yellow-400 mb-2">
+                <span className="text-lg">⚠️</span>
+                <span>
+                  <strong className="font-display font-bold uppercase">Doc limit reached (5/5).</strong>{" "}
+                  Free units can store up to 5 training documents.{" "}
+                  <a href="/commander-pro" className="underline font-bold hover:text-yellow-300">Upgrade to Commander Pro</a> for unlimited uploads.
+                </span>
+              </div>
+            )}
+            <button onClick={uploadDoc} disabled={uploading || (!isProUnit && docs.length >= 5)}
               className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs rounded clip-angled-sm transition-all disabled:opacity-50">
               {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
               {uploading ? "Uploading..." : "Upload"}
@@ -2579,8 +4577,48 @@ function LOATab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "succ
 
   const myLOA = loas.find(l => l.user_id === user?.id && l.status === "Active");
 
+  // Smart LOA Alerts — find LOAs expiring within 48 hours
+  const now = new Date();
+  const expiringSoon = loas.filter(l => {
+    if (l.status !== "Active") return false;
+    const end = new Date(l.end_date);
+    const diffHours = (end.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return diffHours >= 0 && diffHours <= 48;
+  });
+  const overdueActive = loas.filter(l => {
+    if (l.status !== "Active") return false;
+    return new Date(l.end_date) < now;
+  });
+
   return (
     <div className="space-y-6">
+      {/* Smart LOA Alerts */}
+      {(expiringSoon.length > 0 || overdueActive.length > 0) && (
+        <div className="space-y-2">
+          {overdueActive.map(l => (
+            <div key={l.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-red-500/40 bg-red-500/10">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-display font-bold uppercase tracking-wider text-red-400">LOA Overdue — {l.callsign}</p>
+                <p className="text-[10px] font-sans text-muted-foreground">Ended {new Date(l.end_date).toLocaleDateString("en-GB")} · Status not yet updated. Run calendar sync or revoke manually.</p>
+              </div>
+            </div>
+          ))}
+          {expiringSoon.map(l => {
+            const hoursLeft = Math.round((new Date(l.end_date).getTime() - now.getTime()) / (1000 * 60 * 60));
+            return (
+              <div key={l.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-amber-500/40 bg-amber-500/10">
+                <Bell className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-display font-bold uppercase tracking-wider text-amber-400">LOA Expiring Soon — {l.callsign}</p>
+                  <p className="text-[10px] font-sans text-muted-foreground">Expires in ~{hoursLeft}h on {new Date(l.end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · {l.reason_category}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display font-bold text-lg uppercase tracking-widest">Leave of Absence Manager</h2>
@@ -2756,6 +4794,7 @@ const EV_STYLE: Record<string, string> = {
   Other:    "bg-secondary border-border text-muted-foreground",
   LOA:      "bg-blue-500/10 border-blue-500/30 text-blue-400",
   AAR:      "bg-green-500/10 border-green-500/30 text-green-400",
+  Campaign: "bg-yellow-500/10 border-yellow-500/30 text-yellow-300",
 };
 
 function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success"|"error") => void }) {
@@ -2766,7 +4805,9 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
   const [events, setEvents]   = useState<any[]>([]);
   const [loas, setLoas]       = useState<any[]>([]);
   const [aars, setAars]       = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isProCal, setIsProCal] = useState<boolean | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showForm, setShowForm]   = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
@@ -2779,19 +4820,52 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [opsData, loaData, aarData] = await Promise.all([
+      // Pro check
+      const proRes = await fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`);
+      const proData = await proRes.json();
+      setIsProCal(proData.is_pro);
+      if (!proData.is_pro) { setLoading(false); return; }
+
+      const [opsData, loaData, aarData, campRes] = await Promise.all([
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
         apiFetch(`/loa?path=list&group_id=${group.id}`),
         apiFetch(`/milsimAars?path=list&group_id=${group.id}`),
+        fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`).then(r => r.json()).catch(() => []),
       ]);
       setEvents(opsData.events ?? []);
       setLoas(loaData.loas ?? []);
       setAars(aarData.aars ?? []);
-    } catch { setEvents([]); setLoas([]); setAars([]); }
+      setCampaigns(Array.isArray(campRes) ? campRes : []);
+    } catch { setEvents([]); setLoas([]); setAars([]); setCampaigns([]); }
     setLoading(false);
   }, [group.id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // ── Pro gate ──────────────────────────────────────────────────────────────
+  if (isProCal === null) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-3">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+
+  if (!isProCal) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          The Activity Calendar is a Pro feature. Upgrade to unlock full campaign-linked scheduling, LOA tracking, AAR timelines, and monthly readiness views.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]">
+        <Crown className="w-4 h-4" /> Upgrade to Pro
+      </a>
+    </div>
+  );
 
   const save = async () => {
     if (!form.title || !form.scheduled_at) { showMsg("Title and date required", "error"); return; }
@@ -2862,10 +4936,21 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
     return d.getFullYear() === viewYear && d.getMonth() === viewMonth && d.getDate() === day;
   });
 
+  const campaignsForDay = (day: number) => {
+    const date = dayDate(day);
+    return campaigns.filter(camp => {
+      if (!camp.start_date || !camp.end_date) return false;
+      const start = new Date(camp.start_date);
+      const end = new Date(camp.end_date);
+      return date >= start && date <= end && camp.status !== "Archived";
+    });
+  };
+
   const allItemsForDay = (day: number) => [
     ...opsForDay(day).map(e => ({ kind: e.event_type ?? "Op", label: e.title ?? e.name, raw: e })),
     ...loasForDay(day).map(l => ({ kind: "LOA", label: `LOA: ${l.callsign}`, raw: l })),
     ...aarsForDay(day).map(a => ({ kind: "AAR", label: `AAR: ${a.title ?? a.op_name}`, raw: a })),
+    ...campaignsForDay(day).map(camp => ({ kind: "Campaign", label: `Campaign: ${camp.name}`, raw: camp })),
   ];
 
   const upcomingOps = events
@@ -2880,6 +4965,7 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
     const dayOps = opsForDay(selectedDay);
     const dayLoas = loasForDay(selectedDay);
     const dayAars = aarsForDay(selectedDay);
+    const dayCamps = campaignsForDay(selectedDay);
     return (
       <div className="border border-border rounded-lg bg-card p-5 space-y-4">
         <div className="flex items-center justify-between">
@@ -2958,6 +5044,41 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
             </div>
           </div>
         )}
+        {(() => {
+          const dayCamps = selectedDay !== null ? campaignsForDay(selectedDay) : [];
+          if (dayCamps.length === 0) return null;
+          return (
+            <div>
+              <p className="text-[10px] font-display font-bold uppercase tracking-widest text-yellow-400 mb-2 flex items-center gap-1"><Zap className="w-3 h-3" /> Active Campaigns</p>
+              <div className="space-y-1.5">
+                {dayCamps.map(camp => (
+                  <div key={camp.id} className="rounded border border-yellow-500/20 bg-yellow-500/5 p-3 space-y-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-display font-bold text-xs text-yellow-300">{camp.name}</p>
+                      <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ${
+                        camp.status === "Active" ? "border-green-500/40 text-green-400" :
+                        camp.status === "Planning" ? "border-yellow-500/40 text-yellow-400" :
+                        camp.status === "Completed" ? "border-border text-muted-foreground" :
+                        "border-border text-muted-foreground"
+                      }`}>{camp.status}</span>
+                    </div>
+                    {camp.objective && <p className="text-[10px] font-sans text-muted-foreground line-clamp-2">{camp.objective}</p>}
+                    {camp.tags && camp.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {camp.tags.map((t: string) => <span key={t} className="text-[8px] font-display uppercase tracking-widest px-1 py-0.5 bg-secondary border border-border rounded">{t}</span>)}
+                      </div>
+                    )}
+                    {camp.start_date && camp.end_date && (
+                      <p className="text-[9px] font-sans text-muted-foreground opacity-70">
+                        {new Date(camp.start_date).toLocaleDateString("en-GB")} – {new Date(camp.end_date).toLocaleDateString("en-GB")}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   };
@@ -3011,6 +5132,7 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-yellow-400/60" />Training</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-400/60" />AAR</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-300/60 border border-blue-400/40" />LOA</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-yellow-400/60" />Campaign</span>
             <span className="flex items-center gap-1 text-muted-foreground">Click any day for full review</span>
           </div>
 
@@ -3075,6 +5197,1636 @@ function ActivityCalendarTab({ group, showMsg }: { group: any; showMsg: (m: stri
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Analytics (Pro) ──────────────────────────────────────────────────────────
+const ANALYTICS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/groupAnalytics";
+const PRO_STATUS_URL_MANAGE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/getProStatus";
+
+function MiniBar({ value, max, color = "bg-primary" }: { value: number; max: number; color?: string }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs font-display font-bold text-muted-foreground w-6 text-right">{value}</span>
+    </div>
+  );
+}
+
+function SparkLine({ data, color = "#22d3ee" }: { data: number[]; color?: string }) {
+  if (!data.length) return null;
+  const max = Math.max(...data, 1);
+  const w = 120, h = 40, pad = 4;
+  const pts = data.map((v, i) => {
+    const x = pad + (i / (data.length - 1 || 1)) * (w - pad * 2);
+    const y = h - pad - ((v / max) * (h - pad * 2));
+    return `${x},${y}`;
+  }).join(" ");
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="opacity-80">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      {data.map((v, i) => {
+        const x = pad + (i / (data.length - 1 || 1)) * (w - pad * 2);
+        const y = h - pad - ((v / max) * (h - pad * 2));
+        return <circle key={i} cx={x} cy={y} r="2.5" fill={color} />;
+      })}
+    </svg>
+  );
+}
+
+function StatCard({ label, value, sub, trend, sparkData, color }: { label: string; value: string | number; sub?: string; trend?: string; sparkData?: number[]; color?: string }) {
+  return (
+    <div className="bg-card border border-border rounded-lg p-5 flex flex-col gap-2">
+      <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+      <div className="flex items-end justify-between gap-2">
+        <p className={`font-display font-black text-3xl ${color || "text-foreground"}`}>{value}</p>
+        {sparkData && <SparkLine data={sparkData} color={color === "text-yellow-400" ? "#facc15" : color === "text-green-400" ? "#4ade80" : "#22d3ee"} />}
+      </div>
+      {sub && <p className="text-xs font-sans text-muted-foreground">{sub}</p>}
+      {trend && <p className="text-xs font-sans text-primary">{trend}</p>}
+    </div>
+  );
+}
+
+function AnalyticsTab({ group }: any) {
+  const [data, setData] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Check pro first
+    fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`)
+      .then(r => r.json())
+      .then(s => {
+        setIsPro(s.is_pro);
+        if (s.is_pro) {
+          return fetch(`${ANALYTICS_URL}?group_id=${group.id}`)
+            .then(r => r.json())
+            .then(setData)
+            .catch(() => {});
+        }
+      })
+      .catch(() => setIsPro(false))
+      .finally(() => setLoading(false));
+  }, [group.id]);
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-3">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <p className="text-sm text-muted-foreground font-sans">Loading analytics...</p>
+    </div>
+  );
+
+  // Pro gate
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          Analytics is a Pro feature. Upgrade your unit to unlock full attendance tracking, ops frequency charts, roster growth, duty status breakdown, and more.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]"
+      >
+        <Crown className="w-4 h-4" /> Upgrade to Pro — £10/mo
+      </a>
+      <p className="text-xs text-muted-foreground font-sans">Cancel anytime. Instant activation.</p>
+    </div>
+  );
+
+  if (!data) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+      <AlertCircle className="w-8 h-8 text-destructive" />
+      <p className="text-muted-foreground font-sans">Failed to load analytics data.</p>
+    </div>
+  );
+
+  const { summary, charts, top_operators, top_awards } = data;
+
+  // Format month labels
+  const monthLabels = Object.keys(charts.ops_per_month).map(k => {
+    const [y, m] = k.split("-");
+    return new Date(parseInt(y), parseInt(m) - 1).toLocaleString("default", { month: "short" });
+  });
+  const opsData = Object.values(charts.ops_per_month) as number[];
+  const attendData = Object.values(charts.attendance_per_month) as number[];
+  const joinData = Object.values(charts.join_per_month) as number[];
+
+  // Outcome colors
+  const outcomeColor: Record<string, string> = { victory: "bg-green-500", defeat: "bg-red-500", draw: "bg-yellow-500", incomplete: "bg-secondary" };
+  const totalOutcomes = Object.values(charts.aar_outcomes).reduce((a: any, b: any) => a + b, 0) as number;
+
+  return (
+    <div className="space-y-8 max-w-5xl">
+
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
+          <BarChart3 className="w-4 h-4 text-yellow-400" />
+        </div>
+        <div>
+          <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Unit Analytics</h2>
+          <p className="text-xs font-sans text-muted-foreground">Live data — all time unless noted</p>
+        </div>
+        <span className="ml-auto text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
+          <Crown className="w-3 h-3" /> Pro
+        </span>
+      </div>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Active Roster" value={summary.active_roster} sub={`${summary.total_roster} total enrolled`} sparkData={joinData} color="text-foreground" />
+        <StatCard label="Ops Completed" value={summary.completed_ops} sub={`${summary.scheduled_ops} upcoming`} sparkData={opsData} color="text-primary" />
+        <StatCard label="Avg Attendance" value={summary.avg_attendance} sub="per op (from AARs)" color="text-yellow-400" />
+        <StatCard label="Op Win Rate" value={`${summary.op_win_rate}%`} sub={`${summary.total_aars} AARs filed`} color={summary.op_win_rate >= 60 ? "text-green-400" : summary.op_win_rate >= 40 ? "text-yellow-400" : "text-red-400"} />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Total Awards" value={summary.total_awards} color="text-yellow-400" />
+        <StatCard label="Active LOAs" value={summary.active_loas} color={summary.active_loas > 3 ? "text-yellow-400" : "text-muted-foreground"} />
+        <StatCard label="Briefings Filed" value={summary.total_aars} color="text-foreground" />
+        <StatCard label="Scheduled Ops" value={summary.scheduled_ops} color="text-primary" />
+      </div>
+
+      {/* Charts row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        {/* Ops per month */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Ops Completed — Last 6 Months</p>
+          <div className="flex items-end gap-2 h-24">
+            {opsData.map((v, i) => {
+              const maxV = Math.max(...opsData, 1);
+              const pct = (v / maxV) * 100;
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-display font-bold">{v}</span>
+                  <div className="w-full bg-primary/80 rounded-t transition-all" style={{ height: `${Math.max(pct * 0.7, v > 0 ? 4 : 2)}px` }} />
+                  <span className="text-[9px] text-muted-foreground">{monthLabels[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Roster growth */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">New Recruits — Last 6 Months</p>
+          <div className="flex items-end gap-2 h-24">
+            {joinData.map((v, i) => {
+              const maxV = Math.max(...joinData, 1);
+              const pct = (v / maxV) * 100;
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-display font-bold">{v}</span>
+                  <div className="w-full bg-green-500/70 rounded-t transition-all" style={{ height: `${Math.max(pct * 0.7, v > 0 ? 4 : 2)}px` }} />
+                  <span className="text-[9px] text-muted-foreground">{monthLabels[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        {/* Roster status */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Roster by Status</p>
+          <div className="space-y-2.5">
+            {Object.entries(charts.roster_by_status).map(([status, count]) => (
+              <div key={status}>
+                <div className="flex justify-between text-xs font-sans mb-1">
+                  <span className="text-foreground capitalize">{status}</span>
+                  <span className="text-muted-foreground">{count as number}</span>
+                </div>
+                <MiniBar value={count as number} max={summary.total_roster} color="bg-primary" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* AAR outcomes */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Op Outcomes</p>
+          {totalOutcomes === 0 ? (
+            <p className="text-sm text-muted-foreground font-sans py-4 text-center">No AARs filed yet</p>
+          ) : (
+            <div className="space-y-2.5">
+              {Object.entries(charts.aar_outcomes).map(([outcome, count]) => (
+                count as number > 0 ? (
+                  <div key={outcome}>
+                    <div className="flex justify-between text-xs font-sans mb-1">
+                      <span className="text-foreground capitalize">{outcome}</span>
+                      <span className="text-muted-foreground">{count as number} ({Math.round(((count as number) / totalOutcomes) * 100)}%)</span>
+                    </div>
+                    <MiniBar value={count as number} max={totalOutcomes} color={outcomeColor[outcome] || "bg-secondary"} />
+                  </div>
+                ) : null
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Top operators */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-1.5">
+            <Trophy className="w-3 h-3 text-yellow-400" /> Top Operators
+          </p>
+          {top_operators.length === 0 ? (
+            <p className="text-sm text-muted-foreground font-sans py-4 text-center">No op data yet</p>
+          ) : (
+            <div className="space-y-2">
+              {top_operators.map((op: any, i: number) => (
+                <div key={op.callsign} className="flex items-center gap-3">
+                  <span className={`text-xs font-display font-black w-4 ${i === 0 ? "text-yellow-400" : i === 1 ? "text-zinc-400" : i === 2 ? "text-orange-500" : "text-muted-foreground"}`}>
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 text-sm font-sans text-foreground truncate">{op.callsign}</span>
+                  <span className="text-xs font-display font-bold text-muted-foreground">{op.ops_count} ops</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Top awards */}
+      {top_awards.length > 0 && (
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Most Issued Awards</p>
+          <div className="flex flex-wrap gap-3">
+            {top_awards.map((a: any) => (
+              <div key={a.name} className="flex items-center gap-2 bg-secondary/50 border border-border rounded px-3 py-2">
+                <Star className="w-3.5 h-3.5 text-yellow-400" />
+                <span className="text-sm font-sans text-foreground">{a.name}</span>
+                <span className="text-xs font-display font-bold text-muted-foreground">×{a.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+// ─── Campaigns (Pro) ──────────────────────────────────────────────────────────
+const CAMPAIGNS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/campaigns";
+
+const OUTCOME_OPTIONS = ["Victory", "Defeat", "Draw", "Ongoing", "Abandoned"];
+const STATUS_OPTIONS = ["active", "completed", "archived"];
+
+const STATUS_COLORS: Record<string, string> = {
+  active: "bg-green-500/15 text-green-400 border-green-500/30",
+  completed: "bg-primary/15 text-primary border-primary/30",
+  archived: "bg-secondary text-muted-foreground border-border",
+};
+
+const OUTCOME_COLORS: Record<string, string> = {
+  Victory: "text-green-400",
+  Defeat: "text-red-400",
+  Draw: "text-yellow-400",
+  Ongoing: "text-primary",
+  Abandoned: "text-muted-foreground",
+};
+
+function CampaignCard({ campaign, onEdit, onDelete }: { campaign: any; onEdit: () => void; onDelete: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const winColor = campaign.win_rate !== null
+    ? campaign.win_rate >= 60 ? "text-green-400" : campaign.win_rate >= 40 ? "text-yellow-400" : "text-red-400"
+    : "text-muted-foreground";
+
+  return (
+    <div className="bg-card border border-border rounded-lg overflow-hidden hover:border-primary/30 transition-colors">
+      {/* Banner */}
+      {campaign.banner_url && (
+        <div className="h-24 w-full overflow-hidden">
+          <img src={campaign.banner_url} alt={campaign.name} className="w-full h-full object-cover opacity-70" />
+        </div>
+      )}
+
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h3 className="font-display font-black uppercase tracking-wider text-foreground text-base truncate">{campaign.name}</h3>
+              <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${STATUS_COLORS[campaign.status] || STATUS_COLORS.active}`}>
+                {campaign.status}
+              </span>
+              {campaign.outcome && (
+                <span className={`text-[10px] font-display font-bold uppercase tracking-widest ${OUTCOME_COLORS[campaign.outcome] || ""}`}>
+                  {campaign.outcome}
+                </span>
+              )}
+            </div>
+            {campaign.objective && (
+              <p className="text-xs text-muted-foreground font-sans line-clamp-1">{campaign.objective}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={onEdit} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+            <button onClick={onDelete} className="p-1.5 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-4 gap-3 py-3 border-y border-border mb-3">
+          <div className="text-center">
+            <p className="font-display font-black text-lg text-foreground">{campaign.ops_count}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">Ops</p>
+          </div>
+          <div className="text-center">
+            <p className="font-display font-black text-lg text-foreground">{campaign.aars_count}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">AARs</p>
+          </div>
+          <div className="text-center">
+            <p className="font-display font-black text-lg text-foreground">{campaign.avg_attendance || "—"}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">Avg Att.</p>
+          </div>
+          <div className="text-center">
+            <p className={`font-display font-black text-lg ${winColor}`}>{campaign.win_rate !== null ? `${campaign.win_rate}%` : "—"}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">Win Rate</p>
+          </div>
+        </div>
+
+        {/* Dates */}
+        <div className="flex items-center gap-4 text-xs font-sans text-muted-foreground mb-3">
+          {campaign.start_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(campaign.start_date).toLocaleDateString()}</span>}
+          {campaign.end_date && <span>→ {new Date(campaign.end_date).toLocaleDateString()}</span>}
+          {campaign.tags?.length > 0 && (
+            <div className="flex gap-1 flex-wrap">
+              {campaign.tags.map((t: string) => (
+                <span key={t} className="bg-secondary px-1.5 py-0.5 rounded text-[10px] text-muted-foreground">{t}</span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Expandable ops list */}
+        {campaign.ops?.length > 0 && (
+          <div>
+            <button onClick={() => setExpanded(!expanded)} className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+              {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {campaign.ops_count} Linked Op{campaign.ops_count !== 1 ? "s" : ""}
+            </button>
+            {expanded && (
+              <div className="mt-2 space-y-1">
+                {campaign.ops.map((op: any) => (
+                  <div key={op.id} className="flex items-center gap-2 text-xs font-sans text-muted-foreground py-1 border-b border-border/50 last:border-0">
+                    <Target className="w-3 h-3 text-primary shrink-0" />
+                    <span className="flex-1 truncate text-foreground">{op.name}</span>
+                    <span className="capitalize text-muted-foreground">{op.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Outcome note */}
+        {campaign.outcome_note && (
+          <div className="mt-3 pt-3 border-t border-border">
+            <p className="text-xs font-sans text-muted-foreground italic">"{campaign.outcome_note}"</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CampaignModal({ group, campaign, availableOps, onSave, onClose }: {
+  group: any; campaign: any | null; availableOps: any[]; onSave: (data: any) => void; onClose: () => void;
+}) {
+  const [form, setForm] = useState({
+    name: campaign?.name || "",
+    description: campaign?.description || "",
+    objective: campaign?.objective || "",
+    banner_url: campaign?.banner_url || "",
+    status: campaign?.status || "active",
+    start_date: campaign?.start_date || "",
+    end_date: campaign?.end_date || "",
+    outcome: campaign?.outcome || "",
+    outcome_note: campaign?.outcome_note || "",
+    tags: campaign?.tags?.join(", ") || "",
+    op_ids: campaign?.op_ids || [],
+  });
+  const [saving, setSaving] = useState(false);
+
+  const toggleOp = (opId: string) => {
+    setForm(f => ({
+      ...f,
+      op_ids: f.op_ids.includes(opId) ? f.op_ids.filter((id: string) => id !== opId) : [...f.op_ids, opId],
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (!form.name.trim()) return;
+    setSaving(true);
+    const payload = {
+      ...form,
+      tags: form.tags ? form.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
+      group_id: group.id,
+    };
+    onSave(payload);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+          <h2 className="font-display font-black uppercase tracking-wider text-foreground">
+            {campaign ? "Edit Campaign" : "New Campaign"}
+          </h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Campaign Name *</label>
+            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              className="mf-input w-full" placeholder="Operation Thunderstorm" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Objective</label>
+            <input value={form.objective} onChange={e => setForm(f => ({ ...f, objective: e.target.value }))}
+              className="mf-input w-full" placeholder="Secure the northern corridor..." />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Description</label>
+            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              className="mf-input w-full min-h-[80px] resize-y" placeholder="Full campaign brief..." />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Status</label>
+              <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                className="mf-input w-full">
+                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Outcome</label>
+              <select value={form.outcome} onChange={e => setForm(f => ({ ...f, outcome: e.target.value }))}
+                className="mf-input w-full">
+                <option value="">— Not set —</option>
+                {OUTCOME_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Start Date</label>
+              <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
+                className="mf-input w-full" />
+            </div>
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">End Date</label>
+              <input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
+                className="mf-input w-full" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Outcome Note</label>
+            <input value={form.outcome_note} onChange={e => setForm(f => ({ ...f, outcome_note: e.target.value }))}
+              className="mf-input w-full" placeholder="A decisive victory achieved through..." />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Banner Image URL</label>
+            <input value={form.banner_url} onChange={e => setForm(f => ({ ...f, banner_url: e.target.value }))}
+              className="mf-input w-full" placeholder="https://..." />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Tags (comma separated)</label>
+            <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+              className="mf-input w-full" placeholder="arma3, combined-arms, summer-2025" />
+          </div>
+
+          {/* Link ops */}
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">
+              <Link2 className="w-3 h-3 inline mr-1" /> Link Ops ({form.op_ids.length} selected)
+            </label>
+            <div className="max-h-48 overflow-y-auto border border-border rounded-lg divide-y divide-border">
+              {availableOps.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground font-sans text-center">No ops found — create some in the Live Ops tab first</p>
+              ) : availableOps.map((op: any) => (
+                <label key={op.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-secondary/50 cursor-pointer">
+                  <input type="checkbox" checked={form.op_ids.includes(op.id)} onChange={() => toggleOp(op.id)}
+                    className="rounded" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-sans text-foreground truncate">{op.name}</p>
+                    <p className="text-[10px] text-muted-foreground capitalize">{op.status} · {op.event_type || op.game || ""}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3 shrink-0">
+          <button onClick={onClose} className="px-5 py-2 border border-border rounded text-sm font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+          <button onClick={handleSubmit} disabled={saving || !form.name.trim()}
+            className="inline-flex items-center gap-2 px-6 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-wider text-sm rounded transition-all disabled:opacity-50">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {campaign ? "Save Changes" : "Create Campaign"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CampaignsTab({ group }: any) {
+  const { toast } = useToast();
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [availableOps, setAvailableOps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState<{ open: boolean; campaign: any | null }>({ open: false, campaign: null });
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      // Check pro
+      const proRes = await fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`);
+      const proData = await proRes.json();
+      setIsPro(proData.is_pro);
+      if (!proData.is_pro) { setLoading(false); return; }
+
+      // Load campaigns + ops in parallel
+      const [campRes, opsRes] = await Promise.all([
+        fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`),
+        fetch(`${CAMPAIGNS_URL}?path=ops&group_id=${group.id}`),
+      ]);
+      if (campRes.ok) setCampaigns(await campRes.json());
+      if (opsRes.ok) setAvailableOps(await opsRes.json());
+    } catch { /* noop */ } finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, [group.id]);
+
+  const handleSave = async (data: any) => {
+    try {
+      const isEdit = !!modal.campaign;
+      const res = await fetch(
+        isEdit
+          ? `${CAMPAIGNS_URL}?path=update&id=${modal.campaign.id}`
+          : `${CAMPAIGNS_URL}?path=create`,
+        { method: isEdit ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }
+      );
+      if (!res.ok) throw new Error((await res.json()).error || "Save failed");
+      toast({ title: isEdit ? "Campaign updated" : "Campaign created" });
+      setModal({ open: false, campaign: null });
+      load();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (campaign: any) => {
+    if (!confirm(`Delete "${campaign.name}"? This cannot be undone.`)) return;
+    try {
+      await fetch(`${CAMPAIGNS_URL}?path=delete&id=${campaign.id}`, { method: "DELETE" });
+      toast({ title: "Campaign deleted" });
+      load();
+    } catch {
+      toast({ title: "Delete failed", variant: "destructive" });
+    }
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          Campaigns let you group ops into named series with full progression tracking, win rates, attendance analytics, outcome notes and banners. Upgrade to unlock.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]"
+      >
+        <Crown className="w-4 h-4" /> Upgrade to Pro — £10/mo
+      </a>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6 max-w-5xl">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
+            <Zap className="w-4 h-4 text-yellow-400" />
+          </div>
+          <div>
+            <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Campaigns</h2>
+            <p className="text-xs font-sans text-muted-foreground">{campaigns.length} campaign{campaigns.length !== 1 ? "s" : ""} · link ops into series and track progression</p>
+          </div>
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
+            <Crown className="w-3 h-3" /> Pro
+          </span>
+        </div>
+        <button onClick={() => setModal({ open: true, campaign: null })}
+          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/80 text-black font-display font-black uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all">
+          <Plus className="w-4 h-4" /> New Campaign
+        </button>
+      </div>
+
+      {/* Summary stats */}
+      {campaigns.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: "Total Campaigns", value: campaigns.length },
+            { label: "Active", value: campaigns.filter(c => c.status === "active").length, color: "text-green-400" },
+            { label: "Total Ops Linked", value: campaigns.reduce((a, c) => a + c.ops_count, 0), color: "text-primary" },
+            { label: "Avg Win Rate", value: (() => { const wrs = campaigns.filter(c => c.win_rate !== null); return wrs.length ? `${Math.round(wrs.reduce((a, c) => a + c.win_rate, 0) / wrs.length)}%` : "—"; })(), color: "text-yellow-400" },
+          ].map(s => (
+            <div key={s.label} className="bg-card border border-border rounded-lg p-4 text-center">
+              <p className={`font-display font-black text-2xl ${s.color || "text-foreground"}`}>{s.value}</p>
+              <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Campaign cards */}
+      {campaigns.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+          <Flag className="w-12 h-12 text-muted-foreground/30" />
+          <div>
+            <p className="font-display font-bold uppercase tracking-wider text-foreground mb-1">No Campaigns Yet</p>
+            <p className="text-sm text-muted-foreground font-sans">Group your ops into named campaigns. Track win rates, attendance, and progression across op series.</p>
+          </div>
+          <button onClick={() => setModal({ open: true, campaign: null })}
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary/80 text-black font-display font-black uppercase tracking-wider text-sm px-6 py-2.5 rounded transition-all">
+            <Plus className="w-4 h-4" /> Create First Campaign
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {campaigns.map(c => (
+            <CampaignCard key={c.id} campaign={c}
+              onEdit={() => setModal({ open: true, campaign: c })}
+              onDelete={() => handleDelete(c)} />
+          ))}
+        </div>
+      )}
+
+      {modal.open && (
+        <CampaignModal
+          group={group}
+          campaign={modal.campaign}
+          availableOps={availableOps}
+          onSave={handleSave}
+          onClose={() => setModal({ open: false, campaign: null })}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Recruit Pipeline (Pro) ───────────────────────────────────────────────────
+const PIPELINE_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimApplications";
+
+const PIPELINE_COLUMNS = [
+  { id: "pending", label: "Applied", color: "border-yellow-500/40 bg-yellow-500/5", dot: "bg-yellow-400" },
+  { id: "reviewing", label: "Reviewing", color: "border-blue-500/40 bg-blue-500/5", dot: "bg-blue-400" },
+  { id: "interview", label: "Interview", color: "border-purple-500/40 bg-purple-500/5", dot: "bg-purple-400" },
+  { id: "approved", label: "Accepted", color: "border-green-500/40 bg-green-500/5", dot: "bg-green-400" },
+  { id: "rejected", label: "Rejected", color: "border-red-500/40 bg-red-500/5", dot: "bg-red-400" },
+];
+
+function RecruitPipelineTab({ group, showMsg }: any) {
+  const [apps, setApps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+  const [selected, setSelected] = useState<any | null>(null);
+  const [moving, setMoving] = useState(false);
+  const [reviewNote, setReviewNote] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  useEffect(() => {
+    fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`)
+      .then(r => r.json())
+      .then(s => {
+        setIsPro(s.is_pro);
+        if (s.is_pro) loadApps();
+        else setLoading(false);
+      })
+      .catch(() => { setIsPro(false); setLoading(false); });
+  }, [group.id]);
+
+  const loadApps = () => {
+    const token = localStorage.getItem("tag_auth_token") ?? "";
+    fetch(`${PIPELINE_URL}?path=${encodeURIComponent(`/${group.id}/applications`)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(data => { setApps(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  const moveApp = async (app: any, newStatus: string, note?: string) => {
+    setMoving(true);
+    const token = localStorage.getItem("tag_auth_token") ?? "";
+    try {
+      await fetch(`${PIPELINE_URL}?path=${encodeURIComponent(`/${app.id}/review`)}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus, review_note: note ?? reviewNote }),
+      });
+      const updated = { ...app, status: newStatus, review_note: note ?? reviewNote };
+      setApps(prev => prev.map(a => a.id === app.id ? updated : a));
+      if (selected?.id === app.id) setSelected(updated);
+      showMsg(true, `${app.applicant_username} moved to ${PIPELINE_COLUMNS.find(c => c.id === newStatus)?.label ?? newStatus}`);
+      setReviewNote("");
+    } catch { showMsg(false, "Failed to update status"); }
+    setMoving(false);
+  };
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          The Recruitment Pipeline is a Pro feature. Track applicants from applied → reviewing → interview → accepted with full notes and history.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]">
+        <Crown className="w-4 h-4" /> Upgrade to Pro — £10/mo
+      </a>
+    </div>
+  );
+
+  const byStatus = (status: string) => apps.filter(a => a.status === status);
+  const total = apps.length;
+  const pending = byStatus("pending").length;
+
+  const filteredApps = apps.filter(a => {
+    const matchSearch = !searchQuery || a.applicant_username?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchStatus = filterStatus === "all" || a.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
+
+  const conversionRate = total > 0 ? Math.round((byStatus("approved").length / total) * 100) : 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
+            <UserCheck className="w-4 h-4 text-yellow-400" />
+          </div>
+          <div>
+            <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Recruitment Pipeline</h2>
+            <p className="text-xs font-sans text-muted-foreground">{total} applicant{total !== 1 ? "s" : ""} · {conversionRate}% acceptance rate{pending > 0 ? ` · ${pending} awaiting review` : ""}</p>
+          </div>
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
+            <Crown className="w-3 h-3" /> Pro
+          </span>
+        </div>
+        {pending > 0 && (
+          <span className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-3 py-1.5 rounded animate-pulse">
+            <Bell className="w-3 h-3" /> {pending} new
+          </span>
+        )}
+      </div>
+
+      {/* Search + filter bar */}
+      {total > 0 && (
+        <div className="flex items-center gap-3 flex-wrap">
+          <input
+            value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search applicants..."
+            className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 w-48"
+          />
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+            className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-sans text-foreground focus:outline-none focus:border-primary/50">
+            <option value="all">All Stages</option>
+            {PIPELINE_COLUMNS.map(c => <option key={c.id} value={c.id}>{c.label} ({byStatus(c.id).length})</option>)}
+          </select>
+        </div>
+      )}
+
+      {total === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+          <UserCheck className="w-12 h-12 text-muted-foreground/30" />
+          <div>
+            <p className="font-display font-bold uppercase tracking-wider text-foreground mb-1">No Applications Yet</p>
+            <p className="text-sm text-muted-foreground font-sans">Applicants will appear here when they apply to join your unit.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          {PIPELINE_COLUMNS.map(col => {
+            const colApps = filteredApps.filter(a => a.status === col.id);
+            return (
+              <div key={col.id} className={`rounded-lg border p-3 ${col.color} min-h-[200px]`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`w-2 h-2 rounded-full ${col.dot}`} />
+                  <span className="font-display font-bold uppercase tracking-wider text-xs text-foreground">{col.label}</span>
+                  <span className="ml-auto text-xs font-display font-bold text-muted-foreground">{byStatus(col.id).length}</span>
+                </div>
+                <div className="space-y-2">
+                  {colApps.map(app => (
+                    <button key={app.id} onClick={() => { setSelected(app); setReviewNote(app.review_note ?? ""); }}
+                      className="w-full text-left bg-card border border-border rounded p-3 hover:border-primary/50 transition-all group">
+                      <p className="font-display font-bold text-sm text-foreground">{app.applicant_username}</p>
+                      <p className="text-[10px] font-sans text-muted-foreground mt-0.5 flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> {app.created_date ? new Date(app.created_date).toLocaleDateString("en-GB") : "—"}
+                      </p>
+                      {app.review_note && <p className="text-[10px] font-sans text-muted-foreground mt-1 truncate italic">"{app.review_note}"</p>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Applicant detail modal */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setSelected(null)}>
+          <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 space-y-5" onClick={e => e.stopPropagation()}>
+            {/* Modal header */}
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-display font-black text-xl uppercase tracking-wider text-foreground">{selected.applicant_username}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-[9px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                    PIPELINE_COLUMNS.find(c => c.id === selected.status)?.color ?? "border-border"
+                  } ${PIPELINE_COLUMNS.find(c => c.id === selected.status)?.dot.replace("bg-","text-") ?? "text-muted-foreground"}`}>
+                    {PIPELINE_COLUMNS.find(c => c.id === selected.status)?.label ?? selected.status}
+                  </span>
+                  <p className="text-xs font-sans text-muted-foreground">Applied {selected.created_date ? new Date(selected.created_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "—"}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+            </div>
+
+            {/* Answers */}
+            {selected.answers && Object.keys(selected.answers).length > 0 && (
+              <div className="space-y-3">
+                <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Application Answers</p>
+                {Object.entries(selected.answers).map(([q, a]: any) => (
+                  <div key={q} className="bg-secondary/30 rounded p-3 border border-border">
+                    <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-1">{q}</p>
+                    <p className="text-sm font-sans text-foreground leading-relaxed">{a}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Review note */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Internal Review Note</p>
+              <textarea
+                value={reviewNote}
+                onChange={e => setReviewNote(e.target.value)}
+                placeholder="Add internal notes about this applicant (not visible to them)..."
+                rows={3}
+                className="w-full bg-secondary border border-border rounded px-3 py-2 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none"
+              />
+            </div>
+
+            {/* Stage actions */}
+            <div className="space-y-2 pt-2 border-t border-border">
+              <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Move to Stage</p>
+              <div className="flex flex-wrap gap-2">
+                {PIPELINE_COLUMNS.filter(c => c.id !== selected.status).map(col => (
+                  <button key={col.id} disabled={moving} onClick={() => moveApp(selected, col.id)}
+                    className={`text-xs font-display font-bold uppercase tracking-wider px-3 py-1.5 rounded border transition-all disabled:opacity-50 ${col.color} ${col.dot.replace("bg-","text-")}`}>
+                    → {col.label}
+                  </button>
+                ))}
+              </div>
+              {reviewNote !== (selected.review_note ?? "") && (
+                <button disabled={moving} onClick={() => moveApp(selected, selected.status, reviewNote)}
+                  className="text-xs font-display font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-primary/50 text-primary bg-primary/10 hover:bg-primary/20 transition-all disabled:opacity-50">
+                  Save Note Only
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Unit Legacy ──────────────────────────────────────────────────────────────
+function UnitLegacyTab({ group }: any) {
+  const [ops, setOps] = useState<any[]>([]);
+  const [aars, setAars] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+  const token = localStorage.getItem("tag_auth_token") ?? "";
+
+  useEffect(() => {
+    const headers = { Authorization: `Bearer ${token}` };
+    Promise.all([
+      apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`).catch(() => []),
+      apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).catch(() => []),
+      fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`, { headers }).then(r => r.json()).catch(() => []),
+      apiFetch<any>(`/api/milsim-groups/${group.id}/pro-status`).catch(() => ({ is_pro: false })),
+    ]).then(([o, a, c, proStatus]) => {
+      setOps(Array.isArray(o) ? o : []);
+      setAars(Array.isArray(a) ? a : []);
+      setCampaigns(Array.isArray(c) ? c : []);
+      setIsPro(!!proStatus?.is_pro);
+      setLoading(false);
+    });
+  }, [group.id]);
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center gap-4 max-w-md mx-auto">
+      <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+        <Archive className="w-6 h-6 text-primary" />
+      </div>
+      <div>
+        <h3 className="font-display font-black uppercase tracking-widest text-lg text-foreground">Unit Legacy</h3>
+        <p className="text-sm font-sans text-muted-foreground mt-2">
+          The full timeline of your unit's history — ops, campaigns, AARs, and ribbons — is a <strong className="text-foreground">Commander Pro</strong> feature.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded border border-primary/40 bg-primary/10 text-primary text-xs font-display font-bold uppercase tracking-widest hover:bg-primary/20 transition-all">
+        <Zap className="w-3.5 h-3.5" />
+        Upgrade to Commander Pro
+      </a>
+    </div>
+  );
+
+  type LegacyEntryType = "op" | "aar" | "campaign";
+  type LegacyEntry = {
+    date: string; type: LegacyEntryType; id: string;
+    title: string; game?: string; eventType?: string; status?: string;
+    outcome?: string; author?: string; participants?: number;
+    campaignId?: string; opCount?: number;
+  };
+
+  const allEntries: LegacyEntry[] = [
+    ...ops.filter(o => o.scheduled_at).map(o => ({
+      date: o.scheduled_at, type: "op" as const, id: o.id,
+      title: o.name, game: o.game, eventType: o.event_type, status: o.status,
+      campaignId: (campaigns.find((c: any) => (c.op_ids || []).includes(o.id)) || {}).id,
+    })),
+    ...aars.filter(a => a.op_date || a.created_date).map(a => ({
+      date: a.op_date || a.created_date, type: "aar" as const, id: a.id,
+      title: a.title || a.op_name || "AAR",
+      outcome: a.outcome, author: a.author_username,
+      participants: Array.isArray(a.participants) ? a.participants.length : undefined,
+    })),
+    ...campaigns.filter(c => c.start_date).map(c => ({
+      date: c.start_date, type: "campaign" as const, id: c.id,
+      title: c.name, outcome: c.outcome, status: c.status,
+      opCount: (c.op_ids || []).length,
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const legacyTypeStyle: Record<LegacyEntryType, { dot: string; card: string; label: string; icon: typeof Archive }> = {
+    op:       { dot: "bg-primary border-primary/60",        card: "border-primary/20 bg-primary/5",       label: "text-primary",    icon: Siren        },
+    aar:      { dot: "bg-green-500 border-green-400/60",    card: "border-green-500/20 bg-green-500/5",   label: "text-green-400",  icon: ClipboardList },
+    campaign: { dot: "bg-yellow-400 border-yellow-300/60",  card: "border-yellow-500/20 bg-yellow-500/5", label: "text-yellow-400", icon: Zap           },
+  };
+
+  const legacyByYear: Record<number, LegacyEntry[]> = {};
+  allEntries.forEach(e => {
+    const y = new Date(e.date).getFullYear();
+    if (!legacyByYear[y]) legacyByYear[y] = [];
+    legacyByYear[y].push(e);
+  });
+  const legacyYears = Object.keys(legacyByYear).map(Number).sort((a, b) => b - a);
+
+  const firstOpDate = ops.length > 0 ? ops.reduce((e: string | null, o) => (!e || new Date(o.scheduled_at) < new Date(e)) ? o.scheduled_at : e, null) : null;
+  const victories = campaigns.filter(c => c.outcome === "victory").length;
+  const yearsActive = firstOpDate ? new Date().getFullYear() - new Date(firstOpDate).getFullYear() + 1 : 0;
+
+  const legacyOutcomeBadge = (outcome?: string) => {
+    if (!outcome) return null;
+    const map: Record<string, string> = { victory: "bg-green-500/20 text-green-400 border-green-500/30", defeat: "bg-red-500/20 text-red-400 border-red-500/30", draw: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" };
+    return map[outcome] ? <span className={`text-[9px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${map[outcome]}`}>{outcome}</span> : null;
+  };
+
+  return (
+    <div className="space-y-8 max-w-4xl">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-secondary border border-border rounded flex items-center justify-center">
+          <Archive className="w-4 h-4 text-foreground" />
+        </div>
+        <div>
+          <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Unit Legacy</h2>
+          <p className="text-xs font-sans text-muted-foreground">The permanent record of {group.name}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: "Total Ops",    value: ops.length,         color: "text-primary"    },
+          { label: "AARs Filed",   value: aars.length,        color: "text-green-400"  },
+          { label: "Campaigns",    value: campaigns.length,   color: "text-yellow-400" },
+          { label: "Victories",    value: victories,          color: "text-green-400"  },
+          { label: "Years Active", value: yearsActive || "—", color: "text-foreground" },
+        ].map(s => (
+          <div key={s.label} className="bg-card border border-border rounded-lg p-3 text-center">
+            <p className={`font-display font-black text-2xl ${s.color}`}>{s.value}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {campaigns.length > 0 && (
+        <div>
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Campaign Ribbons</p>
+          <div className="flex flex-wrap gap-2">
+            {campaigns.map((c: any) => {
+              const outcome = c.outcome || "incomplete";
+              const col = outcome === "victory" ? "from-green-600 to-green-800 border-green-500/40" :
+                          outcome === "defeat" ? "from-red-700 to-red-900 border-red-500/40" :
+                          outcome === "draw" ? "from-yellow-600 to-yellow-800 border-yellow-500/40" :
+                          "from-zinc-700 to-zinc-900 border-zinc-500/40";
+              return (
+                <div key={c.id} className={`bg-gradient-to-b ${col} border rounded px-3 py-1.5 text-center min-w-[70px]`}>
+                  <p className="text-[10px] font-display font-black uppercase tracking-wider text-white leading-tight">{c.name}</p>
+                  <p className="text-[8px] font-sans text-white/60 mt-0.5">{outcome.toUpperCase()}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {allEntries.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+          <Archive className="w-10 h-10 text-muted-foreground/30" />
+          <p className="text-sm text-muted-foreground font-sans">No ops, AARs, or campaigns logged yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {legacyYears.map(year => (
+            <div key={year}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-px flex-1 bg-border" />
+                <span className="font-display font-black text-xs uppercase tracking-widest text-muted-foreground px-3 py-1 bg-secondary border border-border rounded">{year}</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <div className="relative pl-6 border-l-2 border-border space-y-3">
+                {legacyByYear[year].map((e, i) => {
+                  const s = legacyTypeStyle[e.type];
+                  const Icon = s.icon;
+                  const dateStr = new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+                  return (
+                    <div key={i} className="relative">
+                      <div className={`absolute -left-[29px] w-4 h-4 rounded-full border-2 ${s.dot} flex items-center justify-center`}>
+                        <Icon className="w-2 h-2 text-background" />
+                      </div>
+                      <div className={`rounded-lg border p-3 ml-1 ${s.card}`}>
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`text-[9px] font-display font-bold uppercase tracking-widest shrink-0 ${s.label}`}>
+                              {e.type === "op" ? "OP" : e.type === "aar" ? "AAR" : "CAMPAIGN"}
+                            </span>
+                            <p className="font-display font-bold text-sm text-foreground truncate">{e.title}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {legacyOutcomeBadge(e.outcome)}
+                            <span className="text-[10px] font-sans text-muted-foreground">{dateStr}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                          {e.game && <span className="text-[10px] font-sans text-muted-foreground">{e.game}</span>}
+                          {e.eventType && <span className="text-[10px] font-sans text-muted-foreground">· {e.eventType}</span>}
+                          {e.author && <span className="text-[10px] font-sans text-muted-foreground">By {e.author}</span>}
+                          {e.participants !== undefined && <span className="text-[10px] font-sans text-muted-foreground">· {e.participants} participants</span>}
+                          {e.opCount !== undefined && <span className="text-[10px] font-sans text-muted-foreground">· {e.opCount} ops</span>}
+                          {e.campaignId && <span className="text-[9px] font-display uppercase tracking-wider text-yellow-400/70">· {(campaigns.find((c: any) => c.id === e.campaignId) || {}).name}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Developer / API & Webhooks Tab ──────────────────────────────────────────
+const API_KEYS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimApiKeys";
+
+function DeveloperTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success"|"error") => void }) {
+  const [keys, setKeys] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [newKeyLabel, setNewKeyLabel] = useState("Default");
+  const [freshKey, setFreshKey] = useState<{ raw_key: string; webhook_secret: string } | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const token = localStorage.getItem("tag_auth_token") ?? "";
+
+  const copy = (val: string, id: string) => {
+    navigator.clipboard.writeText(val);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`).then(r => r.json()).catch(() => ({ is_pro: false })),
+      fetch(`${API_KEYS_URL}?path=%2Fkeys&group_id=${group.id}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+    ]).then(([proStatus, keyList]) => {
+      setIsPro(!!proStatus?.is_pro);
+      setKeys(Array.isArray(keyList) ? keyList : []);
+      setLoading(false);
+    });
+  }, [group.id]);
+
+  const generateKey = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch(`${API_KEYS_URL}?path=%2Fgenerate`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ group_id: group.id, label: newKeyLabel || "Default" }),
+      });
+      const data = await res.json();
+      if (data.error) { showMsg(data.error, "error"); setGenerating(false); return; }
+      setFreshKey({ raw_key: data.raw_key, webhook_secret: data.webhook_secret });
+      setKeys(prev => [...prev, { id: Date.now(), key_prefix: data.prefix, label: data.label, is_active: true, last_used_at: null, created_date: new Date().toISOString() }]);
+      setNewKeyLabel("Default");
+    } catch { showMsg("Failed to generate key", "error"); }
+    setGenerating(false);
+  };
+
+  const revokeKey = async (keyId: string, label: string) => {
+    if (!confirm(`Revoke key "${label}"? Any integrations using it will stop working immediately.`)) return;
+    try {
+      await fetch(`${API_KEYS_URL}?path=%2Frevoke`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ key_id: keyId }),
+      });
+      setKeys(prev => prev.map(k => k.id === keyId ? { ...k, is_active: false } : k));
+      showMsg(`Key "${label}" revoked`, "success");
+    } catch { showMsg("Failed to revoke key", "error"); }
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          API access and webhook integration are Pro features. Connect your unit's Discord bot, sync rosters to external tools, or build custom dashboards.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]">
+        <Crown className="w-4 h-4" /> Upgrade to Pro — £10/mo
+      </a>
+    </div>
+  );
+
+  const BASE_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions";
+
+  const endpoints = [
+    { method: "GET",  path: "/milsimGroups?path=%2F{group_id}%2Ffull",        label: "Get full group data (roster, roles, ranks)" },
+    { method: "GET",  path: "/milsimGroups?path=%2F{group_id}%2Fops",         label: "List all ops for group" },
+    { method: "GET",  path: "/milsimGroups?path=%2F{group_id}%2Faars",        label: "List all AARs" },
+    { method: "POST", path: "/milsimApiKeys?path=%2Fverify",                  label: "Verify an API key" },
+    { method: "GET",  path: "/milsimApplications?path=%2F{group_id}%2Fapplications", label: "List applications (pipeline)" },
+  ];
+
+  return (
+    <div className="space-y-8 max-w-3xl">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
+          <GitBranch className="w-4 h-4 text-yellow-400" />
+        </div>
+        <div>
+          <h2 className="font-display font-bold uppercase tracking-wider text-foreground">API & Webhooks</h2>
+          <p className="text-xs font-sans text-muted-foreground">Connect external tools, Discord bots, and custom dashboards to your unit.</p>
+        </div>
+        <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
+          <Crown className="w-3 h-3" /> Pro
+        </span>
+      </div>
+
+      {/* Fresh key reveal — shown once after generation */}
+      {freshKey && (
+        <div className="border-2 border-yellow-500/60 bg-yellow-500/5 rounded-xl p-5 space-y-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-display font-bold uppercase tracking-wider text-yellow-400">Save these now — they won't be shown again</p>
+              <p className="text-xs text-muted-foreground font-sans mt-0.5">Store them securely. Once you close this, neither value can be recovered.</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {[{ label: "API Key", val: freshKey.raw_key, id: "apikey" }, { label: "Webhook Secret", val: freshKey.webhook_secret, id: "secret" }].map(item => (
+              <div key={item.id}>
+                <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">{item.label}</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-black/40 border border-border rounded px-3 py-2 text-xs font-mono text-green-400 truncate">{item.val}</code>
+                  <button onClick={() => copy(item.val, item.id)}
+                    className="shrink-0 px-3 py-2 text-xs font-display font-bold uppercase tracking-wider border border-border rounded hover:border-primary/50 text-muted-foreground hover:text-foreground transition-all">
+                    {copied === item.id ? "✓ Copied" : "Copy"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => setFreshKey(null)} className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground">
+            I've saved these — dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Active keys */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">API Keys ({keys.filter(k => k.is_active).length}/3 active)</p>
+        </div>
+        {keys.length === 0 ? (
+          <div className="border border-dashed border-border rounded-lg p-8 text-center">
+            <GitBranch className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-sm font-display uppercase tracking-widest text-muted-foreground">No API keys yet</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {keys.map(k => (
+              <div key={k.id} className={`flex items-center justify-between gap-3 p-3 rounded-lg border ${k.is_active ? "border-border bg-card" : "border-border/40 bg-secondary/20 opacity-50"}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display font-bold text-sm text-foreground">{k.label}</span>
+                    <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ${k.is_active ? "text-green-400 border-green-500/30 bg-green-500/10" : "text-muted-foreground border-border"}`}>
+                      {k.is_active ? "Active" : "Revoked"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <code className="text-[10px] font-mono text-muted-foreground">{k.key_prefix}</code>
+                    {k.last_used_at && <span className="text-[10px] text-muted-foreground">Last used {new Date(k.last_used_at).toLocaleDateString("en-GB")}</span>}
+                    {!k.last_used_at && <span className="text-[10px] text-muted-foreground">Never used</span>}
+                    <span className="text-[10px] text-muted-foreground">Created {new Date(k.created_date).toLocaleDateString("en-GB")}</span>
+                  </div>
+                </div>
+                {k.is_active && (
+                  <button onClick={() => revokeKey(k.id, k.label)}
+                    className="text-[10px] font-display font-bold uppercase tracking-wider text-red-400 border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 px-2.5 py-1 rounded transition-all">
+                    Revoke
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Generate new key */}
+        {keys.filter(k => k.is_active).length < 3 && (
+          <div className="flex items-center gap-2 pt-1">
+            <input value={newKeyLabel} onChange={e => setNewKeyLabel(e.target.value)}
+              placeholder="Key label (e.g. Discord Bot)"
+              className="bg-secondary border border-border rounded px-3 py-1.5 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 flex-1 max-w-xs"
+            />
+            <button onClick={generateKey} disabled={generating}
+              className="flex items-center gap-2 px-4 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors disabled:opacity-50">
+              {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+              Generate Key
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* API Reference */}
+      <div className="space-y-3">
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">API Reference</p>
+        <div className="bg-secondary/30 border border-border rounded-lg p-4 space-y-1.5">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Authentication</p>
+          <code className="block text-xs font-mono text-green-400 bg-black/30 rounded px-3 py-2">Authorization: Bearer YOUR_API_KEY</code>
+        </div>
+        <div className="space-y-2">
+          {endpoints.map((ep, i) => (
+            <div key={i} className="flex items-start gap-3 p-3 bg-card border border-border rounded-lg">
+              <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded shrink-0 mt-0.5 ${ep.method === "GET" ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-green-500/20 text-green-400 border border-green-500/30"}`}>
+                {ep.method}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-sans text-muted-foreground">{ep.label}</p>
+                <code className="text-[10px] font-mono text-foreground/70 truncate block">{BASE_URL}{ep.path}</code>
+              </div>
+              <button onClick={() => copy(`${BASE_URL}${ep.path}`, `ep${i}`)}
+                className="text-[10px] text-muted-foreground hover:text-foreground shrink-0">
+                {copied === `ep${i}` ? "✓" : "Copy"}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── Webhook Endpoints ─────────────────────────────────────────────── */}
+      <WebhookEndpointsSection group={group} showMsg={showMsg} token={token} />
+    </div>
+  );
+}
+
+// ─── All supported events ────────────────────────────────────────────────────
+const ALL_WEBHOOK_EVENTS = [
+  { id: "application.submitted", label: "Application Submitted", cat: "Applications" },
+  { id: "application.approved",  label: "Application Approved",  cat: "Applications" },
+  { id: "application.rejected",  label: "Application Rejected",  cat: "Applications" },
+  { id: "roster.member_joined",  label: "Member Joined Roster",  cat: "Roster" },
+  { id: "roster.member_left",    label: "Member Left Roster",    cat: "Roster" },
+  { id: "roster.rank_changed",   label: "Rank Changed",          cat: "Roster" },
+  { id: "roster.status_changed", label: "Member Status Changed", cat: "Roster" },
+  { id: "op.created",            label: "Op Created",            cat: "Ops" },
+  { id: "op.status_changed",     label: "Op Status Changed",     cat: "Ops" },
+  { id: "op.completed",          label: "Op Completed",          cat: "Ops" },
+  { id: "aar.posted",            label: "AAR Posted",            cat: "AARs" },
+  { id: "loa.submitted",         label: "LOA Submitted",         cat: "LOA" },
+  { id: "loa.approved",          label: "LOA Approved",          cat: "LOA" },
+  { id: "loa.expired",           label: "LOA Expired",           cat: "LOA" },
+  { id: "award.granted",         label: "Award Granted",         cat: "Awards" },
+  { id: "briefing.published",    label: "Briefing Published",    cat: "Briefings" },
+];
+
+const WEBHOOKS_BASE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/webhooks";
+
+function WebhookEndpointsSection({ group, showMsg, token }: { group: any; showMsg: (m: string, t?: "success"|"error") => void; token: string }) {
+  const [endpoints, setEndpoints] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newUrl, setNewUrl] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [newEvents, setNewEvents] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState<string | null>(null);
+  const [freshSecret, setFreshSecret] = useState<{ id: string; secret: string } | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const copy = (val: string, id: string) => {
+    navigator.clipboard.writeText(val);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const load = () => {
+    fetch(`${WEBHOOKS_BASE}?path=%2Fendpoints&group_id=${group.id}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json()).then(d => { setEndpoints(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [group.id]);
+
+  const addEndpoint = async () => {
+    if (!newUrl.trim()) { showMsg("URL required", "error"); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`${WEBHOOKS_BASE}?path=%2Fendpoints`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ group_id: group.id, label: newLabel || "My Endpoint", webhook_url: newUrl, events: newEvents }),
+      });
+      const data = await res.json();
+      if (data.error) { showMsg(data.error, "error"); setSaving(false); return; }
+      setFreshSecret({ id: data.id, secret: data.secret });
+      setShowAdd(false);
+      setNewUrl(""); setNewLabel(""); setNewEvents([]);
+      load();
+    } catch { showMsg("Failed to add endpoint", "error"); }
+    setSaving(false);
+  };
+
+  const removeEndpoint = async (id: string, label: string) => {
+    if (!confirm(`Remove webhook "${label}"?`)) return;
+    await fetch(`${WEBHOOKS_BASE}?path=%2Fendpoints%2F${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    setEndpoints(prev => prev.filter(e => e.id !== id));
+    showMsg("Webhook removed", "success");
+  };
+
+  const testEndpoint = async (id: string) => {
+    setTesting(id);
+    try {
+      const res = await fetch(`${WEBHOOKS_BASE}?path=%2Ftest`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint_id: id }),
+      });
+      const data = await res.json();
+      if (data.ok) showMsg(`Test ping delivered (HTTP ${data.status})`, "success");
+      else showMsg(`Test failed: ${data.error || `HTTP ${data.status}`}`, "error");
+      load();
+    } catch { showMsg("Test request failed", "error"); }
+    setTesting(null);
+  };
+
+  const toggleEvent = (ev: string) => {
+    setNewEvents(prev => prev.includes(ev) ? prev.filter(e => e !== ev) : [...prev, ev]);
+  };
+
+  const catGroups = ALL_WEBHOOK_EVENTS.reduce((acc, ev) => {
+    (acc[ev.cat] = acc[ev.cat] || []).push(ev);
+    return acc;
+  }, {} as Record<string, typeof ALL_WEBHOOK_EVENTS>);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">
+          Webhook Endpoints ({endpoints.filter(e => e.is_active).length}/5)
+        </p>
+        {!showAdd && endpoints.filter(e => e.is_active).length < 5 && (
+          <button onClick={() => setShowAdd(true)}
+            className="flex items-center gap-1.5 text-[10px] font-display font-bold uppercase tracking-wider text-primary border border-primary/30 bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded transition-all">
+            <Plus className="w-3 h-3" /> Add Endpoint
+          </button>
+        )}
+      </div>
+
+      {/* Fresh secret reveal */}
+      {freshSecret && (
+        <div className="border-2 border-yellow-500/60 bg-yellow-500/5 rounded-xl p-4 space-y-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+            <p className="text-xs font-display font-bold uppercase tracking-wider text-yellow-400">Save your signing secret — shown once only</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 bg-black/40 border border-border rounded px-3 py-2 text-xs font-mono text-green-400 truncate">{freshSecret.secret}</code>
+            <button onClick={() => copy(freshSecret.secret, "whsec")}
+              className="shrink-0 px-3 py-2 text-xs font-display font-bold uppercase tracking-wider border border-border rounded hover:border-primary/50 text-muted-foreground hover:text-foreground transition-all">
+              {copied === "whsec" ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
+          <button onClick={() => setFreshSecret(null)} className="text-[10px] font-display uppercase tracking-wider text-muted-foreground hover:text-foreground">I've saved it — dismiss</button>
+        </div>
+      )}
+
+      {/* Add form */}
+      {showAdd && (
+        <div className="border border-primary/30 bg-primary/5 rounded-xl p-4 space-y-4">
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-primary">New Webhook Endpoint</p>
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground block mb-1">Label</label>
+              <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="e.g. Discord Ops Bot"
+                className="w-full bg-secondary border border-border rounded px-3 py-1.5 text-sm font-sans text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50" />
+            </div>
+            <div>
+              <label className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground block mb-1">Endpoint URL *</label>
+              <input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="https://your-server.com/webhook"
+                className="w-full bg-secondary border border-border rounded px-3 py-1.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50" />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground block mb-2">
+                Events to subscribe ({newEvents.length === 0 ? "all events" : `${newEvents.length} selected`})
+              </label>
+              <div className="space-y-3">
+                {Object.entries(catGroups).map(([cat, evs]) => (
+                  <div key={cat}>
+                    <p className="text-[9px] font-display font-bold uppercase tracking-widest text-muted-foreground/60 mb-1.5">{cat}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {evs.map(ev => (
+                        <button key={ev.id} onClick={() => toggleEvent(ev.id)}
+                          className={`text-[10px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border transition-all ${newEvents.includes(ev.id) ? "border-primary/60 bg-primary/20 text-primary" : "border-border bg-secondary text-muted-foreground hover:border-border/80"}`}>
+                          {ev.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[9px] text-muted-foreground/60 mt-2">Leave none selected to receive all events.</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 pt-1">
+            <button onClick={addEndpoint} disabled={saving}
+              className="flex items-center gap-2 px-4 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors disabled:opacity-50">
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+              Register Endpoint
+            </button>
+            <button onClick={() => { setShowAdd(false); setNewUrl(""); setNewLabel(""); setNewEvents([]); }}
+              className="px-4 py-1.5 text-xs font-display uppercase tracking-widest text-muted-foreground border border-border rounded hover:text-foreground transition-all">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Endpoint list */}
+      {loading ? (
+        <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+      ) : endpoints.length === 0 ? (
+        <div className="border border-dashed border-border rounded-lg p-6 text-center">
+          <p className="text-xs font-display uppercase tracking-widest text-muted-foreground">No webhook endpoints yet</p>
+          <p className="text-[10px] text-muted-foreground/60 mt-1">Add one above to start receiving real-time events.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {endpoints.map(ep => {
+            const failRate = ep.delivery_count > 0 ? Math.round((ep.failure_count / ep.delivery_count) * 100) : 0;
+            const healthColor = failRate === 0 ? "text-green-400 border-green-500/30 bg-green-500/10"
+              : failRate < 20 ? "text-yellow-400 border-yellow-500/30 bg-yellow-500/10"
+              : "text-red-400 border-red-500/30 bg-red-500/10";
+            return (
+              <div key={ep.id} className="border border-border bg-card rounded-lg p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-display font-bold text-sm text-foreground">{ep.label || "Endpoint"}</span>
+                      <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ${ep.is_active ? healthColor : "text-muted-foreground border-border"}`}>
+                        {ep.is_active ? (failRate === 0 ? "Healthy" : `${failRate}% fail`) : "Inactive"}
+                      </span>
+                    </div>
+                    <code className="text-[10px] font-mono text-muted-foreground truncate block mt-0.5">{ep.url}</code>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button onClick={() => testEndpoint(ep.id)} disabled={testing === ep.id}
+                      className="text-[10px] font-display font-bold uppercase tracking-wider text-muted-foreground border border-border px-2 py-1 rounded hover:text-foreground hover:border-border/80 transition-all disabled:opacity-50">
+                      {testing === ep.id ? <Loader2 className="w-3 h-3 animate-spin inline" /> : "Test"}
+                    </button>
+                    <button onClick={() => removeEndpoint(ep.id, ep.label)}
+                      className="text-[10px] font-display font-bold uppercase tracking-wider text-red-400 border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 px-2 py-1 rounded transition-all">
+                      Remove
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+                  <span>{ep.delivery_count} deliveries</span>
+                  <span>{ep.failure_count} failures</span>
+                  {ep.last_triggered_at && <span>Last fired {new Date(ep.last_triggered_at).toLocaleDateString("en-GB")}</span>}
+                  {ep.last_status_code && <span className={ep.last_status_code >= 200 && ep.last_status_code < 300 ? "text-green-400" : "text-red-400"}>HTTP {ep.last_status_code}</span>}
+                </div>
+                {ep.events && ep.events.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {ep.events.map((ev: string) => (
+                      <span key={ev} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-secondary border border-border text-muted-foreground">{ev}</span>
+                    ))}
+                  </div>
+                )}
+                {(!ep.events || ep.events.length === 0) && (
+                  <p className="text-[9px] text-muted-foreground/60">Subscribed to all events</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Signing doc */}
+      <div className="bg-secondary/30 border border-border rounded-lg p-4 space-y-2 text-xs font-sans text-muted-foreground leading-relaxed">
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Webhook Payload Format</p>
+        <pre className="text-[10px] font-mono text-foreground/70 bg-black/30 rounded p-3 overflow-x-auto">{`{
+  "event": "op.created",
+  "timestamp": "2026-03-25T22:00:00Z",
+  "group_id": "abc123",
+  "data": { ... event-specific fields ... }
+}`}</pre>
+        <p>Verify the <code className="text-foreground bg-black/30 px-1 rounded">X-TAG-Signature</code> header: compute <code className="text-foreground bg-black/30 px-1 rounded">HMAC-SHA256(body, signing_secret)</code> — compare to <code className="text-foreground bg-black/30 px-1 rounded">sha256=...</code>.</p>
+      </div>
     </div>
   );
 }

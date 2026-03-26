@@ -196,6 +196,17 @@ Deno.serve(async (req) => {
       return Response.json(updated);
     }
 
+    // PATCH /admin/milsim-groups/:id — general field update (verify_override, is_verified, etc.)
+    if (method === 'PATCH' && parts[0] === 'milsim-groups' && parts.length === 2) {
+      if (!isAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const body = await req.json().catch(() => ({}));
+      const allowed = ['verify_override', 'is_verified', 'verified_at', 'status', 'visibility'];
+      const updates: Record<string, any> = {};
+      for (const key of allowed) { if (key in body) updates[key] = body[key]; }
+      const updated = await base44.asServiceRole.entities.MilsimGroup.update(parts[1], updates);
+      return Response.json(updated);
+    }
+
     // DELETE /admin/milsim-groups/:id
     if (method === 'DELETE' && parts[0] === 'milsim-groups' && parts.length === 2) {
       if (!isAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });

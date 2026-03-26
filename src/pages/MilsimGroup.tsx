@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useRoute, Link } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -7,9 +7,10 @@ import { BRANCH_ICONS, type Branch } from "@/lib/milsimConstants";
 import {
   Shield, Globe, ExternalLink, Loader2, Users, Award, Crosshair,
   FileText, ChevronLeft, Star, BookOpen, Map, Radio, Medal,
-  Zap, Target, TrendingUp, Activity,
+  Zap, Target, TrendingUp, Activity, Archive, Zap, ClipboardList, Siren,
 } from "lucide-react";
-import OrbatBuilder from "@/components/OrbatBuilder";
+const OrbatBuilder = lazy(() => import("@/components/OrbatBuilder"));
+const CAMPAIGNS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/campaigns";
 import { formatDistanceToNow } from "date-fns";
 
 interface Role    { id: string; name: string; description: string | null; sortOrder: number }
@@ -54,7 +55,7 @@ interface ReadinessData {
   narrative_items: { label: string; text: string; severity: 'green' | 'amber' | 'red' | 'neutral' }[];
 }
 
-type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "capabilities";
+type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "capabilities" | "legacy" | "enlist" | "reviews";
 
 function getEmbedUrl(url: string): string | null {
   try {
@@ -196,6 +197,8 @@ export default function MilsimGroup() {
   const rankById = Object.fromEntries(ranks.map(r => [r.id, r]));
   const roleById = Object.fromEntries(roles.map(r => [r.id, r]));
   const embedUrl = group.stream_url ? getEmbedUrl(group.stream_url) : null;
+  const isPro = !!(group as any).is_pro;
+  const isVerified = !!(group as any).is_verified;
 
   const TABS: { id: Tab; label: string; icon: typeof Shield; show: boolean }[] = [
     { id: "overview",      label: "Overview",      icon: Shield,     show: true },
@@ -207,7 +210,10 @@ export default function MilsimGroup() {
     { id: "awards",        label: "Commendations", icon: Medal,      show: true },
     { id: "sops",          label: "SOPs",          icon: BookOpen,   show: !!group.sops },
     { id: "orbat",         label: "ORBAT",         icon: Map,        show: !!group.orbat },
+    { id: "enlist",        label: "Enlist",        icon: ClipboardList, show: true },
     { id: "apply",         label: "Apply",         icon: FileText,   show: questions.length > 0 },
+    { id: "legacy",        label: "Unit Legacy",   icon: Archive,    show: isPro },
+    { id: "reviews",       label: "Reviews",       icon: Star,       show: true },
   ];
 
   return (
@@ -250,6 +256,16 @@ export default function MilsimGroup() {
                     <span className="w-1.5 h-1.5 bg-red-400 rounded-full" /> LIVE
                   </span>
                 )}
+                {isVerified && (
+                  <span className="flex items-center gap-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-2.5 py-1 rounded text-xs font-display font-bold uppercase tracking-widest" title="This unit has been verified by TAG">
+                    <Shield className="w-3 h-3" /> Verified
+                  </span>
+                )}
+                {isPro && (
+                  <span className="flex items-center gap-1 bg-primary/10 border border-primary/30 text-primary px-2.5 py-1 rounded text-xs font-display font-bold uppercase tracking-widest">
+                    <Zap className="w-3 h-3" /> Pro
+                  </span>
+                )}
               </div>
               {group.tagLine && (
                 <p className="font-display font-bold uppercase tracking-widest text-primary text-sm mb-3">{group.tagLine}</p>
@@ -279,6 +295,12 @@ export default function MilsimGroup() {
                     <Globe className="w-3.5 h-3.5" /> Website <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
+                <button
+                  onClick={() => setTab("enlist")}
+                  className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2 rounded text-xs font-display font-black uppercase tracking-widest transition-all active:scale-95"
+                >
+                  <ClipboardList className="w-3.5 h-3.5" /> Enlist
+                </button>
                 <span className="text-xs text-muted-foreground font-sans">{roster.length} member{roster.length !== 1 ? "s" : ""}</span>
               </div>
             </div>
@@ -423,7 +445,7 @@ export default function MilsimGroup() {
                   <div className="bg-card border border-border rounded-lg p-5 space-y-3">
                     <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">System Assessment</p>
                     <div className="space-y-2">
-                      {(readiness.narrative_items ?? readiness.narrative_lines.map((text: string) => ({ label: '', text, severity: 'neutral' }))).map((item: any, i: number) => {
+                      {(readiness.narrative_items ?? (readiness.narrative_lines ?? []).map((text: string) => ({ label: '', text, severity: 'neutral' }))).map((item: any, i: number) => {
                         const sc = item.severity === 'green'  ? { border: 'border-green-500/30 bg-green-500/5',   dot: 'bg-green-400',  label: 'text-green-400'  }
                                  : item.severity === 'amber'  ? { border: 'border-yellow-500/30 bg-yellow-500/5', dot: 'bg-yellow-400', label: 'text-yellow-400' }
                                  : item.severity === 'red'    ? { border: 'border-red-500/30 bg-red-500/5',       dot: 'bg-red-400',    label: 'text-red-400'    }
@@ -442,11 +464,11 @@ export default function MilsimGroup() {
                   </div>
 
                   {/* Readiness flags */}
-                  {readiness.flags.length > 0 && (
+                  {(readiness.flags ?? []).length > 0 && (
                     <div className="bg-card border border-border rounded-lg p-5 space-y-3">
                       <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Readiness Flags</p>
                       <div className="space-y-2">
-                        {readiness.flags.map((flag: any) => (
+                        {(readiness.flags ?? []).map((flag: any) => (
                           <div key={flag.code} className={`flex items-start gap-3 p-3 rounded-lg border ${
                             flag.severity === 'red'
                               ? 'border-red-500/30 bg-red-500/5'
@@ -659,19 +681,21 @@ export default function MilsimGroup() {
                 return <EmptyState icon={Map} message="No ORBAT published yet" sub="The unit commander hasn't set up an ORBAT for this group." />;
               }
               return (
-                <div className="w-full">
-                  <OrbatBuilder
-                    value={group.orbat ?? undefined}
-                    groupName={group.name}
-                    readOnly
-                    roster={roster.map(r => ({
-                      id: r.id,
-                      callsign: r.callsign,
-                      rank: ranks.find(rk => rk.id === r.rankId)?.name ?? undefined,
-                      role: roles.find(ro => ro.id === r.roleId)?.name ?? undefined,
-                    }))}
-                  />
-                </div>
+                <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
+                  <div className="w-full">
+                    <OrbatBuilder
+                      value={group.orbat ?? undefined}
+                      groupName={group.name}
+                      readOnly
+                      roster={roster.map(r => ({
+                        id: r.id,
+                        callsign: r.callsign,
+                        rank: ranks.find(rk => rk.id === r.rankId)?.name ?? undefined,
+                        role: roles.find(ro => ro.id === r.roleId)?.name ?? undefined,
+                      }))}
+                    />
+                  </div>
+                </Suspense>
               );
             })()
           )}
@@ -714,9 +738,429 @@ export default function MilsimGroup() {
             </div>
           )}
 
+          {/* ── ENLIST ─────────────────────────────────────────────────── */}
+          {tab === "enlist" && (
+            <div className="max-w-3xl space-y-6">
+              {/* Selection Criteria */}
+              <div className="bg-card border border-border rounded-lg p-6">
+                <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-1 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-primary" /> Selection Criteria
+                </h2>
+                <p className="text-xs text-muted-foreground font-sans mb-5">
+                  Read and understand what {group.name} expects from its operators before applying.
+                </p>
+                {(group as any).selection_criteria ? (
+                  <div className="prose prose-sm prose-invert max-w-none font-sans text-muted-foreground leading-relaxed whitespace-pre-wrap border-t border-border pt-4">
+                    {(group as any).selection_criteria}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground font-sans italic">No selection criteria posted yet. Contact the unit via Discord for details.</p>
+                )}
+              </div>
+
+              {/* Application */}
+              <div className="bg-card border border-border rounded-lg p-6">
+                <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-1 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" /> Application
+                </h2>
+                {questions.length === 0 ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground font-sans">This unit has not set up an application form. Reach out directly via Discord.</p>
+                    {group.discordUrl && (
+                      <a href={group.discordUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-black uppercase tracking-widest text-sm px-6 py-3 rounded transition-all active:scale-95">
+                        Contact via Discord <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    <p className="text-sm text-muted-foreground font-sans">
+                      Answer the following questions when you apply. Reach out via{" "}
+                      {group.discordUrl
+                        ? <a href={group.discordUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Discord</a>
+                        : "Discord"} with your responses.
+                    </p>
+                    <ol className="space-y-4">
+                      {questions.map((q, i) => (
+                        <li key={q.id} className="flex items-start gap-3">
+                          <span className="w-6 h-6 shrink-0 rounded bg-primary/10 border border-primary/30 flex items-center justify-center font-display font-bold text-xs text-primary">{i + 1}</span>
+                          <span className="font-sans text-muted-foreground leading-relaxed">
+                            {q.question}
+                            {q.required && <span className="ml-2 text-[10px] font-display font-bold uppercase text-accent">Required</span>}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                    {group.discordUrl && (
+                      <a href={group.discordUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-black uppercase tracking-widest text-sm px-8 py-4 rounded transition-all active:scale-95">
+                        Apply via Discord <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {tab === "legacy" && isPro && (
+            <PublicLegacyTab group={group} />
+          )}
+
+          {tab === "reviews" && (
+            <PublicReviewsTab group={group} />
+          )}
+
         </motion.div>
       </div>
     </MainLayout>
+  );
+}
+
+// ─── Public Reviews Tab ───────────────────────────────────────────────────────
+const REVIEWS_URL_PUB = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/groupReviews";
+
+function StarDisplay({ value, small = false }: { value: number; small?: boolean }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1,2,3,4,5].map(n => (
+        <Star key={n} className={`${small ? "w-3.5 h-3.5" : "w-4 h-4"} ${n <= value ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/20"}`} />
+      ))}
+    </div>
+  );
+}
+
+function PublicReviewsTab({ group }: { group: any }) {
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${REVIEWS_URL_PUB}?path=%2Flist&group_id=${group.id}`)
+      .then(r => r.json())
+      .then(data => setReviews(Array.isArray(data) ? data : []))
+      .catch(() => setReviews([]))
+      .finally(() => setLoading(false));
+  }, [group.id]);
+
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((s, r) => s + (r.rating ?? 0), 0) / reviews.length).toFixed(1)
+    : null;
+  const recommendPct = reviews.length > 0
+    ? Math.round((reviews.filter(r => r.recommend).length / reviews.length) * 100)
+    : null;
+
+  const RATING_LABEL: Record<number, string> = { 1:"Terrible", 2:"Poor", 3:"Okay", 4:"Good", 5:"Outstanding" };
+  const RATING_COLOR: Record<number, string> = { 1:"text-red-400", 2:"text-orange-400", 3:"text-yellow-400", 4:"text-blue-400", 5:"text-green-400" };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Summary bar */}
+      {reviews.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-card border border-border rounded-lg p-4 text-center">
+            <p className="text-4xl font-display font-black text-yellow-400">{avgRating}</p>
+            <StarDisplay value={Math.round(Number(avgRating))} />
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-1">{reviews.length} Review{reviews.length !== 1 ? "s" : ""}</p>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-4 text-center">
+            <p className="text-4xl font-display font-black text-green-400">{recommendPct}%</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-2">Would Recommend</p>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-4 space-y-1.5">
+            {["organisation","communication","gameplay","community"].map(key => {
+              const vals = reviews.map(r => r[key]).filter(Boolean);
+              const avg = vals.length ? (vals.reduce((a: number, b: number) => a + b, 0) / vals.length).toFixed(1) : null;
+              if (!avg) return null;
+              return (
+                <div key={key} className="flex items-center justify-between">
+                  <span className="text-[9px] font-display uppercase tracking-widest text-muted-foreground capitalize">{key}</span>
+                  <span className="text-xs font-display font-bold text-foreground">{avg}/5</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Review cards */}
+      {reviews.length === 0 ? (
+        <div className="border border-dashed border-border rounded-lg p-12 text-center">
+          <Star className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+          <p className="text-sm font-display uppercase tracking-widest text-muted-foreground">No reviews yet</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Roster members can submit reviews from their Member HQ.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {reviews.map(r => (
+            <div key={r.id} className="bg-card border border-border rounded-xl p-5 space-y-3">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <StarDisplay value={r.rating} small />
+                  <p className={`text-xs font-display font-bold mt-0.5 ${RATING_COLOR[r.rating] ?? "text-foreground"}`}>{RATING_LABEL[r.rating]}</p>
+                </div>
+                <div className="flex items-center gap-3 text-[10px] font-display uppercase tracking-widest text-muted-foreground">
+                  {r.recommend !== undefined && (
+                    <span className={r.recommend ? "text-green-400" : "text-red-400"}>
+                      {r.recommend ? "✓ Recommended" : "✗ Not Recommended"}
+                    </span>
+                  )}
+                  {r.served_months && <span>{r.served_months}mo served</span>}
+                </div>
+              </div>
+              <div>
+                <p className="font-display font-bold text-sm text-foreground">{r.headline}</p>
+                {r.body && <p className="text-xs font-sans text-muted-foreground mt-1.5 leading-relaxed">{r.body}</p>}
+              </div>
+              {(r.organisation || r.communication || r.gameplay || r.community) && (
+                <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-border/50 pt-2">
+                  {[["Organisation",r.organisation],["Communication",r.communication],["Gameplay",r.gameplay],["Community",r.community]].map(([l,v]) =>
+                    v ? (
+                      <div key={l} className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-display uppercase tracking-widest text-muted-foreground">{l}</span>
+                        <span className="text-[10px] font-display font-bold text-foreground">{v}/5</span>
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              )}
+              <div className="flex items-center justify-between border-t border-border/30 pt-2">
+                <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">{r.reviewer_username}</p>
+                <p className="text-[10px] font-sans text-muted-foreground/50">{r.created_date ? new Date(r.created_date).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }) : ""}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Public Legacy Tab ────────────────────────────────────────────────────────
+function PublicLegacyTab({ group }: { group: any }) {
+  const [ops, setOps]             = useState<any[]>([]);
+  const [aars, setAars]           = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [filter, setFilter]       = useState<Set<string>>(new Set(["op","aar","campaign"]));
+
+  useEffect(() => {
+    const token = localStorage.getItem("tag_auth_token") ?? "";
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+    Promise.all([
+      apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`).catch(() => []),
+      apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).catch(() => []),
+      fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`, { headers }).then(r => r.json()).catch(() => []),
+    ]).then(([o, a, c]) => {
+      setOps(Array.isArray(o) ? o : []);
+      setAars(Array.isArray(a) ? a : []);
+      setCampaigns(Array.isArray(c) ? c : []);
+      setLoading(false);
+    });
+  }, [group.id]);
+
+  const toggleFilter = (t: string) => setFilter(prev => {
+    const next = new Set(prev);
+    if (next.has(t)) { if (next.size > 1) next.delete(t); } else next.add(t);
+    return next;
+  });
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  // Build full entry list
+  type EntryType = "op" | "aar" | "campaign";
+  type TimelineEntry = {
+    date: string; type: EntryType; id: string;
+    title: string; game?: string; eventType?: string; status?: string;
+    outcome?: string; author?: string; participants?: number;
+    campaignId?: string; opCount?: number;
+  };
+
+  const allEntries: TimelineEntry[] = [
+    ...ops.filter(o => o.scheduled_at).map(o => ({
+      date: o.scheduled_at, type: "op" as const, id: o.id,
+      title: o.name, game: o.game, eventType: o.event_type, status: o.status,
+      campaignId: (campaigns.find((c: any) => (c.op_ids || []).includes(o.id)) || {}).id,
+    })),
+    ...aars.filter(a => a.op_date || a.created_date).map(a => ({
+      date: a.op_date || a.created_date, type: "aar" as const, id: a.id,
+      title: a.title || a.op_name || "After Action Report",
+      outcome: a.outcome, author: a.author_username,
+      participants: Array.isArray(a.participants) ? a.participants.length : undefined,
+    })),
+    ...campaigns.filter(c => c.start_date).map(c => ({
+      date: c.start_date, type: "campaign" as const, id: c.id,
+      title: c.name, outcome: c.outcome, status: c.status,
+      opCount: (c.op_ids || []).length,
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const filtered = allEntries.filter(e => filter.has(e.type));
+
+  // Group by year
+  const byYear: Record<number, TimelineEntry[]> = {};
+  filtered.forEach(e => {
+    const y = new Date(e.date).getFullYear();
+    if (!byYear[y]) byYear[y] = [];
+    byYear[y].push(e);
+  });
+  const years = Object.keys(byYear).map(Number).sort((a, b) => b - a);
+
+  const firstOpDate = ops.length > 0
+    ? ops.reduce((e: string | null, o) => (!e || new Date(o.scheduled_at) < new Date(e)) ? o.scheduled_at : e, null)
+    : null;
+  const victories = campaigns.filter(c => c.outcome === "victory").length;
+  const yearsActive = firstOpDate ? new Date().getFullYear() - new Date(firstOpDate).getFullYear() + 1 : 0;
+
+  const typeStyle: Record<EntryType, { dot: string; card: string; label: string; icon: typeof Archive }> = {
+    op:       { dot: "bg-primary border-primary/60",           card: "border-primary/20 bg-primary/5",        label: "text-primary",    icon: Siren        },
+    aar:      { dot: "bg-green-500 border-green-400/60",       card: "border-green-500/20 bg-green-500/5",    label: "text-green-400",  icon: ClipboardList },
+    campaign: { dot: "bg-yellow-400 border-yellow-300/60",     card: "border-yellow-500/20 bg-yellow-500/5",  label: "text-yellow-400", icon: Zap           },
+  };
+
+  const outcomeBadge = (outcome?: string) => {
+    if (!outcome) return null;
+    const map: Record<string, string> = { victory: "bg-green-500/20 text-green-400 border-green-500/30", defeat: "bg-red-500/20 text-red-400 border-red-500/30", draw: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" };
+    return map[outcome] ? <span className={`text-[9px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${map[outcome]}`}>{outcome}</span> : null;
+  };
+
+  return (
+    <div className="space-y-8 max-w-4xl">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-secondary border border-border rounded flex items-center justify-center">
+            <Archive className="w-4 h-4 text-foreground" />
+          </div>
+          <div>
+            <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Unit Legacy</h2>
+            <p className="text-xs font-sans text-muted-foreground">The permanent operational record of {group.name}</p>
+          </div>
+        </div>
+        {/* Filter pills */}
+        <div className="flex items-center gap-2">
+          {(["op","aar","campaign"] as EntryType[]).map(t => {
+            const s = typeStyle[t];
+            const active = filter.has(t);
+            return (
+              <button key={t} onClick={() => toggleFilter(t)}
+                className={`text-[10px] font-display font-bold uppercase tracking-wider px-3 py-1 rounded border transition-all ${active ? `${s.card} ${s.label} border-current` : "bg-secondary border-border text-muted-foreground"}`}>
+                {t === "op" ? "Ops" : t === "aar" ? "AARs" : "Campaigns"}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: "Total Ops",     value: ops.length,        color: "text-primary"    },
+          { label: "AARs Filed",    value: aars.length,       color: "text-green-400"  },
+          { label: "Campaigns",     value: campaigns.length,  color: "text-yellow-400" },
+          { label: "Victories",     value: victories,         color: "text-green-400"  },
+          { label: "Years Active",  value: yearsActive || "—", color: "text-foreground" },
+        ].map(s => (
+          <div key={s.label} className="bg-card border border-border rounded-lg p-3 text-center">
+            <p className={`font-display font-black text-2xl ${s.color}`}>{s.value}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Campaign Ribbons */}
+      {campaigns.length > 0 && (
+        <div>
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Campaign Ribbons</p>
+          <div className="flex flex-wrap gap-2">
+            {campaigns.map((c: any) => {
+              const outcome = c.outcome || "incomplete";
+              const col = outcome === "victory" ? "from-green-600 to-green-800 border-green-500/40" :
+                          outcome === "defeat"  ? "from-red-700 to-red-900 border-red-500/40" :
+                          outcome === "draw"    ? "from-yellow-600 to-yellow-800 border-yellow-500/40" :
+                          "from-zinc-700 to-zinc-900 border-zinc-500/40";
+              return (
+                <div key={c.id} className={`bg-gradient-to-b ${col} border rounded px-3 py-1.5 text-center min-w-[70px]`}>
+                  <p className="text-[10px] font-display font-black uppercase tracking-wider text-white leading-tight">{c.name}</p>
+                  <p className="text-[8px] font-sans text-white/60 mt-0.5">{outcome.toUpperCase()}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Visual Timeline */}
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+          <Archive className="w-10 h-10 text-muted-foreground/30" />
+          <p className="text-sm text-muted-foreground font-sans">No records match the current filter.</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {years.map(year => (
+            <div key={year}>
+              {/* Year band */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-px flex-1 bg-border" />
+                <span className="font-display font-black text-xs uppercase tracking-widest text-muted-foreground px-3 py-1 bg-secondary border border-border rounded">
+                  {year}
+                </span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              {/* Entries for this year */}
+              <div className="relative pl-6 border-l-2 border-border space-y-3">
+                {byYear[year].map((e, i) => {
+                  const s = typeStyle[e.type];
+                  const Icon = s.icon;
+                  const d = new Date(e.date);
+                  const dateStr = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+                  return (
+                    <div key={i} className="relative">
+                      {/* Spine dot */}
+                      <div className={`absolute -left-[29px] w-4 h-4 rounded-full border-2 ${s.dot} flex items-center justify-center`}>
+                        <Icon className="w-2 h-2 text-background" />
+                      </div>
+
+                      {/* Card */}
+                      <div className={`rounded-lg border p-3 ml-1 ${s.card}`}>
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`text-[9px] font-display font-bold uppercase tracking-widest shrink-0 ${s.label}`}>
+                              {e.type === "op" ? "OP" : e.type === "aar" ? "AAR" : "CAMPAIGN"}
+                            </span>
+                            <p className="font-display font-bold text-sm text-foreground truncate">{e.title}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {outcomeBadge(e.outcome)}
+                            <span className="text-[10px] font-sans text-muted-foreground">{dateStr}</span>
+                          </div>
+                        </div>
+
+                        {/* Meta row */}
+                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                          {e.game && <span className="text-[10px] font-sans text-muted-foreground">{e.game}</span>}
+                          {e.eventType && <span className="text-[10px] font-sans text-muted-foreground">· {e.eventType}</span>}
+                          {e.status && e.type === "op" && <span className="text-[10px] font-sans text-muted-foreground">· {e.status}</span>}
+                          {e.author && <span className="text-[10px] font-sans text-muted-foreground">By {e.author}</span>}
+                          {e.participants !== undefined && <span className="text-[10px] font-sans text-muted-foreground">· {e.participants} participants</span>}
+                          {e.opCount !== undefined && <span className="text-[10px] font-sans text-muted-foreground">· {e.opCount} ops</span>}
+                          {e.campaignId && <span className="text-[9px] font-display uppercase tracking-wider text-yellow-400/70">· {(campaigns.find((c: any) => c.id === e.campaignId) || {}).name}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

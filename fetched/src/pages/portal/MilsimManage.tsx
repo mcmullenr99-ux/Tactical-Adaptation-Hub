@@ -9,10 +9,13 @@ import {
   Shield, Crosshair, Award, Users, FileText, BookOpen,
   Plus, Trash2, Loader2, Save, CheckCircle2, AlertCircle, ExternalLink,
   Pencil, Check, X, Radio, Star, Medal, Wifi, WifiOff,
-  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp
+  GraduationCap, Siren, ClipboardList, MapPin, GitBranch, Activity, Megaphone, ChevronDown, ChevronUp,
+  BarChart3, Crown, TrendingUp, Trophy,
+  Rocket, Flag, Link2, Calendar, Target, UserCheck, UserX, Clock, ChevronRight, Archive, Zap, Bell
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
+import { useToast } from "@/hooks/use-toast";
 
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
 interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
@@ -28,7 +31,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness";
+type Tab = "info" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "questions" | "quals" | "ops" | "aars" | "briefings" | "orgchart" | "commendations" | "readiness" | "analytics" | "campaigns" | "pipeline" | "legacy";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -86,6 +89,10 @@ export default function MilsimManage() {
     { id: "stream", label: "Stream", icon: Radio },
     { id: "sops", label: "SOPs / ORBAT", icon: BookOpen },
     { id: "questions", label: "App Questions", icon: FileText },
+    { id: "campaigns", label: "⭐ Campaigns", icon: Rocket },
+    { id: "analytics", label: "⭐ Analytics", icon: BarChart3 },
+    { id: "pipeline", label: "⭐ Pipeline", icon: UserCheck },
+    { id: "legacy", label: "Unit Legacy", icon: Archive },
   ];
 
   return (
@@ -145,9 +152,13 @@ export default function MilsimManage() {
           {tab === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
           {tab === "orgchart" && <OrgChartTab group={group} />}
           {tab === "readiness" && <ReadinessTab group={group} />}
+          {tab === "analytics" && <AnalyticsTab group={group} />}
+          {tab === "campaigns" && <CampaignsTab group={group} />}
           {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
           {tab === "sops" && <SopsTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
           {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
+          {tab === "pipeline" && <RecruitPipelineTab group={group} showMsg={showMsg} />}
+          {tab === "legacy" && <UnitLegacyTab group={group} />}
         </motion.div>
       </div>
     </PortalLayout>
@@ -197,6 +208,14 @@ function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const [subTab, setSubTab] = useState<"sops" | "orbat">("sops");
   const [sopsText, setSopsText] = useState(group.sops ?? "");
   const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`)
+      .then(r => r.json())
+      .then(s => setIsPro(!!s.is_pro))
+      .catch(() => setIsPro(false));
+  }, [group.id]);
 
   const saveSops = async () => {
     setSaving(true);
@@ -222,12 +241,14 @@ function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
     <div className="space-y-4">
       {/* Sub-tab switcher */}
       <div className="flex gap-1 border-b border-border">
-        {(["sops", "orbat"] as const).map(t => (
-          <button key={t} onClick={() => setSubTab(t)}
-            className={`px-4 py-2 text-xs font-display font-bold uppercase tracking-widest transition-colors border-b-2 -mb-px ${subTab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-            {t === "sops" ? "SOPs" : "ORBAT Builder"}
-          </button>
-        ))}
+        <button onClick={() => setSubTab("sops")}
+          className={`px-4 py-2 text-xs font-display font-bold uppercase tracking-widest transition-colors border-b-2 -mb-px ${subTab === "sops" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+          SOPs
+        </button>
+        <button onClick={() => setSubTab("orbat")}
+          className={`px-4 py-2 text-xs font-display font-bold uppercase tracking-widest transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${subTab === "orbat" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+          ORBAT Builder <Crown className="w-3 h-3 text-yellow-400" />
+        </button>
       </div>
 
       {subTab === "sops" && (
@@ -245,15 +266,36 @@ function SopsTab({ group, onSaved, setSaving, saving, showMsg }: any) {
       )}
 
       {subTab === "orbat" && (
-        <div className="space-y-4">
-          <OrbatBuilder value={orbatJson} onChange={setOrbatJson} groupName={group.name} />
-          <div className="flex justify-end pt-2">
-            <button onClick={saveOrbat} disabled={saving}
-              className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save ORBAT
-            </button>
+        isPro === null ? (
+          <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+        ) : isPro ? (
+          <div className="space-y-4">
+            <OrbatBuilder value={orbatJson} onChange={setOrbatJson} groupName={group.name} />
+            <div className="flex justify-end pt-2">
+              <button onClick={saveOrbat} disabled={saving}
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm px-6 py-3 rounded clip-angled-sm transition-all disabled:opacity-60">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save ORBAT
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+            <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+              <Crown className="w-8 h-8 text-yellow-400" />
+            </div>
+            <div>
+              <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+              <p className="text-muted-foreground font-sans leading-relaxed">
+                The visual ORBAT Builder is a Pro feature. Build your command structure with NATO APP-6 symbology, drag-and-drop hierarchy, echelon markers, and print-ready PDF export.
+              </p>
+            </div>
+            <a href="/commander-pro"
+              className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]">
+              <Crown className="w-4 h-4" /> Upgrade to Pro — £10/mo
+            </a>
+            <p className="text-xs text-muted-foreground font-sans">SOPs remain free — ORBAT is a Pro visual tool.</p>
+          </div>
+        )
       )}
     </div>
   );
@@ -1550,7 +1592,1178 @@ function ReadinessTab({ group }: any) {
         </div>
         <p className="text-xs text-muted-foreground font-sans">Readiness based on portal logins in the last 7 days. 70%+ = Green, 40–69% = Amber, &lt;40% = Red.</p>
       </div>
+
+      {/* Smart LOA Alert */}
+      <SmartLOAAlert group={group} />
+
+      {/* Inactivity Purge */}
+      <InactivityPurgePanel group={group} />
     </div>
   );
 }
 
+
+// ─── Analytics (Pro) ──────────────────────────────────────────────────────────
+const ANALYTICS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/groupAnalytics";
+const PRO_STATUS_URL_MANAGE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/getProStatus";
+
+function MiniBar({ value, max, color = "bg-primary" }: { value: number; max: number; color?: string }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs font-display font-bold text-muted-foreground w-6 text-right">{value}</span>
+    </div>
+  );
+}
+
+function SparkLine({ data, color = "#22d3ee" }: { data: number[]; color?: string }) {
+  if (!data.length) return null;
+  const max = Math.max(...data, 1);
+  const w = 120, h = 40, pad = 4;
+  const pts = data.map((v, i) => {
+    const x = pad + (i / (data.length - 1 || 1)) * (w - pad * 2);
+    const y = h - pad - ((v / max) * (h - pad * 2));
+    return `${x},${y}`;
+  }).join(" ");
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="opacity-80">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      {data.map((v, i) => {
+        const x = pad + (i / (data.length - 1 || 1)) * (w - pad * 2);
+        const y = h - pad - ((v / max) * (h - pad * 2));
+        return <circle key={i} cx={x} cy={y} r="2.5" fill={color} />;
+      })}
+    </svg>
+  );
+}
+
+function StatCard({ label, value, sub, trend, sparkData, color }: { label: string; value: string | number; sub?: string; trend?: string; sparkData?: number[]; color?: string }) {
+  return (
+    <div className="bg-card border border-border rounded-lg p-5 flex flex-col gap-2">
+      <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+      <div className="flex items-end justify-between gap-2">
+        <p className={`font-display font-black text-3xl ${color || "text-foreground"}`}>{value}</p>
+        {sparkData && <SparkLine data={sparkData} color={color === "text-yellow-400" ? "#facc15" : color === "text-green-400" ? "#4ade80" : "#22d3ee"} />}
+      </div>
+      {sub && <p className="text-xs font-sans text-muted-foreground">{sub}</p>}
+      {trend && <p className="text-xs font-sans text-primary">{trend}</p>}
+    </div>
+  );
+}
+
+function AnalyticsTab({ group }: any) {
+  const [data, setData] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Check pro first
+    fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`)
+      .then(r => r.json())
+      .then(s => {
+        setIsPro(s.is_pro);
+        if (s.is_pro) {
+          return fetch(`${ANALYTICS_URL}?group_id=${group.id}`)
+            .then(r => r.json())
+            .then(setData)
+            .catch(() => {});
+        }
+      })
+      .catch(() => setIsPro(false))
+      .finally(() => setLoading(false));
+  }, [group.id]);
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-3">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <p className="text-sm text-muted-foreground font-sans">Loading analytics...</p>
+    </div>
+  );
+
+  // Pro gate
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          Analytics is a Pro feature. Upgrade your unit to unlock full attendance tracking, ops frequency charts, roster growth, duty status breakdown, and more.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]"
+      >
+        <Crown className="w-4 h-4" /> Upgrade to Pro — £10/mo
+      </a>
+      <p className="text-xs text-muted-foreground font-sans">Cancel anytime. Instant activation.</p>
+    </div>
+  );
+
+  if (!data) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+      <AlertCircle className="w-8 h-8 text-destructive" />
+      <p className="text-muted-foreground font-sans">Failed to load analytics data.</p>
+    </div>
+  );
+
+  const { summary, charts, top_operators, top_awards } = data;
+
+  // Format month labels
+  const monthLabels = Object.keys(charts.ops_per_month).map(k => {
+    const [y, m] = k.split("-");
+    return new Date(parseInt(y), parseInt(m) - 1).toLocaleString("default", { month: "short" });
+  });
+  const opsData = Object.values(charts.ops_per_month) as number[];
+  const attendData = Object.values(charts.attendance_per_month) as number[];
+  const joinData = Object.values(charts.join_per_month) as number[];
+
+  // Outcome colors
+  const outcomeColor: Record<string, string> = { victory: "bg-green-500", defeat: "bg-red-500", draw: "bg-yellow-500", incomplete: "bg-secondary" };
+  const totalOutcomes = Object.values(charts.aar_outcomes).reduce((a: any, b: any) => a + b, 0) as number;
+
+  return (
+    <div className="space-y-8 max-w-5xl">
+
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
+          <BarChart3 className="w-4 h-4 text-yellow-400" />
+        </div>
+        <div>
+          <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Unit Analytics</h2>
+          <p className="text-xs font-sans text-muted-foreground">Live data — all time unless noted</p>
+        </div>
+        <span className="ml-auto text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
+          <Crown className="w-3 h-3" /> Pro
+        </span>
+      </div>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Active Roster" value={summary.active_roster} sub={`${summary.total_roster} total enrolled`} sparkData={joinData} color="text-foreground" />
+        <StatCard label="Ops Completed" value={summary.completed_ops} sub={`${summary.scheduled_ops} upcoming`} sparkData={opsData} color="text-primary" />
+        <StatCard label="Avg Attendance" value={summary.avg_attendance} sub="per op (from AARs)" color="text-yellow-400" />
+        <StatCard label="Op Win Rate" value={`${summary.op_win_rate}%`} sub={`${summary.total_aars} AARs filed`} color={summary.op_win_rate >= 60 ? "text-green-400" : summary.op_win_rate >= 40 ? "text-yellow-400" : "text-red-400"} />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Total Awards" value={summary.total_awards} color="text-yellow-400" />
+        <StatCard label="Active LOAs" value={summary.active_loas} color={summary.active_loas > 3 ? "text-yellow-400" : "text-muted-foreground"} />
+        <StatCard label="Briefings Filed" value={summary.total_aars} color="text-foreground" />
+        <StatCard label="Scheduled Ops" value={summary.scheduled_ops} color="text-primary" />
+      </div>
+
+      {/* Charts row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        {/* Ops per month */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Ops Completed — Last 6 Months</p>
+          <div className="flex items-end gap-2 h-24">
+            {opsData.map((v, i) => {
+              const maxV = Math.max(...opsData, 1);
+              const pct = (v / maxV) * 100;
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-display font-bold">{v}</span>
+                  <div className="w-full bg-primary/80 rounded-t transition-all" style={{ height: `${Math.max(pct * 0.7, v > 0 ? 4 : 2)}px` }} />
+                  <span className="text-[9px] text-muted-foreground">{monthLabels[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Roster growth */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">New Recruits — Last 6 Months</p>
+          <div className="flex items-end gap-2 h-24">
+            {joinData.map((v, i) => {
+              const maxV = Math.max(...joinData, 1);
+              const pct = (v / maxV) * 100;
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-display font-bold">{v}</span>
+                  <div className="w-full bg-green-500/70 rounded-t transition-all" style={{ height: `${Math.max(pct * 0.7, v > 0 ? 4 : 2)}px` }} />
+                  <span className="text-[9px] text-muted-foreground">{monthLabels[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        {/* Roster status */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Roster by Status</p>
+          <div className="space-y-2.5">
+            {Object.entries(charts.roster_by_status).map(([status, count]) => (
+              <div key={status}>
+                <div className="flex justify-between text-xs font-sans mb-1">
+                  <span className="text-foreground capitalize">{status}</span>
+                  <span className="text-muted-foreground">{count as number}</span>
+                </div>
+                <MiniBar value={count as number} max={summary.total_roster} color="bg-primary" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* AAR outcomes */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Op Outcomes</p>
+          {totalOutcomes === 0 ? (
+            <p className="text-sm text-muted-foreground font-sans py-4 text-center">No AARs filed yet</p>
+          ) : (
+            <div className="space-y-2.5">
+              {Object.entries(charts.aar_outcomes).map(([outcome, count]) => (
+                count as number > 0 ? (
+                  <div key={outcome}>
+                    <div className="flex justify-between text-xs font-sans mb-1">
+                      <span className="text-foreground capitalize">{outcome}</span>
+                      <span className="text-muted-foreground">{count as number} ({Math.round(((count as number) / totalOutcomes) * 100)}%)</span>
+                    </div>
+                    <MiniBar value={count as number} max={totalOutcomes} color={outcomeColor[outcome] || "bg-secondary"} />
+                  </div>
+                ) : null
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Top operators */}
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-1.5">
+            <Trophy className="w-3 h-3 text-yellow-400" /> Top Operators
+          </p>
+          {top_operators.length === 0 ? (
+            <p className="text-sm text-muted-foreground font-sans py-4 text-center">No op data yet</p>
+          ) : (
+            <div className="space-y-2">
+              {top_operators.map((op: any, i: number) => (
+                <div key={op.callsign} className="flex items-center gap-3">
+                  <span className={`text-xs font-display font-black w-4 ${i === 0 ? "text-yellow-400" : i === 1 ? "text-zinc-400" : i === 2 ? "text-orange-500" : "text-muted-foreground"}`}>
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 text-sm font-sans text-foreground truncate">{op.callsign}</span>
+                  <span className="text-xs font-display font-bold text-muted-foreground">{op.ops_count} ops</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Top awards */}
+      {top_awards.length > 0 && (
+        <div className="bg-card border border-border rounded-lg p-5">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Most Issued Awards</p>
+          <div className="flex flex-wrap gap-3">
+            {top_awards.map((a: any) => (
+              <div key={a.name} className="flex items-center gap-2 bg-secondary/50 border border-border rounded px-3 py-2">
+                <Star className="w-3.5 h-3.5 text-yellow-400" />
+                <span className="text-sm font-sans text-foreground">{a.name}</span>
+                <span className="text-xs font-display font-bold text-muted-foreground">×{a.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+// ─── Campaigns (Pro) ──────────────────────────────────────────────────────────
+const CAMPAIGNS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/campaigns";
+
+const OUTCOME_OPTIONS = ["Victory", "Defeat", "Draw", "Ongoing", "Abandoned"];
+const STATUS_OPTIONS = ["active", "completed", "archived"];
+
+const STATUS_COLORS: Record<string, string> = {
+  active: "bg-green-500/15 text-green-400 border-green-500/30",
+  completed: "bg-primary/15 text-primary border-primary/30",
+  archived: "bg-secondary text-muted-foreground border-border",
+};
+
+const OUTCOME_COLORS: Record<string, string> = {
+  Victory: "text-green-400",
+  Defeat: "text-red-400",
+  Draw: "text-yellow-400",
+  Ongoing: "text-primary",
+  Abandoned: "text-muted-foreground",
+};
+
+function CampaignCard({ campaign, onEdit, onDelete }: { campaign: any; onEdit: () => void; onDelete: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const winColor = campaign.win_rate !== null
+    ? campaign.win_rate >= 60 ? "text-green-400" : campaign.win_rate >= 40 ? "text-yellow-400" : "text-red-400"
+    : "text-muted-foreground";
+
+  return (
+    <div className="bg-card border border-border rounded-lg overflow-hidden hover:border-primary/30 transition-colors">
+      {/* Banner */}
+      {campaign.banner_url && (
+        <div className="h-24 w-full overflow-hidden">
+          <img src={campaign.banner_url} alt={campaign.name} className="w-full h-full object-cover opacity-70" />
+        </div>
+      )}
+
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h3 className="font-display font-black uppercase tracking-wider text-foreground text-base truncate">{campaign.name}</h3>
+              <span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${STATUS_COLORS[campaign.status] || STATUS_COLORS.active}`}>
+                {campaign.status}
+              </span>
+              {campaign.outcome && (
+                <span className={`text-[10px] font-display font-bold uppercase tracking-widest ${OUTCOME_COLORS[campaign.outcome] || ""}`}>
+                  {campaign.outcome}
+                </span>
+              )}
+            </div>
+            {campaign.objective && (
+              <p className="text-xs text-muted-foreground font-sans line-clamp-1">{campaign.objective}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={onEdit} className="p-1.5 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+            <button onClick={onDelete} className="p-1.5 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-4 gap-3 py-3 border-y border-border mb-3">
+          <div className="text-center">
+            <p className="font-display font-black text-lg text-foreground">{campaign.ops_count}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">Ops</p>
+          </div>
+          <div className="text-center">
+            <p className="font-display font-black text-lg text-foreground">{campaign.aars_count}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">AARs</p>
+          </div>
+          <div className="text-center">
+            <p className="font-display font-black text-lg text-foreground">{campaign.avg_attendance || "—"}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">Avg Att.</p>
+          </div>
+          <div className="text-center">
+            <p className={`font-display font-black text-lg ${winColor}`}>{campaign.win_rate !== null ? `${campaign.win_rate}%` : "—"}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">Win Rate</p>
+          </div>
+        </div>
+
+        {/* Dates */}
+        <div className="flex items-center gap-4 text-xs font-sans text-muted-foreground mb-3">
+          {campaign.start_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(campaign.start_date).toLocaleDateString()}</span>}
+          {campaign.end_date && <span>→ {new Date(campaign.end_date).toLocaleDateString()}</span>}
+          {campaign.tags?.length > 0 && (
+            <div className="flex gap-1 flex-wrap">
+              {campaign.tags.map((t: string) => (
+                <span key={t} className="bg-secondary px-1.5 py-0.5 rounded text-[10px] text-muted-foreground">{t}</span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Expandable ops list */}
+        {campaign.ops?.length > 0 && (
+          <div>
+            <button onClick={() => setExpanded(!expanded)} className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+              {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {campaign.ops_count} Linked Op{campaign.ops_count !== 1 ? "s" : ""}
+            </button>
+            {expanded && (
+              <div className="mt-2 space-y-1">
+                {campaign.ops.map((op: any) => (
+                  <div key={op.id} className="flex items-center gap-2 text-xs font-sans text-muted-foreground py-1 border-b border-border/50 last:border-0">
+                    <Target className="w-3 h-3 text-primary shrink-0" />
+                    <span className="flex-1 truncate text-foreground">{op.name}</span>
+                    <span className="capitalize text-muted-foreground">{op.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Outcome note */}
+        {campaign.outcome_note && (
+          <div className="mt-3 pt-3 border-t border-border">
+            <p className="text-xs font-sans text-muted-foreground italic">"{campaign.outcome_note}"</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CampaignModal({ group, campaign, availableOps, onSave, onClose }: {
+  group: any; campaign: any | null; availableOps: any[]; onSave: (data: any) => void; onClose: () => void;
+}) {
+  const [form, setForm] = useState({
+    name: campaign?.name || "",
+    description: campaign?.description || "",
+    objective: campaign?.objective || "",
+    banner_url: campaign?.banner_url || "",
+    status: campaign?.status || "active",
+    start_date: campaign?.start_date || "",
+    end_date: campaign?.end_date || "",
+    outcome: campaign?.outcome || "",
+    outcome_note: campaign?.outcome_note || "",
+    tags: campaign?.tags?.join(", ") || "",
+    op_ids: campaign?.op_ids || [],
+  });
+  const [saving, setSaving] = useState(false);
+
+  const toggleOp = (opId: string) => {
+    setForm(f => ({
+      ...f,
+      op_ids: f.op_ids.includes(opId) ? f.op_ids.filter((id: string) => id !== opId) : [...f.op_ids, opId],
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (!form.name.trim()) return;
+    setSaving(true);
+    const payload = {
+      ...form,
+      tags: form.tags ? form.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
+      group_id: group.id,
+    };
+    onSave(payload);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+          <h2 className="font-display font-black uppercase tracking-wider text-foreground">
+            {campaign ? "Edit Campaign" : "New Campaign"}
+          </h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Campaign Name *</label>
+            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              className="mf-input w-full" placeholder="Operation Thunderstorm" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Objective</label>
+            <input value={form.objective} onChange={e => setForm(f => ({ ...f, objective: e.target.value }))}
+              className="mf-input w-full" placeholder="Secure the northern corridor..." />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Description</label>
+            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              className="mf-input w-full min-h-[80px] resize-y" placeholder="Full campaign brief..." />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Status</label>
+              <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                className="mf-input w-full">
+                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Outcome</label>
+              <select value={form.outcome} onChange={e => setForm(f => ({ ...f, outcome: e.target.value }))}
+                className="mf-input w-full">
+                <option value="">— Not set —</option>
+                {OUTCOME_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Start Date</label>
+              <input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
+                className="mf-input w-full" />
+            </div>
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">End Date</label>
+              <input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
+                className="mf-input w-full" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Outcome Note</label>
+            <input value={form.outcome_note} onChange={e => setForm(f => ({ ...f, outcome_note: e.target.value }))}
+              className="mf-input w-full" placeholder="A decisive victory achieved through..." />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Banner Image URL</label>
+            <input value={form.banner_url} onChange={e => setForm(f => ({ ...f, banner_url: e.target.value }))}
+              className="mf-input w-full" placeholder="https://..." />
+          </div>
+
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Tags (comma separated)</label>
+            <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+              className="mf-input w-full" placeholder="arma3, combined-arms, summer-2025" />
+          </div>
+
+          {/* Link ops */}
+          <div>
+            <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">
+              <Link2 className="w-3 h-3 inline mr-1" /> Link Ops ({form.op_ids.length} selected)
+            </label>
+            <div className="max-h-48 overflow-y-auto border border-border rounded-lg divide-y divide-border">
+              {availableOps.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground font-sans text-center">No ops found — create some in the Live Ops tab first</p>
+              ) : availableOps.map((op: any) => (
+                <label key={op.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-secondary/50 cursor-pointer">
+                  <input type="checkbox" checked={form.op_ids.includes(op.id)} onChange={() => toggleOp(op.id)}
+                    className="rounded" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-sans text-foreground truncate">{op.name}</p>
+                    <p className="text-[10px] text-muted-foreground capitalize">{op.status} · {op.event_type || op.game || ""}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3 shrink-0">
+          <button onClick={onClose} className="px-5 py-2 border border-border rounded text-sm font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+          <button onClick={handleSubmit} disabled={saving || !form.name.trim()}
+            className="inline-flex items-center gap-2 px-6 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-wider text-sm rounded transition-all disabled:opacity-50">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {campaign ? "Save Changes" : "Create Campaign"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CampaignsTab({ group }: any) {
+  const { toast } = useToast();
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [availableOps, setAvailableOps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState<{ open: boolean; campaign: any | null }>({ open: false, campaign: null });
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      // Check pro
+      const proRes = await fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`);
+      const proData = await proRes.json();
+      setIsPro(proData.is_pro);
+      if (!proData.is_pro) { setLoading(false); return; }
+
+      // Load campaigns + ops in parallel
+      const [campRes, opsRes] = await Promise.all([
+        fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`),
+        fetch(`${CAMPAIGNS_URL}?path=ops&group_id=${group.id}`),
+      ]);
+      if (campRes.ok) setCampaigns(await campRes.json());
+      if (opsRes.ok) setAvailableOps(await opsRes.json());
+    } catch { /* noop */ } finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, [group.id]);
+
+  const handleSave = async (data: any) => {
+    try {
+      const isEdit = !!modal.campaign;
+      const res = await fetch(
+        isEdit
+          ? `${CAMPAIGNS_URL}?path=update&id=${modal.campaign.id}`
+          : `${CAMPAIGNS_URL}?path=create`,
+        { method: isEdit ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }
+      );
+      if (!res.ok) throw new Error((await res.json()).error || "Save failed");
+      toast({ title: isEdit ? "Campaign updated" : "Campaign created" });
+      setModal({ open: false, campaign: null });
+      load();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (campaign: any) => {
+    if (!confirm(`Delete "${campaign.name}"? This cannot be undone.`)) return;
+    try {
+      await fetch(`${CAMPAIGNS_URL}?path=delete&id=${campaign.id}`, { method: "DELETE" });
+      toast({ title: "Campaign deleted" });
+      load();
+    } catch {
+      toast({ title: "Delete failed", variant: "destructive" });
+    }
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          Campaigns let you group ops into named series with full progression tracking, win rates, attendance analytics, outcome notes and banners. Upgrade to unlock.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]"
+      >
+        <Crown className="w-4 h-4" /> Upgrade to Pro — £10/mo
+      </a>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6 max-w-5xl">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
+            <Rocket className="w-4 h-4 text-yellow-400" />
+          </div>
+          <div>
+            <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Campaigns</h2>
+            <p className="text-xs font-sans text-muted-foreground">{campaigns.length} campaign{campaigns.length !== 1 ? "s" : ""} · link ops into series and track progression</p>
+          </div>
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
+            <Crown className="w-3 h-3" /> Pro
+          </span>
+        </div>
+        <button onClick={() => setModal({ open: true, campaign: null })}
+          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/80 text-black font-display font-black uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all">
+          <Plus className="w-4 h-4" /> New Campaign
+        </button>
+      </div>
+
+      {/* Summary stats */}
+      {campaigns.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: "Total Campaigns", value: campaigns.length },
+            { label: "Active", value: campaigns.filter(c => c.status === "active").length, color: "text-green-400" },
+            { label: "Total Ops Linked", value: campaigns.reduce((a, c) => a + c.ops_count, 0), color: "text-primary" },
+            { label: "Avg Win Rate", value: (() => { const wrs = campaigns.filter(c => c.win_rate !== null); return wrs.length ? `${Math.round(wrs.reduce((a, c) => a + c.win_rate, 0) / wrs.length)}%` : "—"; })(), color: "text-yellow-400" },
+          ].map(s => (
+            <div key={s.label} className="bg-card border border-border rounded-lg p-4 text-center">
+              <p className={`font-display font-black text-2xl ${s.color || "text-foreground"}`}>{s.value}</p>
+              <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Campaign cards */}
+      {campaigns.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+          <Flag className="w-12 h-12 text-muted-foreground/30" />
+          <div>
+            <p className="font-display font-bold uppercase tracking-wider text-foreground mb-1">No Campaigns Yet</p>
+            <p className="text-sm text-muted-foreground font-sans">Group your ops into named campaigns. Track win rates, attendance, and progression across op series.</p>
+          </div>
+          <button onClick={() => setModal({ open: true, campaign: null })}
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary/80 text-black font-display font-black uppercase tracking-wider text-sm px-6 py-2.5 rounded transition-all">
+            <Plus className="w-4 h-4" /> Create First Campaign
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {campaigns.map(c => (
+            <CampaignCard key={c.id} campaign={c}
+              onEdit={() => setModal({ open: true, campaign: c })}
+              onDelete={() => handleDelete(c)} />
+          ))}
+        </div>
+      )}
+
+      {modal.open && (
+        <CampaignModal
+          group={group}
+          campaign={modal.campaign}
+          availableOps={availableOps}
+          onSave={handleSave}
+          onClose={() => setModal({ open: false, campaign: null })}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Recruit Pipeline (Pro) ───────────────────────────────────────────────────
+const PIPELINE_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimApplications";
+
+const PIPELINE_COLUMNS = [
+  { id: "pending", label: "Applied", color: "border-yellow-500/40 bg-yellow-500/5", dot: "bg-yellow-400" },
+  { id: "reviewing", label: "Reviewing", color: "border-blue-500/40 bg-blue-500/5", dot: "bg-blue-400" },
+  { id: "interview", label: "Interview", color: "border-purple-500/40 bg-purple-500/5", dot: "bg-purple-400" },
+  { id: "approved", label: "Accepted", color: "border-green-500/40 bg-green-500/5", dot: "bg-green-400" },
+  { id: "rejected", label: "Rejected", color: "border-red-500/40 bg-red-500/5", dot: "bg-red-400" },
+];
+
+function RecruitPipelineTab({ group, showMsg }: any) {
+  const [apps, setApps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isPro, setIsPro] = useState<boolean | null>(null);
+  const [selected, setSelected] = useState<any | null>(null);
+  const [moving, setMoving] = useState(false);
+
+  useEffect(() => {
+    fetch(`${PRO_STATUS_URL_MANAGE}?group_id=${group.id}`)
+      .then(r => r.json())
+      .then(s => {
+        setIsPro(s.is_pro);
+        if (s.is_pro) loadApps();
+        else setLoading(false);
+      })
+      .catch(() => { setIsPro(false); setLoading(false); });
+  }, [group.id]);
+
+  const loadApps = () => {
+    const token = localStorage.getItem("auth_token") ?? "";
+    fetch(`${PIPELINE_URL}?path=${encodeURIComponent(`/${group.id}/applications`)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(data => { setApps(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  const moveApp = async (app: any, newStatus: string) => {
+    setMoving(true);
+    const token = localStorage.getItem("auth_token") ?? "";
+    try {
+      await fetch(`${PIPELINE_URL}?path=${encodeURIComponent(`/${app.id}/review`)}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus, review_note: "" }),
+      });
+      setApps(prev => prev.map(a => a.id === app.id ? { ...a, status: newStatus } : a));
+      if (selected?.id === app.id) setSelected({ ...selected, status: newStatus });
+      showMsg(true, `Moved ${app.applicant_username} to ${newStatus}`);
+    } catch { showMsg(false, "Failed to update status"); }
+    setMoving(false);
+  };
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (!isPro) return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto gap-6">
+      <div className="w-16 h-16 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-center">
+        <Crown className="w-8 h-8 text-yellow-400" />
+      </div>
+      <div>
+        <h3 className="font-display font-black text-2xl uppercase tracking-wider text-foreground mb-2">Commander Pro Required</h3>
+        <p className="text-muted-foreground font-sans leading-relaxed">
+          The Recruitment Pipeline is a Pro feature. Track applicants from applied → reviewing → interview → accepted with full notes and history.
+        </p>
+      </div>
+      <a href="/commander-pro"
+        className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-sm px-8 py-3 rounded transition-all shadow-[0_0_20px_hsla(48,96%,53%,0.3)]">
+        <Crown className="w-4 h-4" /> Upgrade to Pro
+      </a>
+    </div>
+  );
+
+  const byStatus = (status: string) => apps.filter(a => a.status === status);
+  const total = apps.length;
+  const pending = byStatus("pending").length;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/30 rounded flex items-center justify-center">
+            <UserCheck className="w-4 h-4 text-yellow-400" />
+          </div>
+          <div>
+            <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Recruitment Pipeline</h2>
+            <p className="text-xs font-sans text-muted-foreground">{total} applicant{total !== 1 ? "s" : ""} total{pending > 0 ? ` · ${pending} awaiting review` : ""}</p>
+          </div>
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30 flex items-center gap-1">
+            <Crown className="w-3 h-3" /> Pro
+          </span>
+        </div>
+        {pending > 0 && (
+          <span className="flex items-center gap-1.5 text-xs font-display font-bold uppercase tracking-wider text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-3 py-1.5 rounded animate-pulse">
+            <Bell className="w-3 h-3" /> {pending} new
+          </span>
+        )}
+      </div>
+
+      {total === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+          <UserCheck className="w-12 h-12 text-muted-foreground/30" />
+          <div>
+            <p className="font-display font-bold uppercase tracking-wider text-foreground mb-1">No Applications Yet</p>
+            <p className="text-sm text-muted-foreground font-sans">Applicants will appear here when they apply to join your unit.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          {PIPELINE_COLUMNS.map(col => {
+            const colApps = byStatus(col.id);
+            return (
+              <div key={col.id} className={`rounded-lg border p-3 ${col.color} min-h-[200px]`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`w-2 h-2 rounded-full ${col.dot}`} />
+                  <span className="font-display font-bold uppercase tracking-wider text-xs text-foreground">{col.label}</span>
+                  <span className="ml-auto text-xs font-display font-bold text-muted-foreground">{colApps.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {colApps.map(app => (
+                    <button key={app.id} onClick={() => setSelected(app)}
+                      className="w-full text-left bg-card border border-border rounded p-3 hover:border-primary/50 transition-all group">
+                      <p className="font-display font-bold text-sm text-foreground">{app.applicant_username}</p>
+                      <p className="text-[10px] font-sans text-muted-foreground mt-0.5 flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> {app.created_date ? new Date(app.created_date).toLocaleDateString() : "—"}
+                      </p>
+                      <ChevronRight className="w-3 h-3 text-muted-foreground mt-1 group-hover:text-primary transition-colors" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Detail panel */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setSelected(null)}>
+          <div className="bg-card border border-border rounded-xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6 space-y-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-display font-black text-xl uppercase tracking-wider text-foreground">{selected.applicant_username}</h3>
+                <p className="text-xs font-sans text-muted-foreground">Applied {selected.created_date ? new Date(selected.created_date).toLocaleDateString() : "—"}</p>
+              </div>
+              <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="space-y-3">
+              {selected.answers && Object.entries(selected.answers).map(([q, a]: any) => (
+                <div key={q} className="bg-secondary/30 rounded p-3">
+                  <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-1">{q}</p>
+                  <p className="text-sm font-sans text-foreground">{a}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
+              {PIPELINE_COLUMNS.filter(c => c.id !== selected.status).map(col => (
+                <button key={col.id} disabled={moving} onClick={() => moveApp(selected, col.id)}
+                  className="text-xs font-display font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-all disabled:opacity-50">
+                  → {col.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Unit Legacy ──────────────────────────────────────────────────────────────
+function UnitLegacyTab({ group }: any) {
+  const [ops, setOps] = useState<any[]>([]);
+  const [aars, setAars] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem("auth_token") ?? "";
+
+  useEffect(() => {
+    const headers = { Authorization: `Bearer ${token}` };
+    Promise.all([
+      fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimOps?path=${encodeURIComponent(`/${group.id}/ops`)}`, { headers }).then(r => r.json()).catch(() => []),
+      fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/aars?path=${encodeURIComponent(`/${group.id}/aars`)}`, { headers }).then(r => r.json()).catch(() => []),
+      fetch(`${CAMPAIGNS_URL}?path=${encodeURIComponent(`/${group.id}/campaigns`)}`, { headers }).then(r => r.json()).catch(() => []),
+    ]).then(([o, a, c]) => {
+      setOps(Array.isArray(o) ? o : []);
+      setAars(Array.isArray(a) ? a : []);
+      setCampaigns(Array.isArray(c) ? c : []);
+      setLoading(false);
+    });
+  }, [group.id]);
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  // Build timeline entries
+  type TimelineEntry = { date: string; type: "op" | "aar" | "campaign"; title: string; sub: string; icon: typeof Siren; color: string };
+  const entries: TimelineEntry[] = [
+    ...ops.filter(o => o.scheduled_at).map(o => ({
+      date: o.scheduled_at, type: "op" as const,
+      title: o.name, sub: `${o.game || "Unknown Game"} · ${o.event_type || "Op"} · ${o.status || ""}`,
+      icon: Siren, color: "text-primary border-primary/40 bg-primary/10"
+    })),
+    ...aars.filter(a => a.created_date).map(a => ({
+      date: a.created_date, type: "aar" as const,
+      title: a.title || a.op_name || "AAR", sub: `By ${a.author_username} · Outcome: ${a.outcome || "—"}`,
+      icon: ClipboardList, color: "text-green-400 border-green-500/40 bg-green-500/10"
+    })),
+    ...campaigns.filter(c => c.start_date).map(c => ({
+      date: c.start_date, type: "campaign" as const,
+      title: `Campaign: ${c.name}`, sub: `${c.status} · ${(c.op_ids || []).length} ops`,
+      icon: Rocket, color: "text-yellow-400 border-yellow-500/40 bg-yellow-500/10"
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const totalOps = ops.length;
+  const totalAARs = aars.length;
+  const totalCampaigns = campaigns.length;
+  const firstOpDate = ops.length > 0 ? ops.reduce((earliest, o) => (!earliest || new Date(o.scheduled_at) < new Date(earliest)) ? o.scheduled_at : earliest, null) : null;
+
+  return (
+    <div className="space-y-8 max-w-4xl">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-secondary border border-border rounded flex items-center justify-center">
+          <Archive className="w-4 h-4 text-foreground" />
+        </div>
+        <div>
+          <h2 className="font-display font-bold uppercase tracking-wider text-foreground">Unit Legacy</h2>
+          <p className="text-xs font-sans text-muted-foreground">The permanent record of {group.name}</p>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Total Ops", value: totalOps, color: "text-primary" },
+          { label: "AARs Filed", value: totalAARs, color: "text-green-400" },
+          { label: "Campaigns", value: totalCampaigns, color: "text-yellow-400" },
+          { label: "Since", value: firstOpDate ? new Date(firstOpDate).getFullYear() : "—", color: "text-foreground" },
+        ].map(s => (
+          <div key={s.label} className="bg-card border border-border rounded-lg p-4 text-center">
+            <p className={`font-display font-black text-2xl ${s.color}`}>{s.value}</p>
+            <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Campaign Ribbons */}
+      {campaigns.length > 0 && (
+        <div>
+          <h3 className="font-display font-bold uppercase tracking-wider text-sm text-muted-foreground mb-3">Campaign Ribbons</h3>
+          <div className="flex flex-wrap gap-3">
+            {campaigns.map(c => {
+              const outcome = c.outcome || "incomplete";
+              const color = outcome === "victory" ? "from-green-600 to-green-800 border-green-500/40" :
+                            outcome === "defeat" ? "from-red-700 to-red-900 border-red-500/40" :
+                            outcome === "draw" ? "from-yellow-600 to-yellow-800 border-yellow-500/40" :
+                            "from-zinc-700 to-zinc-900 border-zinc-500/40";
+              return (
+                <div key={c.id} className={`bg-gradient-to-b ${color} border rounded px-4 py-2 text-center min-w-[80px]`}>
+                  <p className="text-xs font-display font-black uppercase tracking-wider text-white leading-tight">{c.name}</p>
+                  <p className="text-[9px] font-sans text-white/70 mt-0.5">{outcome.toUpperCase()}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Timeline */}
+      <div>
+        <h3 className="font-display font-bold uppercase tracking-wider text-sm text-muted-foreground mb-4">Full Timeline</h3>
+        {entries.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <Archive className="w-10 h-10 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground font-sans">No ops, AARs, or campaigns logged yet.</p>
+          </div>
+        ) : (
+          <div className="relative space-y-3 pl-6 border-l border-border">
+            {entries.map((e, i) => (
+              <div key={i} className="relative">
+                <div className={`absolute -left-[25px] w-4 h-4 rounded-full border flex items-center justify-center ${e.color}`}>
+                  <e.icon className="w-2 h-2" />
+                </div>
+                <div className="bg-card border border-border rounded-lg p-3 ml-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-display font-bold text-sm text-foreground">{e.title}</p>
+                    <p className="text-[10px] font-sans text-muted-foreground shrink-0">
+                      {new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  <p className="text-xs font-sans text-muted-foreground mt-0.5">{e.sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Smart LOA Alert ──────────────────────────────────────────────────────────
+function SmartLOAAlert({ group }: any) {
+  const [loas, setLoas] = useState<any[]>([]);
+  const [ops, setOps] = useState<any[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const token = localStorage.getItem("auth_token") ?? "";
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimLOA?path=${encodeURIComponent(`/${group.id}/loas`)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(r => r.json()).catch(() => []),
+      fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimOps?path=${encodeURIComponent(`/${group.id}/ops`)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(r => r.json()).catch(() => []),
+    ]).then(([l, o]) => {
+      setLoas(Array.isArray(l) ? l.filter((x: any) => x.status === "Active") : []);
+      setOps(Array.isArray(o) ? o : []);
+      setLoaded(true);
+    });
+  }, [group.id]);
+
+  if (!loaded) return null;
+
+  const now = new Date();
+  const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  // Find upcoming ops in next 7 days
+  const upcomingOps = ops.filter(o => {
+    const d = new Date(o.scheduled_at);
+    return d >= now && d <= next7Days && o.status !== "cancelled";
+  });
+
+  if (upcomingOps.length === 0 || loas.length === 0) return null;
+
+  // Check if LOA count is > 30% of roster
+  const rosterCount = group.roster?.length ?? 0;
+  const loaPercent = rosterCount > 0 ? Math.round((loas.length / rosterCount) * 100) : 0;
+  const isHighLOA = loaPercent >= 30;
+
+  if (!isHighLOA) return null;
+
+  return (
+    <div className="bg-red-500/10 border border-red-500/40 rounded-lg p-4 flex items-start gap-3">
+      <Bell className="w-5 h-5 text-red-400 shrink-0 mt-0.5 animate-pulse" />
+      <div>
+        <p className="font-display font-bold uppercase tracking-wider text-red-400 text-sm">⚠ LOA Alert — Op Risk</p>
+        <p className="text-xs font-sans text-muted-foreground mt-1">
+          {loas.length} member{loas.length !== 1 ? "s" : ""} ({loaPercent}% of roster) are on active LOA.
+          You have {upcomingOps.length} op{upcomingOps.length !== 1 ? "s" : ""} scheduled in the next 7 days — your unit may be undermanned.
+        </p>
+        <p className="text-xs font-sans text-muted-foreground mt-1">
+          Upcoming: {upcomingOps.map(o => o.name).join(", ")}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Inactivity Purge Panel ───────────────────────────────────────────────────
+function InactivityPurgePanel({ group }: any) {
+  const [roster, setRoster] = useState<any[]>([]);
+  const [aars, setAars] = useState<any[]>([]);
+  const [ops, setOps] = useState<any[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [purging, setPurging] = useState<string | null>(null);
+  const [purged, setPurged] = useState<Set<string>>(new Set());
+  const token = localStorage.getItem("auth_token") ?? "";
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const headers = { Authorization: `Bearer ${token}` };
+    Promise.all([
+      apiFetch<any>(`/api/milsim-groups/${group.id}/roster`).catch(() => []),
+      fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/aars?path=${encodeURIComponent(`/${group.id}/aars`)}`, { headers }).then(r => r.json()).catch(() => []),
+      fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimOps?path=${encodeURIComponent(`/${group.id}/ops`)}`, { headers }).then(r => r.json()).catch(() => []),
+    ]).then(([r, a, o]) => {
+      setRoster(Array.isArray(r) ? r : []);
+      setAars(Array.isArray(a) ? a : []);
+      setOps(Array.isArray(o) ? o : []);
+      setLoaded(true);
+    });
+  }, [group.id]);
+
+  if (!loaded) return null;
+
+  const cutoff30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  // Build per-member last activity map
+  const lastActivity: Record<string, Date> = {};
+  aars.forEach((a: any) => {
+    if (!a.participants) return;
+    (Array.isArray(a.participants) ? a.participants : []).forEach((pid: string) => {
+      const d = new Date(a.created_date);
+      if (!lastActivity[pid] || d > lastActivity[pid]) lastActivity[pid] = d;
+    });
+  });
+  ops.forEach((o: any) => {
+    if (!o.participants) return;
+    (Array.isArray(o.participants) ? o.participants : []).forEach((pid: string) => {
+      const d = new Date(o.scheduled_at);
+      if (!lastActivity[pid] || d > lastActivity[pid]) lastActivity[pid] = d;
+    });
+  });
+
+  const inactive = roster.filter(m => {
+    if (m.status === "inactive" || purged.has(String(m.id))) return false;
+    const last = lastActivity[String(m.user_id)];
+    return !last || last < cutoff30;
+  });
+
+  if (inactive.length === 0) return null;
+
+  const markInactive = async (member: any) => {
+    setPurging(String(member.id));
+    const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+    try {
+      await fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsim?path=${encodeURIComponent(`/roster/${member.id}`)}`, {
+        method: "PATCH", headers, body: JSON.stringify({ status: "inactive" })
+      });
+      setPurged(p => new Set([...p, String(member.id)]));
+      toast({ title: `${member.callsign} marked inactive` });
+    } catch {
+      toast({ title: "Failed to update status", variant: "destructive" });
+    }
+    setPurging(null);
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-lg p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <Zap className="w-4 h-4 text-yellow-400" />
+        <h3 className="font-display font-bold uppercase tracking-wider text-sm text-foreground">Inactivity Report</h3>
+        <span className="ml-auto text-xs font-display font-bold text-muted-foreground">{inactive.length} member{inactive.length !== 1 ? "s" : ""} — no activity in 30 days</span>
+      </div>
+      <div className="space-y-2">
+        {inactive.slice(0, 10).map(m => (
+          <div key={m.id} className="flex items-center justify-between gap-3 bg-secondary/30 rounded p-3">
+            <div>
+              <p className="font-display font-bold text-sm text-foreground">{m.callsign}</p>
+              <p className="text-xs font-sans text-muted-foreground">Last activity: {lastActivity[String(m.user_id)] ? lastActivity[String(m.user_id)].toLocaleDateString() : "Never recorded"}</p>
+            </div>
+            <button onClick={() => markInactive(m)} disabled={!!purging}
+              className="text-xs font-display font-bold uppercase tracking-wider px-3 py-1.5 rounded border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-50">
+              {purging === String(m.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : "Mark Inactive"}
+            </button>
+          </div>
+        ))}
+      </div>
+      {inactive.length > 10 && <p className="text-xs text-muted-foreground font-sans text-center">+{inactive.length - 10} more not shown</p>}
+    </div>
+  );
+}

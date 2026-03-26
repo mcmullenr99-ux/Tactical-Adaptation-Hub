@@ -20,6 +20,7 @@ import MilsimRegistry from "@/pages/MilsimRegistry";
 import MilsimGroup from "@/pages/MilsimGroup";
 import MilsimRegister from "@/pages/MilsimRegister";
 import MilsimManage from "@/pages/portal/MilsimManage";
+import MemberHQ from "@/pages/portal/MemberHQ";
 import NotFound from "@/pages/not-found";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
@@ -29,6 +30,7 @@ import UserPublicProfile from "@/pages/UserPublicProfile";
 
 // New Pages
 import ServiceCard from "@/pages/portal/ServiceCard";
+import RibbonRack from "@/pages/portal/RibbonRack";
 import Stats from "@/pages/Stats";
 
 // Portal Pages
@@ -49,6 +51,7 @@ import VerifyEmail from "@/pages/portal/VerifyEmail";
 import TwoFactorAuth from "@/pages/portal/TwoFactorAuth";
 import Support from "@/pages/portal/Support";
 import SupportAdmin from "@/pages/portal/SupportAdmin";
+import CommanderPro from "@/pages/CommanderPro";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -89,6 +92,7 @@ function Router() {
       <Route path="/milsim/register" component={MilsimRegister} />
       <Route path="/milsim/:slug" component={MilsimGroup} />
       <Route path="/portal/milsim" component={MilsimManage} />
+      <Route path="/portal/member-hq" component={MemberHQ} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
       <Route path="/ops" component={OpsCalendar} />
@@ -112,8 +116,10 @@ function Router() {
       <Route path="/portal/verify-email" component={VerifyEmail} />
       <Route path="/portal/2fa" component={TwoFactorAuth} />
       <Route path="/portal/service-card" component={ServiceCard} />
+      <Route path="/portal/ribbon-rack" component={RibbonRack} />
       <Route path="/portal/support" component={Support} />
       <Route path="/portal/support-admin" component={SupportAdmin} />
+      <Route path="/commander-pro" component={CommanderPro} />
       <Route path="/stats" component={Stats} />
       <Route component={NotFound} />
     </Switch>

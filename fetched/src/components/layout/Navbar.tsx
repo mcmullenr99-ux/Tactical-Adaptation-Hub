@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { href: "/forum", label: "Forum" },
   { href: "/join", label: "Join" },
   { href: "/donate", label: "Donate" },
+  { href: "/commander-pro", label: "⭐ Pro" },
 ];
 
 const VETERANS_LINK = { href: "/veterans", label: "Veterans" };

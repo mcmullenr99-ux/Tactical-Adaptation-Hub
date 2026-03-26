@@ -2,6 +2,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+const WEBHOOKS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/webhooks";
+async function fireEvent(groupId: string, event: string, payload: object) {
+  try { await fetch(`${WEBHOOKS_URL}?path=%2Ffire`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ group_id: groupId, event, payload }) }); } catch (_) {}
+}
 
 async function getCallerUser(base44: any, req: Request) {
   const authHeader = req.headers.get('Authorization') ?? '';
@@ -63,6 +67,7 @@ Deno.serve(async (req) => {
         last_op_date: new Date().toISOString(),
         last_page_update: new Date().toISOString(),
       }).catch(() => {});
+      await fireEvent(parts[0], "op.created", { op_id: op.id, name: op.name, game: op.game, scheduled_at: op.scheduled_at, event_type: op.event_type });
       return Response.json(op, { status: 201 });
     }
 
@@ -82,6 +87,10 @@ Deno.serve(async (req) => {
       if (body.status !== undefined) updates.status = body.status;
 
       const updated = await base44.asServiceRole.entities.MilsimOp.update(parts[2], updates);
+      if (body.status) {
+        await fireEvent(parts[0], "op.status_changed", { op_id: parts[2], new_status: body.status });
+        if (body.status === "Completed") await fireEvent(parts[0], "op.completed", { op_id: parts[2], name: updates.name });
+      }
       return Response.json(updated);
     }
 
