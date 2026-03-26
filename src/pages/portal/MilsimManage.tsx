@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback, useRef, type ElementType } from "react";
-import { useUpload } from "@/stubs/object-storage-web";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -58,6 +57,7 @@ import {
   Wifi,
   WifiOff,
   X,
+  XCircle,
   UserCheck,
   Archive,
   FileEdit,
