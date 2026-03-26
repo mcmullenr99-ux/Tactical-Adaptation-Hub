@@ -2606,6 +2606,7 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
   const [ops, setOps] = useState<any[]>([]);
+  const [roster, setRoster] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -2626,12 +2627,14 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
   const load = async () => {
     setLoading(true);
     try {
-      const [d, opsData] = await Promise.all([
+      const [d, opsData, rosterData] = await Promise.all([
         apiFetch(`/milsimLace?path=list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
+        apiFetch(`/milsimGroups?path=roster&group_id=${group.id}`),
       ]);
       setReports(d.lace_reports ?? []);
       setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned"].includes(o.status)));
+      setRoster((rosterData.roster ?? []).filter((m:any) => m.status === "Active"));
     } catch {}
     setLoading(false);
   };
@@ -2718,10 +2721,13 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
                 <input value={form.report_time} onChange={e => setForm((f:any) => ({...f, report_time: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
               </MField>
               <MField label="FROM (Callsign) *">
-                <input value={form.from_callsign} onChange={e => setForm((f:any) => ({...f, from_callsign: e.target.value}))} placeholder="e.g. 1-1 DELTA" className="mf-input w-full" />
+                <select value={form.from_callsign} onChange={e => setForm((f:any) => ({...f, from_callsign: e.target.value}))} className="mf-input w-full">
+                  <option value="">— Select callsign —</option>
+                  {roster.map((m:any) => <option key={m.id} value={m.callsign}>{m.callsign}{m.rank_name ? ` (${m.rank_name})` : ""}</option>)}
+                </select>
               </MField>
               <MField label="TO (Higher Element)">
-                <input value={form.to_callsign} onChange={e => setForm((f:any) => ({...f, to_callsign: e.target.value}))} placeholder="e.g. 1-0 BRAVO / PLATOON ACTUAL" className="mf-input w-full" />
+                <input value={form.to_callsign} onChange={e => setForm((f:any) => ({...f, to_callsign: e.target.value}))} placeholder="e.g. PLATOON ACTUAL / Coy HQ" className="mf-input w-full" />
               </MField>
             </div>
             <MField label="Linked Op (Optional)">
@@ -2836,6 +2842,7 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
   const [ops, setOps] = useState<any[]>([]);
+  const [roster, setRoster] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -2862,12 +2869,14 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
   const load = async () => {
     setLoading(true);
     try {
-      const [d, opsData] = await Promise.all([
+      const [d, opsData, rosterData] = await Promise.all([
         apiFetch(`/milsimSitrep?path=list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
+        apiFetch(`/milsimGroups?path=roster&group_id=${group.id}`),
       ]);
       setReports(d.sitreps ?? []);
       setOps((opsData.events ?? []).filter((o:any) => ["Active","Confirmed","Planned"].includes(o.status)));
+      setRoster((rosterData.roster ?? []).filter((m:any) => m.status === "Active"));
     } catch {}
     setLoading(false);
   };
@@ -2963,7 +2972,10 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
                 <input value={form.report_time} onChange={e => setForm((f:any) => ({...f, report_time: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
               </MField>
               <MField label="FROM (Callsign) *">
-                <input value={form.from_callsign} onChange={e => setForm((f:any) => ({...f, from_callsign: e.target.value}))} placeholder="e.g. 1-1 ALPHA" className="mf-input w-full" />
+                <select value={form.from_callsign} onChange={e => setForm((f:any) => ({...f, from_callsign: e.target.value}))} className="mf-input w-full">
+                  <option value="">— Select callsign —</option>
+                  {roster.map((m:any) => <option key={m.id} value={m.callsign}>{m.callsign}{m.rank_name ? ` (${m.rank_name})` : ""}</option>)}
+                </select>
               </MField>
               <MField label="TO (Higher Element)">
                 <input value={form.to_callsign} onChange={e => setForm((f:any) => ({...f, to_callsign: e.target.value}))} placeholder="e.g. PLATOON ACTUAL" className="mf-input w-full" />
@@ -3155,6 +3167,7 @@ function MedevacTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "
   const { user } = useAuth();
   const [requests, setRequests] = useState<any[]>([]);
   const [ops, setOps] = useState<any[]>([]);
+  const [roster, setRoster] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -3190,12 +3203,14 @@ function MedevacTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "
   const load = async () => {
     setLoading(true);
     try {
-      const [d, opsData] = await Promise.all([
+      const [d, opsData, rosterData] = await Promise.all([
         apiFetch(`/milsimSitrep?path=medevac_list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
+        apiFetch(`/milsimGroups?path=roster&group_id=${group.id}`),
       ]);
       setRequests(d.medevacs ?? []);
       setOps((opsData.events ?? []).filter((o:any) => ["Active","Confirmed","Planned"].includes(o.status)));
+      setRoster((rosterData.roster ?? []).filter((m:any) => m.status === "Active"));
     } catch {}
     setLoading(false);
   };
@@ -3327,8 +3342,11 @@ function MedevacTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "
               <MField label="DTG">
                 <input value={form.dtg} onChange={e => setForm((f:any) => ({...f, dtg: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
               </MField>
-              <MField label="Unit (Callsign) *">
-                <input value={form.callsign} onChange={e => setForm((f:any) => ({...f, callsign: e.target.value}))} placeholder="e.g. 1-2 DELTA" className="mf-input w-full" />
+              <MField label="Reporting Callsign *">
+                <select value={form.callsign} onChange={e => setForm((f:any) => ({...f, callsign: e.target.value}))} className="mf-input w-full">
+                  <option value="">— Select callsign —</option>
+                  {roster.map((m:any) => <option key={m.id} value={m.callsign}>{m.callsign}{m.rank_name ? ` (${m.rank_name})` : ""}</option>)}
+                </select>
               </MField>
               <MField label="Unit Name">
                 <input value={form.unit} onChange={e => setForm((f:any) => ({...f, unit: e.target.value}))} placeholder="e.g. 2 SECTION" className="mf-input w-full" />
@@ -3422,7 +3440,7 @@ function MedevacTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "
                       <button key={o.code} onClick={() => setForm((f:any) => ({...f, l7_marking: o.code}))}
                         className={`px-2.5 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.l7_marking === o.code ? "bg-pink-500/20 border-pink-500/50 text-pink-400" : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{o.label}</button>
                     ))}
-                    {form.l7_marking === "C" && <input value={form.l7_smoke_colour} onChange={e => setForm((f:any) => ({...f, l7_smoke_colour: e.target.value}))} placeholder="Smoke colour..." className="mf-input text-xs w-36" />}
+                    {form.l7_marking === "C" && <input defaultValue={form.l7_smoke_colour} onBlur={e => setForm((f:any) => ({...f, l7_smoke_colour: e.target.value}))} onKeyDown={e => { if(e.key==="Enter") e.currentTarget.blur(); }} placeholder="Smoke colour..." className="mf-input text-xs w-36" key={`smoke-${form.l7_marking}`} />}
                   </div>
                 }>
                 <span className="font-display font-black text-sm text-pink-400">{L7_OPTS.find(o => o.code === form.l7_marking)?.label ?? "—"}{form.l7_smoke_colour && ` — ${form.l7_smoke_colour}`}</span>
@@ -3533,6 +3551,7 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
   const [ops, setOps] = useState<any[]>([]);
+  const [roster, setRoster] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -3552,12 +3571,14 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
   const load = async () => {
     setLoading(true);
     try {
-      const [d, opsData] = await Promise.all([
+      const [d, opsData, rosterData] = await Promise.all([
         apiFetch(`/milsimConductReport?path=list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
+        apiFetch(`/milsimGroups?path=roster&group_id=${group.id}`),
       ]);
       setReports(d.reports ?? []);
       setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)));
+      setRoster((rosterData.roster ?? []).filter((m:any) => m.status === "Active"));
     } catch {}
     setLoading(false);
   };
@@ -3623,11 +3644,17 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
               <MField label="DTG (Date-Time Group)">
                 <input value={form.report_date} onChange={e => setForm((f:any) => ({...f, report_date: e.target.value}))} placeholder={dtgNow} className="mf-input w-full font-mono text-xs" />
               </MField>
-              <MField label="Subject (Rank / Callsign) *">
-                <input value={form.subject_callsign} onChange={e => setForm((f:any) => ({...f, subject_callsign: e.target.value}))} placeholder="e.g. Cpl CALLSIGN" className="mf-input w-full" />
+              <MField label="Subject (Individual) *">
+                <select value={form.subject_callsign} onChange={e => setForm((f:any) => ({...f, subject_callsign: e.target.value}))} className="mf-input w-full">
+                  <option value="">— Select soldier —</option>
+                  {roster.map((m:any) => <option key={m.id} value={m.callsign}>{m.callsign}{m.rank_name ? ` (${m.rank_name})` : ""}</option>)}
+                </select>
               </MField>
-              <MField label="Reviewing Authority">
-                <input value={form.reviewed_by} onChange={e => setForm((f:any) => ({...f, reviewed_by: e.target.value}))} placeholder="e.g. Sgt / Officer callsign" className="mf-input w-full" />
+              <MField label="Reviewing Authority (Commander / NCO)">
+                <select value={form.reviewed_by} onChange={e => setForm((f:any) => ({...f, reviewed_by: e.target.value}))} className="mf-input w-full">
+                  <option value="">— Select authority —</option>
+                  {roster.map((m:any) => <option key={m.id} value={m.callsign}>{m.callsign}{m.rank_name ? ` (${m.rank_name})` : ""}</option>)}
+                </select>
               </MField>
             </div>
 
