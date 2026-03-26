@@ -1191,6 +1191,10 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
   const [loading, setLoading]           = useState(true);
   const [hovered, setHovered]           = useState<string | null>(null);
   const [localRoster, setLocalRoster]   = useState<any | null>(null);
+  const [ribbonSearch, setRibbonSearch] = useState("");
+  const [ribbonCountry, setRibbonCountry] = useState("all");
+  const [ribbonPage, setRibbonPage]     = useState(1);
+  const RIBBONS_PER_PAGE = 24;
 
   useEffect(() => {
     if (!group?.id || !user?.id) return;
@@ -1320,9 +1324,35 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
   };
 
   const barRibbons = barIds.map(id => allRibbons.find(r => r.id === id)).filter(Boolean);
-  const availableRibbons = allRibbons.filter(r => !barIds.includes(r.id));
 
-  // Chunk bar into rows of 3
+  // Derive unique countries from awarded ribbons for filter dropdown
+  const ribbonCountries = useMemo(() => {
+    const seen = new Set<string>();
+    allRibbons.forEach((r: any) => {
+      const country = r.source_country ?? r.award_description?.match(/^([A-Z]{2,3})\s/)?.[1] ?? null;
+      if (country) seen.add(country);
+    });
+    return Array.from(seen).sort();
+  }, [allRibbons]);
+
+  const filteredRibbons = useMemo(() => {
+    return allRibbons.filter((r: any) => {
+      const name = (r.award_name ?? r.name ?? "").toLowerCase();
+      const matchSearch = ribbonSearch === "" || name.includes(ribbonSearch.toLowerCase());
+      const country = r.source_country ?? null;
+      const matchCountry = ribbonCountry === "all" || country === ribbonCountry;
+      return matchSearch && matchCountry;
+    });
+  }, [allRibbons, ribbonSearch, ribbonCountry]);
+
+  const totalPages = Math.ceil(filteredRibbons.length / RIBBONS_PER_PAGE);
+  const pagedRibbons = filteredRibbons.slice((ribbonPage - 1) * RIBBONS_PER_PAGE, ribbonPage * RIBBONS_PER_PAGE);
+
+  // Reset to page 1 when search/filter changes
+  const handleRibbonSearch = (v: string) => { setRibbonSearch(v); setRibbonPage(1); };
+  const handleRibbonCountry = (v: string) => { setRibbonCountry(v); setRibbonPage(1); };
+
+  // Chunk bar into rows of 5
   const rows: any[][] = [];
   for (let i = 0; i < barRibbons.length; i += 5) rows.push(barRibbons.slice(i, i + 5));
 
@@ -1402,9 +1432,30 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
 
       {/* Available Awards */}
       <div className="border border-border rounded-lg overflow-hidden">
-        <div className="bg-secondary/40 border-b border-border px-5 py-3 flex items-center gap-2">
-          <p className="font-display font-black text-xs uppercase tracking-widest">Awarded Ribbons — Select to Add</p>
-          <span className="text-xs text-muted-foreground font-sans">({allRibbons.length} total granted)</span>
+        <div className="bg-secondary/40 border-b border-border px-5 py-3 flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <p className="font-display font-black text-xs uppercase tracking-widest">Awarded Ribbons — Select to Add</p>
+            <span className="text-xs text-muted-foreground font-sans">({allRibbons.length} total granted)</span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="text"
+              placeholder="Search ribbons..."
+              value={ribbonSearch}
+              onChange={e => handleRibbonSearch(e.target.value)}
+              className="text-xs bg-background border border-border rounded px-2 py-1 font-sans w-40 focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            {ribbonCountries.length > 0 && (
+              <select
+                value={ribbonCountry}
+                onChange={e => handleRibbonCountry(e.target.value)}
+                className="text-xs bg-background border border-border rounded px-2 py-1 font-sans focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="all">All Countries</option>
+                {ribbonCountries.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
+          </div>
         </div>
         <div className="p-5">
           {allRibbons.length === 0 ? (
@@ -1414,8 +1465,14 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
               <p className="text-[10px] text-muted-foreground/60 font-sans mt-1">Your commander issues ribbons from the unit's Awards section</p>
             </div>
           ) : (
+            <>
+            {filteredRibbons.length === 0 && (
+              <div className="text-center py-6 border border-dashed border-border rounded-lg mb-4">
+                <p className="text-xs font-sans text-muted-foreground">No ribbons match your search</p>
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {allRibbons.map((ribbon: any) => {
+              {pagedRibbons.map((ribbon: any) => {
                 const inBar = barIds.includes(ribbon.id);
                 const baseUrl = ribbonImageUrl(ribbon);
                 const modifiers = inBar ? getRibbonModifiers(baseUrl) : [];
@@ -1485,6 +1542,31 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
                 );
               })}
             </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
+                <button
+                  onClick={() => setRibbonPage(p => Math.max(1, p - 1))}
+                  disabled={ribbonPage === 1}
+                  className="px-3 py-1 text-xs font-display uppercase tracking-widest border border-border rounded hover:bg-secondary disabled:opacity-40"
+                >← Prev</button>
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(pg => (
+                    <button
+                      key={pg}
+                      onClick={() => setRibbonPage(pg)}
+                      className={`w-7 h-7 text-xs font-display rounded ${pg === ribbonPage ? "bg-primary text-primary-foreground" : "border border-border hover:bg-secondary"}`}
+                    >{pg}</button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setRibbonPage(p => Math.min(totalPages, p + 1))}
+                  disabled={ribbonPage === totalPages}
+                  className="px-3 py-1 text-xs font-display uppercase tracking-widest border border-border rounded hover:bg-secondary disabled:opacity-40"
+                >Next →</button>
+              </div>
+            )}
+            </>
           )}
         </div>
       </div>
