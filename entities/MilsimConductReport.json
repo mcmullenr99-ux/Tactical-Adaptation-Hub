@@ -1,0 +1,66 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "filed_by": {
+      "type": "string"
+    },
+    "subject_callsign": {
+      "type": "string"
+    },
+    "subject_roster_id": {
+      "type": "string"
+    },
+    "report_date": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Absence",
+        "Conduct",
+        "Insubordination",
+        "Negligence",
+        "Commendation",
+        "Admin"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "Info",
+        "Minor",
+        "Major",
+        "Critical"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "string"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "No Action",
+        "Verbal Warning",
+        "Written Warning",
+        "Strike",
+        "Demotion",
+        "Removal",
+        "Commendation"
+      ]
+    },
+    "outcome_notes": {
+      "type": "string"
+    },
+    "reviewed_by": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "MilsimConductReport"
+}

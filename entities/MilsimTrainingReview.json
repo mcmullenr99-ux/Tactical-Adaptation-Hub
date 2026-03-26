@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "op_id": {
+      "type": "string"
+    },
+    "exercise_name": {
+      "type": "string"
+    },
+    "conducted_by": {
+      "type": "string"
+    },
+    "reviewed_by": {
+      "type": "string"
+    },
+    "exercise_date": {
+      "type": "string"
+    },
+    "participant_count": {
+      "type": "number"
+    },
+    "skills_practised": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "overall_execution": {
+      "type": "number"
+    },
+    "comms_quality": {
+      "type": "number"
+    },
+    "tactics_quality": {
+      "type": "number"
+    },
+    "discipline_quality": {
+      "type": "number"
+    },
+    "notable_gaps": {
+      "type": "string"
+    },
+    "highlights": {
+      "type": "string"
+    },
+    "repeat_recommended": {
+      "type": "boolean"
+    },
+    "ai_summary": {
+      "type": "string"
+    },
+    "ai_score": {
+      "type": "number"
+    }
+  },
+  "required": [],
+  "name": "MilsimTrainingReview"
+}
