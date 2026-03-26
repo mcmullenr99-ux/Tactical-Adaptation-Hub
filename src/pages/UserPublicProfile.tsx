@@ -39,7 +39,7 @@ const ROLE_COLORS: Record<string, string> = {
   admin: "text-destructive border-destructive/40",
 };
 
-const RIBBONS_PER_ROW = 4;
+const RIBBONS_PER_ROW = 5;
 
 function RibbonStripe({ ribbon, selected, onClick }: { ribbon: EarnedRibbon; selected?: boolean; onClick?: () => void }) {
   const c1 = ribbon.ribbon_color_1 || "#3b82f6";

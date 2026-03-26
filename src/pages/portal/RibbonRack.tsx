@@ -191,7 +191,7 @@ export default function RibbonRack() {
 
   const barRibbons = barIds.map(id => allRibbons.find(r => r.id === id)).filter(Boolean);
   const rows: any[][] = [];
-  for (let i = 0; i < barRibbons.length; i += 3) rows.push(barRibbons.slice(i, i + 3));
+  for (let i = 0; i < barRibbons.length; i += 5) rows.push(barRibbons.slice(i, i + 5));
 
   return (
     <PortalLayout>
