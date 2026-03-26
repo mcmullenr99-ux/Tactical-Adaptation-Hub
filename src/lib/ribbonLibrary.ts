@@ -2,7 +2,7 @@
 // Sources:
 //   - EZRackBuilder / USAMM — 1118 real US awards, all branches + auxiliaries
 //   - medals.org.uk — 1274 international awards across 31 countries + UN
-// Total: 214 ribbons. Auto-generated. DO NOT hand-edit.
+// Total: 215 ribbons. Auto-generated. DO NOT hand-edit.
 
 export interface RibbonTemplate {
   country: string;
@@ -236,12 +236,14 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [
   { country: 'United Nations', branch: 'United Nations', name: 'UNSSM Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations027.gif' },
   { country: 'United Nations', branch: 'United Nations', name: 'UNHQ Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations042.gif' },
 
+
   // === NATO ===
   { country: 'NATO', branch: 'NATO', name: 'OSCE Medal', url: 'https://www.medals.org.uk/nato/images/nato007.gif' },
   { country: 'NATO', branch: 'NATO', name: 'NATO Meritorious Service Medal', url: 'https://www.medals.org.uk/nato/images/nato004.gif' },
-  { country: 'NATO', branch: 'NATO', name: 'NATO Medal for the Former Yugoslavia', url: 'https://www.medals.org.uk/nato/images/nato005.gif' },
-  { country: 'NATO', branch: 'NATO', name: 'NATO Medal for Kosovo', url: 'https://www.medals.org.uk/nato/images/nato006.gif' },
-  { country: 'NATO', branch: 'NATO', name: 'NATO Medal for Macedonia', url: 'https://www.medals.org.uk/nato/images/nato011.gif' },
+  { country: 'NATO', branch: 'NATO', name: 'NATO Medal for the Former Yugoslavia', url: 'https://www.medals.org.uk/nato/images/nato009.gif' },
+  { country: 'NATO', branch: 'NATO', name: 'NATO Medal for Kosovo', url: 'https://www.medals.org.uk/nato/images/nato005.gif' },
+  { country: 'NATO', branch: 'NATO', name: 'NATO Medal for Macedonia', url: 'https://www.medals.org.uk/nato/images/nato006.gif' },
   { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Article 5 - Eagle Assist Operation)', url: 'https://www.medals.org.uk/nato/images/nato012.gif' },
-  { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Article 5 - Active Endeavour Operation)', url: 'https://www.medals.org.uk/nato/images/nato013.gif' },
+  { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Article 5 - Active Endeavour Operation)', url: 'https://www.medals.org.uk/nato/images/nato010.gif' },
+  { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Non-Article 5 - Operations in the Balkans)', url: 'https://www.medals.org.uk/nato/images/nato013.gif' },
 ];
