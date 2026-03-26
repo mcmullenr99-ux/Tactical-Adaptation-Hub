@@ -1324,7 +1324,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
 
   // Chunk bar into rows of 3
   const rows: any[][] = [];
-  for (let i = 0; i < barRibbons.length; i += 3) rows.push(barRibbons.slice(i, i + 3));
+  for (let i = 0; i < barRibbons.length; i += 5) rows.push(barRibbons.slice(i, i + 5));
 
   return (
     <div className="space-y-8 max-w-3xl">
