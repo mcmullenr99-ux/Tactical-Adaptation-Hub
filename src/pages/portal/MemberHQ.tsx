@@ -6,7 +6,8 @@ import { format, formatDistanceToNow, differenceInCalendarDays } from "date-fns"
 import {
   Shield, Loader2, AlertTriangle, Siren, ClipboardList, MapPin, Calendar,
   Star, FileText, UserCheck, ChevronDown, ChevronUp, CheckCircle2, XCircle,
-  Award, PlusCircle, Clock, ThumbsUp, ThumbsDown, ExternalLink, Send, TrendingUp
+  Award, PlusCircle, Clock, ThumbsUp, ThumbsDown, ExternalLink, Send, TrendingUp,
+  GripVertical, Rows3, Save, RefreshCw, Info, Crown
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -33,7 +34,7 @@ const STATUS_OP: Record<string, string> = {
 /* ─── main component ──────────────────────────────────────────────────────── */
 export default function MemberHQ() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<"ops"|"briefings"|"aars"|"peer-review"|"unit-review"|"loa"|"service-file">("ops");
+  const [tab, setTab] = useState<"ops"|"briefings"|"aars"|"peer-review"|"unit-review"|"loa"|"service-file"|"ribbon-bar">("ops");
   const [upvoteCount, setUpvoteCount] = useState<number>(0);
   const [hasVoted, setHasVoted] = useState<boolean>(false);
   const [upvoting, setUpvoting] = useState(false);
@@ -115,6 +116,7 @@ export default function MemberHQ() {
     { id: "unit-review",   label: "Unit Review",   icon: Shield },
     { id: "loa",          label: "Request LOA",   icon: Calendar },
     { id: "service-file", label: "My Service File", icon: FileText },
+    { id: "ribbon-bar",   label: "Ribbon Bar",      icon: Rows3 },
   ] as const;
 
   return (
@@ -216,6 +218,7 @@ export default function MemberHQ() {
       {selectedGroup && tab === "loa"          && <MemberLOATab         group={selectedGroup} showMsg={showMsg} user={user} rosterEntry={rosterEntry} />}
       {selectedGroup && tab === "unit-review"   && <MemberUnitReviewTab  group={selectedGroup} showMsg={showMsg} user={user} />}
       {selectedGroup && tab === "service-file" && <MemberServiceFileTab user={user} />}
+      {selectedGroup && tab === "ribbon-bar"   && <MemberRibbonBarTab  group={selectedGroup} user={user} rosterEntry={rosterEntry} />}
     </PortalLayout>
   );
 }
@@ -1082,6 +1085,329 @@ function MemberServiceFileTab({ user }: any) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ─── Ribbon Bar Tab ──────────────────────────────────────────────────────────
+   Shows only if the member's unit has CommanderPro.
+   Pulls all Ribbon-type awards granted to this member, lets them drag/reorder
+   and build their ribbon rack. Saves order back to their roster record.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+// Map award names to uniformribbons.com image slugs (for units using US-style ribbons)
+const RIBBON_SLUG_MAP: Record<string, string> = {
+  "Medal of Honor":                             "medal_of_honor_ribbon",
+  "Distinguished Service Cross":                "army_distinguished_service_cross_ribbon",
+  "Defense Distinguished Service":              "defense_distinguished_service_ribbon",
+  "Distinguished Service":                      "army_distinguished_service_ribbon",
+  "Silver Star":                                "silver_star_ribbon",
+  "Defense Superior Service":                   "defense_superior_service_ribbon",
+  "Legion of Merit":                            "legion_of_merit_ribbon",
+  "Distinguished Flying Cross":                 "distinguished_flying_cross_ribbon",
+  "Soldier's Medal":                            "soldier_medal_ribbon",
+  "Bronze Star":                                "bronze_star_ribbon",
+  "Purple Heart":                               "purple_heart_ribbon",
+  "Defense Meritorious Service":                "defense_meritorious_service_ribbon",
+  "Meritorious Service":                        "meritorious_service_ribbon",
+  "Air Medal":                                  "air_medal_ribbon",
+  "Joint Service Commendation":                 "joint_service_commendation_ribbon",
+  "Army Commendation":                          "army_commendation_ribbon",
+  "Joint Service Achievement":                  "joint_service_achievement_ribbon",
+  "Army Achievement":                           "army_achievement_ribbon",
+  "Good Conduct":                               "army_good_conduct_ribbon",
+  "National Defense Service":                   "national_defense_service_ribbon",
+  "Armed Forces Expeditionary":                 "armed_forces_expeditionary_ribbon",
+  "Global War on Terrorism Expeditionary":      "global_war_on_terrorism_expeditionary_ribbon",
+  "Global War on Terrorism Service":            "global_war_terrorism_service_ribbon",
+  "Korea Defense Service":                      "korea_defense_service_ribbon",
+  "Armed Forces Service":                       "armed_forces_service_ribbon",
+  "Humanitarian Service":                       "humanitarian_service_ribbon",
+  "Army Service":                               "army_service_ribbon",
+  "Overseas Service":                           "army_overseas_service_ribbon",
+  "NATO Medal":                                 "nato_medal_meritorious_ribbon",
+  "NATO ISAF":                                  "nato_isaf_ribbon",
+  "United Nations Medal":                       "united_nations_medal_ribbon",
+  "Afghanistan Campaign":                       "afghanistan_campaign_medal_ribbon",
+  "Iraq Campaign":                              "iraq_campaign_medal_ribbon",
+  "Kosovo Campaign":                            "kosovo_campaign_medal_ribbon",
+  "Southwest Asia Service":                     "southwest_asia_service_medal_ribbon",
+  "Vietnam Service":                            "vietnam_service_medal_ribbon",
+  "Prisoner of War":                            "prisoner_of_war_ribbon",
+  "Presidential Unit Citation":                 "army_presidential_unit_citation_ribbon",
+  "Valorous Unit Award":                        "army_valorous_unit_award_ribbon",
+  "Meritorious Unit Commendation":              "army_meritorious_unit_commendation_ribbon",
+  "Superior Unit Award":                        "army_superior_unit_award_ribbon",
+};
+
+function ribbonImageUrl(award: any): string {
+  // 1. Custom image uploaded by commander
+  if (award.award_image_url) return award.award_image_url;
+  // 2. Try mapping name to uniformribbons.com asset
+  const slug = RIBBON_SLUG_MAP[award.award_name ?? award.name ?? ""];
+  if (slug) return `https://www.uniformribbons.com/image/${slug}.png`;
+  // 3. Fallback: render CSS ribbon from stripe colours
+  return "";
+}
+
+function CssRibbon({ award, size = 40 }: { award: any; size?: number }) {
+  const c1 = award.ribbon_color_1 ?? "#4a90e2";
+  const c2 = award.ribbon_color_2 ?? c1;
+  const c3 = award.ribbon_color_3 ?? c2;
+  const gradient = `linear-gradient(to right, ${c1} 0%, ${c1} 33%, ${c2} 33%, ${c2} 66%, ${c3} 66%, ${c3} 100%)`;
+  return (
+    <div
+      style={{ width: size * 1.6, height: size * 0.55, background: gradient, borderRadius: 2, flexShrink: 0 }}
+      title={award.award_name ?? award.name ?? ""}
+    />
+  );
+}
+
+function RibbonImage({ award, size = 40 }: { award: any; size?: number }) {
+  const url = ribbonImageUrl(award);
+  if (!url) return <CssRibbon award={award} size={size} />;
+  return (
+    <img
+      src={url}
+      alt={award.award_name ?? award.name ?? "ribbon"}
+      style={{ width: size * 1.6, height: size * 0.55, objectFit: "fill", borderRadius: 2, flexShrink: 0 }}
+      onError={(e: any) => { e.currentTarget.style.display = "none"; }}
+      title={award.award_name ?? award.name ?? ""}
+    />
+  );
+}
+
+function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
+  const [isPro, setIsPro]               = useState<boolean | null>(null);
+  const [allRibbons, setAllRibbons]     = useState<any[]>([]); // all awarded ribbons
+  const [barIds, setBarIds]             = useState<string[]>([]); // IDs in current bar
+  const [dragging, setDragging]         = useState<string | null>(null);
+  const [dragOver, setDragOver]         = useState<string | null>(null);
+  const [saving, setSaving]             = useState(false);
+  const [loading, setLoading]           = useState(true);
+  const [hovered, setHovered]           = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!group?.id || !user?.id) return;
+    const load = async () => {
+      setLoading(true);
+      try {
+        // Check pro status
+        const proData = await apiFetch(`/getProStatus?path=status&group_id=${group.id}`);
+        setIsPro(!!proData.is_pro);
+        if (!proData.is_pro) { setLoading(false); return; }
+
+        // Fetch all awards granted to this user in this group
+        const [awardsData, rosterData] = await Promise.all([
+          apiFetch(`/milsimAwards?path=member_awards&group_id=${group.id}&user_id=${user.id}`),
+          apiFetch(`/milsimGroups?path=roster_member&group_id=${group.id}&user_id=${user.id}`),
+        ]);
+
+        // Only include ribbon-type awards
+        const ribbons = (awardsData.awards ?? []).filter((a: any) =>
+          (a.award_type ?? "").toLowerCase() === "ribbon" || (a.award_type ?? "").toLowerCase() === "service ribbon"
+        );
+        setAllRibbons(ribbons);
+
+        // Load saved bar order from roster entry
+        const savedOrder: string[] = rosterData.roster_member?.ribbon_bar_order ?? [];
+        // Keep only IDs that still exist in granted ribbons
+        const validIds = savedOrder.filter((id: string) => ribbons.some((r: any) => r.id === id));
+        setBarIds(validIds);
+      } catch {}
+      setLoading(false);
+    };
+    load();
+  }, [group.id, user?.id]);
+
+  const toggleInBar = (id: string) => {
+    setBarIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  // Drag reorder within bar
+  const handleDragStart = (id: string) => setDragging(id);
+  const handleDragEnd   = () => { setDragging(null); setDragOver(null); };
+  const handleDragOver  = (e: any, id: string) => { e.preventDefault(); setDragOver(id); };
+  const handleDrop      = (targetId: string) => {
+    if (!dragging || dragging === targetId) { setDragging(null); setDragOver(null); return; }
+    setBarIds(prev => {
+      const arr = [...prev];
+      const fromIdx = arr.indexOf(dragging);
+      const toIdx   = arr.indexOf(targetId);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      arr.splice(fromIdx, 1);
+      arr.splice(toIdx, 0, dragging);
+      return arr;
+    });
+    setDragging(null);
+    setDragOver(null);
+  };
+
+  const saveBar = async () => {
+    if (!rosterEntry?.id) return;
+    setSaving(true);
+    try {
+      await apiFetch(`/milsimGroups?path=update_roster_member`, {
+        method: "POST",
+        body: JSON.stringify({ roster_id: rosterEntry.id, ribbon_bar_order: barIds }),
+      });
+    } catch {}
+    setSaving(false);
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (isPro === false) return (
+    <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
+      <Crown className="w-12 h-12 text-yellow-400/40" />
+      <p className="font-display font-black text-sm uppercase tracking-widest text-muted-foreground">Commander Pro Required</p>
+      <p className="text-xs text-muted-foreground font-sans max-w-sm">
+        The Ribbon Bar builder is a Commander Pro feature. Your unit commander can upgrade at <a href="/commander-pro" className="underline text-primary">commander-pro</a>.
+      </p>
+    </div>
+  );
+
+  const barRibbons = barIds.map(id => allRibbons.find(r => r.id === id)).filter(Boolean);
+  const availableRibbons = allRibbons.filter(r => !barIds.includes(r.id));
+
+  // Chunk bar into rows of 3
+  const rows: any[][] = [];
+  for (let i = 0; i < barRibbons.length; i += 3) rows.push(barRibbons.slice(i, i + 3));
+
+  return (
+    <div className="space-y-8 max-w-3xl">
+      {/* Header */}
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Rows3 className="w-5 h-5 text-primary" />
+            <h2 className="font-display font-black text-lg uppercase tracking-widest">Ribbon Bar</h2>
+            <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 rounded flex items-center gap-1">
+              <Crown className="w-2.5 h-2.5" /> Pro
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">
+            Build your service ribbon rack from awards granted by your unit. Drag to reorder.
+          </p>
+        </div>
+        <button
+          onClick={saveBar}
+          disabled={saving}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90 disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+          Save Bar
+        </button>
+      </div>
+
+      {/* Live Ribbon Rack Preview */}
+      <div className="border border-primary/30 rounded-lg overflow-hidden">
+        <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center gap-2">
+          <p className="font-display font-black text-xs uppercase tracking-widest text-primary">Your Ribbon Rack</p>
+          <span className="text-xs text-muted-foreground font-sans">— {barRibbons.length} ribbon{barRibbons.length !== 1 ? "s" : ""}</span>
+        </div>
+        <div className="p-5 bg-card min-h-[80px]">
+          {barRibbons.length === 0 ? (
+            <div className="text-center py-6 border border-dashed border-border rounded-lg">
+              <Rows3 className="w-8 h-8 mx-auto mb-2 opacity-20" />
+              <p className="text-xs font-sans text-muted-foreground">No ribbons in your rack yet — select from your awards below</p>
+            </div>
+          ) : (
+            <div className="space-y-0.5 inline-block">
+              {rows.map((row, ri) => (
+                <div key={ri} className="flex gap-0.5">
+                  {row.map((ribbon: any) => (
+                    <div
+                      key={ribbon.id}
+                      draggable
+                      onDragStart={() => handleDragStart(ribbon.id)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={e => handleDragOver(e, ribbon.id)}
+                      onDrop={() => handleDrop(ribbon.id)}
+                      className={`relative cursor-grab active:cursor-grabbing transition-all ${
+                        dragging === ribbon.id ? "opacity-40" : ""
+                      } ${dragOver === ribbon.id ? "ring-2 ring-primary" : ""}`}
+                      title={ribbon.award_name ?? ribbon.name ?? ""}
+                      onMouseEnter={() => setHovered(ribbon.id)}
+                      onMouseLeave={() => setHovered(null)}
+                    >
+                      <RibbonImage award={ribbon} size={52} />
+                      {hovered === ribbon.id && (
+                        <button
+                          onClick={() => toggleInBar(ribbon.id)}
+                          className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center hover:bg-red-600 z-10"
+                          title="Remove from rack"
+                        >×</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Available Awards */}
+      <div className="border border-border rounded-lg overflow-hidden">
+        <div className="bg-secondary/40 border-b border-border px-5 py-3 flex items-center gap-2">
+          <p className="font-display font-black text-xs uppercase tracking-widest">Awarded Ribbons — Select to Add</p>
+          <span className="text-xs text-muted-foreground font-sans">({allRibbons.length} total granted)</span>
+        </div>
+        <div className="p-5">
+          {allRibbons.length === 0 ? (
+            <div className="text-center py-8 border border-dashed border-border rounded-lg">
+              <Award className="w-8 h-8 mx-auto mb-2 opacity-20" />
+              <p className="text-xs font-sans text-muted-foreground">No ribbons have been awarded to you yet</p>
+              <p className="text-[10px] text-muted-foreground/60 font-sans mt-1">Your commander issues ribbons from the unit's Awards section</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {allRibbons.map((ribbon: any) => {
+                const inBar = barIds.includes(ribbon.id);
+                return (
+                  <button
+                    key={ribbon.id}
+                    onClick={() => toggleInBar(ribbon.id)}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all ${
+                      inBar
+                        ? "border-primary/60 bg-primary/10 ring-1 ring-primary/30"
+                        : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
+                    }`}
+                  >
+                    <RibbonImage award={ribbon} size={44} />
+                    <div className="text-center">
+                      <p className="text-[10px] font-display font-bold uppercase tracking-wider leading-tight line-clamp-2">
+                        {ribbon.award_name ?? ribbon.name ?? "Ribbon"}
+                      </p>
+                      {ribbon.reason && (
+                        <p className="text-[9px] text-muted-foreground font-sans mt-0.5 line-clamp-1">{ribbon.reason}</p>
+                      )}
+                    </div>
+                    <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
+                      inBar ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
+                    }`}>
+                      {inBar ? "In Rack ✓" : "Add to Rack"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Info box */}
+      <div className="flex items-start gap-3 p-4 bg-secondary/30 border border-border rounded-lg">
+        <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+        <div className="text-xs text-muted-foreground font-sans space-y-1">
+          <p><strong className="text-foreground">Real ribbon assets</strong> — US-standard ribbons are sourced from uniformribbons.com. Custom unit ribbons use the image your commander uploaded.</p>
+          <p><strong className="text-foreground">Drag to reorder</strong> — within the rack preview, drag ribbons left/right to set your precedence order. Rows fill 3 per line, left to right.</p>
+          <p><strong className="text-foreground">Saving</strong> — click Save Bar to persist your arrangement. It will be visible on your public profile.</p>
+        </div>
+      </div>
     </div>
   );
 }

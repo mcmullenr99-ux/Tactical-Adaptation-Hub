@@ -148,6 +148,44 @@ Deno.serve(async (req) => {
       return Response.json(enriched);
     }
 
+    // GET ?path=member_awards&group_id=X&user_id=Y — ribbons for a specific member
+    if (parts[0] === 'member_awards') {
+      const groupId = url.searchParams.get('group_id');
+      const userId  = url.searchParams.get('user_id');
+      if (!groupId || !userId) return Response.json({ error: 'group_id and user_id required' }, { status: 400 });
+      // Find roster entry for this user in this group
+      const rosters = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id: groupId, user_id: userId });
+      if (rosters.length === 0) return Response.json({ awards: [] });
+      const rosterIds = rosters.map((r: any) => r.id);
+      const allAwards: any[] = [];
+      for (const rid of rosterIds) {
+        const awards = await base44.asServiceRole.entities.MilsimAward.filter({ recipient_roster_id: rid });
+        allAwards.push(...awards);
+      }
+      // Also check awards by recipient_callsign fallback
+      const callsign = rosters[0]?.callsign;
+      // Enrich with def metadata
+      const enriched = await Promise.all(allAwards.map(async (a: any) => {
+        let def: any = null;
+        if (a.award_def_id) {
+          try { def = await base44.asServiceRole.entities.MilsimAwardDef.get(a.award_def_id); } catch {}
+        }
+        return {
+          ...a,
+          award_type:       def?.award_type ?? a.award_type ?? 'medal',
+          ribbon_color_1:   def?.ribbon_color_1 ?? null,
+          ribbon_color_2:   def?.ribbon_color_2 ?? null,
+          ribbon_color_3:   def?.ribbon_color_3 ?? null,
+          award_image_url:  a.award_image_url ?? def?.image_url ?? null,
+        };
+      }));
+      // Filter to ribbons only
+      const ribbons = enriched.filter((a: any) =>
+        ['ribbon','service ribbon'].includes((a.award_type ?? '').toLowerCase())
+      );
+      return Response.json({ awards: ribbons });
+    }
+
         return Response.json({ error: 'Not found' }, { status: 404 });
   } catch (error) {
     console.error('[milsimAwards]', error);

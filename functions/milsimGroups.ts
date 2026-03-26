@@ -875,6 +875,46 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true });
     }
 
+    // GET ?path=roster&group_id=X — get roster for a group (used by report dropdowns)
+    if (parts[0] === 'roster') {
+      const groupId = url.searchParams.get('group_id');
+      if (!groupId) return Response.json({ error: 'group_id required' }, { status: 400 });
+      const roster = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id: groupId });
+      // Enrich with rank names
+      const enriched = await Promise.all(roster.map(async (m: any) => {
+        let rank_name = null;
+        if (m.rank_id) {
+          try { const rank = await base44.asServiceRole.entities.MilsimRank.get(m.rank_id); rank_name = rank?.abbreviation ?? rank?.name ?? null; } catch {}
+        }
+        return { ...m, rank_name };
+      }));
+      return Response.json({ roster: enriched });
+    }
+
+    // GET ?path=roster_member&group_id=X&user_id=Y — get single roster entry
+    if (parts[0] === 'roster_member') {
+      const groupId = url.searchParams.get('group_id');
+      const userId  = url.searchParams.get('user_id');
+      if (!groupId || !userId) return Response.json({ error: 'group_id and user_id required' }, { status: 400 });
+      const rosters = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id: groupId, user_id: userId });
+      return Response.json({ roster_member: rosters[0] ?? null });
+    }
+
+    // POST ?path=update_roster_member — save ribbon_bar_order to roster entry
+    if (parts[0] === 'update_roster_member' && method === 'POST') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const body = await req.json().catch(() => ({}));
+      const rosterEntry = await base44.asServiceRole.entities.MilsimRoster.get(body.roster_id);
+      if (!rosterEntry) return Response.json({ error: 'Roster entry not found' }, { status: 404 });
+      // Only allow the member themselves to update their own ribbon bar order
+      if (rosterEntry.user_id !== full.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      await base44.asServiceRole.entities.MilsimRoster.update(body.roster_id, {
+        ribbon_bar_order: body.ribbon_bar_order ?? [],
+      });
+      return Response.json({ ok: true });
+    }
+
     return Response.json({ error: 'Not found' }, { status: 404 });
   } catch (error) {
     console.error('[milsimGroups]', error);
