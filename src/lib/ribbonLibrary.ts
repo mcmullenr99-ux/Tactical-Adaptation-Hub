@@ -2,7 +2,7 @@
 // Sources:
 //   - EZRackBuilder / USAMM — 1118 real US awards, all branches + auxiliaries
 //   - medals.org.uk — 1274 international awards across 31 countries + UN
-// Total: 164 ribbons. Auto-generated. DO NOT hand-edit.
+// Total: 207 ribbons. Auto-generated. DO NOT hand-edit.
 
 export interface RibbonTemplate {
   country: string;
@@ -12,10 +12,11 @@ export interface RibbonTemplate {
   sku?: string;
 }
 
-export const RIBBON_COUNTRIES: string[] = ['United States'];
+export const RIBBON_COUNTRIES: string[] = ['United States', 'United Nations'];
 
 export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'United States': ['US Army', 'US Navy', 'US Marine Corps', 'US Air Force'],
+  'United Nations': ['United Nations'],
 };
 
 export const RIBBON_TEMPLATES: RibbonTemplate[] = [
@@ -188,4 +189,49 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [
   // ─── UNITED NATIONS ───
 
 
+
+  // === UNITED NATIONS ===
+  { country: 'United Nations', branch: 'United Nations', name: 'UN Korea Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations001.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNEF Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations028.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNTSO Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations032.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNMOGIP Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations034.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'ONUC Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations033.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNTEA Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations016.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNYOM Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations038.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNFICYP Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations039.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNEFME Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations045.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNDOF Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations047.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNIFIL Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations018.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNIIMOG Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations052.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNTAG Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations055.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'ONUCA Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations057.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNIKOM Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations059.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNAVEM Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations061.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'MINURSO Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations020.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'ONUSAL Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations062.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNPROFOR Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations065.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNAMIC Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations066.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNTAC Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations067.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNOSOM Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations070.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'ONUMOZ Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations021.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNAMIR Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations072.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UN Medal for Haiti', url: 'https://www.medals.org.uk/united-nations/images/united-nations074.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNOMIG Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations075.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNOMIL Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations078.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNOMUR Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations079.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNMOT Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations024.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNMIBH Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations005.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNMOP Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations083.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNTAES Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations084.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'MINUGUA Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations006.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'MINURCA Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations087.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNPSG Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations089.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNOMSIL Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations091.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNMIK Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations093.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNAMET Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations094.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNPREDEP Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations097.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'MONUC Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations098.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNMEE Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations104.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNSSM Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations027.gif' },
+  { country: 'United Nations', branch: 'United Nations', name: 'UNHQ Medal', url: 'https://www.medals.org.uk/united-nations/images/united-nations042.gif' },
 ];
