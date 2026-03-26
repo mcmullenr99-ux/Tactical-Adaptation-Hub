@@ -176,6 +176,7 @@ Deno.serve(async (req) => {
 
     const user = await base44.asServiceRole.entities.User.create({
       username,
+      full_name: username,              // required by User schema; callsign serves as display name
       email: cleanEmail,
       password_hash,
       role: 'member',
