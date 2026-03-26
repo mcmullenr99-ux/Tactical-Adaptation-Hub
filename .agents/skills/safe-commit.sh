@@ -12,6 +12,14 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  SAFE COMMIT: $MSG"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+# Auto-setup GitHub remote if missing
+if ! git remote get-url github &>/dev/null; then
+  echo "⚠️  GitHub remote missing — adding it now..."
+  source .agents/.env 2>/dev/null || true
+  git remote add github "https://mcmullenr99-ux:${GITHUB_TOKEN}@github.com/mcmullenr99-ux/Tactical-Adaptation-Hub.git"
+  echo "✅ GitHub remote added."
+fi
+
 # Run crash check on staged files
 bash "$(dirname "$0")/pre-commit-crash-check.sh"
 CHECK_STATUS=$?
@@ -26,9 +34,9 @@ echo ""
 echo "📦 Committing..."
 git commit -m "$MSG"
 
-echo "🚀 Pushing to main + base44-deploy..."
+echo "🚀 Pushing to GitHub (main + base44-deploy)..."
 git push github HEAD:main
 git push github HEAD:base44-deploy
 
 echo ""
-echo "✅ Done. Cloudflare Pages will build in ~1-2 mins."
+echo "✅ Done. Cloudflare Pages will build in ~60 seconds."
