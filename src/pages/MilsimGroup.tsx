@@ -56,7 +56,7 @@ interface ReadinessData {
   narrative_items: { label: string; text: string; severity: 'green' | 'amber' | 'red' | 'neutral' }[];
 }
 
-type Tab = "overview" | "roles" | "ranks" | "roster" | "awards" | "stream" | "sops" | "orbat" | "apply" | "capabilities" | "legacy" | "enlist" | "reviews";
+type Tab = "overview" | "roles" | "ranks" | "roster" | "stream" | "sops" | "orbat" | "apply" | "capabilities" | "legacy" | "enlist" | "reviews";
 
 function getEmbedUrl(url: string): string | null {
   try {
@@ -146,8 +146,7 @@ export default function MilsimGroup() {
   const [group, setGroup] = useState<GroupDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("overview");
-  const [awards, setAwards] = useState<MilsimAward[]>([]);
-  const [awardsLoaded, setAwardsLoaded] = useState(false);
+
   const [readiness, setReadiness] = useState<ReadinessData | null>(null);
   const [readinessLoaded, setReadinessLoaded] = useState(false);
   const [applyAnswers, setApplyAnswers] = useState<Record<string, string>>({});
@@ -163,17 +162,13 @@ export default function MilsimGroup() {
   }, [slug]);
 
   useEffect(() => {
-    if (tab === "awards" && group && !awardsLoaded) {
-      apiFetch<MilsimAward[]>(`/api/milsim-groups/${group.id}/awards`)
-        .then(data => { setAwards(data ?? []); setAwardsLoaded(true); })
-        .catch(() => { setAwards([]); setAwardsLoaded(true); });
-    }
+
     if ((tab === "capabilities" || tab === "overview") && group && !readinessLoaded) {
       apiFetch<ReadinessData>(`/api/stats/readiness/${group.id}`)
         .then(data => { setReadiness(data); setReadinessLoaded(true); })
         .catch(() => { setReadinessLoaded(true); });
     }
-  }, [tab, group, awardsLoaded, readinessLoaded]);
+  }, [tab, group, readinessLoaded]);
 
   if (loading) return (
     <MainLayout>
@@ -211,7 +206,6 @@ export default function MilsimGroup() {
     { id: "roles",         label: "Roles",         icon: Crosshair,  show: roles.length > 0 },
     { id: "ranks",         label: "Ranks",         icon: Award,      show: ranks.length > 0 },
     { id: "roster",        label: "Roster",        icon: Users,      show: roster.length > 0 },
-    { id: "awards",        label: "Commendations", icon: Medal,      show: true },
     { id: "sops",          label: "SOPs",          icon: BookOpen,   show: !!group.sops },
     { id: "orbat",         label: "ORBAT",         icon: Map,        show: !!group.orbat },
     { id: "enlist",        label: "Enlist",        icon: ClipboardList, show: true },
@@ -666,32 +660,7 @@ export default function MilsimGroup() {
           )}
 
           {/* ── AWARDS ──────────────────────────────────────────────────── */}
-          {tab === "awards" && (
-            <div className="max-w-2xl">
-              {awards.length === 0 ? (
-                <EmptyState icon={Medal} message="No commendations issued yet" />
-              ) : (
-                <div className="space-y-3">
-                  {awards.map(a => (
-                    <div key={a.id} className="flex items-center gap-4 bg-card border border-border rounded-lg px-5 py-4">
-                      <div className="w-10 h-10 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shrink-0">
-                        <Medal className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{a.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {a.callsign ?? `Entry #${a.roster_entry_id}`}
-                          {a.awarded_by && <> · Issued by <strong className="text-foreground">{a.awarded_by}</strong></>}
-                        </p>
-                        {a.description && <p className="text-xs text-muted-foreground italic mt-0.5">{a.description}</p>}
-                        {a.awarded_at && <p className="text-[10px] text-muted-foreground mt-1">{formatDistanceToNow(new Date(a.awarded_at), { addSuffix: true })}</p>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+
 
           {/* ── SOPs ────────────────────────────────────────────────────── */}
           {tab === "sops" && (

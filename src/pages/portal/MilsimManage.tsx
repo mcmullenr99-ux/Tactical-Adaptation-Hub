@@ -1012,11 +1012,10 @@ function AwardImage({ path, fallbackIcon: FIcon }: { path: string | null | undef
 
 // ─── Recognition Tab (Awards + Commendations + Qualifications merged) ────────
 function RecognitionTab({ group, showMsg }: any) {
-  const [sub, setSub] = useState<"awards" | "commendations" | "quals">("awards");
+  const [sub, setSub] = useState<"awards" | "quals">("awards");
   const SUB_TABS = [
-    { id: "awards" as const,        label: "Awards",         icon: Medal },
-    { id: "commendations" as const, label: "Commendations",  icon: Megaphone },
-    { id: "quals" as const,         label: "Qualifications", icon: GraduationCap },
+    { id: "awards" as const, label: "Awards",         icon: Medal },
+    { id: "quals" as const,  label: "Qualifications", icon: GraduationCap },
   ];
   return (
     <div className="space-y-4">
@@ -1031,9 +1030,8 @@ function RecognitionTab({ group, showMsg }: any) {
           </button>
         ))}
       </div>
-      {sub === "awards"        && <AwardsTab        group={group} showMsg={showMsg} />}
-      {sub === "commendations" && <CommendationsTab group={group} />}
-      {sub === "quals"         && <QualsTab         group={group} showMsg={showMsg} />}
+      {sub === "awards" && <AwardsTab group={group} showMsg={showMsg} />}
+      {sub === "quals"  && <QualsTab  group={group} showMsg={showMsg} />}
     </div>
   );
 }
@@ -6283,15 +6281,23 @@ function RecruitPipelineTab({ group, showMsg }: any) {
             </div>
 
             {/* Answers */}
-            {selected.answers && Object.keys(selected.answers).length > 0 && (
+            {selected.answers && (Array.isArray(selected.answers) ? selected.answers.length > 0 : Object.keys(selected.answers).length > 0) && (
               <div className="space-y-3">
                 <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Application Answers</p>
-                {Object.entries(selected.answers).map(([q, a]: any) => (
-                  <div key={q} className="bg-secondary/30 rounded p-3 border border-border">
-                    <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-1">{q}</p>
-                    <p className="text-sm font-sans text-foreground leading-relaxed">{a}</p>
-                  </div>
-                ))}
+                {Array.isArray(selected.answers)
+                  ? selected.answers.map((item: any, i: number) => (
+                    <div key={i} className="bg-secondary/30 rounded p-3 border border-border">
+                      <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-1">{item.question}</p>
+                      <p className="text-sm font-sans text-foreground leading-relaxed">{item.answer || <span className="italic text-muted-foreground">No answer provided</span>}</p>
+                    </div>
+                  ))
+                  : Object.entries(selected.answers).map(([q, a]: any) => (
+                    <div key={q} className="bg-secondary/30 rounded p-3 border border-border">
+                      <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-1">{q}</p>
+                      <p className="text-sm font-sans text-foreground leading-relaxed">{a}</p>
+                    </div>
+                  ))
+                }
               </div>
             )}
 
