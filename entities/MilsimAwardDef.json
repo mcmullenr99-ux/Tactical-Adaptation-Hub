@@ -14,8 +14,7 @@
       "type": "string"
     },
     "sort_order": {
-      "type": "integer",
-      "default": 0
+      "type": "number"
     },
     "award_type": {
       "type": "string",
@@ -23,8 +22,7 @@
         "medal",
         "ribbon",
         "qualification-patch"
-      ],
-      "default": "medal"
+      ]
     },
     "ribbon_color_1": {
       "type": "string"
@@ -34,11 +32,14 @@
     },
     "ribbon_color_3": {
       "type": "string"
+    },
+    "source_country": {
+      "type": "string"
+    },
+    "source_branch": {
+      "type": "string"
     }
   },
-  "required": [
-    "group_id",
-    "name"
-  ],
+  "required": [],
   "name": "MilsimAwardDef"
 }
