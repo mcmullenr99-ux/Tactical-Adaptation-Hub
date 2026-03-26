@@ -2,7 +2,7 @@
 // Sources:
 //   - EZRackBuilder / USAMM — 1118 real US awards, all branches + auxiliaries
 //   - medals.org.uk — 1274 international awards across 31 countries + UN
-// Total: 1173 ribbons. Auto-generated. DO NOT hand-edit.
+// Total: 1172 ribbons. Auto-generated. DO NOT hand-edit.
 
 export interface RibbonTemplate {
   country: string;
@@ -558,7 +558,6 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [
   { country: 'France', branch: 'French Armed Forces', name: 'Medal of the National Gendarmerie', url: 'https://www.medals.org.uk/france/images/france058.gif' },
   { country: 'France', branch: 'French Armed Forces', name: 'Resistance Medal', url: 'https://www.medals.org.uk/france/images/france063.gif' },
   { country: 'France', branch: 'French Armed Forces', name: 'Order of Maritime Merit', url: 'https://www.medals.org.uk/france/images/france079.gif' },
-  { country: 'France', branch: 'French Armed Forces', name: 'Order of Public Health', url: 'https://www.medals.org.uk/france/images/france097.gif' },
   { country: 'France', branch: 'French Armed Forces', name: 'Order of Commercial Merit', url: 'https://www.medals.org.uk/france/images/france108.gif' },
   { country: 'France', branch: 'French Armed Forces', name: 'Order of Merit for Tourism', url: 'https://www.medals.org.uk/france/images/france117.gif' },
   { country: 'France', branch: 'French Armed Forces', name: 'Order of Merit for Crafts', url: 'https://www.medals.org.uk/france/images/france121.gif' },
