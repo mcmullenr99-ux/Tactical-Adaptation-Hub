@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import { BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST as MC_GAMES, type Branch } from "@/lib/milsimConstants";
+import { RIBBON_TEMPLATES, RIBBON_COUNTRIES, RIBBON_BRANCHES_BY_COUNTRY, type RibbonTemplate } from "@/lib/ribbonLibrary";
 import {
   Activity,
   AlertCircle,
@@ -1118,106 +1119,116 @@ function AwardsTab({ group, showMsg }: any) {
   const [subView, setSubView] = useState<"library" | "issued">("library");
   const [defs, setDefs] = useState<any[]>([]);
   const [issued, setIssued] = useState<any[]>([]);
+  const [roster, setRoster] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [issuingDefId, setIssuingDefId] = useState<number | null>(null);
+  const [issuingDefId, setIssuingDefId] = useState<string | null>(null);
 
+  // Create form state
+  const [createMode, setCreateMode] = useState<"library" | "custom">("library");
+  // Library picker
+  const [pickerCountry, setPickerCountry] = useState<string>("");
+  const [pickerBranch, setPickerBranch] = useState<string>("");
+  const [pickerSearch, setPickerSearch] = useState<string>("");
+  const [selectedTemplate, setSelectedTemplate] = useState<RibbonTemplate | null>(null);
+  // Custom form
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
-  const [awardType, setAwardType] = useState<"medal" | "ribbon" | "qualification-patch">("medal");
-  const [imagePath, setImagePath] = useState<string | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [qualifiers, setQualifiers] = useState<string[]>([]);
-  const [qualInput, setQualInput] = useState("");
-  const [creating, setCreating] = useState(false);
+  const [awardType, setAwardType] = useState<"medal" | "ribbon" | "qualification-patch">("ribbon");
+  const [customImageUrl, setCustomImageUrl] = useState<string>("");
   const [ribbonC1, setRibbonC1] = useState("#3b82f6");
   const [ribbonC2, setRibbonC2] = useState("#3b82f6");
   const [ribbonC3, setRibbonC3] = useState("#3b82f6");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [creating, setCreating] = useState(false);
 
+  // Issue form
   const [issueRosterId, setIssueRosterId] = useState("");
   const [issueCitation, setIssueCitation] = useState("");
   const [issuing, setIssuing] = useState(false);
 
-  const { uploadFile, isUploading } = useUpload({
-    onError: (e) => showMsg(false, `Upload failed: ${e.message}`),
-  });
-
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [d, a] = await Promise.all([
-        apiFetch<any[]>(`/api/milsim-groups/${group.id}/award-defs`),
-        apiFetch<any[]>(`/api/milsim-groups/${group.id}/awards`),
+      const [defsData, issuedData, rosterData] = await Promise.all([
+        apiFetch<any>(`/milsimAwards?path=${group.id}/award-defs`),
+        apiFetch<any>(`/milsimAwards?path=${group.id}/awards`),
+        apiFetch<any>(`/milsimGroups?path=roster&group_id=${group.id}`),
       ]);
-      setDefs(d);
-      setIssued(a);
+      setDefs(Array.isArray(defsData) ? defsData : []);
+      setIssued(Array.isArray(issuedData) ? issuedData : []);
+      setRoster(rosterData?.roster ?? []);
     } catch { showMsg(false, "Failed to load awards."); }
     finally { setLoading(false); }
   }, [group.id]);
 
   useEffect(() => { load(); }, [load]);
 
-  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
-      showMsg(false, "PNG, JPEG, or WebP only."); return;
-    }
-    if (file.size > 5 * 1024 * 1024) { showMsg(false, "Max 5 MB."); return; }
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImagePreview(URL.createObjectURL(file));
-    setImagePath(null);
-    const res = await uploadFile(file);
-    if (res) setImagePath(res.objectPath);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
+  // Filtered ribbon templates
+  const availableCountries = RIBBON_COUNTRIES;
+  const availableBranches = pickerCountry ? (RIBBON_BRANCHES_BY_COUNTRY[pickerCountry] ?? []) : [];
+  const filteredTemplates = RIBBON_TEMPLATES.filter(r => {
+    if (pickerCountry && r.country !== pickerCountry) return false;
+    if (pickerBranch && r.branch !== pickerBranch) return false;
+    if (pickerSearch && !r.name.toLowerCase().includes(pickerSearch.toLowerCase())) return false;
+    return true;
+  });
 
-  const addQualifier = () => {
-    const q = qualInput.trim();
-    if (!q || qualifiers.includes(q)) return;
-    setQualifiers(qs => [...qs, q]);
-    setQualInput("");
-  };
-
-  const resetCreateForm = () => {
-    setName(""); setDesc(""); setAwardType("medal");
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImagePath(null); setImagePreview(null); setQualifiers([]); setQualInput("");
-    setRibbonC1("#3b82f6"); setRibbonC2("#3b82f6"); setRibbonC3("#3b82f6");
+  const resetForm = () => {
     setShowCreate(false);
+    setSelectedTemplate(null);
+    setPickerCountry(""); setPickerBranch(""); setPickerSearch("");
+    setName(""); setDesc(""); setCustomImageUrl("");
+    setRibbonC1("#3b82f6"); setRibbonC2("#3b82f6"); setRibbonC3("#3b82f6");
+    setAwardType("ribbon"); setCreateMode("library");
   };
 
   const createDef = async () => {
-    if (!name.trim()) return;
+    const finalName = createMode === "library" ? selectedTemplate?.name : name.trim();
+    if (!finalName) { showMsg(false, "Award name required."); return; }
     setCreating(true);
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/award-defs`, {
+      const payload: any = {
+        name: finalName,
+        description: desc || undefined,
+        award_type: "ribbon",
+        sort_order: defs.length,
+      };
+      if (createMode === "library" && selectedTemplate) {
+        payload.image_url = selectedTemplate.url;
+        payload.source_country = selectedTemplate.country;
+        payload.source_branch = selectedTemplate.branch;
+      } else {
+        payload.award_type = awardType;
+        payload.image_url = customImageUrl || undefined;
+        payload.ribbon_color_1 = awardType === "ribbon" ? ribbonC1 : undefined;
+        payload.ribbon_color_2 = awardType === "ribbon" ? ribbonC2 : undefined;
+        payload.ribbon_color_3 = awardType === "ribbon" ? ribbonC3 : undefined;
+      }
+      await apiFetch(`/milsimAwards?path=${group.id}/award-defs`, {
         method: "POST",
-        body: JSON.stringify({ name: name.trim(), description: desc || undefined, awardType, imagePath: imagePath || undefined, qualifiers, ribbonColor1: awardType === 'ribbon' ? ribbonC1 : undefined, ribbonColor2: awardType === 'ribbon' ? ribbonC2 : undefined, ribbonColor3: awardType === 'ribbon' ? ribbonC3 : undefined }),
+        body: JSON.stringify(payload),
       });
-      resetCreateForm();
+      resetForm();
       showMsg(true, "Award created.");
       load();
-    } catch (e: any) { showMsg(false, e.message); }
+    } catch (e: any) { showMsg(false, e.message || "Failed to create award."); }
     finally { setCreating(false); }
   };
 
-  const deleteDef = async (defId: number) => {
+  const deleteDef = async (defId: string) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/award-defs/${defId}`, { method: "DELETE" });
-      showMsg(true, "Award deleted.");
-      load();
+      await apiFetch(`/milsimAwards?path=${group.id}/award-defs/${defId}`, { method: "DELETE" });
+      showMsg(true, "Award deleted."); load();
     } catch (e: any) { showMsg(false, e.message); }
   };
 
-  const issueAward = async (defId: number) => {
-    if (!issueRosterId) return;
+  const issueAward = async (defId: string) => {
+    if (!issueRosterId) { showMsg(false, "Select a roster member."); return; }
     setIssuing(true);
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/awards`, {
+      await apiFetch(`/milsimAwards?path=${group.id}/awards`, {
         method: "POST",
-        body: JSON.stringify({ rosterEntryId: parseInt(issueRosterId), awardDefId: defId, citation: issueCitation || undefined }),
+        body: JSON.stringify({ rosterEntryId: issueRosterId, awardDefId: defId, citation: issueCitation || undefined }),
       });
       showMsg(true, "Award issued.");
       setIssuingDefId(null); setIssueRosterId(""); setIssueCitation("");
@@ -1226,23 +1237,18 @@ function AwardsTab({ group, showMsg }: any) {
     finally { setIssuing(false); }
   };
 
-  const revokeAward = async (id: number) => {
+  const revokeAward = async (id: string) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/awards/${id}`, { method: "DELETE" });
+      await apiFetch(`/milsimAwards?path=${group.id}/awards/${id}`, { method: "DELETE" });
       showMsg(true, "Award revoked."); load();
     } catch (e: any) { showMsg(false, e.message); }
-  };
-
-  const parseQuals = (raw: any): string[] => {
-    if (Array.isArray(raw)) return raw;
-    if (typeof raw === "string") { try { return JSON.parse(raw); } catch { return []; } }
-    return [];
   };
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="max-w-3xl space-y-5">
+    <div className="max-w-4xl space-y-5">
+      {/* Sub-nav */}
       <div className="flex gap-1 border-b border-border">
         {([
           { id: "library", label: "Award Library" },
@@ -1255,70 +1261,72 @@ function AwardsTab({ group, showMsg }: any) {
         ))}
       </div>
 
+      {/* ── LIBRARY VIEW ── */}
       {subView === "library" && (
         <div className="space-y-4">
-          {defs.length === 0 && !showCreate ? (
-            <div className="text-center py-14 border border-dashed border-border rounded-lg text-muted-foreground">
-              <Medal className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="font-display text-sm uppercase tracking-widest mb-4">No awards defined yet</p>
-              <button onClick={() => setShowCreate(true)}
-                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all">
-                <Plus className="w-3.5 h-3.5" /> Create First Award
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
+          {/* Existing defs */}
+          {defs.length > 0 && (
+            <div className="space-y-2">
               {defs.map((d: any) => {
-                const typeDef = TYPE_DEFS.find(t => t.id === d.type) ?? TYPE_DEFS[0];
-                const { Icon: TypeIcon } = typeDef;
                 const isIssuing = issuingDefId === d.id;
-                const quals = parseQuals(d.qualifiers);
+                const imgUrl = d.image_url ?? d.image_path ?? null;
                 return (
                   <div key={d.id} className="bg-card border border-border rounded-lg overflow-hidden">
                     <div className="flex items-center gap-4 p-4">
-                      <AwardImage path={d.image_path} fallbackIcon={TypeIcon} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{d.name}</p>
-                          <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-                            {typeDef.label}
-                          </span>
-                        </div>
-                        {d.description && <p className="text-xs text-muted-foreground font-sans mt-0.5">{d.description}</p>}
-                        {quals.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {quals.map((q: string) => (
-                              <span key={q} className="text-[10px] px-1.5 py-0.5 bg-secondary border border-border rounded text-muted-foreground font-display uppercase tracking-wider">{q}</span>
-                            ))}
-                          </div>
+                      {/* Ribbon image */}
+                      <div className="shrink-0">
+                        {imgUrl ? (
+                          <img src={imgUrl} alt={d.name} className="h-8 w-auto rounded-sm object-fill" style={{ minWidth: 48 }} />
+                        ) : (
+                          <div className="h-8 w-14 rounded-sm" style={{ background: `linear-gradient(to right, ${d.ribbon_color_1 ?? '#4a90e2'}, ${d.ribbon_color_2 ?? '#4a90e2'}, ${d.ribbon_color_3 ?? '#4a90e2'})` }} />
                         )}
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-display font-bold uppercase tracking-wider text-sm">{d.name}</p>
+                          <span className="text-[10px] font-display uppercase tracking-widest px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                            {d.award_type ?? 'ribbon'}
+                          </span>
+                          {d.source_country && (
+                            <span className="text-[10px] font-sans text-muted-foreground">{d.source_country}</span>
+                          )}
+                        </div>
+                        {d.description && <p className="text-xs text-muted-foreground font-sans mt-0.5 line-clamp-1">{d.description}</p>}
+                      </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => { setIssuingDefId(isIssuing ? null : d.id); setIssueRosterId(""); setIssueCitation(""); }}
+                        <button onClick={() => { setIssuingDefId(isIssuing ? null : d.id); setIssueRosterId(""); setIssueCitation(""); }}
                           className="text-xs font-display font-bold uppercase tracking-widest px-3 py-1.5 bg-accent/10 text-accent border border-accent/30 rounded hover:bg-accent/20 transition-colors">
                           Issue
                         </button>
-                        <button onClick={() => deleteDef(d.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors">
-                          <Trash2 className="w-4 h-4" />
+                        <button onClick={() => deleteDef(d.id)}
+                          className="text-xs text-red-400 hover:text-red-300 font-display uppercase tracking-widest px-2 py-1.5 rounded hover:bg-red-500/10 transition-colors">
+                          Delete
                         </button>
                       </div>
                     </div>
+                    {/* Issue panel */}
                     {isIssuing && (
-                      <div className="border-t border-border bg-secondary/20 px-4 py-3 space-y-3">
-                        <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">Issue to Member</p>
-                        <select value={issueRosterId} onChange={e => setIssueRosterId(e.target.value)} className="mf-input">
-                          <option value="">Select recipient...</option>
-                          {group.roster.map((r: RosterEntry) => <option key={r.id} value={r.id}>{r.callsign}</option>)}
-                        </select>
-                        <input value={issueCitation} onChange={e => setIssueCitation(e.target.value)} className="mf-input" placeholder="Citation / reason (optional)" />
-                        <div className="flex gap-2">
-                          <button onClick={() => issueAward(d.id)} disabled={issuing || !issueRosterId}
-                            className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-background font-display font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-all disabled:opacity-50">
-                            {issuing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Award className="w-3.5 h-3.5" />} Issue Award
-                          </button>
-                          <button onClick={() => setIssuingDefId(null)} className="px-3 py-2 text-xs font-display uppercase text-muted-foreground hover:text-foreground border border-border rounded transition-colors">Cancel</button>
+                      <div className="border-t border-border p-4 bg-secondary/20 flex flex-wrap gap-3 items-end">
+                        <div className="flex-1 min-w-[160px]">
+                          <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Member</label>
+                          <select value={issueRosterId} onChange={e => setIssueRosterId(e.target.value)}
+                            className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground">
+                            <option value="">Select member...</option>
+                            {roster.filter(r => r.status !== 'Kicked' && r.status !== 'Resigned').map((r: any) => (
+                              <option key={r.id} value={r.id}>{r.rank_name ? `${r.rank_name} ` : ''}{r.callsign}</option>
+                            ))}
+                          </select>
                         </div>
+                        <div className="flex-1 min-w-[160px]">
+                          <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Citation (optional)</label>
+                          <input value={issueCitation} onChange={e => setIssueCitation(e.target.value)}
+                            placeholder="For gallantry in action..."
+                            className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground" />
+                        </div>
+                        <button onClick={() => issueAward(d.id)} disabled={issuing || !issueRosterId}
+                          className="px-4 py-1.5 bg-accent text-accent-foreground rounded font-display text-xs uppercase tracking-widest disabled:opacity-50 hover:bg-accent/90 transition-colors">
+                          {issuing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Confirm Issue"}
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1327,221 +1335,233 @@ function AwardsTab({ group, showMsg }: any) {
             </div>
           )}
 
-          {defs.length > 0 && !showCreate && (
-            <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 text-xs font-display font-bold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors">
-              <Plus className="w-3.5 h-3.5" /> Create New Award
+          {/* Create button */}
+          {!showCreate && (
+            <button onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-dashed border-border rounded-lg text-xs font-display uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors w-full justify-center">
+              <Plus className="w-3.5 h-3.5" /> Add Award to Library
             </button>
           )}
 
+          {/* ── CREATE FORM ── */}
           {showCreate && (
-            <div className="bg-card border border-primary/30 rounded-lg p-6 space-y-5">
-              <h3 className="font-display font-bold uppercase tracking-widest text-sm">Create Award</h3>
-
-              <div>
-                <label className="mf-label">Award Name *</label>
-                <input value={name} onChange={e => setName(e.target.value)} className="mf-input" placeholder="e.g. Combat Action Badge, Leadership Medal..." />
+            <div className="border border-primary/30 rounded-lg bg-card overflow-hidden">
+              <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center justify-between">
+                <p className="font-display font-black text-xs uppercase tracking-widest text-primary">Create Award</p>
+                <button onClick={resetForm} className="text-muted-foreground hover:text-foreground transition-colors"><XCircle className="w-4 h-4" /></button>
               </div>
 
-              <div>
-                <label className="mf-label">Award Type *</label>
-                <div className="grid grid-cols-3 gap-3 mt-1">
-                  {TYPE_DEFS.map(t => {
-                    const { Icon: TIcon } = t;
-                    const selected = awardType === t.id;
-                    return (
-                      <button key={t.id} onClick={() => setAwardType(t.id as any)}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${selected ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary/20 text-muted-foreground hover:border-primary/40"}`}>
-                        <TIcon className="w-6 h-6" />
-                        <div className="text-center">
-                          <p className="font-display font-bold uppercase tracking-wider text-xs">{t.label}</p>
-                          <p className="text-[10px] opacity-70 font-sans">{t.desc}</p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Ribbon color picker — only shown when type is ribbon */}
-              {awardType === "ribbon" && (
-                <div>
-                  <label className="mf-label">Ribbon Stripe Colours <span className="font-normal normal-case text-muted-foreground">— up to 3 stripe colours</span></label>
-                  <div className="flex items-center gap-4 mt-2">
-                    {([
-                      { label: "Stripe 1", val: ribbonC1, set: setRibbonC1 },
-                      { label: "Stripe 2", val: ribbonC2, set: setRibbonC2 },
-                      { label: "Stripe 3", val: ribbonC3, set: setRibbonC3 },
-                    ] as const).map(({ label, val, set }) => (
-                      <div key={label} className="flex flex-col items-center gap-1.5">
-                        <span className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">{label}</span>
-                        <input type="color" value={val} onChange={e => set(e.target.value)}
-                          className="w-10 h-10 rounded border border-border cursor-pointer bg-secondary" />
-                        <span className="text-[9px] font-mono text-muted-foreground">{val}</span>
-                      </div>
-                    ))}
-                    {/* Live preview */}
-                    <div className="flex-1 ml-4">
-                      <span className="text-[10px] font-display uppercase tracking-widest text-muted-foreground block mb-1.5">Preview</span>
-                      <div className="w-14 h-9 rounded-sm overflow-hidden flex border border-border/60">
-                        <div className="flex-1" style={{ background: ribbonC1 }} />
-                        <div className="flex-1" style={{ background: ribbonC2 }} />
-                        <div className="flex-1" style={{ background: ribbonC3 }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="mf-label">Description</label>
-                <textarea rows={2} value={desc} onChange={e => setDesc(e.target.value)} className="mf-input resize-none" placeholder="Criteria or description for this award..." />
-              </div>
-
-              <div>
-                <label className="mf-label">Award Image <span className="font-normal normal-case text-muted-foreground">(PNG/JPG/WebP · max 600×600px · 5 MB)</span></label>
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`relative mt-1 flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-lg cursor-pointer transition-colors h-36 ${isUploading ? "border-primary/60 bg-primary/5" : "border-border hover:border-primary/40 bg-secondary/20"}`}>
-                  <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleImageSelect} />
-                  {imagePreview ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <img src={imagePreview} alt="Preview" className="h-20 w-20 object-contain rounded" />
-                      {isUploading && <p className="text-xs text-primary font-display uppercase tracking-wider animate-pulse">Uploading...</p>}
-                      {imagePath && <p className="text-xs text-green-400 font-display uppercase tracking-wider">✓ Uploaded</p>}
-                    </div>
-                  ) : (
-                    <div className="text-center px-4">
-                      <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground">Drop image here or click to browse</p>
-                      <p className="text-[10px] text-muted-foreground font-sans mt-1">Displayed on award card and issued awards log</p>
-                    </div>
-                  )}
-                </div>
-                {imagePreview && (
-                  <button onClick={() => { if (imagePreview) URL.revokeObjectURL(imagePreview); setImagePreview(null); setImagePath(null); }}
-                    className="text-xs text-muted-foreground hover:text-destructive mt-1 transition-colors">Remove image</button>
-                )}
-              </div>
-
-              <div>
-                <label className="mf-label">
-                  Qualifiers / Upgrades <span className="font-normal normal-case text-muted-foreground">— optional device attachments (e.g. "V Device", "Gold Star", "Oak Leaf")</span>
-                </label>
-                <div className="flex gap-2 mt-1">
-                  <input
-                    value={qualInput}
-                    onChange={e => setQualInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addQualifier(); } }}
-                    className="mf-input"
-                    placeholder="Type qualifier and press Enter..."
-                  />
-                  <button onClick={addQualifier} disabled={!qualInput.trim()}
-                    className="px-3 py-2 bg-secondary border border-border rounded text-xs font-display font-bold uppercase tracking-wider hover:border-primary/40 transition-colors disabled:opacity-40">
-                    <Plus className="w-3.5 h-3.5" />
+              <div className="p-5 space-y-5">
+                {/* Mode toggle */}
+                <div className="flex gap-2">
+                  <button onClick={() => setCreateMode("library")}
+                    className={`flex-1 flex flex-col items-center gap-1 py-3 rounded-lg border text-xs font-display uppercase tracking-widest transition-all ${createMode === "library" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
+                    <Flag className="w-4 h-4" />
+                    <span>From Library</span>
+                    <span className="text-[9px] normal-case tracking-normal font-sans text-muted-foreground">392 real-world ribbons</span>
+                  </button>
+                  <button onClick={() => setCreateMode("custom")}
+                    className={`flex-1 flex flex-col items-center gap-1 py-3 rounded-lg border text-xs font-display uppercase tracking-widest transition-all ${createMode === "custom" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
+                    <Award className="w-4 h-4" />
+                    <span>Custom Award</span>
+                    <span className="text-[9px] normal-case tracking-normal font-sans text-muted-foreground">Upload image or CSS stripes</span>
                   </button>
                 </div>
-                {qualifiers.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {qualifiers.map(q => (
-                      <span key={q} className="flex items-center gap-1 text-xs px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded font-display font-bold uppercase tracking-wider">
-                        {q}
-                        <button onClick={() => setQualifiers(qs => qs.filter(x => x !== q))} className="hover:text-destructive transition-colors ml-0.5">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
+
+                {/* ── LIBRARY MODE ── */}
+                {createMode === "library" && (
+                  <div className="space-y-4">
+                    {/* Filters */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Country</label>
+                        <select value={pickerCountry} onChange={e => { setPickerCountry(e.target.value); setPickerBranch(""); setSelectedTemplate(null); }}
+                          className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground">
+                          <option value="">All countries</option>
+                          {availableCountries.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Branch / Force</label>
+                        <select value={pickerBranch} onChange={e => { setPickerBranch(e.target.value); setSelectedTemplate(null); }}
+                          className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground"
+                          disabled={!pickerCountry}>
+                          <option value="">All branches</option>
+                          {availableBranches.map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Search</label>
+                        <input value={pickerSearch} onChange={e => { setPickerSearch(e.target.value); setSelectedTemplate(null); }}
+                          placeholder="e.g. Bronze Star..."
+                          className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground" />
+                      </div>
+                    </div>
+
+                    {/* Selected template preview */}
+                    {selectedTemplate && (
+                      <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/30 rounded-lg">
+                        <img src={selectedTemplate.url} alt={selectedTemplate.name}
+                          className="h-8 w-auto object-fill rounded-sm"
+                          onError={(e: any) => { e.currentTarget.style.display = 'none'; }} />
+                        <div className="flex-1">
+                          <p className="font-display font-bold text-xs uppercase tracking-wider text-primary">{selectedTemplate.name}</p>
+                          <p className="text-[10px] text-muted-foreground font-sans">{selectedTemplate.country} — {selectedTemplate.branch}</p>
+                        </div>
+                        <button onClick={() => setSelectedTemplate(null)} className="text-muted-foreground hover:text-foreground"><XCircle className="w-4 h-4" /></button>
+                      </div>
+                    )}
+
+                    {/* Ribbon grid */}
+                    {!selectedTemplate && (
+                      <div className="border border-border rounded-lg overflow-hidden">
+                        <div className="bg-secondary/40 border-b border-border px-3 py-2 flex items-center gap-2">
+                          <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">{filteredTemplates.length} ribbons</p>
+                        </div>
+                        <div className="max-h-64 overflow-y-auto p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                          {filteredTemplates.slice(0, 100).map((r, i) => (
+                            <button key={i} onClick={() => setSelectedTemplate(r)}
+                              className="flex flex-col items-center gap-1 p-1.5 rounded border border-transparent hover:border-primary/40 hover:bg-primary/5 transition-all group">
+                              <img src={r.url} alt={r.name}
+                                className="h-6 w-auto object-fill rounded-sm"
+                                onError={(e: any) => { e.currentTarget.style.opacity = '0.3'; }}
+                                title={r.name} />
+                              <p className="text-[8px] font-sans text-muted-foreground text-center leading-tight line-clamp-2 group-hover:text-foreground">{r.name.split(' (')[0]}</p>
+                            </button>
+                          ))}
+                          {filteredTemplates.length === 0 && (
+                            <div className="col-span-5 text-center py-6 text-xs text-muted-foreground font-sans">No ribbons match your filter</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Optional description */}
+                    <div>
+                      <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Description / Criteria (optional)</label>
+                      <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2}
+                        placeholder="Awarded for..." className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground resize-none" />
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button onClick={resetForm} className="px-4 py-2 border border-border rounded font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+                      <button onClick={createDef} disabled={creating || !selectedTemplate}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                        {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                        Add to Library
+                      </button>
+                    </div>
                   </div>
                 )}
-              </div>
 
-              <div className="flex gap-2 pt-1">
-                <button onClick={createDef} disabled={creating || !name.trim() || isUploading}
-                  className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">
-                  {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Create Award
-                </button>
-                <button onClick={resetCreateForm}
-                  className="px-4 py-2.5 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground transition-colors">
-                  Cancel
-                </button>
+                {/* ── CUSTOM MODE ── */}
+                {createMode === "custom" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Award Name *</label>
+                      <input value={name} onChange={e => setName(e.target.value)}
+                        placeholder="e.g. Valour Cross, Unit Citation..."
+                        className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Award Type</label>
+                      <div className="flex gap-2">
+                        {(["medal", "ribbon", "qualification-patch"] as const).map(t => (
+                          <button key={t} onClick={() => setAwardType(t)}
+                            className={`flex-1 py-2 rounded border text-xs font-display uppercase tracking-widest transition-all ${awardType === t ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
+                            {t === "qualification-patch" ? "Qual. Patch" : t.charAt(0).toUpperCase() + t.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {awardType === "ribbon" && (
+                      <div>
+                        <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-2">Ribbon Stripe Colours — up to 3</label>
+                        <div className="flex items-center gap-4">
+                          {[
+                            { label: "Stripe 1", val: ribbonC1, set: setRibbonC1 },
+                            { label: "Stripe 2", val: ribbonC2, set: setRibbonC2 },
+                            { label: "Stripe 3", val: ribbonC3, set: setRibbonC3 },
+                          ].map(s => (
+                            <div key={s.label} className="flex flex-col items-center gap-1">
+                              <span className="text-[9px] font-display uppercase tracking-widest text-muted-foreground">{s.label}</span>
+                              <input type="color" value={s.val} onChange={e => s.set(e.target.value)} className="w-10 h-10 rounded cursor-pointer border border-border" />
+                              <span className="text-[9px] font-mono text-muted-foreground">{s.val}</span>
+                            </div>
+                          ))}
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="text-[9px] font-display uppercase tracking-widest text-muted-foreground">Preview</span>
+                            <div className="h-10 w-16 rounded-sm border border-border" style={{ background: `linear-gradient(to right, ${ribbonC1} 0%, ${ribbonC1} 33%, ${ribbonC2} 33%, ${ribbonC2} 66%, ${ribbonC3} 66%, ${ribbonC3} 100%)` }} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Award Image URL (optional)</label>
+                      <input value={customImageUrl} onChange={e => setCustomImageUrl(e.target.value)}
+                        placeholder="https://... (PNG/JPG/WebP)"
+                        className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground font-mono" />
+                      {customImageUrl && (
+                        <img src={customImageUrl} alt="preview" className="mt-2 h-8 rounded-sm object-fill border border-border" />
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Description / Criteria (optional)</label>
+                      <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2}
+                        placeholder="Awarded for..." className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground resize-none" />
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={resetForm} className="px-4 py-2 border border-border rounded font-display text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+                      <button onClick={createDef} disabled={creating || !name.trim()}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                        {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                        Create Award
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
       )}
 
+      {/* ── ISSUED VIEW ── */}
       {subView === "issued" && (
         <div className="space-y-3">
           {issued.length === 0 ? (
             <div className="text-center py-14 border border-dashed border-border rounded-lg text-muted-foreground">
               <Award className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p className="font-display text-sm uppercase tracking-widest">No awards issued yet</p>
-              <p className="text-xs mt-2 font-sans">Go to Award Library to issue awards to roster members</p>
             </div>
           ) : (
-            issued.map((a: any) => {
-              const typeDef = TYPE_DEFS.find(t => t.id === (a.def_type ?? a.icon)) ?? TYPE_DEFS[0];
-              const quals = parseQuals(a.def_qualifiers);
-              return (
-                <div key={a.id} className="flex items-center gap-4 bg-card border border-border rounded-lg px-5 py-3">
-                  <AwardImage path={a.def_image} fallbackIcon={typeDef.Icon} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{a.def_name ?? a.title}</p>
-                      {a.def_type && (
-                        <span className="text-[10px] font-display font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-                          {typeDef.label}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-accent font-display font-bold mt-0.5">→ {a.callsign ?? "Unknown"}</p>
-                    {a.citation && <p className="text-xs text-muted-foreground font-sans mt-0.5 italic">"{a.citation}"</p>}
-                    <div className="flex items-center gap-3 mt-1 flex-wrap">
-                      {quals.length > 0 && (
-                        <div className="flex gap-1 flex-wrap">
-                          {quals.map((q: string) => (
-                            <span key={q} className="text-[9px] px-1.5 py-0.5 bg-secondary border border-border rounded text-muted-foreground font-display uppercase">{q}</span>
-                          ))}
-                        </div>
-                      )}
-                      {a.awarded_by && <p className="text-[10px] text-muted-foreground">by {a.awarded_by}</p>}
-                      {a.awarded_at && <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(a.awarded_at), { addSuffix: true })}</p>}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={async () => {
-                        try {
-                          const token = localStorage.getItem("auth_token");
-                          const res = await fetch("https://agent-tag-lead-developer-cff87ae4.base44.app/functions/generateAwardCertificate", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                            body: JSON.stringify({ award_id: a.id, group_id: group.id }),
-                          });
-                          if (!res.ok) { const e = await res.json(); showMsg(false, e.error ?? "Failed to generate certificate"); return; }
-                          const blob = await res.blob();
-                          const url = URL.createObjectURL(blob);
-                          const link = document.createElement("a");
-                          link.href = url; link.download = `certificate_${a.callsign ?? "award"}.pdf`; link.click();
-                          URL.revokeObjectURL(url);
-                        } catch { showMsg(false, "Certificate generation failed"); }
-                      }}
-                      title="Download Certificate (Pro)"
-                      className="p-1.5 text-accent hover:text-accent/80 transition-colors"
-                    >
-                      <FileDown className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => revokeAward(a.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+            issued.map((a: any) => (
+              <div key={a.id} className="flex items-center gap-4 p-4 bg-card border border-border rounded-lg">
+                <div className="shrink-0">
+                  {a.award_image_url ? (
+                    <img src={a.award_image_url} alt={a.award_name} className="h-7 w-auto object-fill rounded-sm" style={{ minWidth: 40 }} />
+                  ) : (
+                    <Award className="w-6 h-6 text-muted-foreground opacity-40" />
+                  )}
                 </div>
-              );
-            })
+                <div className="flex-1 min-w-0">
+                  <p className="font-display font-bold uppercase tracking-wider text-sm">{a.award_name}</p>
+                  <p className="text-xs text-muted-foreground font-sans">To: <span className="text-foreground font-medium">{a.recipient_callsign}</span>
+                    {a.reason && <> — <span className="italic">{a.reason}</span></>}
+                  </p>
+                </div>
+                <button onClick={() => revokeAward(a.id)} className="text-xs text-red-400 hover:text-red-300 font-display uppercase tracking-widest px-2 py-1.5 rounded hover:bg-red-500/10 transition-colors shrink-0">
+                  Revoke
+                </button>
+              </div>
+            ))
           )}
         </div>
       )}
     </div>
   );
 }
+
 
 function StreamTab({ group, onUpdated, showMsg }: any) {
   const [streamUrl, setStreamUrl] = useState(group.stream_url ?? "");
