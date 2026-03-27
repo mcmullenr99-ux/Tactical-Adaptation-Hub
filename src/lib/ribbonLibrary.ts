@@ -302,10 +302,43 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'France', branch: 'France Campaign Medals', name: 'Medaille de la Protection Militaire du Territoire', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Medaille_de_la_protection_militaire_du_territoire.svg/250px-Medaille_de_la_protection_militaire_du_territoire.svg.png' },
 
   // ─── ITALY ──────────────────────────────────────────────────────────────────
-  { country: 'Italy', branch: 'Italy Orders', name: "Order of St. Maurice & St. Lazarus", url: 'https://www.medals.pl/it/r/it1oml.gif' },
-  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Merit of the Italian Republic', url: 'https://www.medals.pl/it/r/it2ome.gif' },
-  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal for Military Valor', url: 'https://www.medals.pl/it/r/it2mvmi2.gif' },
-  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'War Merit Cross', url: 'https://www.medals.pl/it/r/it2cmg.gif' },
+  // Orders - OMRI (Order of Merit of the Italian Republic) - all 6 grades
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Merit of the Republic (OMRI) - Cavaliere', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/ITA_OMRI_2001_Cav_BAR.svg/250px-ITA_OMRI_2001_Cav_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Merit of the Republic (OMRI) - Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/ITA_OMRI_2001_Uff_BAR.svg/250px-ITA_OMRI_2001_Uff_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Merit of the Republic (OMRI) - Commendatore', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/ITA_OMRI_2001_Com_BAR.svg/250px-ITA_OMRI_2001_Com_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Merit of the Republic (OMRI) - Grande Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/ITA_OMRI_2001_GUff_BAR.svg/250px-ITA_OMRI_2001_GUff_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Merit of the Republic (OMRI) - Gran Croce', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/ITA_OMRI_2001_GC_BAR.svg/250px-ITA_OMRI_2001_GC_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Merit of the Republic (OMRI) - Gran Cordone', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/ITA_OMRI_2001_GC-GCord_BAR.svg/250px-ITA_OMRI_2001_GC-GCord_BAR.svg.png' },
+  // Military Order of Italy (OMI)
+  { country: 'Italy', branch: 'Italy Orders', name: 'Military Order of Italy (OMI)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Cavaliere_BAR.svg/250px-Cavaliere_BAR.svg.png' },
+  // Order of Saints Maurice and Lazarus (SSML) - 3 confirmed grades
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Saints Maurice and Lazarus (SSML) - Cavaliere', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Cavaliere_SSML_BAR.svg/250px-Cavaliere_SSML_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Saints Maurice and Lazarus (SSML) - Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Ufficiale_SSML_BAR.svg/250px-Ufficiale_SSML_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Saints Maurice and Lazarus (SSML) - Commendatore', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Commendatore_SSML_BAR.svg/250px-Commendatore_SSML_BAR.svg.png' },
+  // Medal of Military Valor - 3 grades
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Military Valor - Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Valor_militare_gold_medal_BAR.svg/250px-Valor_militare_gold_medal_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Military Valor - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Valor_militare_silver_medal_BAR.svg/250px-Valor_militare_silver_medal_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Military Valor - Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Valor_militare_bronze_medal_BAR.svg/250px-Valor_militare_bronze_medal_BAR.svg.png' },
+  // War Crosses
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'War Cross for Military Valor', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Croce_di_guerra_al_valor_militare_BAR.svg/250px-Croce_di_guerra_al_valor_militare_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'War Merit Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Croce_di_guerra_al_merito_BAR.svg/250px-Croce_di_guerra_al_merito_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'War Merit Cross with Silver Clasp', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Croce_di_guerra_al_merito_SC_BAR.svg/250px-Croce_di_guerra_al_merito_SC_BAR.svg.png' },
+  // Medal of Valor of the Army - 3 grades
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Army - Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Valor_dell%27esercito_gold_medal_BAR.svg/250px-Valor_dell%27esercito_gold_medal_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Army - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Valor_dell%27esercito_silver_medal_BAR.svg/250px-Valor_dell%27esercito_silver_medal_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Army - Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Valor_dell%27esercito_bronze_medal_BAR.svg/250px-Valor_dell%27esercito_bronze_medal_BAR.svg.png' },
+  // Medal of Valor of the Navy - 3 grades
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Navy - Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Valor_di_marina_gold_medal_2010_BAR.svg/250px-Valor_di_marina_gold_medal_2010_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Navy - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Valor_di_marina_silver_medal_BAR.svg/250px-Valor_di_marina_silver_medal_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Navy - Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Valor_di_marina_bronze_medal_BAR.svg/250px-Valor_di_marina_bronze_medal_BAR.svg.png' },
+  // Medal of Valor of the Air Forces - 3 grades
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Air Forces - Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Valor_aeronautico_gold_medal_2010_BAR.svg/250px-Valor_aeronautico_gold_medal_2010_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Air Forces - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Valor_aeronautico_silver_medal_BAR.svg/250px-Valor_aeronautico_silver_medal_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Air Forces - Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Valor_aeronautico_bronze_medal_BAR.svg/250px-Valor_aeronautico_bronze_medal_BAR.svg.png' },
+  // Medal of Valor of the Carabinieri - 3 grades
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Carabinieri - Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Valor_dei_carabinieri_gold_medal_BAR.svg/250px-Valor_dei_carabinieri_gold_medal_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Carabinieri - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Valor_dei_carabinieri_silver_medal_BAR.svg/250px-Valor_dei_carabinieri_silver_medal_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Carabinieri - Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Valor_dei_carabinieri_bronze_medal_BAR.svg/250px-Valor_dei_carabinieri_bronze_medal_BAR.svg.png' },
 
   // ─── GREECE ─────────────────────────────────────────────────────────────────
   { country: 'Greece', branch: 'Greece Orders', name: 'Order of the Redeemer', url: 'https://www.medals.pl/gr/r/gr1ore.gif' },
