@@ -12,7 +12,7 @@ export interface RibbonTemplate {
   sku?: string;
 }
 
-export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand', 'Belgium', 'France', 'Italy', 'Greece', 'Norway', 'Netherlands', 'Russia', 'Germany (NVA)', 'Poland', 'Luxembourg', 'Switzerland', 'Croatia', 'Finland', 'Estonia', 'Austria', 'Czech Republic', 'Sweden', 'Slovakia', 'Georgia', 'Iran', 'North Korea', 'Pakistan', 'Belgium', 'Italy', 'Norway', 'Switzerland', 'Luxembourg', 'Lithuania', 'Latvia'];
+export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand', 'Belgium', 'France', 'Italy', 'Greece', 'Norway', 'Netherlands', 'Russia', 'Germany (NVA)', 'Poland', 'Luxembourg', 'Switzerland', 'Croatia', 'Finland', 'Estonia', 'Austria', 'Czech Republic', 'Sweden', 'Slovakia', 'Georgia', 'Iran', 'North Korea', 'Pakistan', 'Belgium', 'Italy', 'Norway', 'Switzerland', 'Luxembourg', 'Lithuania', 'Latvia', 'China'];
 
 export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'United States': ['US Gallantry', 'US Orders & Distinguished Service', 'US Commendations', 'US Campaign Medals', 'US Service Medals', 'US Long Service', 'US Commemorative'],
@@ -51,6 +51,7 @@ export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'Luxembourg': ['Luxembourg Orders', 'Luxembourg Service Medals'],
   'Lithuania': ['Lithuania Orders', 'Lithuania Service Medals', 'Lithuania Commemorative'],
   'Latvia': ['Latvia Orders', 'Latvia Gallantry'],
+  'China': ['China Gallantry', 'China Service Medals', 'China Campaign Medals', 'China Long Service'],
 };
 
 export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL ───
@@ -1085,4 +1086,53 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Latvia', branch: 'Latvia Orders', name: 'Order of the Three Stars - Gold Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/LVA_Order_of_the_Three_Stars_-_Gold_Medal_BAR.png/250px-LVA_Order_of_the_Three_Stars_-_Gold_Medal_BAR.png' },
   { country: 'Latvia', branch: 'Latvia Orders', name: 'Order of the Three Stars - Silver Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/LVA_Order_of_the_Three_Stars_-_Silver_Medal_BAR.png/250px-LVA_Order_of_the_Three_Stars_-_Silver_Medal_BAR.png' },
   { country: 'Latvia', branch: 'Latvia Orders', name: 'Order of the Three Stars - Bronze Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/LVA_Order_of_the_Three_Stars_-_Bronze_Medal_BAR.png/250px-LVA_Order_of_the_Three_Stars_-_Bronze_Medal_BAR.png' },
+
+  // ─── CHINA (PLA) ─────────────────────────────────────────────────────────────
+  // Highest Orders (wartime)
+  { country: 'China', branch: 'China Gallantry', name: 'Order of the Red Banner', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/PLA_honour_ribbon_order_of_red_banner.svg/250px-PLA_honour_ribbon_order_of_red_banner.svg.png' },
+  { country: 'China', branch: 'China Gallantry', name: 'Order of the Red Star', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/PLA_honour_ribbon_order_of_red_star.svg/250px-PLA_honour_ribbon_order_of_red_star.svg.png' },
+  // Wartime Honorary Titles
+  { country: 'China', branch: 'China Gallantry', name: 'Wartime Honorary Title - Special Class Combat Hero', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/PLA_honour_ribbon_honorary_title_individual_wartime_lv1.svg/250px-PLA_honour_ribbon_honorary_title_individual_wartime_lv1.svg.png' },
+  { country: 'China', branch: 'China Gallantry', name: 'Wartime Honorary Title - 1st Class Combat Hero', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/PLA_honour_ribbon_honorary_title_individual_wartime_lv2.svg/250px-PLA_honour_ribbon_honorary_title_individual_wartime_lv2.svg.png' },
+  { country: 'China', branch: 'China Gallantry', name: 'Wartime Honorary Title - 2nd Class Combat Hero', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/PLA_honour_ribbon_honorary_title_individual_wartime_lv3.svg/250px-PLA_honour_ribbon_honorary_title_individual_wartime_lv3.svg.png' },
+  // Wartime Meritorious Service Medals
+  { country: 'China', branch: 'China Gallantry', name: 'Wartime Meritorious Service Medal - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv1.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv1.svg.png' },
+  { country: 'China', branch: 'China Gallantry', name: 'Wartime Meritorious Service Medal - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv2.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv2.svg.png' },
+  { country: 'China', branch: 'China Gallantry', name: 'Wartime Meritorious Service Medal - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv3.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv3.svg.png' },
+  { country: 'China', branch: 'China Gallantry', name: 'Wartime Meritorious Service Medal - 4th Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv4.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv4.svg.png' },
+  // Medal of Valor
+  { country: 'China', branch: 'China Gallantry', name: 'Medal of Valor (Combat Disabled)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/PLA_service_ribbon_bravery.svg/250px-PLA_service_ribbon_bravery.svg.png' },
+  // Peacetime Meritorious Service Medals
+  { country: 'China', branch: 'China Service Medals', name: 'Peacetime Meritorious Service Medal - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv1.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv1.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Peacetime Meritorious Service Medal - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv2.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv2.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Peacetime Meritorious Service Medal - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv3.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv3.svg.png' },
+  // Commendations
+  { country: 'China', branch: 'China Service Medals', name: 'Individual Commendation - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/PLA_honour_ribbon_commendation_for_individual_lv1.svg/250px-PLA_honour_ribbon_commendation_for_individual_lv1.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Individual Commendation - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/PLA_honour_ribbon_commendation_for_individual_lv2.svg/250px-PLA_honour_ribbon_commendation_for_individual_lv2.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Individual Commendation - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/PLA_honour_ribbon_commendation_for_individual_lv3.svg/250px-PLA_honour_ribbon_commendation_for_individual_lv3.svg.png' },
+  // Branch Honour Awards
+  { country: 'China', branch: 'China Service Medals', name: 'Navy Iron Shield Honour - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Navy_honour_ribbon_lv1.svg/250px-Navy_honour_ribbon_lv1.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Navy Iron Shield Honour - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Navy_honour_ribbon_lv2.svg/250px-Navy_honour_ribbon_lv2.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Navy Iron Shield Honour - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Navy_honour_ribbon_lv3.svg/250px-Navy_honour_ribbon_lv3.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Air Force Sky and Space Iron Fist Honour - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/AF_honour_ribbon_lv1.svg/250px-AF_honour_ribbon_lv1.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Air Force Sky and Space Iron Fist Honour - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/AF_honour_ribbon_lv2.svg/250px-AF_honour_ribbon_lv2.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Air Force Sky and Space Iron Fist Honour - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/AF_honour_ribbon_lv3.svg/250px-AF_honour_ribbon_lv3.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Rocket Force Sharpening Sword Vanguard Honour - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/RF_honour_ribbon_lv1.svg/250px-RF_honour_ribbon_lv1.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Rocket Force Sharpening Sword Vanguard Honour - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/RF_honour_ribbon_lv2.svg/250px-RF_honour_ribbon_lv2.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Rocket Force Sharpening Sword Vanguard Honour - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/RF_honour_ribbon_lv3.svg/250px-RF_honour_ribbon_lv3.svg.png' },
+  // Service Branch Ribbons
+  { country: 'China', branch: 'China Service Medals', name: 'PLA Ground Force Service Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/PLA_service_ribbon_ground_force.svg/250px-PLA_service_ribbon_ground_force.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'PLA Navy Service Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/PLA_service_ribbon_navy.svg/250px-PLA_service_ribbon_navy.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'PLA Air Force Service Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/PLA_service_ribbon_air_force.svg/250px-PLA_service_ribbon_air_force.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'PLA Rocket Force Service Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/PLA_service_ribbon_rocket_force.svg/250px-PLA_service_ribbon_rocket_force.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Joint Logistics Support Force Service Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/PLA_service_ribbon_joint_logistics_support_force.svg/250px-PLA_service_ribbon_joint_logistics_support_force.svg.png' },
+  // Campaign / Operational Ribbons
+  { country: 'China', branch: 'China Campaign Medals', name: 'Combat Experience Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/PLA_service_ribbon_combat_mission.svg/250px-PLA_service_ribbon_combat_mission.svg.png' },
+  { country: 'China', branch: 'China Campaign Medals', name: 'Major MOOTW Experience Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/PLA_service_ribbon_vital_MOOTW.svg/250px-PLA_service_ribbon_vital_MOOTW.svg.png' },
+  { country: 'China', branch: 'China Campaign Medals', name: 'Overseas Deployment Ribbon - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/PLA_service_ribbon_overseas_deployment_lv1.svg/250px-PLA_service_ribbon_overseas_deployment_lv1.svg.png' },
+  { country: 'China', branch: 'China Campaign Medals', name: 'Overseas Deployment Ribbon - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/PLA_service_ribbon_overseas_deployment_lv2.svg/250px-PLA_service_ribbon_overseas_deployment_lv2.svg.png' },
+  { country: 'China', branch: 'China Campaign Medals', name: 'Overseas Deployment Ribbon - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/PLA_service_ribbon_overseas_deployment_lv3.svg/250px-PLA_service_ribbon_overseas_deployment_lv3.svg.png' },
+  { country: 'China', branch: 'China Campaign Medals', name: 'Border Defence Service Ribbon - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/PLA_service_ribbon_medal_of_defending_the_frontiers_lv1.svg/250px-PLA_service_ribbon_medal_of_defending_the_frontiers_lv1.svg.png' },
+  { country: 'China', branch: 'China Campaign Medals', name: 'Border Defence Service Ribbon - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/PLA_service_ribbon_medal_of_defending_the_frontiers_lv2.svg/250px-PLA_service_ribbon_medal_of_defending_the_frontiers_lv2.svg.png' },
+  { country: 'China', branch: 'China Campaign Medals', name: 'Border Defence Service Ribbon - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/PLA_service_ribbon_medal_of_defending_the_frontiers_lv3.svg/250px-PLA_service_ribbon_medal_of_defending_the_frontiers_lv3.svg.png' },
 ];
