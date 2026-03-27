@@ -1,9 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import { useSEO } from "@/hooks/useSEO";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   Shield, Globe, Star, Users, Plus, ExternalLink, Loader2, Trophy,
   CheckCircle2, Zap, TrendingUp, Map, Gamepad2, BarChart3, Crown
@@ -85,92 +86,95 @@ function isVerified(group: MilsimGroup): boolean {
 type LeaderboardCategory = "region" | "game" | "troop_count" | "op_success";
 
 
-// ─── Country → approximate SVG coords (on a 1000×500 equirectangular projection) ──
+// ─── World Map ─────────────────────────────────────────────────────────────────
+// Coordinates are % positions relative to the SVG viewBox of the world map asset
+// Source: flekschas/simple-world-map (MIT), path centroids normalised to 0-100%
 const COUNTRY_COORDS: Record<string, [number, number]> = {
-  "🇬🇧 United Kingdom":     [480, 155],
-  "🇩🇪 Germany":            [500, 165],
-  "🇫🇷 France":             [487, 175],
-  "🇮🇹 Italy":              [503, 185],
-  "🇵🇱 Poland":             [515, 160],
-  "🇳🇱 Netherlands":        [493, 158],
-  "🇳🇴 Norway":             [495, 140],
-  "🇸🇪 Sweden":             [505, 142],
-  "🇩🇰 Denmark":            [500, 152],
-  "🇧🇪 Belgium":            [490, 162],
-  "🇪🇸 Spain":              [475, 185],
-  "🇵🇹 Portugal":           [467, 187],
-  "🇨🇿 Czech Republic":     [510, 163],
-  "🇸🇰 Slovakia":           [515, 165],
-  "🇭🇺 Hungary":            [518, 170],
-  "🇷🇴 Romania":            [525, 170],
-  "🇧🇬 Bulgaria":           [523, 177],
-  "🇬🇷 Greece":             [520, 187],
-  "🇭🇷 Croatia":            [510, 173],
-  "🇷🇸 Serbia":             [517, 173],
-  "🇺🇦 Ukraine":            [535, 162],
-  "🇫🇮 Finland":            [520, 138],
-  "🇦🇹 Austria":            [507, 167],
-  "🇨🇭 Switzerland":        [497, 170],
-  "🇱🇺 Luxembourg":         [493, 163],
-  "🇮🇪 Ireland":            [472, 153],
-  "🇱🇹 Lithuania":          [522, 152],
-  "🇱🇻 Latvia":             [522, 148],
-  "🇪🇪 Estonia":            [522, 144],
-  "🇸🇮 Slovenia":           [507, 170],
-  "🇺🇸 United States":      [200, 195],
-  "🇨🇦 Canada":             [190, 160],
-  "🇲🇽 Mexico":             [175, 220],
-  "🇧🇷 Brazil":             [290, 290],
-  "🇦🇷 Argentina":          [270, 340],
-  "🇨🇱 Chile":              [255, 330],
-  "🇨🇴 Colombia":           [255, 265],
-  "🇵🇪 Peru":               [248, 290],
-  "🇻🇪 Venezuela":          [267, 255],
-  "🇺🇾 Uruguay":            [280, 335],
-  "🇪🇨 Ecuador":            [242, 278],
-  "🇧🇴 Bolivia":            [262, 305],
-  "🇹🇷 Turkey":             [545, 183],
-  "🇸🇦 Saudi Arabia":       [570, 218],
-  "🇮🇱 Israel":             [547, 204],
-  "🇦🇪 UAE":                [587, 218],
-  "🇶🇦 Qatar":              [582, 218],
-  "🇰🇼 Kuwait":             [572, 208],
-  "🇮🇶 Iraq":               [562, 200],
-  "🇮🇷 Iran":               [578, 195],
-  "🇯🇴 Jordan":             [550, 207],
-  "🇱🇧 Lebanon":            [547, 201],
-  "🇪🇬 Egypt":              [537, 207],
-  "🇲🇦 Morocco":            [473, 200],
-  "🇿🇦 South Africa":       [530, 365],
-  "🇳🇬 Nigeria":            [493, 272],
-  "🇰🇪 Kenya":              [553, 285],
-  "🇬🇭 Ghana":              [483, 270],
-  "🇪🇹 Ethiopia":           [557, 270],
-  "🇹🇿 Tanzania":           [548, 300],
-  "🇯🇵 Japan":              [795, 185],
-  "🇰🇷 South Korea":        [785, 188],
-  "🇨🇳 China":              [740, 190],
-  "🇮🇳 India":              [660, 218],
-  "🇵🇰 Pakistan":           [638, 205],
-  "🇧🇩 Bangladesh":         [678, 217],
-  "🇻🇳 Vietnam":            [735, 240],
-  "🇹🇭 Thailand":           [723, 238],
-  "🇵🇭 Philippines":        [770, 248],
-  "🇮🇩 Indonesia":          [755, 278],
-  "🇲🇾 Malaysia":           [740, 268],
-  "🇸🇬 Singapore":          [742, 272],
-  "🇹🇼 Taiwan":             [775, 207],
-  "🇭🇰 Hong Kong":          [762, 212],
-  "🇦🇺 Australia":          [800, 340],
-  "🇳🇿 New Zealand":        [870, 385],
-  "🇵🇬 Papua New Guinea":   [830, 295],
-  "🇫🇯 Fiji":               [895, 330],
+  '\u{1F1EC}\u{1F1E7} United Kingdom': [46.75, 28.72],
+  '\u{1F1E9}\u{1F1EA} Germany': [49.94, 31.09],
+  '\u{1F1EB}\u{1F1F7} France': [48.75, 33.14],
+  '\u{1F1EE}\u{1F1F9} Italy': [50.99, 39.25],
+  '\u{1F1F5}\u{1F1F1} Poland': [54.37, 32.40],
+  '\u{1F1F3}\u{1F1F1} Netherlands': [49.81, 31.18],
+  '\u{1F1F3}\u{1F1F4} Norway': [52.87, 11.80],
+  '\u{1F1F8}\u{1F1EA} Sweden': [52.91, 23.46],
+  '\u{1F1E9}\u{1F1F0} Denmark': [50.85, 28.96],
+  '\u{1F1E7}\u{1F1EA} Belgium': [48.88, 32.73],
+  '\u{1F1EA}\u{1F1F8} Spain': [45.15, 44.02],
+  '\u{1F1F5}\u{1F1F9} Portugal': [41.35, 41.10],
+  '\u{1F1E8}\u{1F1FF} Czech Republic': [51.84, 34.30],
+  '\u{1F1F8}\u{1F1F0} Slovakia': [52.65, 34.74],
+  '\u{1F1ED}\u{1F1FA} Hungary': [52.75, 35.19],
+  '\u{1F1F7}\u{1F1F4} Romania': [54.45, 34.82],
+  '\u{1F1E7}\u{1F1EC} Bulgaria': [54.37, 37.61],
+  '\u{1F1EC}\u{1F1F7} Greece': [54.40, 41.69],
+  '\u{1F1ED}\u{1F1F7} Croatia': [52.63, 36.24],
+  '\u{1F1F7}\u{1F1F8} Serbia': [53.72, 36.13],
+  '\u{1F1FA}\u{1F1E6} Ukraine': [54.83, 32.10],
+  '\u{1F1EB}\u{1F1EE} Finland': [53.86, 21.50],
+  '\u{1F1E6}\u{1F1F9} Austria': [50.98, 35.30],
+  '\u{1F1E8}\u{1F1ED} Switzerland': [50.13, 35.15],
+  '\u{1F1F1}\u{1F1FA} Luxembourg': [49.69, 34.02],
+  '\u{1F1EE}\u{1F1EA} Ireland': [46.44, 30.85],
+  '\u{1F1F1}\u{1F1F9} Lithuania': [53.74, 29.13],
+  '\u{1F1F1}\u{1F1FB} Latvia': [55.10, 28.00],
+  '\u{1F1EA}\u{1F1EA} Estonia': [54.22, 26.78],
+  '\u{1F1F8}\u{1F1EE} Slovenia': [52.54, 35.65],
+  '\u{1F1FA}\u{1F1F8} United States': [21.58, 30.18],
+  '\u{1F1E8}\u{1F1E6} Canada': [21.58, 14.92],
+  '\u{1F1F2}\u{1F1FD} Mexico': [13.14, 41.95],
+  '\u{1F1E7}\u{1F1F7} Brazil': [32.63, 71.61],
+  '\u{1F1E6}\u{1F1F7} Argentina': [30.75, 87.76],
+  '\u{1F1E8}\u{1F1F1} Chile': [28.52, 82.51],
+  '\u{1F1E8}\u{1F1F4} Colombia': [25.96, 55.97],
+  '\u{1F1F5}\u{1F1EA} Peru': [22.80, 65.33],
+  '\u{1F1FB}\u{1F1EA} Venezuela': [27.71, 54.16],
+  '\u{1F1FA}\u{1F1FE} Uruguay': [31.79, 81.42],
+  '\u{1F1EA}\u{1F1E8} Ecuador': [21.43, 62.97],
+  '\u{1F1E7}\u{1F1F4} Bolivia': [26.51, 69.73],
+  '\u{1F1F9}\u{1F1F7} Turkey': [56.38, 39.31],
+  '\u{1F1F8}\u{1F1E6} Saudi Arabia': [62.37, 47.19],
+  '\u{1F1EE}\u{1F1F1} Israel': [58.11, 44.33],
+  '\u{1F1E6}\u{1F1EA} UAE': [63.48, 49.39],
+  '\u{1F1F6}\u{1F1E6} Qatar': [63.33, 48.28],
+  '\u{1F1F0}\u{1F1FC} Kuwait': [62.29, 46.05],
+  '\u{1F1EE}\u{1F1F6} Iraq': [60.20, 41.87],
+  '\u{1F1EE}\u{1F1F7} Iran': [62.40, 41.08],
+  '\u{1F1EF}\u{1F1F4} Jordan': [58.51, 44.85],
+  '\u{1F1F1}\u{1F1E7} Lebanon': [58.20, 43.26],
+  '\u{1F1EA}\u{1F1EC} Egypt': [55.53, 45.27],
+  '\u{1F1F2}\u{1F1E6} Morocco': [47.41, 43.24],
+  '\u{1F1FF}\u{1F1E6} South Africa': [56.67, 77.28],
+  '\u{1F1F3}\u{1F1EC} Nigeria': [48.88, 59.66],
+  '\u{1F1F0}\u{1F1EA} Kenya': [58.71, 61.01],
+  '\u{1F1EC}\u{1F1ED} Ghana': [46.98, 59.22],
+  '\u{1F1EA}\u{1F1F9} Ethiopia': [58.57, 58.22],
+  '\u{1F1F9}\u{1F1FF} Tanzania': [58.85, 69.43],
+  '\u{1F1EF}\u{1F1F5} Japan': [88.11, 34.45],
+  '\u{1F1F0}\u{1F1F7} South Korea': [84.89, 36.81],
+  '\u{1F1E8}\u{1F1F3} China': [77.70, 34.54],
+  '\u{1F1EE}\u{1F1F3} India': [71.96, 54.16],
+  '\u{1F1F5}\u{1F1F0} Pakistan': [66.68, 46.55],
+  '\u{1F1E7}\u{1F1E9} Bangladesh': [74.68, 47.16],
+  '\u{1F1FB}\u{1F1F3} Vietnam': [80.12, 51.98],
+  '\u{1F1F9}\u{1F1ED} Thailand': [78.47, 50.44],
+  '\u{1F1F5}\u{1F1ED} Philippines': [85.93, 54.62],
+  '\u{1F1EE}\u{1F1E9} Indonesia': [84.98, 62.89],
+  '\u{1F1F2}\u{1F1FE} Malaysia': [80.49, 60.55],
+  '\u{1F1F8}\u{1F1EC} Singapore': [80.25, 61.14],
+  '\u{1F1F9}\u{1F1FC} Taiwan': [84.80, 46.27],
+  '\u{1F1ED}\u{1F1F0} Hong Kong': [83.44, 46.53],
+  '\u{1F1E6}\u{1F1FA} Australia': [85.47, 80.33],
+  '\u{1F1F3}\u{1F1FF} New Zealand': [96.00, 90.00],
+  '\u{1F1F5}\u{1F1EC} Papua New Guinea': [91.00, 63.00],
+  '\u{1F1EB}\u{1F1EF} Fiji': [97.00, 75.00],
 };
 
 function WorldMap({ groups }: { groups: MilsimGroup[] }) {
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; names: string[] } | null>(null);
+  const [tooltip, setTooltip] = useState<{ pctX: number; pctY: number; names: string[]; featured: boolean } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
 
-  // Count groups per country (approved/featured only)
   const countryGroups = useMemo(() => {
     const map: Record<string, MilsimGroup[]> = {};
     groups.forEach(g => {
@@ -186,115 +190,112 @@ function WorldMap({ groups }: { groups: MilsimGroup[] }) {
     return Object.entries(countryGroups).map(([country, grps]) => {
       const coords = COUNTRY_COORDS[country];
       if (!coords) return null;
-      return { country, grps, x: coords[0], y: coords[1] };
-    }).filter(Boolean) as { country: string; grps: MilsimGroup[]; x: number; y: number }[];
+      return { country, grps, pctX: coords[0], pctY: coords[1] };
+    }).filter(Boolean) as { country: string; grps: MilsimGroup[]; pctX: number; pctY: number }[];
   }, [countryGroups]);
 
   const totalOnMap = dots.reduce((s, d) => s + d.grps.length, 0);
 
-  return (
-    <div className="relative w-full bg-secondary/30 border-b border-border overflow-hidden" style={{ minHeight: 220 }}>
-      {/* scanline texture */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 3px)" }} />
+  // dark mode: map = dark landmass on darker ocean bg
+  // light mode: map = light landmass on lighter bg (invert the SVG)
+  const isDark = theme === "dark";
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+  return (
+    <div className="relative w-full border-b border-border overflow-hidden" style={{ background: isDark ? "#07111f" : "#dce8f0" }}>
+      {/* Scanline texture */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.025]"
+        style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,1) 2px,rgba(255,255,255,1) 3px)" }} />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-4 relative z-10">
+        {/* Header row */}
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0" />
           <span className="text-[10px] font-display font-bold uppercase tracking-widest text-primary">Live Deployment Map</span>
-          <span className="text-[9px] font-sans text-muted-foreground ml-auto">{totalOnMap} unit{totalOnMap !== 1 ? "s" : ""} plotted across {dots.length} countr{dots.length !== 1 ? "ies" : "y"}</span>
+          <span className="text-[9px] font-sans text-muted-foreground ml-auto">
+            {totalOnMap} unit{totalOnMap !== 1 ? "s" : ""} across {dots.length} countr{dots.length !== 1 ? "ies" : "y"}
+          </span>
         </div>
 
-        <div className="relative w-full" style={{ aspectRatio: "2/1", maxHeight: 420 }}>
-          <svg
-            viewBox="0 0 1000 500"
-            className="w-full h-full"
-            style={{ display: "block" }}
-            onMouseLeave={() => setTooltip(null)}
-          >
-            {/* Ocean */}
-            <rect width="1000" height="500" fill="#0a0f1a" />
+        {/* Map container */}
+        <div className="relative w-full select-none" ref={containerRef} style={{ aspectRatio: "784.077 / 458.627" }}>
+          {/* The world map image */}
+          <img
+            src="/world-map.svg"
+            alt="World map"
+            draggable={false}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              // Dark mode: SVG paths are black → show as muted teal/dark on dark bg
+              // Light mode: invert so land = dark on light bg
+              filter: isDark
+                ? "invert(1) sepia(1) saturate(0.3) brightness(0.25) hue-rotate(180deg)"
+                : "invert(0) sepia(0) saturate(0.5) brightness(0.7)",
+              opacity: isDark ? 0.9 : 0.55,
+            }}
+          />
 
-            {/* Grid lines */}
-            {[0,1,2,3,4,5,6,7,8,9,10].map(i => (
-              <line key={`v${i}`} x1={i*100} y1={0} x2={i*100} y2={500} stroke="#1a2535" strokeWidth="0.5" />
-            ))}
-            {[0,1,2,3,4,5].map(i => (
-              <line key={`h${i}`} x1={0} y1={i*100} x2={1000} y2={i*100} stroke="#1a2535" strokeWidth="0.5" />
-            ))}
-
-            {/* Simplified continent land masses */}
-            {/* North America */}
-            <path d="M 80 100 L 140 80 L 250 90 L 280 130 L 290 200 L 270 250 L 230 270 L 200 260 L 160 240 L 130 200 L 100 160 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
-            {/* South America */}
-            <path d="M 200 250 L 270 245 L 310 270 L 320 320 L 300 370 L 260 395 L 225 370 L 210 320 L 205 280 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
-            {/* Europe */}
-            <path d="M 440 120 L 560 120 L 575 145 L 565 190 L 530 200 L 500 195 L 455 190 L 440 165 L 435 140 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
-            {/* Africa */}
-            <path d="M 460 205 L 575 200 L 590 230 L 585 300 L 555 375 L 510 395 L 465 370 L 445 310 L 450 250 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
-            {/* Middle East */}
-            <path d="M 540 190 L 610 185 L 620 220 L 590 240 L 555 235 L 540 215 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
-            {/* Asia (main) */}
-            <path d="M 575 100 L 820 95 L 840 150 L 820 220 L 780 240 L 710 250 L 660 235 L 620 220 L 610 185 L 590 160 L 575 130 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
-            {/* SE Asia islands */}
-            <path d="M 730 255 L 780 250 L 800 270 L 800 295 L 760 300 L 730 285 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
-            {/* Australia */}
-            <path d="M 750 300 L 870 295 L 885 330 L 875 375 L 830 395 L 775 385 L 750 355 L 745 325 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
-            {/* New Zealand */}
-            <path d="M 865 375 L 885 370 L 895 390 L 880 405 L 862 395 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
-
-            {/* Group dots */}
-            {dots.map(dot => {
-              const count = dot.grps.length;
-              const baseR = count === 1 ? 4 : count <= 3 ? 6 : count <= 8 ? 9 : 13;
-              const hasFeatured = dot.grps.some(g => g.status === "featured");
-              const dotColor = hasFeatured ? "#f59e0b" : "#ef4444";
-              const pulseColor = hasFeatured ? "rgba(245,158,11,0.3)" : "rgba(239,68,68,0.25)";
-
-              return (
-                <g key={dot.country}
-                  style={{ cursor: "pointer" }}
-                  onMouseEnter={e => {
-                    const svg = (e.currentTarget as SVGGElement).closest("svg");
-                    const rect = svg?.getBoundingClientRect();
-                    if (!rect) return;
-                    const svgX = (dot.x / 1000) * rect.width + rect.left;
-                    const svgY = (dot.y / 500) * rect.height + rect.top;
-                    setTooltip({ x: svgX - rect.left, y: svgY - rect.top, names: dot.grps.map(g => g.name) });
+          {/* Dots overlay — absolutely positioned using % */}
+          {dots.map(dot => {
+            const count = dot.grps.length;
+            const hasFeatured = dot.grps.some(g => g.status === "featured");
+            return (
+              <div
+                key={dot.country}
+                className="absolute"
+                style={{
+                  left: `${dot.pctX}%`,
+                  top: `${dot.pctY}%`,
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 10,
+                  cursor: "pointer",
+                }}
+                onMouseEnter={() => setTooltip({ pctX: dot.pctX, pctY: dot.pctY, names: dot.grps.map(g => g.name), featured: hasFeatured })}
+                onMouseLeave={() => setTooltip(null)}
+              >
+                {/* Pulse ring */}
+                <span
+                  className="absolute rounded-full animate-ping"
+                  style={{
+                    width: count > 5 ? 20 : count > 2 ? 16 : 12,
+                    height: count > 5 ? 20 : count > 2 ? 16 : 12,
+                    top: "50%", left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    background: hasFeatured ? "rgba(245,158,11,0.35)" : "rgba(239,68,68,0.35)",
                   }}
-                  onMouseLeave={() => setTooltip(null)}
+                />
+                {/* Core dot */}
+                <span
+                  className="relative flex items-center justify-center rounded-full font-mono font-bold"
+                  style={{
+                    width: count > 5 ? 18 : count > 2 ? 14 : 8,
+                    height: count > 5 ? 18 : count > 2 ? 14 : 8,
+                    fontSize: count > 2 ? 7 : 0,
+                    background: hasFeatured ? "#f59e0b" : "#ef4444",
+                    boxShadow: hasFeatured
+                      ? "0 0 6px 2px rgba(245,158,11,0.6)"
+                      : "0 0 6px 2px rgba(239,68,68,0.5)",
+                    color: "white",
+                    lineHeight: 1,
+                  }}
                 >
-                  {/* Pulse ring */}
-                  <circle cx={dot.x} cy={dot.y} r={baseR + 5} fill={pulseColor}>
-                    <animate attributeName="r" values={`${baseR + 2};${baseR + 9};${baseR + 2}`} dur="2.5s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0.6;0;0.6" dur="2.5s" repeatCount="indefinite" />
-                  </circle>
-                  {/* Main dot */}
-                  <circle cx={dot.x} cy={dot.y} r={baseR} fill={dotColor} stroke="rgba(0,0,0,0.5)" strokeWidth="1" />
-                  {/* Count label if >1 */}
-                  {count > 1 && (
-                    <text x={dot.x} y={dot.y + 1} textAnchor="middle" dominantBaseline="middle"
-                      fill="white" fontSize={baseR > 7 ? "7" : "6"} fontWeight="bold" fontFamily="monospace">
-                      {count}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
+                  {count > 1 ? count : ""}
+                </span>
+              </div>
+            );
+          })}
 
           {/* Tooltip */}
           {tooltip && (
             <div
               className="absolute z-20 pointer-events-none"
               style={{
-                left: Math.min(tooltip.x + 10, 800),
-                top: Math.max(tooltip.y - 10, 0),
-                transform: "translateY(-100%)",
+                left: `${Math.min(tooltip.pctX + 2, 75)}%`,
+                top: `${tooltip.pctY > 70 ? tooltip.pctY - 12 : tooltip.pctY + 4}%`,
               }}
             >
-              <div className="bg-card border border-primary/40 rounded shadow-lg px-3 py-2 min-w-[140px] max-w-[220px]">
+              <div className="bg-card/95 backdrop-blur-sm border border-primary/40 rounded shadow-xl px-3 py-2 min-w-[130px] max-w-[200px]">
                 {tooltip.names.map((n, i) => (
-                  <p key={i} className="text-[10px] font-display font-bold uppercase tracking-wider text-foreground leading-relaxed">{n}</p>
+                  <p key={i} className="text-[10px] font-display font-bold uppercase tracking-wide text-foreground leading-snug">{n}</p>
                 ))}
               </div>
             </div>
@@ -302,26 +303,25 @@ function WorldMap({ groups }: { groups: MilsimGroup[] }) {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 mt-3">
+        <div className="flex items-center gap-5 mt-2 mb-1">
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-            <span className="text-[9px] font-sans text-muted-foreground">Registered Unit</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 block" />
+            <span className="text-[9px] font-sans text-muted-foreground">Registered</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-            <span className="text-[9px] font-sans text-muted-foreground">Featured Unit</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 block" />
+            <span className="text-[9px] font-sans text-muted-foreground">Featured</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500 flex items-center justify-center">
-              <span className="text-[6px] text-white font-bold">3</span>
-            </div>
-            <span className="text-[9px] font-sans text-muted-foreground">Cluster (multiple units)</span>
+            <span className="w-3.5 h-3.5 rounded-full bg-red-500 flex items-center justify-center text-[7px] text-white font-bold block" style={{display:"inline-flex"}}>5</span>
+            <span className="text-[9px] font-sans text-muted-foreground">Cluster</span>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
 
 export default function MilsimRegistry() {
   useSEO({ title: "MilSim Registry", description: "Browse TAG's registered MilSim groups — find your unit and enlist in organised tactical play." });
