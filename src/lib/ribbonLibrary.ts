@@ -342,6 +342,26 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   // Commendations
   { country: 'Finland', branch: 'Finland Commendations', name: 'Medal for Military Merits', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/FIN_Military_Merit_Medal_BAR.svg/250px-FIN_Military_Merit_Medal_BAR.svg.png' },
 
+
+  // ─── CROATIA ──────────────────────────────────────────────────────────────
+  // Orders & Distinguished Service
+  { country: 'Croatia', branch: 'Croatia Orders & Distinguished Service', name: 'Grand Order of King Tomislav', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Ribbon_of_an_order_of_king_Tomislav.png/250px-Ribbon_of_an_order_of_king_Tomislav.png' },
+  { country: 'Croatia', branch: 'Croatia Orders & Distinguished Service', name: 'Order of Ban Jelacic', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Ribbon_of_an_Order_of_Ban_Jela%C4%8Di%C4%87.png/250px-Ribbon_of_an_Order_of_Ban_Jela%C4%8Di%C4%87.png' },
+  { country: 'Croatia', branch: 'Croatia Orders & Distinguished Service', name: 'Order of the Croatian Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Ribbon_of_an_Order_of_the_Croatian_Cross.png/250px-Ribbon_of_an_Order_of_the_Croatian_Cross.png' },
+  // Gallantry
+  { country: 'Croatia', branch: 'Croatia Gallantry', name: 'Order of Duke Trpimir', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Ribbon_of_the_Order_of_Duke_Trpimir.png/250px-Ribbon_of_the_Order_of_Duke_Trpimir.png' },
+  { country: 'Croatia', branch: 'Croatia Gallantry', name: 'Order of Duke Domagoj', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Ribbon_of_an_Order_of_Duke_Domagoj.png/250px-Ribbon_of_an_Order_of_Duke_Domagoj.png' },
+  { country: 'Croatia', branch: 'Croatia Gallantry', name: 'Order of Nikola Subic Zrinski', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Ribbon_of_an_Order_of_Nikola_%C5%A0ubi%C4%87_Zrinski.png/250px-Ribbon_of_an_Order_of_Nikola_%C5%A0ubi%C4%87_Zrinski.png' },
+  // Campaign Medals
+  { country: 'Croatia', branch: 'Croatia Campaign Medals', name: 'Homeland's Gratitude Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Homelands_Gratitude_Medal.jpg/250px-Homelands_Gratitude_Medal.jpg' },
+  { country: 'Croatia', branch: 'Croatia Campaign Medals', name: 'Homeland Medal - Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Zlatna_domovinska_medalja_-_mala_oznaka.jpg/250px-Zlatna_domovinska_medalja_-_mala_oznaka.jpg' },
+  { country: 'Croatia', branch: 'Croatia Campaign Medals', name: 'Homeland Medal - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Srebrna_domovinska_medalja_-_mala_oznaka.jpg/250px-Srebrna_domovinska_medalja_-_mala_oznaka.jpg' },
+  { country: 'Croatia', branch: 'Croatia Campaign Medals', name: 'Homeland Medal - Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Bron%C4%8Dana_domovinska_medalja_-_mala_oznaka.jpg/250px-Bron%C4%8Dana_domovinska_medalja_-_mala_oznaka.jpg' },
+  // Service Medals
+  { country: 'Croatia', branch: 'Croatia Service Medals', name: 'Medal of the Croatian Armed Forces - Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Zlatna_medalja_Hrvatske_vojske_-_mala_oznaka.jpg/250px-Zlatna_medalja_Hrvatske_vojske_-_mala_oznaka.jpg' },
+  { country: 'Croatia', branch: 'Croatia Service Medals', name: 'Medal of the Croatian Armed Forces - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Srebrna_medalja_Hrvatske_vojske.jpg/250px-Srebrna_medalja_Hrvatske_vojske.jpg' },
+  { country: 'Croatia', branch: 'Croatia Service Medals', name: 'Medal of the Croatian Armed Forces - Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Bron%C4%8Dana_medalja_Hrvatske_vojske_-_mala_oznaka.jpg/250px-Bron%C4%8Dana_medalja_Hrvatske_vojske_-_mala_oznaka.jpg' },
+
   // ─── GERMANY (NVA) ──────────────────────────────────────────────────────────
   // Orders & Distinguished Service
   { country: 'Germany (NVA)', branch: 'Germany (NVA) Orders & Distinguished Service', name: 'Militarischer Verdienstorden - Gold (Order of Military Merit - Gold)', url: 'https://www.medals.pl/de/r/drmvo1.gif' },
