@@ -90,7 +90,7 @@ type LeaderboardCategory = "region" | "game" | "troop_count" | "op_success";
 // Coords = [x%, y%] on equirectangular projection: x=(lon+180)/360*100, y=(90-lat)/180*100
 const COUNTRY_COORDS: Record<string, [number, number]> = {
   // Europe
-  '🇬🇧 United Kingdom': [47.2, 29.9],
+  '🇬🇧 United Kingdom': [48.2, 33.5],
   '🇩🇪 Germany': [49.9, 31.1],
   '🇫🇷 France': [46.5, 37.5],
   '🇮🇹 Italy': [50.6, 39.7],
@@ -254,7 +254,7 @@ function WorldMap({ groups }: { groups: MilsimGroup[] }) {
           {dots.map(dot => {
             const count = dot.grps.length;
             const hasFeatured = dot.grps.some(g => g.status === "featured");
-            const size = count > 8 ? 20 : count > 4 ? 16 : count > 1 ? 12 : 8;
+            const size = count > 8 ? 12 : count > 4 ? 9 : count > 1 ? 7 : 5;
             const color = hasFeatured ? "#f59e0b" : "#ef4444";
             const glow = hasFeatured
               ? "0 0 8px 3px rgba(245,158,11,0.7)"
@@ -284,8 +284,8 @@ function WorldMap({ groups }: { groups: MilsimGroup[] }) {
                 <span
                   className="absolute rounded-full animate-ping"
                   style={{
-                    width: size + 8,
-                    height: size + 8,
+                    width: size + 4,
+                    height: size + 4,
                     top: "50%",
                     left: "50%",
                     transform: "translate(-50%,-50%)",
