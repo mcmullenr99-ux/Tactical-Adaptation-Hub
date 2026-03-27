@@ -990,15 +990,14 @@ export default function OrbatBuilder({ initialData, onSave, value, onChange, rea
   }, [value, initialised]);
 
   // Fire onChange only after user edits (not on initial seed)
-  const userEditedRef = React.useRef(false);
+  const didMountRef = React.useRef(false);
   React.useEffect(() => {
-    if (userEditedRef.current && onChange) {
-      onChange(JSON.stringify(nodes));
-    }
+    if (!didMountRef.current) { didMountRef.current = true; return; }
+    if (onChange) onChange(JSON.stringify(nodes));
   }, [nodes]);
 
-  function notifyEdit<T>(fn: (p: T) => T): (p: T) => T {
-    return (prev: T) => { userEditedRef.current = true; return fn(prev); };
+  function notifyEdit(fn: (p: OrbatNode[]) => OrbatNode[]): (p: OrbatNode[]) => OrbatNode[] {
+    return fn;
   }
 
   function updateById(tree: OrbatNode[], id: string, u: Partial<OrbatNode>): OrbatNode[] {

@@ -89,7 +89,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "roles" | "ranks" | "roster" | "recognition" | "stream" | "questions" | "operations" | "readiness" | "analytics" | "campaigns" | "reputation" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events" | "eventhub" | "onboarding" | "criteria" | "doctrine" | "orbat";
+type Tab = "roles" | "ranks" | "roster" | "recognition" | "stream" | "questions" | "operations" | "readiness" | "analytics" | "campaigns" | "reputation" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events" | "eventhub" | "onboarding" | "criteria" | "doctrine";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -166,8 +166,7 @@ export default function MilsimManage() {
       label: "Customization",
       pro: true,
       items: [
-        { id: "recognition", label: "Recognition", icon: Medal, pro: true },
-        { id: "orbat", label: "ORBAT Builder", icon: GitBranch, pro: true },
+        { id: "recognition", label: "Customisation", icon: Medal, pro: true },
         { id: "legacy", label: "Unit Legacy", icon: Archive, pro: true },
         { id: "developer", label: "API & Webhooks", icon: GitBranch, pro: true },
       ],
@@ -467,7 +466,7 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
 const _PRO_STATUS_URL_MANAGE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/getProStatus";
 
 /* ─── Doctrine Tab (Info + SOPs + Org Chart + Training Docs) ──────────────── */
-type DoctrineSubTab = "info" | "sops" | "orbat" | "orgchart" | "training";
+type DoctrineSubTab = "info" | "sops" | "orgchart" | "training";
 
 function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const [sub, setSub] = useState<DoctrineSubTab>("info");
@@ -1048,12 +1047,25 @@ function AwardImage({ path, fallbackIcon: FIcon }: { path: string | null | undef
 
 
 
-// ─── Recognition Tab (Awards + Commendations + Qualifications merged) ────────
+// ─── Customisation Tab (Awards + Qualifications + ORBAT) ─────────────────────
 function RecognitionTab({ group, showMsg }: any) {
-  const [sub, setSub] = useState<"awards" | "quals">("awards");
+  const [sub, setSub] = useState<"awards" | "quals" | "orbat">("awards");
+  const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const saveOrbat = async () => {
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
+      showMsg(true, "ORBAT saved.");
+    } catch (e: any) { showMsg(false, e.message); }
+    finally { setSaving(false); }
+  };
+
   const SUB_TABS = [
     { id: "awards" as const, label: "Awards",         icon: Medal },
-    { id: "quals" as const,  label: "Qualifications", icon: GraduationCap },
+    { id: "quals"  as const, label: "Qualifications", icon: GraduationCap },
+    { id: "orbat"  as const, label: "ORBAT Builder",  icon: GitBranch },
   ];
   return (
     <div className="space-y-4">
@@ -1070,6 +1082,9 @@ function RecognitionTab({ group, showMsg }: any) {
       </div>
       {sub === "awards" && <AwardsTab group={group} showMsg={showMsg} />}
       {sub === "quals"  && <QualsTab  group={group} showMsg={showMsg} />}
+      {sub === "orbat"  && (
+        <OrbatProGate group={group} orbatJson={orbatJson} setOrbatJson={setOrbatJson} saveOrbat={saveOrbat} saving={saving} />
+      )}
     </div>
   );
 }
