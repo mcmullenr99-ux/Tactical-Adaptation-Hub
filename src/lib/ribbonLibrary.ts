@@ -79,6 +79,8 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United Nations', branch: 'United Nations', name: 'UNHQ Medal (HQ Service)', url: 'https://www.medals.pl/int/r/unhq.gif' },
   { country: 'United Nations', branch: 'United Nations', name: 'UNMIL Medal (Liberia)', url: 'https://www.medals.pl/int/r/unmil.gif' },
   { country: 'United Nations', branch: 'United Nations', name: 'UNMIS Medal (Sudan)', url: 'https://www.medals.pl/int/r/unmis.gif' },
+  { country: 'International', branch: 'United Nations', name: 'United Nations Medal', url: 'https://www.uniformribbons.com/image/un_medal_ribbon.png' },
+  { country: 'International', branch: 'United Nations', name: 'United Nations Special Service Medal', url: 'https://www.uniformribbons.com/image/un_special_service_medal_ribbon.png' },
 
 
   // === NATO ===
@@ -87,6 +89,8 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Kosovo)', url: 'https://www.uniformribbons.com/image/nato_kosovo_ribbon.png' },
   { country: 'NATO', branch: 'NATO', name: 'NATO Medal (Non-Article 5)', url: 'https://www.uniformribbons.com/image/nato_medal_non_article_5_ribbon.png' },
   { country: 'NATO', branch: 'NATO', name: 'NATO Medal (ISAF - Afghanistan)', url: 'https://www.uniformribbons.com/image/nato_isaf_ribbon.png' },
+  { country: 'International', branch: 'NATO', name: 'Multinational Force and Observers Medal', url: 'https://www.uniformribbons.com/image/mfo_medal_ribbon.png' },
+  { country: 'International', branch: 'NATO', name: 'Inter-American Defense Board Medal', url: 'https://www.uniformribbons.com/image/iadb_medal_ribbon.png' },
 
   // ── United Kingdom ──────────────────────────────────────────────
   { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Victoria Cross (VC)', url: 'https://www.medals.pl/bc/r/uk1vc.gif' },
@@ -316,13 +320,8 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United States', branch: 'US Service Medals', name: 'Arctic Service Ribbon', url: 'https://www.uniformribbons.com/image/army_arctic_service_ribbon.png' },
   { country: 'United States', branch: 'US Service Medals', name: 'Army Overseas Service Ribbon', url: 'https://www.uniformribbons.com/image/army_overseas_service_ribbon.png' },
   { country: 'United States', branch: 'US Service Medals', name: 'Army Reserve Componenets Overseas Training', url: 'https://www.uniformribbons.com/image/army_reserve_components_overseas_training_ribbon.png' },
-  { country: 'United States', branch: 'US Commemorative', name: 'United Nations Medal', url: 'https://www.uniformribbons.com/image/united_nations_ribbon.png' },
-  { country: 'United States', branch: 'US Commemorative', name: 'Multinational Forces and Observers Medal', url: 'https://www.uniformribbons.com/image/multinational_forces_and_observer_ribbon.png' },
-  { country: 'United States', branch: 'US Commemorative', name: 'Inter American Defense Board Medal', url: 'https://www.uniformribbons.com/image/inter_american_defense_board_ribbon.png' },
   { country: 'United States', branch: 'US Campaign Medals', name: 'Kuwait Liberation Saudi Arabia Ribbon', url: 'https://www.uniformribbons.com/image/kuwait_liberation_saudi_arabia_ribbon.png' },
   { country: 'United States', branch: 'US Campaign Medals', name: 'Kuwait Liberation Kuwait Ribbon', url: 'https://www.uniformribbons.com/image/kuwait_liberation_kuwait_ribbon.png' },
-  { country: 'United States', branch: 'US Commemorative', name: 'Multinational Force and Observers Medal Ribbon', url: 'https://www.uniformribbons.com/image/multinational_forces_and_observer_ribbon.png' },
-  { country: 'United States', branch: 'US Commemorative', name: 'Inter-American Defense Board Medal Ribbon', url: 'https://www.uniformribbons.com/image/inter_american_defense_board_ribbon.png' },
   { country: 'United States', branch: 'US Campaign Medals', name: 'Kuwait Liberation Medal (Saudi Arabia) Ribbon', url: 'https://www.uniformribbons.com/image/kuwait_liberation_saudi_arabia_ribbon.png' },
   { country: 'United States', branch: 'US Campaign Medals', name: 'Kuwait Liberation Medal (Kuwait) Ribbon', url: 'https://www.uniformribbons.com/image/kuwait_liberation_kuwait_ribbon.png' },
   { country: 'United States', branch: 'US Gallantry', name: 'Navy Cross Ribbon', url: 'https://www.uniformribbons.com/image/navy_cross_ribbon.png' },
@@ -355,9 +354,6 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United States', branch: 'US Long Service', name: 'Navy Ceremonial Guard Ribbon', url: 'https://www.uniformribbons.com/image/navy_ceremonial_guard_ribbon.png' },
   { country: 'United States', branch: 'US Long Service', name: 'Navy Recruit Honor Graduate Ribbon', url: 'https://www.uniformribbons.com/image/navy_recruit_honor_graduate_ribbon.png' },
   { country: 'United States', branch: 'US Service Medals', name: 'Navy Reserve Ribbon', url: 'https://www.uniformribbons.com/image/navy_reserve_ribbon.png' },
-  { country: 'United States', branch: 'US Commemorative', name: 'United Nations Ribbon', url: 'https://www.uniformribbons.com/image/united_nations_ribbon.png' },
-  { country: 'United States', branch: 'US Commemorative', name: 'Multinational Forces and Observers Ribbon', url: 'https://www.uniformribbons.com/image/multinational_forces_and_observer_ribbon.png' },
-  { country: 'United States', branch: 'US Commemorative', name: 'Inter American Defense Board Ribbon', url: 'https://www.uniformribbons.com/image/inter_american_defense_board_ribbon.png' },
   { country: 'United States', branch: 'US Long Service', name: 'Navy Rifleman Ribbon', url: 'https://www.uniformribbons.com/image/navy_rifleman_ribbon.png' },
   { country: 'United States', branch: 'US Long Service', name: 'Navy Pistol Ribbon', url: 'https://www.uniformribbons.com/image/navy_pistol_ribbon.png' },
   { country: 'United States', branch: 'US Gallantry', name: 'Navy Marine Corps Medal Ribbon', url: 'https://www.uniformribbons.com/image/navy_marine_corps_ribbon.png' },
