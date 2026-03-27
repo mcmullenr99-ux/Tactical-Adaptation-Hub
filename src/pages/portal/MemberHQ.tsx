@@ -237,6 +237,26 @@ function MemberOpsTab({ group, showMsg }: any) {
       .finally(() => setLoading(false));
   }, [group.id]);
 
+  // Derive unique countries from awarded ribbons for filter dropdown
+  const ribbonCountries = useMemo(() => {
+    const seen = new Set<string>();
+    allRibbons.forEach((r: any) => {
+      const country = r.source_country ?? r.award_description?.match(/^([A-Z]{2,3})\s/)?.[1] ?? null;
+      if (country) seen.add(country);
+    });
+    return Array.from(seen).sort();
+  }, [allRibbons]);
+
+  const filteredRibbons = useMemo(() => {
+    return allRibbons.filter((r: any) => {
+      const name = (r.award_name ?? r.name ?? "").toLowerCase();
+      const matchSearch = ribbonSearch === "" || name.includes(ribbonSearch.toLowerCase());
+      const country = r.source_country ?? null;
+      const matchCountry = ribbonCountry === "all" || country === ribbonCountry;
+      return matchSearch && matchCountry;
+    });
+  }, [allRibbons, ribbonSearch, ribbonCountry]);
+
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   if (ops.length === 0) return (
@@ -292,6 +312,26 @@ function MemberBriefingsTab({ group, showMsg }: any) {
       .catch(() => setBriefings([]))
       .finally(() => setLoading(false));
   }, [group.id]);
+
+  // Derive unique countries from awarded ribbons for filter dropdown
+  const ribbonCountries = useMemo(() => {
+    const seen = new Set<string>();
+    allRibbons.forEach((r: any) => {
+      const country = r.source_country ?? r.award_description?.match(/^([A-Z]{2,3})\s/)?.[1] ?? null;
+      if (country) seen.add(country);
+    });
+    return Array.from(seen).sort();
+  }, [allRibbons]);
+
+  const filteredRibbons = useMemo(() => {
+    return allRibbons.filter((r: any) => {
+      const name = (r.award_name ?? r.name ?? "").toLowerCase();
+      const matchSearch = ribbonSearch === "" || name.includes(ribbonSearch.toLowerCase());
+      const country = r.source_country ?? null;
+      const matchCountry = ribbonCountry === "all" || country === ribbonCountry;
+      return matchSearch && matchCountry;
+    });
+  }, [allRibbons, ribbonSearch, ribbonCountry]);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
@@ -357,6 +397,26 @@ function MemberAARsTab({ group, showMsg, rosterEntry }: any) {
   }, [group.id]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Derive unique countries from awarded ribbons for filter dropdown
+  const ribbonCountries = useMemo(() => {
+    const seen = new Set<string>();
+    allRibbons.forEach((r: any) => {
+      const country = r.source_country ?? r.award_description?.match(/^([A-Z]{2,3})\s/)?.[1] ?? null;
+      if (country) seen.add(country);
+    });
+    return Array.from(seen).sort();
+  }, [allRibbons]);
+
+  const filteredRibbons = useMemo(() => {
+    return allRibbons.filter((r: any) => {
+      const name = (r.award_name ?? r.name ?? "").toLowerCase();
+      const matchSearch = ribbonSearch === "" || name.includes(ribbonSearch.toLowerCase());
+      const country = r.source_country ?? null;
+      const matchCountry = ribbonCountry === "all" || country === ribbonCountry;
+      return matchSearch && matchCountry;
+    });
+  }, [allRibbons, ribbonSearch, ribbonCountry]);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
@@ -460,6 +520,26 @@ function MemberPeerReviewTab({ group, showMsg, user }: any) {
       showMsg(false, e.message);
     } finally { setSubmitting(false); }
   };
+
+  // Derive unique countries from awarded ribbons for filter dropdown
+  const ribbonCountries = useMemo(() => {
+    const seen = new Set<string>();
+    allRibbons.forEach((r: any) => {
+      const country = r.source_country ?? r.award_description?.match(/^([A-Z]{2,3})\s/)?.[1] ?? null;
+      if (country) seen.add(country);
+    });
+    return Array.from(seen).sort();
+  }, [allRibbons]);
+
+  const filteredRibbons = useMemo(() => {
+    return allRibbons.filter((r: any) => {
+      const name = (r.award_name ?? r.name ?? "").toLowerCase();
+      const matchSearch = ribbonSearch === "" || name.includes(ribbonSearch.toLowerCase());
+      const country = r.source_country ?? null;
+      const matchCountry = ribbonCountry === "all" || country === ribbonCountry;
+      return matchSearch && matchCountry;
+    });
+  }, [allRibbons, ribbonSearch, ribbonCountry]);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
@@ -618,6 +698,26 @@ function MemberLOATab({ group, showMsg, user, rosterEntry }: any) {
       <p className="text-sm font-display uppercase tracking-widest text-muted-foreground">Roster entry not found — contact your commander</p>
     </div>
   );
+
+  // Derive unique countries from awarded ribbons for filter dropdown
+  const ribbonCountries = useMemo(() => {
+    const seen = new Set<string>();
+    allRibbons.forEach((r: any) => {
+      const country = r.source_country ?? r.award_description?.match(/^([A-Z]{2,3})\s/)?.[1] ?? null;
+      if (country) seen.add(country);
+    });
+    return Array.from(seen).sort();
+  }, [allRibbons]);
+
+  const filteredRibbons = useMemo(() => {
+    return allRibbons.filter((r: any) => {
+      const name = (r.award_name ?? r.name ?? "").toLowerCase();
+      const matchSearch = ribbonSearch === "" || name.includes(ribbonSearch.toLowerCase());
+      const country = r.source_country ?? null;
+      const matchCountry = ribbonCountry === "all" || country === ribbonCountry;
+      return matchSearch && matchCountry;
+    });
+  }, [allRibbons, ribbonSearch, ribbonCountry]);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
@@ -837,6 +937,26 @@ function MemberUnitReviewTab({ group, showMsg, user }: any) {
   const RATING_LABEL: Record<number,string> = { 1:"Terrible", 2:"Poor", 3:"Okay", 4:"Good", 5:"Outstanding" };
   const RATING_COLOR: Record<number,string> = { 1:"text-red-400", 2:"text-orange-400", 3:"text-yellow-400", 4:"text-blue-400", 5:"text-green-400" };
 
+  // Derive unique countries from awarded ribbons for filter dropdown
+  const ribbonCountries = useMemo(() => {
+    const seen = new Set<string>();
+    allRibbons.forEach((r: any) => {
+      const country = r.source_country ?? r.award_description?.match(/^([A-Z]{2,3})\s/)?.[1] ?? null;
+      if (country) seen.add(country);
+    });
+    return Array.from(seen).sort();
+  }, [allRibbons]);
+
+  const filteredRibbons = useMemo(() => {
+    return allRibbons.filter((r: any) => {
+      const name = (r.award_name ?? r.name ?? "").toLowerCase();
+      const matchSearch = ribbonSearch === "" || name.includes(ribbonSearch.toLowerCase());
+      const country = r.source_country ?? null;
+      const matchCountry = ribbonCountry === "all" || country === ribbonCountry;
+      return matchSearch && matchCountry;
+    });
+  }, [allRibbons, ribbonSearch, ribbonCountry]);
+
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   // ── Existing review display ───────────────────────────────────────────────
@@ -1011,6 +1131,26 @@ function MemberServiceFileTab({ user }: any) {
       .catch(() => setRep(null))
       .finally(() => setLoading(false));
   }, [user?.id]);
+
+  // Derive unique countries from awarded ribbons for filter dropdown
+  const ribbonCountries = useMemo(() => {
+    const seen = new Set<string>();
+    allRibbons.forEach((r: any) => {
+      const country = r.source_country ?? r.award_description?.match(/^([A-Z]{2,3})\s/)?.[1] ?? null;
+      if (country) seen.add(country);
+    });
+    return Array.from(seen).sort();
+  }, [allRibbons]);
+
+  const filteredRibbons = useMemo(() => {
+    return allRibbons.filter((r: any) => {
+      const name = (r.award_name ?? r.name ?? "").toLowerCase();
+      const matchSearch = ribbonSearch === "" || name.includes(ribbonSearch.toLowerCase());
+      const country = r.source_country ?? null;
+      const matchCountry = ribbonCountry === "all" || country === ribbonCountry;
+      return matchSearch && matchCountry;
+    });
+  }, [allRibbons, ribbonSearch, ribbonCountry]);
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
@@ -1271,6 +1411,26 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
     setSaving(false);
   };
 
+  // Derive unique countries from awarded ribbons for filter dropdown
+  const ribbonCountries = useMemo(() => {
+    const seen = new Set<string>();
+    allRibbons.forEach((r: any) => {
+      const country = r.source_country ?? r.award_description?.match(/^([A-Z]{2,3})\s/)?.[1] ?? null;
+      if (country) seen.add(country);
+    });
+    return Array.from(seen).sort();
+  }, [allRibbons]);
+
+  const filteredRibbons = useMemo(() => {
+    return allRibbons.filter((r: any) => {
+      const name = (r.award_name ?? r.name ?? "").toLowerCase();
+      const matchSearch = ribbonSearch === "" || name.includes(ribbonSearch.toLowerCase());
+      const country = r.source_country ?? null;
+      const matchCountry = ribbonCountry === "all" || country === ribbonCountry;
+      return matchSearch && matchCountry;
+    });
+  }, [allRibbons, ribbonSearch, ribbonCountry]);
+
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   if (isPro === false) return (
@@ -1325,25 +1485,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
 
   const barRibbons = barIds.map(id => allRibbons.find(r => r.id === id)).filter(Boolean);
 
-  // Derive unique countries from awarded ribbons for filter dropdown
-  const ribbonCountries = useMemo(() => {
-    const seen = new Set<string>();
-    allRibbons.forEach((r: any) => {
-      const country = r.source_country ?? r.award_description?.match(/^([A-Z]{2,3})\s/)?.[1] ?? null;
-      if (country) seen.add(country);
-    });
-    return Array.from(seen).sort();
-  }, [allRibbons]);
 
-  const filteredRibbons = useMemo(() => {
-    return allRibbons.filter((r: any) => {
-      const name = (r.award_name ?? r.name ?? "").toLowerCase();
-      const matchSearch = ribbonSearch === "" || name.includes(ribbonSearch.toLowerCase());
-      const country = r.source_country ?? null;
-      const matchCountry = ribbonCountry === "all" || country === ribbonCountry;
-      return matchSearch && matchCountry;
-    });
-  }, [allRibbons, ribbonSearch, ribbonCountry]);
 
   const totalPages = Math.ceil(filteredRibbons.length / RIBBONS_PER_PAGE);
   const pagedRibbons = filteredRibbons.slice((ribbonPage - 1) * RIBBONS_PER_PAGE, ribbonPage * RIBBONS_PER_PAGE);
