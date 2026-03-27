@@ -953,15 +953,35 @@ function OrbatCanvas({ roots, onEdit, onAddChild, onDelete, onDuplicate, onToggl
 // ─── Main Builder Export ──────────────────────────────────────────────────────
 
 interface OrbatBuilderProps {
+  // New API
   initialData?: OrbatNode[];
   onSave?: (nodes: OrbatNode[]) => void;
+  // Legacy API (value = JSON string, onChange = JSON string callback)
+  value?: string;
+  onChange?: (json: string) => void;
+  groupName?: string;
+  roster?: any[];
   readOnly?: boolean;
 }
 
-export default function OrbatBuilder({ initialData, onSave, readOnly = false }: OrbatBuilderProps) {
-  const [nodes, setNodes] = useState<OrbatNode[]>(initialData ?? []);
+export default function OrbatBuilder({ initialData, onSave, value, onChange, readOnly = false }: OrbatBuilderProps) {
+  // Parse legacy JSON string prop
+  const parsedInitial: OrbatNode[] = React.useMemo(() => {
+    if (initialData) return initialData;
+    if (value) {
+      try { return JSON.parse(value) as OrbatNode[]; } catch { return []; }
+    }
+    return [];
+  }, []);
+
+  const [nodes, setNodes] = useState<OrbatNode[]>(parsedInitial);
   const [editingNode, setEditingNode] = useState<OrbatNode | null>(null);
   const [zoom, setZoom] = useState(1);
+
+  // Fire legacy onChange when nodes change
+  React.useEffect(() => {
+    if (onChange) onChange(JSON.stringify(nodes));
+  }, [nodes]);
 
   function updateById(tree: OrbatNode[], id: string, u: Partial<OrbatNode>): OrbatNode[] {
     return tree.map(n => n.id === id ? { ...n, ...u } : { ...n, children: updateById(n.children, id, u) });
