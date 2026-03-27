@@ -231,9 +231,24 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Belgium', branch: 'Belgium Orders', name: "Order of Léopold II", url: 'https://www.medals.pl/be/r/be1oleii.gif' },
 
   // ─── FRANCE ─────────────────────────────────────────────────────────────────
-  { country: 'France', branch: 'France Orders', name: "Légion d'Honneur", url: 'https://www.medals.pl/fr/r/fr2olh4.gif' },
-  { country: 'France', branch: 'France Gallantry & Crosses', name: "Médaille Militaire", url: 'https://www.medals.pl/fr/r/fr2mm.gif' },
-  { country: 'France', branch: 'France Gallantry & Crosses', name: 'Croix du Combattant', url: 'https://www.medals.pl/fr/r/fr2cc.gif' },
+  // Gallantry
+  { country: 'France', branch: 'France Gallantry', name: 'Legion d'Honneur', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Legion_Honneur_Chevalier_ribbon.svg/250px-Legion_Honneur_Chevalier_ribbon.svg.png' },
+  { country: 'France', branch: 'France Gallantry', name: 'Medaille Militaire', url: 'https://upload.wikimedia.org/wikipedia/commons/0/0c/Ruban_de_la_M%C3%A9daille_militaire.PNG' },
+  { country: 'France', branch: 'France Gallantry', name: 'Croix de Guerre - Theatres d'Operations Exterieures', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Croix_de_Guerre_des_Theatres_d%27Operations_Exterieurs_ribbon.svg/250px-Croix_de_Guerre_des_Theatres_d%27Operations_Exterieurs_ribbon.svg.png' },
+  { country: 'France', branch: 'France Gallantry', name: 'Croix de la Valeur Militaire', url: 'https://upload.wikimedia.org/wikipedia/commons/a/af/Ruban_de_la_Croix_de_la_Valeur_militaire.PNG' },
+  { country: 'France', branch: 'France Gallantry', name: 'Croix du Combattant', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Croix_du_Combattant_%281930_France%29_ribbon.svg/250px-Croix_du_Combattant_%281930_France%29_ribbon.svg.png' },
+  { country: 'France', branch: 'France Gallantry', name: 'Croix du Combattant Volontaire (1983)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Croix_du_Combattant_Volontaire_1939-1945_ribbon.svg/250px-Croix_du_Combattant_Volontaire_1939-1945_ribbon.svg.png' },
+  // Orders & Distinguished Service
+  { country: 'France', branch: 'France Orders & Distinguished Service', name: 'Ordre National du Merite', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Ordre_national_du_Merite_Chevalier_ribbon.svg/250px-Ordre_national_du_Merite_Chevalier_ribbon.svg.png' },
+  // Service Medals
+  { country: 'France', branch: 'France Service Medals', name: 'Medaille de la Defense Nationale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Medaille_de_la_Defense_Nationale_Bronze_ribbon.svg/250px-Medaille_de_la_Defense_Nationale_Bronze_ribbon.svg.png' },
+  { country: 'France', branch: 'France Service Medals', name: 'Medaille d'Outre-Mer', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Medaille_d%27Outre-Mer_%28Coloniale%29_ribbon.svg/250px-Medaille_d%27Outre-Mer_%28Coloniale%29_ribbon.svg.png' },
+  { country: 'France', branch: 'France Service Medals', name: 'Medaille des Services Militaires Volontaires', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg.png' },
+  { country: 'France', branch: 'France Service Medals', name: 'Medaille des Blesses de Guerre', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg/250px-Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg.png' },
+  { country: 'France', branch: 'France Service Medals', name: 'Medaille d'honneur du Service de Sante des Armees', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Medaille_d%27honneur_du_Service_de_Sante_des_Armees_Bronze_ribbon.svg/250px-Medaille_d%27honneur_du_Service_de_Sante_des_Armees_Bronze_ribbon.svg.png' },
+  // Campaign Medals
+  { country: 'France', branch: 'France Campaign Medals', name: 'Medaille Commemorative Francaise (Operations Exterieures)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Medaille_commemorative_Francaise_ribbon.svg/250px-Medaille_commemorative_Francaise_ribbon.svg.png' },
+  { country: 'France', branch: 'France Campaign Medals', name: 'Medaille de la Protection Militaire du Territoire', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Medaille_de_la_protection_militaire_du_territoire.svg/250px-Medaille_de_la_protection_militaire_du_territoire.svg.png' },
 
   // ─── ITALY ──────────────────────────────────────────────────────────────────
   { country: 'Italy', branch: 'Italy Orders', name: "Order of St. Maurice & St. Lazarus", url: 'https://www.medals.pl/it/r/it1oml.gif' },
