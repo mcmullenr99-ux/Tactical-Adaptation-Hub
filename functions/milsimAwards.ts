@@ -198,11 +198,8 @@ Deno.serve(async (req) => {
           award_image_url:  a.award_image_url ?? def?.image_url ?? null,
         };
       }));
-      // Filter to ribbons only
-      const ribbons = enriched.filter((a: any) =>
-        ['ribbon','service ribbon'].includes((a.award_type ?? '').toLowerCase())
-      );
-      return Response.json({ awards: ribbons });
+      // Return all awarded items (ribbons, medals, orders, decorations) — frontend handles display
+      return Response.json({ awards: enriched });
     }
 
         return Response.json({ error: 'Not found' }, { status: 404 });

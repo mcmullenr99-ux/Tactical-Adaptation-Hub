@@ -6,8 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { getRibbonModifiers } from "@/lib/ribbonModifiers";
 import { Loader2, Award, Save, Rows3, Crown, Info, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
-const NON_RIBBON_TYPES = ["medal", "badge", "patch", "coin", "certificate"];
-
 function ribbonImageUrl(award: any, modifierUrl?: string): string {
   if (modifierUrl) return modifierUrl;
   if (award.award_image_url) return award.award_image_url;
@@ -86,11 +84,8 @@ export default function RibbonRack() {
           apiFetch<any>(`/milsimGroups?path=roster_member&group_id=${selectedGroupId}&user_id=${user.id}`),
         ]);
 
-        // Accept all ribbon-type awards — null award_type is included (library ribbons have null)
-        const ribbons = (awardsData.awards ?? []).filter((a: any) => {
-          const t = (a.award_type ?? "").toLowerCase().trim();
-          return t === "" || t === "ribbon" || t === "service ribbon" || !NON_RIBBON_TYPES.includes(t);
-        });
+        // Show all awarded items — medals, ribbons, orders, decorations all belong in the rack
+        const ribbons = awardsData.awards ?? [];
         setAllRibbons(ribbons);
 
         const member = rosterData.roster_member ?? null;

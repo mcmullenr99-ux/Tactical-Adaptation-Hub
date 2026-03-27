@@ -1219,12 +1219,8 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
           apiFetch(`/milsimGroups?path=roster_member&group_id=${group.id}&user_id=${user.id}`),
         ]) as any[];
 
-        // Backend already filters to ribbons only; accept all returned awards
-        const NON_RIBBON = ['medal', 'badge', 'patch', 'coin', 'certificate'];
-        const ribbons = (awardsData.awards ?? []).filter((a: any) => {
-          const t = (a.award_type ?? "").toLowerCase().trim();
-          return t === "" || t === "ribbon" || t === "service ribbon" || !NON_RIBBON.includes(t);
-        });
+        // Show all awarded items — medals, orders, decorations all belong in the rack
+        const ribbons = awardsData.awards ?? [];
         setAllRibbons(ribbons);
 
         // Load saved bar order from roster entry
