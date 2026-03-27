@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# SAFE COMMIT — crash-checks all staged files, then commits+pushes
+# SAFE COMMIT — crash-checks, rebuilds dist, then commits+pushes
 # Usage: bash .agents/skills/safe-commit.sh "commit message"
 # ============================================================
 
@@ -30,6 +30,15 @@ if [ "$CHECK_STATUS" -ne 0 ]; then
   exit 1
 fi
 
+# Rebuild dist (Cloudflare serves pre-built dist — MUST rebuild on every change)
+echo ""
+echo "🔨 Rebuilding dist..."
+node /app/node_modules/vite/dist/node/cli.js build 2>&1 | tail -8
+echo "✅ Dist rebuilt."
+
+# Stage dist too
+git add dist/
+
 echo ""
 echo "📦 Committing..."
 git commit -m "$MSG"
@@ -39,4 +48,4 @@ git push github HEAD:main
 git push github HEAD:base44-deploy
 
 echo ""
-echo "✅ Done. Cloudflare Pages will build in ~60 seconds."
+echo "✅ Done. Cloudflare Pages will deploy in ~60 seconds."
