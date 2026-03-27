@@ -36,7 +36,7 @@ import {
   Link2,
   Loader2,
   MapPin,
-  Medal,
+  Medal, Search,
   Megaphone,
   Pencil,
   PlaneTakeoff,
@@ -1142,6 +1142,31 @@ function AwardsTab({ group, showMsg }: any) {
   const [issueCitation, setIssueCitation] = useState("");
   const [issuing, setIssuing] = useState(false);
 
+  // Library search / filter / pagination
+  const [libSearch, setLibSearch] = useState("");
+  const [libCountry, setLibCountry] = useState("all");
+  const [libPage, setLibPage] = useState(1);
+  const LIB_PER_PAGE = 20;
+
+  // Derived filtered/paged defs
+  const filteredDefs = React.useMemo(() => {
+    const q = libSearch.toLowerCase();
+    return defs.filter(d => {
+      if (libCountry !== "all" && d.source_country !== libCountry) return false;
+      if (q && !(d.name ?? "").toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [defs, libSearch, libCountry]);
+  const libTotalPages = Math.ceil(filteredDefs.length / LIB_PER_PAGE);
+  const pagedDefs = filteredDefs.slice((libPage - 1) * LIB_PER_PAGE, libPage * LIB_PER_PAGE);
+  const libCountries = React.useMemo(() => {
+    const s = new Set<string>();
+    defs.forEach(d => { if (d.source_country) s.add(d.source_country); });
+    return Array.from(s).sort();
+  }, [defs]);
+  const handleLibSearch = (v: string) => { setLibSearch(v); setLibPage(1); setIssuingDefId(null); };
+  const handleLibCountry = (v: string) => { setLibCountry(v); setLibPage(1); setIssuingDefId(null); };
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -1250,10 +1275,43 @@ function AwardsTab({ group, showMsg }: any) {
       {subView === "library" && (
         <div className="space-y-4">
 
-          {/* Existing award defs */}
+          {/* Existing award defs — search, filter, pagination */}
           {defs.length > 0 && (
-            <div className="space-y-2">
-              {defs.map((d: any) => {
+            <div className="space-y-3">
+              {/* Search + filter bar */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative flex-1 min-w-[160px]">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search award library..."
+                    value={libSearch}
+                    onChange={e => handleLibSearch(e.target.value)}
+                    className="w-full text-xs bg-background border border-border rounded pl-6 pr-2 py-1.5 font-sans focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                {libCountries.length > 0 && (
+                  <select
+                    value={libCountry}
+                    onChange={e => handleLibCountry(e.target.value)}
+                    className="text-xs bg-background border border-border rounded px-2 py-1.5 font-sans focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="all">All Countries</option>
+                    {libCountries.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                )}
+                <span className="text-[10px] text-muted-foreground font-sans whitespace-nowrap">
+                  {filteredDefs.length} of {defs.length} awards
+                  {libTotalPages > 1 && ` — page ${libPage}/${libTotalPages}`}
+                </span>
+              </div>
+              {filteredDefs.length === 0 && (
+                <div className="text-center py-6 border border-dashed border-border rounded-lg text-muted-foreground text-xs font-sans">
+                  No awards match your search
+                </div>
+              )}
+              <div className="space-y-2">
+              {pagedDefs.map((d: any) => {
                 const isIssuing = issuingDefId === d.id;
                 const imgUrl = d.image_url ?? d.image_path ?? null;
                 return (
@@ -1317,6 +1375,32 @@ function AwardsTab({ group, showMsg }: any) {
                   </div>
                 );
               })}
+              </div>
+              {/* Pagination */}
+              {libTotalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
+                  <button
+                    onClick={() => setLibPage(p => Math.max(1, p - 1))}
+                    disabled={libPage === 1}
+                    className="px-3 py-1 text-xs font-display uppercase tracking-widest border border-border rounded hover:bg-secondary disabled:opacity-40 transition-colors">
+                    ← Prev
+                  </button>
+                  <div className="flex gap-1 flex-wrap justify-center">
+                    {Array.from({ length: libTotalPages }, (_, i) => i + 1).map(pg => (
+                      <button key={pg} onClick={() => setLibPage(pg)}
+                        className={`w-7 h-7 text-xs font-display rounded transition-colors ${pg === libPage ? "bg-primary text-primary-foreground" : "border border-border hover:bg-secondary text-muted-foreground"}`}>
+                        {pg}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setLibPage(p => Math.min(libTotalPages, p + 1))}
+                    disabled={libPage === libTotalPages}
+                    className="px-3 py-1 text-xs font-display uppercase tracking-widest border border-border rounded hover:bg-secondary disabled:opacity-40 transition-colors">
+                    Next →
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
