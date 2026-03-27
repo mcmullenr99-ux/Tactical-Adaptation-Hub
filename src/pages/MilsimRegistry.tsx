@@ -975,3 +975,4 @@ function GroupCard({ group, index, featured = false, upvoteCount = 0 }: { group:
     </motion.div>
   );
 }
+
