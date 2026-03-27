@@ -23,9 +23,21 @@ function CssRibbon({ award, size = 40 }: { award: any; size?: number }) {
   );
 }
 
-function RibbonImage({ award, size = 40, modifierUrl }: { award: any; size?: number; modifierUrl?: string }) {
+function RibbonImage({ award, size = 40, modifierUrl, overlayUrl }: { award: any; size?: number; modifierUrl?: string; overlayUrl?: string }) {
   const url = ribbonImageUrl(award, modifierUrl);
   if (!url) return <CssRibbon award={award} size={size} />;
+  if (overlayUrl) {
+    return (
+      <div style={{ position: "relative", width: size * 1.6, height: size * 0.55, flexShrink: 0, borderRadius: 2, overflow: "hidden" }}>
+        <img src={url} alt={award.award_name ?? award.name ?? "ribbon"}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "fill" }}
+          onError={(e: any) => { e.currentTarget.style.display = "none"; }} />
+        <img src={overlayUrl} alt="device"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
+          onError={(e: any) => { e.currentTarget.style.display = "none"; }} />
+      </div>
+    );
+  }
   return (
     <img src={url} alt={award.award_name ?? award.name ?? "ribbon"}
       style={{ width: size * 1.6, height: size * 0.55, objectFit: "fill", borderRadius: 2, flexShrink: 0 }}

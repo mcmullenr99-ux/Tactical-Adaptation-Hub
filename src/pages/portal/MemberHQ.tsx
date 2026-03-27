@@ -1173,9 +1173,21 @@ function CssRibbon({ award, size = 40 }: { award: any; size?: number }) {
   );
 }
 
-function RibbonImage({ award, size = 40, modifierUrl }: { award: any; size?: number; modifierUrl?: string }) {
+function RibbonImage({ award, size = 40, modifierUrl, overlayUrl }: { award: any; size?: number; modifierUrl?: string; overlayUrl?: string }) {
   const url = ribbonImageUrl(award, modifierUrl);
   if (!url) return <CssRibbon award={award} size={size} />;
+  if (overlayUrl) {
+    return (
+      <div style={{ position: "relative", width: size * 1.6, height: size * 0.55, flexShrink: 0, borderRadius: 2, overflow: "hidden" }}>
+        <img src={url} alt={award.award_name ?? award.name ?? "ribbon"}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "fill" }}
+          onError={(e: any) => { e.currentTarget.style.display = "none"; }} />
+        <img src={overlayUrl} alt="device"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
+          onError={(e: any) => { e.currentTarget.style.display = "none"; }} />
+      </div>
+    );
+  }
   return (
     <img
       src={url}
@@ -1420,7 +1432,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
                       onMouseEnter={() => setHovered(ribbon.id)}
                       onMouseLeave={() => setHovered(null)}
                     >
-                      {(() => { const r = getModifierResult(ribbon, true); return <RibbonImage award={ribbon} size={52} modifierUrl={r.url} />; })()}
+                      {(() => { const r = getModifierResult(ribbon, true); return <RibbonImage award={ribbon} size={52} modifierUrl={r.url} overlayUrl={r.overlayUrl} />; })()}
                       {hovered === ribbon.id && (
                         <button
                           onClick={() => toggleInBar(ribbon.id)}
@@ -1499,7 +1511,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
                     }`}
                   >
                     <button className="flex flex-col items-center gap-2 w-full" onClick={() => toggleInBar(ribbon.id)}>
-                      <RibbonImage award={ribbon} size={44} modifierUrl={modUrl} />
+                      <RibbonImage award={ribbon} size={44} modifierUrl={modUrl} overlayUrl={getModifierResult(ribbon, true).overlayUrl} />
                       <div className="text-center">
                         <p className="text-[10px] font-display font-bold uppercase tracking-wider leading-tight line-clamp-2">
                           {ribbon.award_name ?? ribbon.name ?? "Ribbon"}

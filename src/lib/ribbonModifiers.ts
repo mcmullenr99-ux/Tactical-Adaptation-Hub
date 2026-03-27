@@ -1205,4 +1205,321 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     ] },
   ],
 
+  // ══════════════════════════════════════════════════════════════════════
+  // UNITED STATES — missing ribbons (oak leaf devices)
+  // ══════════════════════════════════════════════════════════════════════
+  // Medal of Honor - no devices, single award
+  // Korea Defense Service Medal - no devices
+  // Army Service Ribbon - no devices  
+  // Arctic Service Ribbon - no devices
+  // Kuwait Liberation (Saudi Arabia) - no devices
+  // Kuwait Liberation (Kuwait) - no devices
+  // Navy Fleet Marine Force Ribbon - no devices
+  // Marine Corps Combat Instructor Ribbon - no devices
+  // Air Force BMT Honor Graduate - no devices
+  // (All 9 are correctly without modifiers — single-award ribbons)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // UNITED KINGDOM — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Polar Medal — awarded with clasps for each expedition area
+  "https://www.medals.pl/bc/r/uk1mpo.gif": [
+    { type: 'select', name: 'clasp', label: 'Clasp', options: [
+      { value: 'No Clasp', label: 'No Clasp', url: 'https://www.medals.pl/bc/r/uk1mpo.gif' },
+      { value: 'Arctic', label: 'Arctic', url: 'https://www.medals.pl/bc/r/uk1mpo.gif' },
+      { value: 'Antarctic', label: 'Antarctic', url: 'https://www.medals.pl/bc/r/uk1mpo.gif' },
+    ] },
+  ],
+  // (MID, INTERFET, Iraq Reconstruction, Civilian Service Medal, RFA Medal, 
+  //  Golden/Diamond Jubilee, GC, BEM, MSM — all single-award, no modifier needed)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // AUSTRALIA — missing ribbons  
+  // ══════════════════════════════════════════════════════════════════════
+  // Commendation for Gallantry — single award
+  // Commendation for Distinguished Service — single award
+  // Australian Defence Medal — no variants
+  // Afghanistan Medal — with/without clasps (SOLIC, ICAT etc) but same ribbon image
+  // Iraq Medal — single clasp system but same ribbon image
+  // Australian Centenary Medal — single award
+  // Commendation for Brave Conduct — single award
+  // Medal of the Order of Australia (OAM) Military — single award
+  // Australian Service Medal (ASM) — clasps by theatre (same ribbon image)
+  // (All correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // CANADA — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Somalia Medal — single award (clasp: SOMALIA but same image)
+  // CPSM — single award
+  // 125th Anniversary Medal — single award
+  // Cross of Valour — single award (highest Canadian decoration)
+  // (All correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // NEW ZEALAND — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // NZC, ONZ, NZ MSM — single award
+  // NZ Operational Service Medal — with/without clasp (same image)
+  // GSM variants — single award per theatre  
+  // NZ East Timor Medal — single award
+  // NZ General Service Medal Warlike/Non-Warlike — single award each
+  // Special Service Medal Asian Tsunami — single award
+  // (All correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // FRANCE — missing ribbons (Wikipedia SVG URLs)
+  // ══════════════════════════════════════════════════════════════════════
+  // Medaille Militaire — single award (no grades)
+  // Croix du Combattant — single award
+  // Croix du Combattant Volontaire (1983) — single award
+  // Medaille des Blesses de Guerre — grades shown by star devices on ribbon
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg/250px-Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg.png": [
+    { type: 'select', name: 'wound', label: 'Number of Wounds', options: [
+      { value: '1st Wound', label: '1st Wound', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg/250px-Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg.png' },
+      { value: '2nd Wound', label: '2nd Wound (1 star)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg/250px-Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg.png' },
+      { value: '3rd Wound', label: '3rd Wound (2 stars)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg/250px-Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg.png' },
+    ] },
+  ],
+  // Medaille Commemorative Francaise — clasps by operation (same base ribbon)
+  // Medaille de la Protection Militaire — single award
+  // (Most French medals correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ITALY — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Military Order of Italy — 5 grades, all different ribbons — needs modifier
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Cavaliere_BAR.svg/250px-Cavaliere_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Cavaliere (Knight)', label: 'Cavaliere (Knight)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Cavaliere_BAR.svg/250px-Cavaliere_BAR.svg.png' },
+      { value: 'Ufficiale (Officer)', label: 'Ufficiale (Officer)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Ufficiale_BAR.svg/250px-Ufficiale_BAR.svg.png' },
+      { value: 'Commendatore (Commander)', label: 'Commendatore', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Commendatore_BAR.svg/250px-Commendatore_BAR.svg.png' },
+      { value: 'Grande Ufficiale (Grand Officer)', label: 'Grande Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Grande_Ufficiale_BAR.svg/250px-Grande_Ufficiale_BAR.svg.png' },
+      { value: 'Cavaliere di Gran Croce (Grand Cross)', label: 'Gran Croce', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Gran_Croce_BAR.svg/250px-Gran_Croce_BAR.svg.png' },
+    ] },
+  ],
+  // War Cross for Military Valor — single award (multiple awards shown by palms/stars on medal, same ribbon)
+  // War Merit Cross — single award; WITH Silver Clasp is its own entry already
+  // War Merit Cross with Silver Clasp — already a separate entry (keep as-is)
+  // Order of Merit of the Italian Republic — 5 grades
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Cavaliere_OMRI_BAR.svg/250px-Cavaliere_OMRI_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Cavaliere (Knight)', label: 'Cavaliere (Knight)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Cavaliere_OMRI_BAR.svg/250px-Cavaliere_OMRI_BAR.svg.png' },
+      { value: 'Ufficiale (Officer)', label: 'Ufficiale (Officer)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Ufficiale_OMRI_BAR.svg/250px-Ufficiale_OMRI_BAR.svg.png' },
+      { value: 'Commendatore', label: 'Commendatore', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Commendatore_OMRI_BAR.svg/250px-Commendatore_OMRI_BAR.svg.png' },
+      { value: 'Grande Ufficiale', label: 'Grande Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Grande_Ufficiale_OMRI_BAR.svg/250px-Grande_Ufficiale_OMRI_BAR.svg.png' },
+      { value: 'Cavaliere di Gran Croce', label: 'Gran Croce', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Gran_Croce_OMRI_BAR.svg/250px-Gran_Croce_OMRI_BAR.svg.png' },
+    ] },
+  ],
+  // Order of the Star of Italy — 5 grades (same structure as OMRI)
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Cavaliere (Knight)', label: 'Cavaliere (Knight)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png' },
+      { value: 'Ufficiale (Officer)', label: 'Ufficiale (Officer)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png' },
+      { value: 'Commendatore', label: 'Commendatore', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png' },
+      { value: 'Grande Ufficiale', label: 'Grande Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png' },
+      { value: 'Cavaliere di Gran Croce', label: 'Gran Croce', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png' },
+    ] },
+  ],
+  // Order of Merit for Labour — 5 grades (same ribbon for all)
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg/250px-1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Gold Medal', label: 'Gold Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg/250px-1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg.png' },
+      { value: 'Silver Medal', label: 'Silver Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg/250px-1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg.png' },
+      { value: 'Bronze Medal', label: 'Bronze Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg/250px-1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg.png' },
+    ] },
+  ],
+  // War Cross for Military Valor + War Merit Cross — single awards (correctly no modifier)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // NETHERLANDS — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Military Order of William — 4 grades (highest Dutch military decoration)
+  "https://www.medals.pl/nl/r/nl1owi.gif": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Knight 4th Class', label: 'Knight 4th Class', url: 'https://www.medals.pl/nl/r/nl1owi.gif' },
+      { value: 'Knight 3rd Class', label: 'Knight 3rd Class', url: 'https://www.medals.pl/nl/r/nl1owi.gif' },
+      { value: 'Commander 2nd Class', label: 'Commander 2nd Class', url: 'https://www.medals.pl/nl/r/nl1owi.gif' },
+      { value: 'Grand Cross 1st Class', label: 'Grand Cross 1st Class', url: 'https://www.medals.pl/nl/r/nl1owi.gif' },
+    ] },
+  ],
+  // Bronze Lion, Bronze Cross, Flying Cross, Cross of Merit — single awards (correctly no modifier)
+  "https://www.medals.pl/nl/r/nl1bli.gif": [
+    { type: 'select', name: 'award', label: 'Award Number', options: [
+      { value: '1st Award', label: '1st Award', url: 'https://www.medals.pl/nl/r/nl1bli.gif' },
+      { value: '2nd Award', label: '2nd Award (w/ clasp)', url: 'https://www.medals.pl/nl/r/nl1bli.gif' },
+    ] },
+  ],
+
+  // ══════════════════════════════════════════════════════════════════════
+  // BELGIUM — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Military Decoration for Gallantry — 2 grades (1st and 2nd class)
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BEL_Military_Decoration_for_Gallantry.PNG/250px-BEL_Military_Decoration_for_Gallantry.PNG": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '2nd Class', label: '2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BEL_Military_Decoration_for_Gallantry.PNG/250px-BEL_Military_Decoration_for_Gallantry.PNG' },
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BEL_Military_Decoration_for_Gallantry.PNG/250px-BEL_Military_Decoration_for_Gallantry.PNG' },
+    ] },
+  ],
+  // Croix de Guerre (1954) — awarded with palms/stars for valor (same ribbon)
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BEL_Croix_de_Guerre_1954_ribbon.svg/250px-BEL_Croix_de_Guerre_1954_ribbon.svg.png": [
+    { type: 'select', name: 'device', label: 'Device', options: [
+      { value: 'No Device', label: 'No Device', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BEL_Croix_de_Guerre_1954_ribbon.svg/250px-BEL_Croix_de_Guerre_1954_ribbon.svg.png' },
+      { value: 'Bronze Palm', label: 'Bronze Palm', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BEL_Croix_de_Guerre_1954_ribbon.svg/250px-BEL_Croix_de_Guerre_1954_ribbon.svg.png' },
+      { value: 'Silver Palm', label: 'Silver Palm', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BEL_Croix_de_Guerre_1954_ribbon.svg/250px-BEL_Croix_de_Guerre_1954_ribbon.svg.png' },
+      { value: 'Gold Palm', label: 'Gold Palm', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BEL_Croix_de_Guerre_1954_ribbon.svg/250px-BEL_Croix_de_Guerre_1954_ribbon.svg.png' },
+    ] },
+  ],
+  // Military Decoration for Faithful Service — 1st/2nd class
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/BEL_Military_Decoration_for_Faithful_Service.PNG/250px-BEL_Military_Decoration_for_Faithful_Service.PNG": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '2nd Class', label: '2nd Class (15 years)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/BEL_Military_Decoration_for_Faithful_Service.PNG/250px-BEL_Military_Decoration_for_Faithful_Service.PNG' },
+      { value: '1st Class', label: '1st Class (25 years)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/BEL_Military_Decoration_for_Faithful_Service.PNG/250px-BEL_Military_Decoration_for_Faithful_Service.PNG' },
+    ] },
+  ],
+
+  // ══════════════════════════════════════════════════════════════════════
+  // NORWAY — Orders and medals with grades
+  // ══════════════════════════════════════════════════════════════════════
+  // Royal Norwegian Order of St. Olav — 3 grades
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/St._Olavs_Orden_stripe.svg/250px-St._Olavs_Orden_stripe.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Knight 1st Class', label: 'Knight 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/St._Olavs_Orden_stripe.svg/250px-St._Olavs_Orden_stripe.svg.png' },
+      { value: 'Commander', label: 'Commander', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/St._Olavs_Orden_stripe.svg/250px-St._Olavs_Orden_stripe.svg.png' },
+      { value: 'Grand Cross', label: 'Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/St._Olavs_Orden_stripe.svg/250px-St._Olavs_Orden_stripe.svg.png' },
+    ] },
+  ],
+  // Royal Norwegian Order of Merit — 3 grades  
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Den_kongelige_norske_fortjenstorden.svg/250px-Den_kongelige_norske_fortjenstorden.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Knight', label: 'Knight', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Den_kongelige_norske_fortjenstorden.svg/250px-Den_kongelige_norske_fortjenstorden.svg.png' },
+      { value: 'Commander', label: 'Commander', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Den_kongelige_norske_fortjenstorden.svg/250px-Den_kongelige_norske_fortjenstorden.svg.png' },
+      { value: 'Grand Cross', label: 'Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Den_kongelige_norske_fortjenstorden.svg/250px-Den_kongelige_norske_fortjenstorden.svg.png' },
+    ] },
+  ],
+  // War Cross with Sword, War Cross, Defence Cross of Honour, Medal for Heroic Deeds,
+  // Wounded in Action Medal, Defence Service Medal with Laurel, Home Guard Medal,
+  // Army/Navy/Air Force/Intel/Special Ops/Norwegian Police/Logistics Medals of Merit,
+  // War Medal, UN Medal, NATO Medal — all single award each (no grade variants, correctly no modifier)
+  // Medal for Meritorious Service, Beret Badges, and campaign medals — single award
+
+  // ══════════════════════════════════════════════════════════════════════
+  // SWEDEN — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Royal Order of the Seraphim — single grade (highest Swedish order, no subdivisions)
+  // Medal of Merit (1995-2007) — already superseded, single award
+  // Reserve Officer Medal — single award
+  // (All correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // FINLAND — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Medal for Military Merits — 3 classes (Gold, Silver, Bronze)
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/FIN_Military_Merit_Medal_BAR.svg/250px-FIN_Military_Merit_Medal_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: 'Gold', label: 'Gold Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/FIN_Military_Merit_Medal_BAR.svg/250px-FIN_Military_Merit_Medal_BAR.svg.png' },
+      { value: 'Silver', label: 'Silver Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/FIN_Military_Merit_Medal_BAR.svg/250px-FIN_Military_Merit_Medal_BAR.svg.png' },
+      { value: 'Bronze', label: 'Bronze Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/FIN_Military_Merit_Medal_BAR.svg/250px-FIN_Military_Merit_Medal_BAR.svg.png' },
+    ] },
+  ],
+
+  // ══════════════════════════════════════════════════════════════════════
+  // POLAND — missing ribbons (all single-award; PKW medals are per-rotation but same ribbon)
+  // All correctly without modifiers — Order of the White Eagle (1 grade), 
+  // Virtuti Militari grades already separate entries, Polonia Restituta grades separate,
+  // Cross of Merit for Bravery (single), Air/Navy Cross of Merit (single each),
+  // Medal for Sacrifice and Courage (single), Gloria Intrepidis (single),
+  // PKW campaign medals (single award per person), Centenary Medal (single)
+  // ══════════════════════════════════════════════════════════════════════
+
+  // ══════════════════════════════════════════════════════════════════════
+  // CZECH REPUBLIC — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Honour Badge, Military Logistics Badge, Medal for Injury — single awards
+  // Medal for Service Abroad (generic) — single award (specific theatre versions separate)
+  // (All correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // SLOVAKIA — missing ribbons  
+  // ══════════════════════════════════════════════════════════════════════
+  // All Slovak medals listed are single-award (no grade variants)
+  // (Correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // AUSTRIA — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Military Recognition Medal — single award
+  // Militia Medal — single award
+  // (Correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ESTONIA — all are single-award (cross grades already in name, decorations single)
+  // LATVIA — Order of Lacplesis has 3 classes but all use same ribbon image
+  // LUXEMBOURG — Croix de Guerre and Military Medal both single-award
+  // ══════════════════════════════════════════════════════════════════════
+
+  // ══════════════════════════════════════════════════════════════════════
+  // CHINA — missing ribbons (PLA service ribbons and awards — all single-award)
+  // ══════════════════════════════════════════════════════════════════════
+
+  // ══════════════════════════════════════════════════════════════════════
+  // RUSSIA — Orders with grades
+  // ══════════════════════════════════════════════════════════════════════
+  // Order of Courage — single award (Russia) - correctly no modifier
+  // Medal for Courage — single award - correctly no modifier
+  // Orders of Saints (Suvorov, Kutuzov, Ushakov, Nakhimov, Zhukov) — 3 grades each but different ribbons per grade
+  "https://upload.wikimedia.org/wikipedia/commons/e/ea/RUS_Order_of_Suvorov_ribbon_2010.svg": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/e/ea/RUS_Order_of_Suvorov_ribbon_2010.svg' },
+      { value: '2nd Class', label: '2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/e/ea/RUS_Order_of_Suvorov_ribbon_2010.svg' },
+      { value: '3rd Class', label: '3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/e/ea/RUS_Order_of_Suvorov_ribbon_2010.svg' },
+    ] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/a/a3/RUS_Order_of_Kutuzov_ribbon_2010.svg": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/a/a3/RUS_Order_of_Kutuzov_ribbon_2010.svg' },
+      { value: '2nd Class', label: '2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/a/a3/RUS_Order_of_Kutuzov_ribbon_2010.svg' },
+      { value: '3rd Class', label: '3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/a/a3/RUS_Order_of_Kutuzov_ribbon_2010.svg' },
+    ] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/c/c1/RUS_Order_of_Ushakov_ribbon_2010.svg": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/RUS_Order_of_Ushakov_ribbon_2010.svg' },
+      { value: '2nd Class', label: '2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/RUS_Order_of_Ushakov_ribbon_2010.svg' },
+    ] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/8/8e/RUS_Order_of_Nakhimov_ribbon_2010.svg": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/RUS_Order_of_Nakhimov_ribbon_2010.svg' },
+      { value: '2nd Class', label: '2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/RUS_Order_of_Nakhimov_ribbon_2010.svg' },
+    ] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/8/80/RUS_Order_of_Zhukov_ribbon.svg": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/8/80/RUS_Order_of_Zhukov_ribbon.svg' },
+      { value: '2nd Class', label: '2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/8/80/RUS_Order_of_Zhukov_ribbon.svg' },
+    ] },
+  ],
+  // Orders of Military Merit, Naval Merit, and medals for Suvorov/Ushakov/Zhukov/Nesterov
+  // and Border Protection — all single-award (correctly no modifier)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // GREECE — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Cross of Valour — single award (highest Greek gallantry award)
+  // Medal for Outstanding Acts — single award
+  // (Correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // GERMANY (NVA) — grades already in name (Gold/Silver/Bronze), single-award each
+  // CROATIA — all single-award orders
+  // GEORGIA — all single-award
+  // IRAN — all single-award  
+  // NORTH KOREA — all single-award
+  // PAKISTAN — service medals by length are separate entries; single-award each
+  // LITHUANIA — all single-award
+  // UNITED NATIONS — all single-award per mission (correctly no modifier)
+  // INTERNATIONAL — all single-award
+  // ══════════════════════════════════════════════════════════════════════
+
 };

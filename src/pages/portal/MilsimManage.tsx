@@ -1473,21 +1473,32 @@ function AwardsTab({ group, showMsg }: any) {
                 {/* Selected ribbon preview */}
                 {selectedTemplate && (() => {
                   const modifiers = getRibbonModifiers(selectedTemplate.url);
-                  const activeImg = (() => {
+                  const { activeImg, activeOverlay } = (() => {
+                    let img = selectedTemplate.url;
+                    let overlay: string | undefined;
                     for (const mod of modifiers) {
-                      if (mod.type === "select" && mod.options && pickerMods[mod.name]) {
-                        const opt = mod.options.find(o => o.value === pickerMods[mod.name]);
-                        if (opt?.url) return opt.url;
+                      if (mod.type === "select" && mod.options) {
+                        const val = pickerMods[mod.name] ?? mod.options[0].value;
+                        const opt = mod.options.find(o => o.value === val);
+                        if (opt?.url) img = opt.url;
+                        if (opt?.overlayUrl) overlay = opt.overlayUrl;
                       }
                     }
-                    return selectedTemplate.url;
+                    return { activeImg: img, activeOverlay: overlay };
                   })();
                   return (
                     <div className="p-3 bg-primary/10 border border-primary/30 rounded-lg space-y-3">
                       <div className="flex items-center gap-3">
-                        <img src={activeImg} alt={selectedTemplate.name}
-                          className="h-8 w-24 object-cover rounded-sm border border-white/10"
-                          onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }} />
+                        {activeOverlay ? (
+                          <div style={{ position: "relative", width: 96, height: 32, flexShrink: 0, borderRadius: 2, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
+                            <img src={activeImg} alt={selectedTemplate.name} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "fill" }} onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }} />
+                            <img src={activeOverlay} alt="device" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} />
+                          </div>
+                        ) : (
+                          <img src={activeImg} alt={selectedTemplate.name}
+                            className="h-8 w-24 object-cover rounded-sm border border-white/10"
+                            onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }} />
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className="font-display font-bold text-sm uppercase tracking-wider text-primary truncate">
                             {selectedTemplate.name}{pickerMods["class"] || pickerMods["branch"] ? ` — ${pickerMods["class"] || pickerMods["branch"]}` : ""}
