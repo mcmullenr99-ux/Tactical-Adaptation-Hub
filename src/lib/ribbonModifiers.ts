@@ -37,7 +37,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'select', name: "au2maa", label: 'Select variant', tooltip: "au2maa", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/au2maa.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/au2maa1.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/au2maa2.gif" }] },
   ],
   "https://www.medals.pl/bc/r/au2mbr1.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/au2mbr2.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/au2mbr1.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/au2mbr2.gif" }] },
   ],
   "https://www.medals.pl/bc/r/au2mcs.gif": [
     { type: 'select', name: "au2mcs", label: 'Select variant', tooltip: "au2mcs", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/au2mcs.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/au2mcs1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/au2mcs2.gif" }] },
@@ -59,7 +59,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'select', name: "au2mrf", label: 'Select variant', tooltip: "au2mrf", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/au2mrf.gif" }, { value: "2", label: "1 Clasp", url: "https://www.medals.pl/bc/r/au2mrf1.gif" }, { value: "3", label: "2 Clasps", url: "https://www.medals.pl/bc/r/au2mrf2.gif" }, { value: "4", label: "3 Clasps", url: "https://www.medals.pl/bc/r/au2mrf3.gif" }, { value: "5", label: "4 Clasps", url: "https://www.medals.pl/bc/r/au2mrf4.gif" }, { value: "6", label: "5 Clasps", url: "https://www.medals.pl/bc/r/au2mrf5.gif" }, { value: "7", label: "6 Clasps", url: "https://www.medals.pl/bc/r/au2mrf6.gif" }, { value: "8", label: "7 Clasps", url: "https://www.medals.pl/bc/r/au2mrf7.gif" }] },
   ],
   "https://www.medals.pl/bc/r/au2sco1.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/au2sco2.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/au2sco1.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/au2sco2.gif" }] },
   ],
   "https://www.medals.pl/bc/r/au2sga.gif": [
     { type: 'select', name: "au2sga", label: 'Select variant', tooltip: "au2sga", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/au2sga.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/au2sga1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/au2sga2.gif" }] },
@@ -79,21 +79,15 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.medals.pl/bc/r/ca2mbr.gif": [
     { type: 'select', name: "ca2mbr", label: 'Select variant', tooltip: "ca2mbr", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/ca2mbr.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/ca2mbr1.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/ca2mbr2.gif" }] },
   ],
-  "https://www.medals.pl/bc/r/ca2mgk1.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/ca2mgk1.gif", affectsImage: true },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/ca2mgk1.gif", affectsImage: false },
-  ],
+
   "https://www.medals.pl/bc/r/ca2mgsaf.gif": [
     { type: 'select', name: "ca2mgsaf", label: 'Select variant', tooltip: "ca2mgsaf", options: [{ value: "z", label: "No clasp", url: "https://www.medals.pl/bc/r/ca2mgsaf.gif" }, { value: "1", label: "1 Clasp", url: "https://www.medals.pl/bc/r/ca2mgsaf1.gif" }, { value: "2", label: "2 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsaf2.gif" }, { value: "3", label: "3 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsaf3.gif" }, { value: "4", label: "4 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsaf4.gif" }, { value: "5", label: "5 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsaf5.gif" }, { value: "6", label: "6 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsaf6.gif" }] },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/ca2mgsaf.gif", affectsImage: false },
   ],
   "https://www.medals.pl/bc/r/ca2mgsexp.gif": [
     { type: 'select', name: "ca2mgsexp", label: 'Select variant', tooltip: "ca2mgsexp", options: [{ value: "z", label: "No clasp", url: "https://www.medals.pl/bc/r/ca2mgsexp.gif" }, { value: "1", label: "1 Clasp", url: "https://www.medals.pl/bc/r/ca2mgsexp1.gif" }, { value: "2", label: "2 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsexp2.gif" }, { value: "3", label: "3 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsexp3.gif" }, { value: "4", label: "4 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsexp4.gif" }, { value: "5", label: "5 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsexp5.gif" }, { value: "6", label: "6 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsexp6.gif" }] },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/ca2mgsexp.gif", affectsImage: false },
   ],
   "https://www.medals.pl/bc/r/ca2mgsswa.gif": [
     { type: 'select', name: "ca2mgsswa", label: 'Select variant', tooltip: "ca2mgsswa", options: [{ value: "z", label: "No clasp", url: "https://www.medals.pl/bc/r/ca2mgsswa.gif" }, { value: "1", label: "1 Clasp", url: "https://www.medals.pl/bc/r/ca2mgsswa1.gif" }, { value: "2", label: "2 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsswa2.gif" }, { value: "3", label: "3 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsswa3.gif" }, { value: "4", label: "4 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsswa4.gif" }, { value: "5", label: "5 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsswa5.gif" }, { value: "6", label: "6 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsswa6.gif" }] },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/ca2mgsswa.gif", affectsImage: false },
   ],
 
   "https://www.medals.pl/bc/r/ca2mmsm.gif": [
@@ -119,8 +113,6 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   ],
   "https://www.medals.pl/bc/r/ca2mswass.gif": [
     { type: 'select', name: "ca2mswas", label: 'Select variant', tooltip: "ca2mswas", options: [{ value: "z", label: "No clasp", url: "https://www.medals.pl/bc/r/ca2mswas.gif" }, { value: "1", label: "1 Clasp", url: "https://www.medals.pl/bc/r/ca2mswass1.gif" }, { value: "2", label: "2 Clasps", url: "https://www.medals.pl/bc/r/ca2mswass2.gif" }, { value: "3", label: "3 Clasps", url: "https://www.medals.pl/bc/r/ca2mswass3.gif" }, { value: "4", label: "4 Clasps", url: "https://www.medals.pl/bc/r/ca2mswass4.gif" }, { value: "5", label: "5 Clasps", url: "https://www.medals.pl/bc/r/ca2mswass5.gif" }, { value: "6", label: "6 Clasps", url: "https://www.medals.pl/bc/r/ca2mswass6.gif" }] },
-    { type: 'checkbox', name: "w_\"AFGHANISTAN\"_bar", label: "w. \"AFGHANISTAN\" bar", variantUrl: "https://www.medals.pl/bc/r/ca2mswass.gif", affectsImage: true },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/ca2mswass.gif", affectsImage: false },
   ],
   "https://www.medals.pl/bc/r/ca2omm1.gif": [
     { type: 'select', name: "ca2omm", label: 'Select variant', tooltip: "1.Companion (CMM)\n2.Officer (OMM)\n3.Member (MMM)", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/ca2omm1.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/ca2omma2.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/ca2omm3.gif" }] },
@@ -151,22 +143,22 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   ],
 
   "https://www.medals.pl/bc/r/nz2nzbd.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/nz2nzbd1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/nz2nzbd.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/nz2nzbd1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/nz2nzbm.gif": [
     { type: 'select', name: "nz2nzbm", label: 'Select variant', tooltip: "nz2nzbm", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/nz2nzbm.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/nz2nzbm1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/nz2nzbm2.gif" }] },
   ],
   "https://www.medals.pl/bc/r/nz2nzbs.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/nz2nzbs1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/nz2nzbs.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/nz2nzbs1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/nz2nzgd.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/nz2nzgd1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/nz2nzgd.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/nz2nzgd1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/nz2nzgm.gif": [
     { type: 'select', name: "nz2nzgm", label: 'Select variant', tooltip: "nz2nzgm", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/nz2nzgm.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/nz2nzgm1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/nz2nzgm2.gif" }] },
   ],
   "https://www.medals.pl/bc/r/nz2nzgs.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/nz2nzgs1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/nz2nzgs.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/nz2nzgs1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/nz2nzom.gif": [
     { type: 'select', name: "nz2nzom", label: 'Select variant', tooltip: "1.Knight/Dame Grand Companion (GNZM)\n2.Knight/Dame Companion (KNZM/DNZM)\n3.Companion (CNZM)\n4.Officer (ONZM)\n5.Member (MNZM)", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }, { value: "1a", label: "1a", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }, { value: "2a", label: "2a", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }, { value: "4", label: "4", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }, { value: "5", label: "5", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }] },
@@ -198,11 +190,10 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'select', name: "uk1mcs", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/uk1mcs.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/uk1mcs_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1mcs_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1mcs_cvs.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mge.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mge1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1mge.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/uk1mge1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mgu.gif": [
-    { type: 'checkbox', name: "w_rosette", label: "w. rosette", variantUrl: "https://www.medals.pl/bc/r/uk1mgu1.gif", affectsImage: true },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/uk1mgu_m.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1mgu.gif" }, { value: "w. rosette", label: "w. rosette", url: "https://www.medals.pl/bc/r/uk1mgu1.gif" }, { value: "MID emblem", label: "MID emblem", url: "https://www.medals.pl/bc/r/uk1mgu_m.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mhac.gif": [
     { type: 'select', name: "uk1mhac", label: 'Select variant', tooltip: "uk1mhac", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/uk1mhac.gif" }, { value: "2", label: "1 Clasp", url: "https://www.medals.pl/bc/r/uk1mhac1.gif" }, { value: "3", label: "2 Clasps", url: "https://www.medals.pl/bc/r/uk1mhac2.gif" }, { value: "4", label: "3 Clasps", url: "https://www.medals.pl/bc/r/uk1mhac3.gif" }] },
@@ -212,13 +203,13 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   ],
 
   "https://www.medals.pl/bc/r/uk1mlsa.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mlsa1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1mlsa.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/uk1mlsa1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mlsaf.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mlsaf1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1mlsaf.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/uk1mlsaf1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mlsn.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mlsn1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1mlsn.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/uk1mlsn1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mos_m2.gif": [
     { type: 'select', name: "uk1mos", label: 'Decoration', options: [{ value: "1", label: "MID", url: "https://www.medals.pl/bc/r/uk1mos_m2.gif" }, { value: "2", label: "MID + Rosette", url: "https://www.medals.pl/bc/r/uk1mos1_m2.gif" }, { value: "3", label: "Plain", url: "https://www.medals.pl/bc/r/uk1mos.gif" }, { value: "4", label: "Plain + Rosette", url: "https://www.medals.pl/bc/r/uk1mos1.gif" }, { value: "5", label: "QCB", url: "https://www.medals.pl/bc/r/uk1mos_cb.gif" }, { value: "6", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1mos_cba.gif" }, { value: "7", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1mos_cvs.gif" }] },
@@ -230,7 +221,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'select', name: "uk1mosco", label: 'Decoration', options: [{ value: "1", label: "MID", url: "https://www.medals.pl/bc/r/uk1mosco_m2.gif" }, { value: "2", label: "MID + Rosette", url: "https://www.medals.pl/bc/r/uk1mosco1_m2.gif" }, { value: "3", label: "Plain", url: "https://www.medals.pl/bc/r/uk1mosco.gif" }, { value: "4", label: "Plain + Rosette", url: "https://www.medals.pl/bc/r/uk1mosco1.gif" }, { value: "5", label: "QCB", url: "https://www.medals.pl/bc/r/uk1mosco_cb.gif" }, { value: "6", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1mosco_cba.gif" }, { value: "7", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1mosco_cvs.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mqg.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mqg1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1mqg.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/uk1mqg1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1msa1.gif": [
     { type: 'select', name: "uk1msa_variant", label: 'Variant', options: [{ value: "1", label: "With Rosette (no MID)", url: "https://www.medals.pl/bc/r/uk1msa.gif" }, { value: "2", label: "With MID emblem", url: "https://www.medals.pl/bc/r/uk1msa1.gif" }, { value: "3", label: "With Rosette + MID", url: "https://www.medals.pl/bc/r/uk1msa_m.gif" }] },
@@ -256,7 +247,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'select', name: "uk1miqc", label: 'Decoration', options: [{ value: "1", label: "MID", url: "https://www.medals.pl/bc/r/uk1miqc_m2.gif" }, { value: "2", label: "MID + Rosette", url: "https://www.medals.pl/bc/r/uk1miqc1_m2.gif" }, { value: "3", label: "Plain", url: "https://www.medals.pl/bc/r/uk1miqc.gif" }, { value: "4", label: "Plain + Rosette", url: "https://www.medals.pl/bc/r/uk1miqc1.gif" }, { value: "5", label: "QCB", url: "https://www.medals.pl/bc/r/uk1miqc_cb.gif" }, { value: "6", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1miqc_cba.gif" }, { value: "7", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1miqc_cvs.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1vc.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1vc2.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1vc.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/uk1vc2.gif" }] },
   ],
   // ── NATO medals ──────────────────────────────────────────────
 
