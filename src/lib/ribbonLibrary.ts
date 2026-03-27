@@ -310,6 +310,26 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Austria', branch: 'Austria Long Service', name: 'Military Service Award - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/AUT_Wehrdienstzeichen_3._Klasse_BAR.svg/250px-AUT_Wehrdienstzeichen_3._Klasse_BAR.svg.png' },
   { country: 'Austria', branch: 'Austria Long Service', name: 'Militia Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/AUT_Milizmedaille_BAR.svg/250px-AUT_Milizmedaille_BAR.svg.png' },
 
+
+  // ─── ESTONIA ──────────────────────────────────────────────────────────────
+  // Gallantry
+  { country: 'Estonia', branch: 'Estonia Gallantry', name: 'Cross of Liberty - 1st Division', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/EST_Cross_of_Liberty_I_division_ribbon.svg/250px-EST_Cross_of_Liberty_I_division_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Gallantry', name: 'Cross of Liberty - 2nd Division', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/EST_Cross_of_Liberty_II_division_ribbon.svg/250px-EST_Cross_of_Liberty_II_division_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Gallantry', name: 'Cross of Liberty - 3rd Division', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/EST_Cross_of_Liberty_III_division_ribbon.svg/250px-EST_Cross_of_Liberty_III_division_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Gallantry', name: 'Defence Forces Decoration for Battle Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/EST_Defence_Forces_Decoration_for_battle_merit_ribbon.svg/250px-EST_Defence_Forces_Decoration_for_battle_merit_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Gallantry', name: 'Navy Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/EST_Navy_Cross_ribbon.svg/250px-EST_Navy_Cross_ribbon.svg.png' },
+  // Commendations
+  { country: 'Estonia', branch: 'Estonia Commendations', name: 'Defence Forces Decoration for Defence Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/EST_Defence_Forces_Decoration_for_defence_merit_ribbon.svg/250px-EST_Defence_Forces_Decoration_for_defence_merit_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Commendations', name: 'Defence Forces Merit Cross for Meritorious Service', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/EST_Defence_Forces_Merit_Cross_for_meritorious_service_ribbon.svg/250px-EST_Defence_Forces_Merit_Cross_for_meritorious_service_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Commendations', name: 'Defence Forces Merit Cross for National Defence Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/EST_Defence_Forces_Merit_Cross_for_national_defence_merit_ribbon.svg/250px-EST_Defence_Forces_Merit_Cross_for_national_defence_merit_ribbon.svg.png' },
+  // Long Service
+  { country: 'Estonia', branch: 'Estonia Long Service', name: 'Long Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/EST_Kaitsev%C3%A4e_pikaajalise_teenistuse_medal.png/250px-EST_Kaitsev%C3%A4e_pikaajalise_teenistuse_medal.png' },
+  { country: 'Estonia', branch: 'Estonia Long Service', name: 'White Cross of the Estonian Defence League - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/EST_White_Cross_of_the_Estonian_Defence_League_1st_class_ribbon.svg/250px-EST_White_Cross_of_the_Estonian_Defence_League_1st_class_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Long Service', name: 'White Cross of the Estonian Defence League - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/EST_White_Cross_of_the_Estonian_Defence_League_2nd_class_ribbon.svg/250px-EST_White_Cross_of_the_Estonian_Defence_League_2nd_class_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Long Service', name: 'White Cross of the Estonian Defence League - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/EST_White_Cross_of_the_Estonian_Defence_League_3rd_class_ribbon.svg/250px-EST_White_Cross_of_the_Estonian_Defence_League_3rd_class_ribbon.svg.png' },
+  // Commemorative
+  { country: 'Estonia', branch: 'Estonia Commemorative', name: 'Memorial Medal - 10 Years of the Re-Established Defence Forces', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/EST_Memorial_Medal_10_Years_of_the_Re-Established_Defence_Forces.png/250px-EST_Memorial_Medal_10_Years_of_the_Re-Established_Defence_Forces.png' },
+
   // ─── GERMANY (NVA) ──────────────────────────────────────────────────────────
   // Orders & Distinguished Service
   { country: 'Germany (NVA)', branch: 'Germany (NVA) Orders & Distinguished Service', name: 'Militarischer Verdienstorden - Gold (Order of Military Merit - Gold)', url: 'https://www.medals.pl/de/r/drmvo1.gif' },
