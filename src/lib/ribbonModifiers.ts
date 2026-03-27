@@ -1120,4 +1120,89 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     ] },
   ],
 
+  // ── SWITZERLAND: Skill-at-Arms — 2 levels each ─────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/CHE_Skill-at-arms_decoration_Assault_rifle_level_1.png/250px-CHE_Skill-at-arms_decoration_Assault_rifle_level_1.png": [
+    { type: 'select', name: 'level', label: 'Level', options: [
+      { value: 'Level 1', label: 'Level 1', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/CHE_Skill-at-arms_decoration_Assault_rifle_level_1.png/250px-CHE_Skill-at-arms_decoration_Assault_rifle_level_1.png' },
+      { value: 'Level 2', label: 'Level 2', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/CHE_Skill-at-arms_decoration_Assault_rifle_level_2.png/250px-CHE_Skill-at-arms_decoration_Assault_rifle_level_2.png' },
+    ] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/CHE_Skill-at-arms_decoration_Pistol_level_1.png/250px-CHE_Skill-at-arms_decoration_Pistol_level_1.png": [
+    { type: 'select', name: 'level', label: 'Level', options: [
+      { value: 'Level 1', label: 'Level 1', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/CHE_Skill-at-arms_decoration_Pistol_level_1.png/250px-CHE_Skill-at-arms_decoration_Pistol_level_1.png' },
+      { value: 'Level 2', label: 'Level 2', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/CHE_Skill-at-arms_decoration_Pistol_level_2.png/250px-CHE_Skill-at-arms_decoration_Pistol_level_2.png' },
+    ] },
+  ],
+  // ── FINLAND: Order of the Cross of Liberty — 5 grades ──────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/FIN_Order_of_the_Cross_of_Liberty_GCross_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_GCross_peace_military_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Grand Cross', label: 'Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/FIN_Order_of_the_Cross_of_Liberty_GCross_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_GCross_peace_military_BAR.svg.png' },
+      { value: '1st Class with Star', label: '1st Class with Star', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/FIN_Order_of_the_Cross_of_Liberty_1Class_Star_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_1Class_Star_peace_military_BAR.svg.png' },
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/FIN_Order_of_the_Cross_of_Liberty_1Class_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_1Class_peace_military_BAR.svg.png' },
+      { value: 'Liberty Medal', label: 'Liberty Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/FIN_Order_of_the_Cross_of_Liberty_Medal_1Class_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_Medal_1Class_BAR.svg.png' },
+      { value: 'Medal of Merit (Gold)', label: 'Medal of Merit (Gold)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/FIN_Order_of_the_Cross_of_Liberty_Medal_Merit_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_Medal_Merit_BAR.svg.png' },
+    ] },
+  ],
+  // ── LATVIA: Order of the Three Stars — 4 grades ──────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Order_of_the_Three_Stars_Grand_Cross_BAR_%28Latvia%29.png/250px-Order_of_the_Three_Stars_Grand_Cross_BAR_%28Latvia%29.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Grand Cross', label: 'Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Order_of_the_Three_Stars_Grand_Cross_BAR_%28Latvia%29.png/250px-Order_of_the_Three_Stars_Grand_Cross_BAR_%28Latvia%29.png' },
+      { value: 'Gold Medal', label: 'Gold Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/LVA_Order_of_the_Three_Stars_-_Gold_Medal_BAR.png/250px-LVA_Order_of_the_Three_Stars_-_Gold_Medal_BAR.png' },
+      { value: 'Silver Medal', label: 'Silver Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/LVA_Order_of_the_Three_Stars_-_Silver_Medal_BAR.png/250px-LVA_Order_of_the_Three_Stars_-_Silver_Medal_BAR.png' },
+      { value: 'Bronze Medal', label: 'Bronze Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/LVA_Order_of_the_Three_Stars_-_Bronze_Medal_BAR.png/250px-LVA_Order_of_the_Three_Stars_-_Bronze_Medal_BAR.png' },
+    ] },
+  ],
+  // ── AUSTRIA: Wound Medal — 1st / 2nd wound ──────────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/AUT_Verwundetenmedaille_BAR.svg/250px-AUT_Verwundetenmedaille_BAR.svg.png": [
+    { type: 'select', name: 'wound', label: 'Number of Wounds', options: [
+      { value: '1st Wound', label: '1st Wound', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/AUT_Verwundetenmedaille_BAR.svg/250px-AUT_Verwundetenmedaille_BAR.svg.png' },
+      { value: '2nd Wound', label: '2nd Wound', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/AUT_Verwundetenmedaille_2x_BAR.svg/250px-AUT_Verwundetenmedaille_2x_BAR.svg.png' },
+    ] },
+  ],
+  // ── AUSTRIA: Armed Forces Operations Medal — Foreign / Military Defence ──────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/AUT_Einsatzmedaille_a_BAR.svg/250px-AUT_Einsatzmedaille_a_BAR.svg.png": [
+    { type: 'select', name: 'type', label: 'Operation Type', options: [
+      { value: 'Foreign Operations', label: 'Foreign Operations', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/AUT_Einsatzmedaille_a_BAR.svg/250px-AUT_Einsatzmedaille_a_BAR.svg.png' },
+      { value: 'Military Defence', label: 'Military Defence', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/AUT_Einsatzmedaille_d_BAR.svg/250px-AUT_Einsatzmedaille_d_BAR.svg.png' },
+    ] },
+  ],
+  // ── SWEDEN: Royal Order of Vasa ──────────────────────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/SWE_Order_of_Vasa_-_Commander_Grand_Cross_BAR.png/250px-SWE_Order_of_Vasa_-_Commander_Grand_Cross_BAR.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Commander Grand Cross', label: 'Commander Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/SWE_Order_of_Vasa_-_Commander_Grand_Cross_BAR.png/250px-SWE_Order_of_Vasa_-_Commander_Grand_Cross_BAR.png' },
+      { value: 'Commander 1st Class', label: 'Commander 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/SWE_Order_of_Vasa_-_Commander_1st_Class_BAR.png/250px-SWE_Order_of_Vasa_-_Commander_1st_Class_BAR.png' },
+    ] },
+  ],
+  // ── SWEDEN: International Service Medal — with / without Sword ───────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/FMintGMmsv_bar.png/250px-FMintGMmsv_bar.png": [
+    { type: 'select', name: 'variant', label: 'Variant', options: [
+      { value: 'with Sword', label: 'with Sword', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/FMintGMmsv_bar.png/250px-FMintGMmsv_bar.png' },
+      { value: 'without Sword', label: 'without Sword', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/FMintSMmsv.png/250px-FMintSMmsv.png' },
+    ] },
+  ],
+  // ── SWEDEN: Service Medal — National Defence / Generic ───────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/SWE_Armed_Forces_Medal_for_National_Defense.png/250px-SWE_Armed_Forces_Medal_for_National_Defense.png": [
+    { type: 'select', name: 'variant', label: 'Variant', options: [
+      { value: 'National Defence', label: 'National Defence', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/SWE_Armed_Forces_Medal_for_National_Defense.png/250px-SWE_Armed_Forces_Medal_for_National_Defense.png' },
+      { value: 'Generic Service', label: 'Generic Service', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/FMSMmsv.png/250px-FMSMmsv.png' },
+    ] },
+  ],
+  // ── POLAND: Cross of Merit with Swords — Gold / Silver / Bronze ─────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/POL_Z%C5%82oty_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Z%C5%82oty_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Gold', label: 'Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/POL_Z%C5%82oty_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Z%C5%82oty_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+      { value: 'Silver', label: 'Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/POL_Srebrny_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Srebrny_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+      { value: 'Bronze', label: 'Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/POL_Br%C4%85zowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Br%C4%85zowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+    ] },
+  ],
+  // ── POLAND: Navy Medal — Oak Leaf devices ────────────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/POL_Medal_Morski_BAR.svg/250px-POL_Medal_Morski_BAR.svg.png": [
+    { type: 'select', name: 'award', label: 'Award Number', options: [
+      { value: '1st Award', label: '1st Award (plain)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/POL_Medal_Morski_BAR.svg/250px-POL_Medal_Morski_BAR.svg.png' },
+      { value: '2nd Award (1 Oak Leaf)', label: '2nd Award (1 Oak Leaf)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/POL_Medal_Morski_1ok_BAR.svg/250px-POL_Medal_Morski_1ok_BAR.svg.png' },
+      { value: '3rd Award (2 Oak Leaves)', label: '3rd Award (2 Oak Leaves)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/POL_Medal_Morski_2ok_BAR.svg/250px-POL_Medal_Morski_2ok_BAR.svg.png' },
+      { value: '4th Award (3 Oak Leaves)', label: '4th Award (3 Oak Leaves)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/POL_Medal_Morski_3ok_BAR.svg/250px-POL_Medal_Morski_3ok_BAR.svg.png' },
+    ] },
+  ],
+
 };
