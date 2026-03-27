@@ -89,7 +89,7 @@ type LeaderboardCategory = "region" | "game" | "troop_count" | "op_success";
 // ─── World Map ─────────────────────────────────────────────────────────────────
 // Coords = [x%, y%] on equirectangular projection: x=(lon+180)/360*100, y=(90-lat)/180*100
 const COUNTRY_COORDS: Record<string, [number, number]> = {
-  '\u{1F1EC}\u{1F1E7} United Kingdom': [49.31, 20.0],
+  '🇬🇧 United Kingdom': [49.97, 21.39],
   '\u{1F1E9}\u{1F1EA} Germany': [52.92, 21.56],
   '\u{1F1EB}\u{1F1F7} France': [50.69, 24.17],
   '\u{1F1EE}\u{1F1F9} Italy': [53.47, 26.11],
@@ -242,7 +242,7 @@ function WorldMap({ groups }: { groups: MilsimGroup[] }) {
             className="absolute inset-0 w-full h-full"
             style={{
               filter: isDark
-                ? "invert(1) brightness(0.25) contrast(1.1)"
+                ? "invert(1) brightness(0.25) contrast(1.1) saturate(0)"
                 : "brightness(0.55) contrast(1.05) saturate(0)",
               opacity: 1,
             }}
