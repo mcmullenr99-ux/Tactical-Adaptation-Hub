@@ -170,7 +170,7 @@ export default function MilsimManage() {
       ],
     },
     {
-      label: "Customization",
+      label: "Customisation",
       pro: true,
       items: [
         { id: "recognition", label: "Customisation", icon: Medal, pro: true },
@@ -270,7 +270,7 @@ export default function MilsimManage() {
               {tab === "roles" && <RolesTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-              {tab === "recognition" && <RecognitionTab group={group} showMsg={showMsg} />}
+              {tab === "recognition" && <CustomisationTab group={group} showMsg={showMsg} />}
               {tab === "eventhub" && <EventHubTab group={group} showMsg={showMsg} />}
               {tab === "onboarding" && <OnboardingTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "events" && <EventsTab group={group} showMsg={showMsg} />}
@@ -287,7 +287,6 @@ export default function MilsimManage() {
               {tab === "developer" && <DeveloperTab group={group} showMsg={showMsg} />}
               {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "doctrine" && <DoctrineTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
-              {tab === "orbat" && <OrbatStandaloneTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
               {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
             </motion.div>
           </div>
@@ -481,7 +480,6 @@ function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const SUB_TABS: { id: DoctrineSubTab; label: string; icon: typeof Shield }[] = [
     { id: "info",      label: "Unit Info",      icon: Shield },
     { id: "sops",      label: "SOPs",           icon: BookOpen },
-    { id: "orbat",     label: "ORBAT",          icon: GitBranch },
     { id: "orgchart",  label: "Org Chart",      icon: GitBranch },
     { id: "training",  label: "Training Docs",  icon: Brain },
   ];
@@ -507,7 +505,6 @@ function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
       <motion.div key={sub} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.12 }}>
         {sub === "info"     && <InfoTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
         {sub === "sops"     && <SopsOnlyTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
-        {sub === "orbat"    && <OrbatOnlyTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
         {sub === "orgchart" && <OrgChartTab group={group} />}
         {sub === "training" && <TrainingDocsTab group={group} showMsg={showMsg} />}
       </motion.div>
@@ -1055,7 +1052,7 @@ function AwardImage({ path, fallbackIcon: FIcon }: { path: string | null | undef
 
 
 // ─── Customisation Tab (Awards + Qualifications + ORBAT) ─────────────────────
-function RecognitionTab({ group, showMsg }: any) {
+function CustomisationTab({ group, showMsg }: any) {
   const [sub, setSub] = useState<"awards" | "quals" | "orbat">("awards");
   const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
   const [saving, setSaving] = useState(false);
