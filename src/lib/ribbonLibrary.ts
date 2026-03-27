@@ -12,7 +12,7 @@ export interface RibbonTemplate {
   sku?: string;
 }
 
-export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand', 'Belgium', 'France', 'Italy', 'Greece', 'Norway', 'Netherlands', 'Russia', 'Germany (NVA)', 'Poland', 'Luxembourg'];
+export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand', 'Belgium', 'France', 'Italy', 'Greece', 'Norway', 'Netherlands', 'Russia', 'Germany (NVA)', 'Poland', 'Luxembourg', 'Switzerland', 'Croatia', 'Finland', 'Estonia', 'Austria'];
 
 export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'United States': ['US Gallantry', 'US Orders & Distinguished Service', 'US Commendations', 'US Campaign Medals', 'US Service Medals', 'US Long Service', 'US Commemorative'],
@@ -22,16 +22,21 @@ export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'Australia': ['Australia Gallantry', 'Australia Orders', 'Australia Commendations', 'Australia Campaign Medals', 'Australia Service Medals', 'Australia Jubilee & Commemorative'],
   'Canada': ['Canada Gallantry', 'Canada Orders', 'Canada Campaign Medals', 'Canada Service Medals', 'Canada Jubilee & Commemorative'],
   'New Zealand': ['New Zealand Gallantry', 'New Zealand Orders', 'New Zealand Campaign Medals', 'New Zealand Service Medals', 'New Zealand Jubilee & Commemorative'],
-  'Belgium': ['Belgium Orders', 'Belgium Gallantry & Crosses', 'Belgium Campaign Medals'],
-  'France': ['France Orders', 'France Gallantry & Crosses', 'France Campaign Medals'],
-  'Italy': ['Italy Orders', 'Italy Gallantry & Crosses', 'Italy Campaign Medals'],
-  'Greece': ['Greece Orders', 'Greece Gallantry & Crosses', 'Greece Campaign Medals'],
-  'Norway': ['Norway Orders', 'Norway Gallantry & Crosses', 'Norway Campaign Medals'],
-  'Netherlands': ['Netherlands Orders', 'Netherlands Gallantry & Crosses', 'Netherlands Campaign Medals'],
+  'Belgium': ['Belgium Orders & Distinguished Service', 'Belgium Gallantry', 'Belgium Service Medals', 'Belgium Long Service', 'Belgium Campaign Medals'],
+  'France': ['France Gallantry', 'France Orders & Distinguished Service', 'France Service Medals', 'France Campaign Medals'],
+  'Italy': ['Italy Orders', 'Italy Gallantry & Crosses'],
+  'Greece': ['Greece Orders', 'Greece Gallantry & Crosses'],
+  'Norway': ['Norway Orders', 'Norway Gallantry & Crosses'],
+  'Netherlands': ['Netherlands Orders', 'Netherlands Gallantry & Crosses'],
   'Russia': ['Russia Gallantry', 'Russia Orders & Distinguished Service', 'Russia Commendations'],
   'Germany (NVA)': ['Germany (NVA) Orders & Distinguished Service', 'Germany (NVA) Long Service', 'Germany (NVA) Commemorative'],
   'Poland': ['Poland Orders', 'Poland Gallantry & Crosses'],
   'Luxembourg': ['Luxembourg Orders', 'Luxembourg Gallantry & Crosses'],
+  'Switzerland': ['Switzerland Gallantry', 'Switzerland Service Medals', 'Switzerland Long Service', 'Switzerland Campaign Medals'],
+  'Croatia': ['Croatia Gallantry', 'Croatia Orders & Distinguished Service', 'Croatia Service Medals', 'Croatia Campaign Medals'],
+  'Finland': ['Finland Gallantry', 'Finland Commendations', 'Finland Long Service'],
+  'Estonia': ['Estonia Gallantry', 'Estonia Commendations', 'Estonia Long Service', 'Estonia Commemorative'],
+  'Austria': ['Austria Gallantry', 'Austria Commendations', 'Austria Service Medals', 'Austria Campaign Medals', 'Austria Long Service'],
 };
 
 export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL ───
@@ -227,8 +232,41 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Naval Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsn.gif' },
   { country: 'United Kingdom', branch: 'UK Service Medals', name: 'RAF Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsaf.gif' },
   // ─── BELGIUM ────────────────────────────────────────────────────────────────
-  { country: 'Belgium', branch: 'Belgium Orders', name: "Order of Léopold", url: 'https://www.medals.pl/be/r/be1ole4.gif' },
-  { country: 'Belgium', branch: 'Belgium Orders', name: "Order of Léopold II", url: 'https://www.medals.pl/be/r/be1oleii.gif' },
+  // Orders & Distinguished Service - Order of Leopold (all 5 grades, military division)
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold - Knight', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/BEL_-_Order_of_Leopold_-_Knight_bar.svg/250px-BEL_-_Order_of_Leopold_-_Knight_bar.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold - Officer', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/BEL_-_Order_of_Leopold_-_Officer_bar.svg/250px-BEL_-_Order_of_Leopold_-_Officer_bar.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold - Commander', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/BEL_-_Order_of_Leopold_-_Commander_bar.svg/250px-BEL_-_Order_of_Leopold_-_Commander_bar.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold - Grand Officer', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/BEL_-_Order_of_Leopold_-_Grand_Officer_bar.svg/250px-BEL_-_Order_of_Leopold_-_Grand_Officer_bar.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold - Grand Cordon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/BEL_-_Order_of_Leopold_-_Grand_Cordon_bar.svg/250px-BEL_-_Order_of_Leopold_-_Grand_Cordon_bar.svg.png' },
+  // Order of Leopold II (all 5 grades + 3 medals)
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold II - Knight', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/BEL_Order_of_Leopold_II_-_Knight_BAR.svg/250px-BEL_Order_of_Leopold_II_-_Knight_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold II - Officer', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/BEL_Order_of_Leopold_II_-_Officer_BAR.svg/250px-BEL_Order_of_Leopold_II_-_Officer_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold II - Commander', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/BEL_Order_of_Leopold_II_-_Commander_BAR.svg/250px-BEL_Order_of_Leopold_II_-_Commander_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold II - Grand Officer', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/BEL_Order_of_Leopold_II_-_Grand_Officer_BAR.svg/250px-BEL_Order_of_Leopold_II_-_Grand_Officer_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold II - Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/BEL_Order_of_Leopold_II_-_Grand_Cross_BAR.svg/250px-BEL_Order_of_Leopold_II_-_Grand_Cross_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold II - Gold Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/BEL_Order_of_Leopold_II_-_Gold_Medal_BAR.png/250px-BEL_Order_of_Leopold_II_-_Gold_Medal_BAR.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold II - Silver Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/BEL_Order_of_Leopold_II_-_Silver_Medal_BAR.png/250px-BEL_Order_of_Leopold_II_-_Silver_Medal_BAR.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold II - Bronze Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/BEL_Order_of_Leopold_II_-_Bronze_Medal_BAR.png/250px-BEL_Order_of_Leopold_II_-_Bronze_Medal_BAR.png' },
+  // Order of the Crown (Kroonorde) - all 5 grades + 3 medals
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of the Crown - Knight', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/BEL_Kroonorde_Ridder_BAR.svg/250px-BEL_Kroonorde_Ridder_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of the Crown - Officer', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BEL_Kroonorde_Officier_BAR.svg/250px-BEL_Kroonorde_Officier_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of the Crown - Commander', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/BEL_Kroonorde_Commandeur_BAR.svg/250px-BEL_Kroonorde_Commandeur_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of the Crown - Grand Officer', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/BEL_Kroonorde_Grootofficier_BAR.svg/250px-BEL_Kroonorde_Grootofficier_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of the Crown - Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/BEL_Kroonorde_Grootkruis_BAR.svg/250px-BEL_Kroonorde_Grootkruis_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of the Crown - Gold Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/BEL_Kroonorde_Med_Goud_BAR.svg/250px-BEL_Kroonorde_Med_Goud_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of the Crown - Silver Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/BEL_Kroonorde_Med_Zilver_BAR.svg/250px-BEL_Kroonorde_Med_Zilver_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of the Crown - Bronze Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/BEL_Kroonorde_Med_Brons_BAR.svg/250px-BEL_Kroonorde_Med_Brons_BAR.svg.png' },
+  // Gallantry
+  { country: 'Belgium', branch: 'Belgium Gallantry', name: 'Military Cross - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/BEL_Militair_Kruis_1klasse_BAR.svg/250px-BEL_Militair_Kruis_1klasse_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Gallantry', name: 'Military Cross - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/BEL_Militair_Kruis_2klasse_BAR.svg/250px-BEL_Militair_Kruis_2klasse_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Gallantry', name: 'Military Decoration for Gallantry', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BEL_Military_Decoration_for_Gallantry.PNG/250px-BEL_Military_Decoration_for_Gallantry.PNG' },
+  { country: 'Belgium', branch: 'Belgium Gallantry', name: 'Croix de Guerre (1954 - modern)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BEL_Croix_de_Guerre_1954_ribbon.svg/250px-BEL_Croix_de_Guerre_1954_ribbon.svg.png' },
+  // Service Medals
+  { country: 'Belgium', branch: 'Belgium Service Medals', name: 'Military Decoration for Faithful Service', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/BEL_Military_Decoration_for_Faithful_Service.PNG/250px-BEL_Military_Decoration_for_Faithful_Service.PNG' },
+  // Campaign Medals / Foreign Service
+  { country: 'Belgium', branch: 'Belgium Campaign Medals', name: 'Foreign Service Honour Cross - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/BEL_Foreign_Service_Honour_Cross_1st_Class_ribbon.PNG/250px-BEL_Foreign_Service_Honour_Cross_1st_Class_ribbon.PNG' },
+  { country: 'Belgium', branch: 'Belgium Campaign Medals', name: 'Foreign Service Honour Cross - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/BEL_Foreign_Service_Honour_Cross_2nd_Class_ribbon.PNG/250px-BEL_Foreign_Service_Honour_Cross_2nd_Class_ribbon.PNG' },
+  { country: 'Belgium', branch: 'Belgium Campaign Medals', name: 'Foreign Service Honour Cross - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/BEL_Foreign_Service_Honour_Cross_3rd_Class_ribbon.PNG/250px-BEL_Foreign_Service_Honour_Cross_3rd_Class_ribbon.PNG' },
 
   // ─── FRANCE ─────────────────────────────────────────────────────────────────
   // Gallantry
