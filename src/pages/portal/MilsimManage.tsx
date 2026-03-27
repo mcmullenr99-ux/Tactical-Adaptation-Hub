@@ -93,15 +93,17 @@ type Tab = "roles" | "ranks" | "roster" | "recognition" | "stream" | "questions"
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
-  const [group, setGroup] = useState<GroupDetail | null | undefined>(undefined);
   const [tab, setTabState] = useState<Tab>(() => {
-    const saved = localStorage.getItem("milsimManageTab") as Tab | null;
-    return saved ?? "doctrine";
+    try {
+      const saved = localStorage.getItem("milsimManageTab") as Tab | null;
+      return saved ?? "doctrine";
+    } catch { return "doctrine"; }
   });
   const setTab = (t: Tab) => {
     setTabState(t);
-    localStorage.setItem("milsimManageTab", t);
+    try { localStorage.setItem("milsimManageTab", t); } catch {}
   };
+  const [group, setGroup] = useState<GroupDetail | null | undefined>(undefined);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -111,27 +113,8 @@ export default function MilsimManage() {
       .catch(() => setGroup(null));
   }, []);
 
-  if (group === undefined) return (
-    <PortalLayout>
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-      </div>
-    </PortalLayout>
-  );
-
-  if (group === null) return (
-    <PortalLayout>
-      <div className="text-center py-24 border border-dashed border-border rounded-lg">
-        <Shield className="w-14 h-14 text-muted-foreground mx-auto mb-4 opacity-30" />
-        <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-3">No Group Registered</h2>
-        <p className="text-muted-foreground font-sans mb-6">You haven't registered a MilSim group yet.</p>
-        <button onClick={() => setLocation("/milsim/register")}
-          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-widest text-sm px-6 py-3 rounded clip-angled-sm transition-all">
-          <Plus className="w-4 h-4" /> Register Your Unit
-        </button>
-      </div>
-    </PortalLayout>
-  );
+  // NOTE: No early returns here — early returns unmount the component and reset useState (including tab).
+  // Instead we use inline conditionals in the render so tab state persists across group load.
 
   const showMsg = (okOrText: boolean | string, textOrType?: string) => {
     // Accept both (ok: boolean, text: string) and (text: string, type: "success"|"error")
@@ -193,6 +176,28 @@ export default function MilsimManage() {
       ],
     },
   ];
+
+  if (group === undefined) return (
+    <PortalLayout>
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      </div>
+    </PortalLayout>
+  );
+
+  if (group === null) return (
+    <PortalLayout>
+      <div className="text-center py-24 border border-dashed border-border rounded-lg">
+        <Shield className="w-14 h-14 text-muted-foreground mx-auto mb-4 opacity-30" />
+        <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-3">No Group Registered</h2>
+        <p className="text-muted-foreground font-sans mb-6">You haven't registered a MilSim group yet.</p>
+        <button onClick={() => setLocation("/milsim/register")}
+          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-widest text-sm px-6 py-3 rounded clip-angled-sm transition-all">
+          <Plus className="w-4 h-4" /> Register Your Unit
+        </button>
+      </div>
+    </PortalLayout>
+  );
 
   return (
     <PortalLayout>
