@@ -87,93 +87,93 @@ type LeaderboardCategory = "region" | "game" | "troop_count" | "op_success";
 
 
 // ─── World Map ─────────────────────────────────────────────────────────────────
-// Coordinates are % positions relative to the SVG viewBox of the world map asset
-// Source: flekschas/simple-world-map (MIT), path centroids normalised to 0-100%
+// Coords = [x%, y%] on equirectangular projection: x=(lon+180)/360*100, y=(90-lat)/180*100
 const COUNTRY_COORDS: Record<string, [number, number]> = {
-  '\u{1F1EC}\u{1F1E7} United Kingdom': [46.75, 28.72],
-  '\u{1F1E9}\u{1F1EA} Germany': [49.94, 31.09],
-  '\u{1F1EB}\u{1F1F7} France': [48.75, 33.14],
-  '\u{1F1EE}\u{1F1F9} Italy': [50.99, 39.25],
-  '\u{1F1F5}\u{1F1F1} Poland': [54.37, 32.40],
-  '\u{1F1F3}\u{1F1F1} Netherlands': [49.81, 31.18],
-  '\u{1F1F3}\u{1F1F4} Norway': [52.87, 11.80],
-  '\u{1F1F8}\u{1F1EA} Sweden': [52.91, 23.46],
-  '\u{1F1E9}\u{1F1F0} Denmark': [50.85, 28.96],
-  '\u{1F1E7}\u{1F1EA} Belgium': [48.88, 32.73],
-  '\u{1F1EA}\u{1F1F8} Spain': [45.15, 44.02],
-  '\u{1F1F5}\u{1F1F9} Portugal': [41.35, 41.10],
-  '\u{1F1E8}\u{1F1FF} Czech Republic': [51.84, 34.30],
-  '\u{1F1F8}\u{1F1F0} Slovakia': [52.65, 34.74],
-  '\u{1F1ED}\u{1F1FA} Hungary': [52.75, 35.19],
-  '\u{1F1F7}\u{1F1F4} Romania': [54.45, 34.82],
-  '\u{1F1E7}\u{1F1EC} Bulgaria': [54.37, 37.61],
-  '\u{1F1EC}\u{1F1F7} Greece': [54.40, 41.69],
-  '\u{1F1ED}\u{1F1F7} Croatia': [52.63, 36.24],
-  '\u{1F1F7}\u{1F1F8} Serbia': [53.72, 36.13],
-  '\u{1F1FA}\u{1F1E6} Ukraine': [54.83, 32.10],
-  '\u{1F1EB}\u{1F1EE} Finland': [53.86, 21.50],
-  '\u{1F1E6}\u{1F1F9} Austria': [50.98, 35.30],
-  '\u{1F1E8}\u{1F1ED} Switzerland': [50.13, 35.15],
-  '\u{1F1F1}\u{1F1FA} Luxembourg': [49.69, 34.02],
-  '\u{1F1EE}\u{1F1EA} Ireland': [46.44, 30.85],
-  '\u{1F1F1}\u{1F1F9} Lithuania': [53.74, 29.13],
-  '\u{1F1F1}\u{1F1FB} Latvia': [55.10, 28.00],
-  '\u{1F1EA}\u{1F1EA} Estonia': [54.22, 26.78],
-  '\u{1F1F8}\u{1F1EE} Slovenia': [52.54, 35.65],
-  '\u{1F1FA}\u{1F1F8} United States': [21.58, 30.18],
-  '\u{1F1E8}\u{1F1E6} Canada': [21.58, 14.92],
-  '\u{1F1F2}\u{1F1FD} Mexico': [13.14, 41.95],
-  '\u{1F1E7}\u{1F1F7} Brazil': [32.63, 71.61],
-  '\u{1F1E6}\u{1F1F7} Argentina': [30.75, 87.76],
-  '\u{1F1E8}\u{1F1F1} Chile': [28.52, 82.51],
-  '\u{1F1E8}\u{1F1F4} Colombia': [25.96, 55.97],
-  '\u{1F1F5}\u{1F1EA} Peru': [22.80, 65.33],
-  '\u{1F1FB}\u{1F1EA} Venezuela': [27.71, 54.16],
-  '\u{1F1FA}\u{1F1FE} Uruguay': [31.79, 81.42],
-  '\u{1F1EA}\u{1F1E8} Ecuador': [21.43, 62.97],
-  '\u{1F1E7}\u{1F1F4} Bolivia': [26.51, 69.73],
-  '\u{1F1F9}\u{1F1F7} Turkey': [56.38, 39.31],
-  '\u{1F1F8}\u{1F1E6} Saudi Arabia': [62.37, 47.19],
-  '\u{1F1EE}\u{1F1F1} Israel': [58.11, 44.33],
-  '\u{1F1E6}\u{1F1EA} UAE': [63.48, 49.39],
-  '\u{1F1F6}\u{1F1E6} Qatar': [63.33, 48.28],
-  '\u{1F1F0}\u{1F1FC} Kuwait': [62.29, 46.05],
-  '\u{1F1EE}\u{1F1F6} Iraq': [60.20, 41.87],
-  '\u{1F1EE}\u{1F1F7} Iran': [62.40, 41.08],
-  '\u{1F1EF}\u{1F1F4} Jordan': [58.51, 44.85],
-  '\u{1F1F1}\u{1F1E7} Lebanon': [58.20, 43.26],
-  '\u{1F1EA}\u{1F1EC} Egypt': [55.53, 45.27],
-  '\u{1F1F2}\u{1F1E6} Morocco': [47.41, 43.24],
-  '\u{1F1FF}\u{1F1E6} South Africa': [56.67, 77.28],
-  '\u{1F1F3}\u{1F1EC} Nigeria': [48.88, 59.66],
-  '\u{1F1F0}\u{1F1EA} Kenya': [58.71, 61.01],
-  '\u{1F1EC}\u{1F1ED} Ghana': [46.98, 59.22],
-  '\u{1F1EA}\u{1F1F9} Ethiopia': [58.57, 58.22],
-  '\u{1F1F9}\u{1F1FF} Tanzania': [58.85, 69.43],
-  '\u{1F1EF}\u{1F1F5} Japan': [88.11, 34.45],
-  '\u{1F1F0}\u{1F1F7} South Korea': [84.89, 36.81],
-  '\u{1F1E8}\u{1F1F3} China': [77.70, 34.54],
-  '\u{1F1EE}\u{1F1F3} India': [71.96, 54.16],
-  '\u{1F1F5}\u{1F1F0} Pakistan': [66.68, 46.55],
-  '\u{1F1E7}\u{1F1E9} Bangladesh': [74.68, 47.16],
-  '\u{1F1FB}\u{1F1F3} Vietnam': [80.12, 51.98],
-  '\u{1F1F9}\u{1F1ED} Thailand': [78.47, 50.44],
-  '\u{1F1F5}\u{1F1ED} Philippines': [85.93, 54.62],
-  '\u{1F1EE}\u{1F1E9} Indonesia': [84.98, 62.89],
-  '\u{1F1F2}\u{1F1FE} Malaysia': [80.49, 60.55],
-  '\u{1F1F8}\u{1F1EC} Singapore': [80.25, 61.14],
-  '\u{1F1F9}\u{1F1FC} Taiwan': [84.80, 46.27],
-  '\u{1F1ED}\u{1F1F0} Hong Kong': [83.44, 46.53],
-  '\u{1F1E6}\u{1F1FA} Australia': [85.47, 80.33],
-  '\u{1F1F3}\u{1F1FF} New Zealand': [96.00, 90.00],
-  '\u{1F1F5}\u{1F1EC} Papua New Guinea': [91.00, 63.00],
-  '\u{1F1EB}\u{1F1EF} Fiji': [97.00, 75.00],
+  '\u{1F1EC}\u{1F1E7} United Kingdom': [49.31, 20.0],
+  '\u{1F1E9}\u{1F1EA} Germany': [52.92, 21.56],
+  '\u{1F1EB}\u{1F1F7} France': [50.69, 24.17],
+  '\u{1F1EE}\u{1F1F9} Italy': [53.47, 26.11],
+  '\u{1F1F5}\u{1F1F1} Poland': [55.56, 21.11],
+  '\u{1F1F3}\u{1F1F1} Netherlands': [51.47, 20.94],
+  '\u{1F1F3}\u{1F1F4} Norway': [54.17, 14.44],
+  '\u{1F1F8}\u{1F1EA} Sweden': [54.31, 15.56],
+  '\u{1F1E9}\u{1F1F0} Denmark': [52.78, 18.89],
+  '\u{1F1E7}\u{1F1EA} Belgium': [51.25, 21.78],
+  '\u{1F1EA}\u{1F1F8} Spain': [48.97, 27.67],
+  '\u{1F1F5}\u{1F1F9} Portugal': [47.78, 28.06],
+  '\u{1F1E8}\u{1F1FF} Czech Republic': [54.31, 22.33],
+  '\u{1F1F8}\u{1F1F0} Slovakia': [55.42, 22.94],
+  '\u{1F1ED}\u{1F1FA} Hungary': [55.42, 23.89],
+  '\u{1F1F7}\u{1F1F4} Romania': [56.92, 24.5],
+  '\u{1F1E7}\u{1F1EC} Bulgaria': [57.08, 26.28],
+  '\u{1F1EC}\u{1F1F7} Greece': [56.11, 28.28],
+  '\u{1F1ED}\u{1F1F7} Croatia': [54.22, 24.94],
+  '\u{1F1F7}\u{1F1F8} Serbia': [55.83, 25.56],
+  '\u{1F1FA}\u{1F1E6} Ukraine': [58.89, 22.78],
+  '\u{1F1EB}\u{1F1EE} Finland': [57.5, 14.44],
+  '\u{1F1E6}\u{1F1F9} Austria': [53.94, 23.61],
+  '\u{1F1E8}\u{1F1ED} Switzerland': [52.31, 23.89],
+  '\u{1F1F1}\u{1F1FA} Luxembourg': [51.69, 22.33],
+  '\u{1F1EE}\u{1F1EA} Ireland': [47.86, 20.5],
+  '\u{1F1F1}\u{1F1F9} Lithuania': [56.64, 18.94],
+  '\u{1F1F1}\u{1F1FB} Latvia': [56.83, 18.39],
+  '\u{1F1EA}\u{1F1EA} Estonia': [56.94, 17.44],
+  '\u{1F1F8}\u{1F1EE} Slovenia': [54.11, 24.39],
+  '\u{1F1FA}\u{1F1F8} United States': [23.06, 28.89],
+  '\u{1F1E8}\u{1F1E6} Canada': [23.33, 18.89],
+  '\u{1F1F2}\u{1F1FD} Mexico': [21.67, 36.94],
+  '\u{1F1E7}\u{1F1F7} Brazil': [35.28, 55.56],
+  '\u{1F1E6}\u{1F1F7} Argentina': [31.94, 69.44],
+  '\u{1F1E8}\u{1F1F1} Chile': [30.28, 66.67],
+  '\u{1F1E8}\u{1F1F4} Colombia': [29.44, 47.78],
+  '\u{1F1F5}\u{1F1EA} Peru': [29.17, 55.0],
+  '\u{1F1FB}\u{1F1EA} Venezuela': [31.67, 45.56],
+  '\u{1F1FA}\u{1F1FE} Uruguay': [34.44, 68.33],
+  '\u{1F1EA}\u{1F1E8} Ecuador': [28.47, 51.11],
+  '\u{1F1E7}\u{1F1F4} Bolivia': [31.94, 59.44],
+  '\u{1F1F9}\u{1F1F7} Turkey': [59.72, 28.33],
+  '\u{1F1F8}\u{1F1E6} Saudi Arabia': [62.22, 36.67],
+  '\u{1F1EE}\u{1F1F1} Israel': [59.72, 32.5],
+  '\u{1F1E6}\u{1F1EA} UAE': [65.0, 36.67],
+  '\u{1F1F6}\u{1F1E6} Qatar': [64.22, 35.94],
+  '\u{1F1F0}\u{1F1FC} Kuwait': [63.25, 33.67],
+  '\u{1F1EE}\u{1F1F6} Iraq': [62.14, 31.56],
+  '\u{1F1EE}\u{1F1F7} Iran': [65.0, 32.22],
+  '\u{1F1EF}\u{1F1F4} Jordan': [60.28, 32.78],
+  '\u{1F1F1}\u{1F1E7} Lebanon': [59.97, 31.17],
+  '\u{1F1EA}\u{1F1EC} Egypt': [58.33, 35.56],
+  '\u{1F1F2}\u{1F1E6} Morocco': [48.61, 32.22],
+  '\u{1F1FF}\u{1F1E6} South Africa': [56.94, 66.11],
+  '\u{1F1F3}\u{1F1EC} Nigeria': [52.36, 45.0],
+  '\u{1F1F0}\u{1F1EA} Kenya': [60.53, 49.72],
+  '\u{1F1EC}\u{1F1ED} Ghana': [49.72, 45.61],
+  '\u{1F1EA}\u{1F1F9} Ethiopia': [61.25, 44.94],
+  '\u{1F1F9}\u{1F1FF} Tanzania': [59.72, 53.56],
+  '\u{1F1EF}\u{1F1F5} Japan': [88.33, 30.0],
+  '\u{1F1F0}\u{1F1F7} South Korea': [85.5, 29.72],
+  '\u{1F1E8}\u{1F1F3} China': [79.17, 30.56],
+  '\u{1F1EE}\u{1F1F3} India': [71.39, 38.89],
+  '\u{1F1F5}\u{1F1F0} Pakistan': [69.44, 33.33],
+  '\u{1F1E7}\u{1F1E9} Bangladesh': [75.11, 36.83],
+  '\u{1F1FB}\u{1F1F3} Vietnam': [80.0, 41.11],
+  '\u{1F1F9}\u{1F1ED} Thailand': [78.06, 41.39],
+  '\u{1F1F5}\u{1F1ED} Philippines': [83.83, 42.89],
+  '\u{1F1EE}\u{1F1E9} Indonesia': [82.78, 51.39],
+  '\u{1F1F2}\u{1F1FE} Malaysia': [80.0, 47.67],
+  '\u{1F1F8}\u{1F1EC} Singapore': [78.83, 49.25],
+  '\u{1F1F9}\u{1F1FC} Taiwan': [83.61, 36.83],
+  '\u{1F1ED}\u{1F1F0} Hong Kong': [81.72, 37.61],
+  '\u{1F1E6}\u{1F1FA} Australia': [87.22, 63.89],
+  '\u{1F1F3}\u{1F1FF} New Zealand': [97.92, 73.06],
+  '\u{1F1F5}\u{1F1EC} Papua New Guinea': [90.83, 53.33],
+  '\u{1F1EB}\u{1F1EF} Fiji': [99.58, 59.83],
 };
 
 function WorldMap({ groups }: { groups: MilsimGroup[] }) {
   const [tooltip, setTooltip] = useState<{ pctX: number; pctY: number; names: string[]; featured: boolean } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
+  const isDark = theme === "dark";
 
   const countryGroups = useMemo(() => {
     const map: Record<string, MilsimGroup[]> = {};
@@ -187,57 +187,77 @@ function WorldMap({ groups }: { groups: MilsimGroup[] }) {
   }, [groups]);
 
   const dots = useMemo(() => {
-    return Object.entries(countryGroups).map(([country, grps]) => {
-      const coords = COUNTRY_COORDS[country];
-      if (!coords) return null;
-      return { country, grps, pctX: coords[0], pctY: coords[1] };
-    }).filter(Boolean) as { country: string; grps: MilsimGroup[]; pctX: number; pctY: number }[];
+    return Object.entries(countryGroups)
+      .map(([country, grps]) => {
+        const coords = COUNTRY_COORDS[country];
+        if (!coords) return null;
+        return { country, grps, pctX: coords[0], pctY: coords[1] };
+      })
+      .filter(Boolean) as { country: string; grps: MilsimGroup[]; pctX: number; pctY: number }[];
   }, [countryGroups]);
 
   const totalOnMap = dots.reduce((s, d) => s + d.grps.length, 0);
 
-  // dark mode: map = dark landmass on darker ocean bg
-  // light mode: map = light landmass on lighter bg (invert the SVG)
-  const isDark = theme === "dark";
-
   return (
-    <div className="relative w-full border-b border-border overflow-hidden" style={{ background: isDark ? "#07111f" : "#dce8f0" }}>
-      {/* Scanline texture */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.025]"
-        style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,1) 2px,rgba(255,255,255,1) 3px)" }} />
+    <div
+      className="relative w-full border-b border-border overflow-hidden"
+      style={{ background: isDark ? "#070e1a" : "#e8eef4" }}
+    >
+      {/* subtle scanline */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          opacity: 0.03,
+          backgroundImage:
+            "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,1) 2px,rgba(255,255,255,1) 3px)",
+        }}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-4 relative z-10">
-        {/* Header row */}
+        {/* header */}
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0" />
-          <span className="text-[10px] font-display font-bold uppercase tracking-widest text-primary">Live Deployment Map</span>
+          <span className="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0 block" />
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest text-primary">
+            Live Deployment Map
+          </span>
           <span className="text-[9px] font-sans text-muted-foreground ml-auto">
-            {totalOnMap} unit{totalOnMap !== 1 ? "s" : ""} across {dots.length} countr{dots.length !== 1 ? "ies" : "y"}
+            {totalOnMap} unit{totalOnMap !== 1 ? "s" : ""} across {dots.length}{" "}
+            countr{dots.length !== 1 ? "ies" : "y"}
           </span>
         </div>
 
-        {/* Map container */}
-        <div className="relative w-full select-none" ref={containerRef} style={{ aspectRatio: "784.077 / 458.627" }}>
-          {/* The world map image */}
+        {/* map + dots */}
+        <div
+          className="relative w-full select-none"
+          ref={containerRef}
+          style={{ aspectRatio: "1024 / 683" }}
+        >
+          {/* PNG map asset — white outlines on transparent bg.
+              Dark mode: show white lines as-is on dark ocean bg.
+              Light mode: invert so lines become dark on light bg. */}
           <img
-            src="/world-map.svg"
+            src="/world-map.png"
             alt="World map"
             draggable={false}
             className="absolute inset-0 w-full h-full"
             style={{
-              // Dark mode: SVG paths are black → show as muted teal/dark on dark bg
-              // Light mode: invert so land = dark on light bg
               filter: isDark
-                ? "invert(1) sepia(1) saturate(0.3) brightness(0.25) hue-rotate(180deg)"
-                : "invert(0) sepia(0) saturate(0.5) brightness(0.7)",
-              opacity: isDark ? 0.9 : 0.55,
+                ? "brightness(0.55) sepia(1) hue-rotate(180deg) saturate(0.4)"
+                : "invert(1) brightness(0.65) sepia(0.2) saturate(0.8)",
+              mixBlendMode: isDark ? "screen" : "multiply",
+              opacity: isDark ? 1 : 0.85,
             }}
           />
 
-          {/* Dots overlay — absolutely positioned using % */}
+          {/* dots */}
           {dots.map(dot => {
             const count = dot.grps.length;
             const hasFeatured = dot.grps.some(g => g.status === "featured");
+            const size = count > 8 ? 20 : count > 4 ? 16 : count > 1 ? 12 : 8;
+            const color = hasFeatured ? "#f59e0b" : "#ef4444";
+            const glow = hasFeatured
+              ? "0 0 8px 3px rgba(245,158,11,0.7)"
+              : "0 0 8px 3px rgba(239,68,68,0.6)";
             return (
               <div
                 key={dot.country}
@@ -245,36 +265,43 @@ function WorldMap({ groups }: { groups: MilsimGroup[] }) {
                 style={{
                   left: `${dot.pctX}%`,
                   top: `${dot.pctY}%`,
-                  transform: "translate(-50%, -50%)",
+                  transform: "translate(-50%,-50%)",
                   zIndex: 10,
                   cursor: "pointer",
                 }}
-                onMouseEnter={() => setTooltip({ pctX: dot.pctX, pctY: dot.pctY, names: dot.grps.map(g => g.name), featured: hasFeatured })}
+                onMouseEnter={() =>
+                  setTooltip({
+                    pctX: dot.pctX,
+                    pctY: dot.pctY,
+                    names: dot.grps.map(g => g.name),
+                    featured: hasFeatured,
+                  })
+                }
                 onMouseLeave={() => setTooltip(null)}
               >
-                {/* Pulse ring */}
+                {/* ping ring */}
                 <span
                   className="absolute rounded-full animate-ping"
                   style={{
-                    width: count > 5 ? 20 : count > 2 ? 16 : 12,
-                    height: count > 5 ? 20 : count > 2 ? 16 : 12,
-                    top: "50%", left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    background: hasFeatured ? "rgba(245,158,11,0.35)" : "rgba(239,68,68,0.35)",
+                    width: size + 8,
+                    height: size + 8,
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%,-50%)",
+                    background: hasFeatured
+                      ? "rgba(245,158,11,0.3)"
+                      : "rgba(239,68,68,0.3)",
                   }}
                 />
-                {/* Core dot */}
+                {/* core */}
                 <span
-                  className="relative flex items-center justify-center rounded-full font-mono font-bold"
+                  className="relative flex items-center justify-center rounded-full font-mono font-bold text-white"
                   style={{
-                    width: count > 5 ? 18 : count > 2 ? 14 : 8,
-                    height: count > 5 ? 18 : count > 2 ? 14 : 8,
-                    fontSize: count > 2 ? 7 : 0,
-                    background: hasFeatured ? "#f59e0b" : "#ef4444",
-                    boxShadow: hasFeatured
-                      ? "0 0 6px 2px rgba(245,158,11,0.6)"
-                      : "0 0 6px 2px rgba(239,68,68,0.5)",
-                    color: "white",
+                    width: size,
+                    height: size,
+                    fontSize: size > 10 ? 7 : 0,
+                    background: color,
+                    boxShadow: glow,
                     lineHeight: 1,
                   }}
                 >
@@ -284,25 +311,33 @@ function WorldMap({ groups }: { groups: MilsimGroup[] }) {
             );
           })}
 
-          {/* Tooltip */}
+          {/* tooltip */}
           {tooltip && (
             <div
               className="absolute z-20 pointer-events-none"
               style={{
-                left: `${Math.min(tooltip.pctX + 2, 75)}%`,
-                top: `${tooltip.pctY > 70 ? tooltip.pctY - 12 : tooltip.pctY + 4}%`,
+                left: `${Math.min(tooltip.pctX + 1.5, 72)}%`,
+                top:
+                  tooltip.pctY > 72
+                    ? `${tooltip.pctY - 14}%`
+                    : `${tooltip.pctY + 3}%`,
               }}
             >
-              <div className="bg-card/95 backdrop-blur-sm border border-primary/40 rounded shadow-xl px-3 py-2 min-w-[130px] max-w-[200px]">
+              <div className="bg-card/95 backdrop-blur-sm border border-primary/40 rounded shadow-xl px-3 py-2 min-w-[130px] max-w-[210px]">
                 {tooltip.names.map((n, i) => (
-                  <p key={i} className="text-[10px] font-display font-bold uppercase tracking-wide text-foreground leading-snug">{n}</p>
+                  <p
+                    key={i}
+                    className="text-[10px] font-display font-bold uppercase tracking-wide text-foreground leading-snug"
+                  >
+                    {n}
+                  </p>
                 ))}
               </div>
             </div>
           )}
         </div>
 
-        {/* Legend */}
+        {/* legend */}
         <div className="flex items-center gap-5 mt-2 mb-1">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 block" />
@@ -313,7 +348,12 @@ function WorldMap({ groups }: { groups: MilsimGroup[] }) {
             <span className="text-[9px] font-sans text-muted-foreground">Featured</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full bg-red-500 flex items-center justify-center text-[7px] text-white font-bold block" style={{display:"inline-flex"}}>5</span>
+            <span
+              className="inline-flex items-center justify-center rounded-full text-white font-bold"
+              style={{ width: 14, height: 14, fontSize: 7, background: "#ef4444" }}
+            >
+              5
+            </span>
             <span className="text-[9px] font-sans text-muted-foreground">Cluster</span>
           </div>
         </div>
