@@ -12,7 +12,7 @@ export interface RibbonTemplate {
   sku?: string;
 }
 
-export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand', 'Belgium', 'France', 'Italy', 'Greece', 'Norway', 'Netherlands', 'Russia', 'Germany (NVA)', 'Poland', 'Luxembourg', 'Switzerland', 'Croatia', 'Finland', 'Estonia', 'Austria', 'Czech Republic'];
+export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand', 'Belgium', 'France', 'Italy', 'Greece', 'Norway', 'Netherlands', 'Russia', 'Germany (NVA)', 'Poland', 'Luxembourg', 'Switzerland', 'Croatia', 'Finland', 'Estonia', 'Austria', 'Czech Republic', 'Sweden', 'Slovakia'];
 
 export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'United States': ['US Gallantry', 'US Orders & Distinguished Service', 'US Commendations', 'US Campaign Medals', 'US Service Medals', 'US Long Service', 'US Commemorative'],
@@ -38,6 +38,8 @@ export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'Estonia': ['Estonia Gallantry', 'Estonia Commendations', 'Estonia Long Service', 'Estonia Commemorative'],
   'Austria': ['Austria Gallantry', 'Austria Commendations', 'Austria Service Medals', 'Austria Campaign Medals', 'Austria Long Service'],
   'Czech Republic': ['Czech Republic Gallantry', 'Czech Republic Orders & Distinguished Service', 'Czech Republic Service Medals', 'Czech Republic Campaign Medals'],
+  'Sweden': ['Sweden Orders', 'Sweden Military Medals', 'Sweden Long Service'],
+  'Slovakia': ['Slovakia Orders', 'Slovakia Gallantry', 'Slovakia Service Medals', 'Slovakia Commemorative'],
 };
 
 export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL ───
@@ -590,7 +592,18 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Air Force Cross of Merit with Swords - 2nd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg/250px-POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg.png' },
   { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Navy Cross of Merit with Swords', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
   { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Navy Cross of Merit with Swords - 2nd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg/250px-POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg.png' },
-  // Service Medals (Army/Air/Navy merit medals, multi-award)
+
+  // Cross of Merit with Swords - Gold/Silver/Bronze (state awards)
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Gold Cross of Merit with Swords', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/POL_Z%C5%82oty_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Z%C5%82oty_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Silver Cross of Merit with Swords', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/POL_Srebrny_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Srebrny_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Bronze Cross of Merit with Swords', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/POL_Br%C4%85zowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Br%C4%85zowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+  // Military/Air/Navy Cross of Merit (without swords - non-combat service merit)
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Military Cross of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg/250px-POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Military Cross of Merit - 2nd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_2r_BAR.svg/250px-POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_2r_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Air Force Cross of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg/250px-POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Navy Cross of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg/250px-POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg.png' },
+  // Medal for Sacrifice and Courage (Odznaka za Rany i Kontuzje - wound/courage medal)
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Medal for Sacrifice and Courage', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/POL_Medal_za_Ofiarno%C5%9B%C4%87_i_Odwag%C4%99_BAR.svg/250px-POL_Medal_za_Ofiarno%C5%9B%C4%87_i_Odwag%C4%99_BAR.svg.png' },  // Service Medals (Army/Air/Navy merit medals, multi-award)
   // Medal Wojska (Army Service Medal)
   { country: 'Poland', branch: 'Poland Service Medals', name: 'Army Medal - Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/POL_Z%C5%82oty_Medal_Wojska_Polskiego_BAR.svg/250px-POL_Z%C5%82oty_Medal_Wojska_Polskiego_BAR.svg.png' },
   { country: 'Poland', branch: 'Poland Service Medals', name: 'Army Medal - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/POL_Srebrny_Medal_Wojska_Polskiego_BAR.svg/250px-POL_Srebrny_Medal_Wojska_Polskiego_BAR.svg.png' },
@@ -822,4 +835,73 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Czech Republic', branch: 'Czech Republic Campaign Medals', name: 'Medal for Service Abroad - Combat 1st Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/CZE_MoD_Medal_For_Service_Abroad_Combat_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Combat_1st_BAR.svg.png' },
   { country: 'Czech Republic', branch: 'Czech Republic Campaign Medals', name: 'Medal for Service Abroad - Combat 2nd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/CZE_MoD_Medal_For_Service_Abroad_Combat_2st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Combat_2st_BAR.svg.png' },
   { country: 'Czech Republic', branch: 'Czech Republic Campaign Medals', name: 'Medal for Service Abroad - Combat 3rd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/CZE_MoD_Medal_For_Service_Abroad_Combat_3st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Combat_3st_BAR.svg.png' },
+
+  // ─── SWEDEN ──────────────────────────────────────────────────────────────────
+  // Orders (Royal Orders - reactivated 2023, first awarded March 2024)
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of the Seraphim', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Seraphimerorden_ribbon.svg/250px-Seraphimerorden_ribbon.svg.png' },
+  // Royal Order of the Sword
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of the Sword - Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Ruotsin_miekkaritarikunnan_suurristin_nauha.png/250px-Ruotsin_miekkaritarikunnan_suurristin_nauha.png' },
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of the Sword - Commander', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Ruotsin_miekkaritarikunnan_komenta_nauha.png/250px-Ruotsin_miekkaritarikunnan_komenta_nauha.png' },
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of the Sword - Knight 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Ruotsin_miekkaritarikunnan_ritarimerkin_nauha.png/250px-Ruotsin_miekkaritarikunnan_ritarimerkin_nauha.png' },
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of the Sword - Knight', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Ruotsin_miekkaritarikunnan_nauha.png/250px-Ruotsin_miekkaritarikunnan_nauha.png' },
+  // Royal Order of Vasa (reactivated 2023)
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of Vasa - Commander Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/SWE_Order_of_Vasa_-_Commander_Grand_Cross_BAR.png/250px-SWE_Order_of_Vasa_-_Commander_Grand_Cross_BAR.png' },
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of Vasa - Commander 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/SWE_Order_of_Vasa_-_Commander_1st_Class_BAR.png/250px-SWE_Order_of_Vasa_-_Commander_1st_Class_BAR.png' },
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of Vasa - Commander', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/SWE_Order_of_Vasa_-_Commander_BAR.png/250px-SWE_Order_of_Vasa_-_Commander_BAR.png' },
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of Vasa - Knight 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/SWE_Order_of_Vasa_-_Knight_1st_Class_BAR.png/250px-SWE_Order_of_Vasa_-_Knight_1st_Class_BAR.png' },
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of Vasa - Knight 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/SWE_Order_of_Vasa_-_Knight_2nd_Class_BAR.png/250px-SWE_Order_of_Vasa_-_Knight_2nd_Class_BAR.png' },
+  // Military Medals
+  // Swedish Armed Forces Medal of Merit (1995-2009 with sword variants)
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Medal of Merit with Sword - Gold (1995-2007)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_guld.png/250px-F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_guld.png' },
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Medal of Merit with Sword - Silver (1995-2007)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_silver.png/250px-F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_silver.png' },
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Medal of Merit (1995-2007)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_utan_sv%C3%A4rd.png/250px-F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_utan_sv%C3%A4rd.png' },
+  // Swedish Armed Forces Medal of Merit (2008-2023 series)
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Medal of Merit - Gold (2008-2023)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/FMGM.png/250px-FMGM.png' },
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Medal of Merit - Silver (2008-2023)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/FMGMmsv.png/250px-FMGMmsv.png' },
+  // Swedish Armed Forces Medal for Wounded in Battle (2011-)
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Medal for Wounded in Battle - Silver with Star', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/FMSMsismstj.png/250px-FMSMsismstj.png' },
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Medal for Wounded in Battle - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/FMSNsismstj2.png/250px-FMSNsismstj2.png' },
+  // Swedish Armed Forces International Service Medal (1991-)
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces International Service Medal with Sword - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/FMintGMmsv_bar.png/250px-FMintGMmsv_bar.png' },
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces International Service Medal - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/FMintSMmsv.png/250px-FMintSMmsv.png' },
+  // Reserve Officer Medal (2003/2008-)
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Reserve Officer Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/FMresoffSM_-_F%C3%B6rsvarsmaktens_reservofficersmedalj_%28Sverige%29.png/250px-FMresoffSM_-_F%C3%B6rsvarsmaktens_reservofficersmedalj_%28Sverige%29.png' },
+  // Service Medal for National Defence (2015-)
+  { country: 'Sweden', branch: 'Sweden Long Service', name: 'Swedish Armed Forces Service Medal for National Defence', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/SWE_Armed_Forces_Medal_for_National_Defense.png/250px-SWE_Armed_Forces_Medal_for_National_Defense.png' },
+  // Service Medal
+  { country: 'Sweden', branch: 'Sweden Long Service', name: 'Swedish Armed Forces Service Medal - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/FMSMmsv.png/250px-FMSMmsv.png' },
+  { country: 'Sweden', branch: 'Sweden Long Service', name: 'Swedish Armed Forces Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/FMSMsis.png/250px-FMSMsis.png' },
+
+  // ─── SLOVAKIA ────────────────────────────────────────────────────────────────
+  // Orders - Pribina Cross (merit order awarded to military personnel)
+  { country: 'Slovakia', branch: 'Slovakia Orders', name: 'Pribina Cross - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/SVK_Pribinov_Kriz_1_triedy_BAR.svg/250px-SVK_Pribinov_Kriz_1_triedy_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Orders', name: 'Pribina Cross - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/SVK_Pribinov_Kriz_2_triedy_BAR.svg/250px-SVK_Pribinov_Kriz_2_triedy_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Orders', name: 'Pribina Cross - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/SVK_Pribinov_Kriz_3_triedy_BAR.svg/250px-SVK_Pribinov_Kriz_3_triedy_BAR.svg.png' },
+  // White Double Cross (awarded to foreign military & diplomats - borderline keep as international prestige award)
+  { country: 'Slovakia', branch: 'Slovakia Orders', name: 'Order of the White Double Cross - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/SVK_Rad_Bieleho_Dvojkriza_1_triedy_BAR.svg/250px-SVK_Rad_Bieleho_Dvojkriza_1_triedy_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Orders', name: 'Order of the White Double Cross - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/SVK_Rad_Bieleho_Dvojkriza_2_triedy_BAR.svg/250px-SVK_Rad_Bieleho_Dvojkriza_2_triedy_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Orders', name: 'Order of the White Double Cross - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/SVK_Rad_Bieleho_Dvojkriza_3_triedy_BAR.svg/250px-SVK_Rad_Bieleho_Dvojkriza_3_triedy_BAR.svg.png' },
+  // Gallantry
+  { country: 'Slovakia', branch: 'Slovakia Gallantry', name: 'Medal for Bravery', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/SVK_Medaila_za_statocnost_BAR.svg/250px-SVK_Medaila_za_statocnost_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Gallantry', name: 'Medal for Wounds in Combat', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/SVK_Medaila_Za_zranenie_v_boji_3x_BAR.svg/250px-SVK_Medaila_Za_zranenie_v_boji_3x_BAR.svg.png' },
+  // Service Medals
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal of the President of the Slovak Republic (2001)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/SVK_Medaila_prezidenta_SR_2001_BAR.svg/250px-SVK_Medaila_prezidenta_SR_2001_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal of the President of the Slovak Republic (2008)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/SVK_Medaila_prezidenta_SR_2008_BAR.svg/250px-SVK_Medaila_prezidenta_SR_2008_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Gratitude Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/SVK_Gratitude_Medal_BAR.svg/250px-SVK_Gratitude_Medal_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal for Humanitarian Aid', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/SVK_Medaila_Za_humanitarnu_pomoc_BAR.svg/250px-SVK_Medaila_Za_humanitarnu_pomoc_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal for Observer of Peacekeeping Missions', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/SVK_Med_Observer_Peacekeeping_Missions_2002_%28V%29_BAR.svg/250px-SVK_Med_Observer_Peacekeeping_Missions_2002_%28V%29_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal of Military Counterintelligence - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/SVK_Med_voj_obranneho_spravodajstva_1-st_BAR.png/250px-SVK_Med_voj_obranneho_spravodajstva_1-st_BAR.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal of Military Counterintelligence - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/SVK_Med_voj_obranneho_spravodajstva_2-st_BAR.png/250px-SVK_Med_voj_obranneho_spravodajstva_2-st_BAR.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal of Military Counterintelligence - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/SVK_Med_voj_obranneho_spravodajstva_3-st_BAR.png/250px-SVK_Med_voj_obranneho_spravodajstva_3-st_BAR.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal of Military Intelligence Service - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/SVK_Med_voj_spravodajskej_sluzby_1-st_BAR.png/250px-SVK_Med_voj_spravodajskej_sluzby_1-st_BAR.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal of Military Intelligence Service - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/SVK_Med_voj_spravodajskej_sluzby_2-st_BAR.png/250px-SVK_Med_voj_spravodajskej_sluzby_2-st_BAR.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal of Military Intelligence Service - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/SVK_Med_voj_spravodajskej_sluzby_3-st_BAR.png/250px-SVK_Med_voj_spravodajskej_sluzby_3-st_BAR.png' },
+  // Commemorative
+  { country: 'Slovakia', branch: 'Slovakia Commemorative', name: 'Commemorative Medal of the Minister of Defence - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/SVK_Commemorative_Medal_Min-of-Def_1st_BAR.svg/250px-SVK_Commemorative_Medal_Min-of-Def_1st_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Commemorative', name: 'Commemorative Medal of the Minister of Defence - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/SVK_Commemorative_Medal_Min-of-Def_2nd_BAR.svg/250px-SVK_Commemorative_Medal_Min-of-Def_2nd_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Commemorative', name: 'Commemorative Medal of the Minister of Defence - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/SVK_Commemorative_Medal_Min-of-Def_3rd_BAR.svg/250px-SVK_Commemorative_Medal_Min-of-Def_3rd_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Commemorative', name: 'Commemorative Cross of the Chief of General Staff - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/SVK_Pamatny_kriz_nacelnika_GS_OSSR_1-st_BAR.svg/250px-SVK_Pamatny_kriz_nacelnika_GS_OSSR_1-st_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Commemorative', name: 'Commemorative Cross of the Chief of General Staff - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/SVK_Pamatny_kriz_nacelnika_GS_OSSR_2-st_BAR.svg/250px-SVK_Pamatny_kriz_nacelnika_GS_OSSR_2-st_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Commemorative', name: 'Commemorative Cross of the Chief of General Staff - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/SVK_Pamatny_kriz_nacelnika_GS_OSSR_3-st_BAR.svg/250px-SVK_Pamatny_kriz_nacelnika_GS_OSSR_3-st_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Commemorative', name: 'Commemorative Medal for 20th Anniversary of Slovak Armed Forces', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/SVK_Pam_Med_k20_vyr_vzn_OSSR_BAR.svg/250px-SVK_Pam_Med_k20_vyr_vzn_OSSR_BAR.svg.png' },
 ];
