@@ -194,9 +194,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.medals.pl/bc/r/uk1cmm.gif": [
     { type: 'select', name: "uk1cmm", label: 'Select variant', tooltip: "uk1cmm", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/uk1cmm.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/uk1cmm1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/uk1cmm2.gif" }] },
   ],
-  "https://www.medals.pl/bc/r/uk1crrc.gif": [
-    { type: 'select', name: "uk1crrc", label: 'Select variant', tooltip: "1.Royal Red Cross (RRC)\n2.Associate Royal Red Cross (ARRC)", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/uk1crrc.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/uk1crrc.gif" }] },
-  ],
+
   "https://www.medals.pl/bc/r/uk1macb.gif": [
     { type: 'select', name: "uk1macb", label: 'Select variant', tooltip: "uk1macb", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/uk1macb.gif" }, { value: "2", label: "1 Clasp", url: "https://www.medals.pl/bc/r/uk1macb1.gif" }, { value: "3", label: "2 Clasps", url: "https://www.medals.pl/bc/r/uk1macb2.gif" }, { value: "4", label: "3 Clasps", url: "https://www.medals.pl/bc/r/uk1macb3.gif" }, { value: "5", label: "4 Clasps", url: "https://www.medals.pl/bc/r/uk1macb4.gif" }, { value: "6", label: "5 Clasps", url: "https://www.medals.pl/bc/r/uk1macb5.gif" }, { value: "7", label: "6 Clasps", url: "https://www.medals.pl/bc/r/uk1macb6.gif" }] },
   ],
@@ -1029,9 +1027,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/LTU_Order_of_the_Cross_of_Vytis_-_Grand_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Grand_Cross_BAR.svg.png": [
     { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Grand Cross", label: "Grand Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/LTU_Order_of_the_Cross_of_Vytis_-_Grand_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Grand_Cross_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LTU_Order_of_the_Cross_of_Vytis_-_Commander%27s_Grand_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Commander%27s_Grand_Cross_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/LTU_Order_of_the_Cross_of_Vytis_-_Commander%27s_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Commander%27s_Cross_BAR.svg.png" }, { value: "Officer", label: "Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/LTU_Order_of_the_Cross_of_Vytis_-_Officer%27s_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Officer%27s_Cross_BAR.svg.png" }, { value: "Knight", label: "Knight", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/LTU_Order_of_the_Cross_of_Vytis_-_Knight%27s_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Knight%27s_Cross_BAR.svg.png" }, { value: "Medal", label: "Medal", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/LTU_Order_of_the_Cross_of_Vytis_-_Medal_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Medal_BAR.svg.png" }] },
   ],
-  "https://www.medals.pl/bc/r/uk1bqcb.gif": [
-    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Conspicuous Gallantry Cross", label: "Conspicuous Gallantry Cross", url: "https://www.medals.pl/bc/r/uk1bqcb.gif" }, { value: "Conspicuous Gallantry Cross (1st Clasp)", label: "Conspicuous Gallantry Cross (1st Clasp)", url: "https://www.medals.pl/bc/r/uk1bqcba.gif" }] },
-  ],
+
 
   // ── ITALY: Order of Merit of the Republic (OMRI) — 6 grades ────────────────
   "https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/ITA_OMRI_2001_Cav_BAR.svg/250px-ITA_OMRI_2001_Cav_BAR.svg.png": [
