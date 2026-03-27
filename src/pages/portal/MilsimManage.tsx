@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, type ElementType } from "react";
-import { useLocation, useSearch } from "wouter";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { PortalLayout } from "@/components/layout/PortalLayout";
@@ -94,15 +94,13 @@ type Tab = "roles" | "ranks" | "roster" | "recognition" | "stream" | "questions"
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
   const [group, setGroup] = useState<GroupDetail | null | undefined>(undefined);
-  const searchStr = useSearch();
-  const urlParams = new URLSearchParams(searchStr);
-  const urlTab = urlParams.get("tab") as Tab | null;
-  const [tab, setTabState] = useState<Tab>(urlTab ?? "doctrine");
+  const [tab, setTabState] = useState<Tab>(() => {
+    const saved = localStorage.getItem("milsimManageTab") as Tab | null;
+    return saved ?? "doctrine";
+  });
   const setTab = (t: Tab) => {
     setTabState(t);
-    const p = new URLSearchParams(window.location.search);
-    p.set("tab", t);
-    window.history.replaceState(null, "", window.location.pathname + "?" + p.toString());
+    localStorage.setItem("milsimManageTab", t);
   };
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
