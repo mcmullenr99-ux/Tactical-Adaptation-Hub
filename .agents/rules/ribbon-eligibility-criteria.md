@@ -17,6 +17,9 @@ All ribbons/medals in the library MUST meet ALL of the following criteria:
 - ❌ No Civilian Emergency Services Awards (e.g. National Emergency Medal AUS)
 - ❌ No Civilian Public Service Awards (e.g. Australia Public Service Medal PSM)
 - ❌ No Civilian Humanitarian Awards (e.g. Humanitarian Overseas Service Medal)
+- ❌ No Homeland Security Awards (civilian department)
+- ❌ No Coast Guard Awards
+- ❌ No National Guard Awards
 
 ### Post-1980 Eligibility Rule
 - ✅ Campaign medals: only those for operations/service **post 1980**
@@ -26,6 +29,9 @@ All ribbons/medals in the library MUST meet ALL of the following criteria:
 - ❌ No Vietnam War Era medals (last awarded 1973)
 - ❌ No pre-1980 commemorative medals
 - ❌ No medals for operations/service that ended before 1980 with no subsequent awards
+- ❌ No foreign awards given to US/allied forces for Vietnam-era service (e.g. RVN Presidential Unit Citation, Vietnam Gallantry Cross)
+- ❌ No WW2-era Philippine ribbons (Philippine Defense, Liberation, Independence)
+- ❌ No China Service Medal (last awarded 1957)
 
 ### Research & Vetting Requirement
 - All medals must be cross-referenced against Google and Wikipedia before being added
@@ -33,11 +39,12 @@ All ribbons/medals in the library MUST meet ALL of the following criteria:
 
 ### Sorting Rule
 - In the Ribbon Library & Builder, all ribbons must be sorted into **categories based on purpose**, NOT military branch
-- Categories: Gallantry, Orders, Commendations, Campaign Medals, Service Medals, Commemorative (e.g. Jubilee awards), Long Service
+- Categories: Gallantry, Orders & Distinguished Service, Commendations, Campaign Medals, Service Medals, Long Service, Commemorative
+- US ribbons specifically use: `US Gallantry`, `US Orders & Distinguished Service`, `US Commendations`, `US Campaign Medals`, `US Service Medals`, `US Long Service`, `US Commemorative`
 
 ---
 
-## Reference: Removals Made 2026-03-27
+## Reference: Removals Made 2026-03-27 (Audit Pass 1)
 
 The following types were systematically removed during the initial eligibility audit:
 
@@ -56,6 +63,20 @@ The following types were systematically removed during the initial eligibility a
 **Norway:** War Medal (WW2), Defense Participation Medal 1940-45, Haakon VII Cross of Liberty, Haakon VII Freedom Medal (all WW2 only)  
 **Russia:** Order of St. Vladimir, St. Anne, St. Stanislas (Imperial era, all abolished by Soviets)
 
+## Reference: Removals Made 2026-03-27 (Audit Pass 2)
+
+**US missed in Pass 1:** Korea Service Ribbon (all 5 branches), Korea Service United Nations (Army, Marines, CG), Vietnam Service Medal Ribbon (Army), Republic of Vietnam Campaign Ribbon/Medal Ribbon (all 5 branches)
+
+## Reference: Removals Made 2026-03-27 (Audit Pass 3 — Updated Criteria)
+
+**US Coast Guard:** All 86 entries removed (Coast Guard excluded per updated criteria)  
+**Homeland Security:** Homeland Security Distinguished Service Medal (all branches), Dept of Homeland Security Outstanding Unit Award, Secretary of Transportation Outstanding Unit Award  
+**Vietnam-era foreign awards:** Republic of Vietnam Presidential/Gallantry/Civil Action Unit Citations, Vietnam Gallantry Cross, Vietnam Armed Forces Honor (1C & 2C), Vietnam Civil Action (1C & 2C)  
+**WW2-era Philippine awards:** Philippine Defense, Philippine Liberation, Philippine Independence  
+**Pre-1980:** China Service Medal (last awarded 1957), Philippines Republic Presidential Unit Citation (1944/45), Republic of Korea Presidential Unit Citation (Korean War era)  
+**Deduplication:** 122 duplicate entries removed (same ribbon was listed under each branch — now deduplicated to 1 per ribbon)  
+**Recategorisation:** All US ribbons moved from branch-based to 7 purpose-based categories
+
 ---
 
 ## Borderline Decisions (Kept)
@@ -63,6 +84,7 @@ The following types were systematically removed during the initial eligibility a
 - **UK Royal Red Cross (RRC)** — Military nursing decoration, awarded to military nursing personnel (not civilian nurses). Kept as military medical award.
 - **UN UNTSO Medal** — Mission ongoing since 1948, still actively awarding today. Kept (post-1980 awards verified).
 - **UN UNMOGIP Medal** — Kashmir mission, still ongoing. Kept.
+- **UN MONUC Medal** — Congo mission 1999-2010, post-1980. Kept.
 - **France Croix du Combattant** — Still awarded for modern French military combat ops (90 days combat service criterion). Kept.
 - **Netherlands Flying Cross** — Still awarded for modern military aviation bravery. Kept.
 - **Russia Cross/Medal of St. George** — Reinstated 1992, first modern award 2008 (Russo-Georgian War). Kept.
