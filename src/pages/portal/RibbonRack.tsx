@@ -277,7 +277,7 @@ export default function RibbonRack() {
                         className={`relative cursor-grab active:cursor-grabbing transition-all ${dragging === ribbon.id ? "opacity-40" : ""} ${dragOver === ribbon.id ? "ring-2 ring-primary" : ""}`}
                         title={ribbon.award_name ?? ribbon.name ?? ""}
                         onMouseEnter={() => setHovered(ribbon.id)} onMouseLeave={() => setHovered(null)}>
-                        <RibbonImage award={ribbon} size={52} modifierUrl={getModifierUrl(ribbon)} />
+                        (() => { const r = getModifierResult(ribbon); return <RibbonImage award={ribbon} size={52} modifierUrl={r.url} overlayUrl={r.overlayUrl} />; })()
                         {hovered === ribbon.id && (
                           <button onClick={() => toggleInBar(ribbon.id)}
                             className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center hover:bg-red-600 z-10"
@@ -346,14 +346,16 @@ export default function RibbonRack() {
                     const baseUrl = ribbonImageUrl(ribbon);
                     const modifiers = inBar ? getRibbonModifiers(baseUrl) : [];
                     const currentMods = barMods[ribbon.id] ?? {};
-                    const modUrl = inBar ? getModifierUrl(ribbon) : undefined;
+                    const modResult = inBar ? getModifierResult(ribbon) : {};
+                    const modUrl = modResult.url;
+                    const modOverlay = modResult.overlayUrl;
                     return (
                       <div key={ribbon.id}
                         className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all ${
                           inBar ? "border-primary/60 bg-primary/10 ring-1 ring-primary/30" : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
                         }`}>
                         <button className="flex flex-col items-center gap-2 w-full" onClick={() => toggleInBar(ribbon.id)}>
-                          <RibbonImage award={ribbon} size={44} modifierUrl={modUrl} />
+                          <RibbonImage award={ribbon} size={44} modifierUrl={modUrl} overlayUrl={modOverlay} />
                           <div className="text-center">
                             <p className="text-[10px] font-display font-bold uppercase tracking-wider leading-tight line-clamp-2">
                               {ribbon.award_name ?? ribbon.name ?? "Ribbon"}

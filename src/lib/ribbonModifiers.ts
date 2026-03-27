@@ -4,7 +4,8 @@
 export interface RibbonModifierOption {
   value: string;
   label: string;
-  url: string;
+  url?: string;
+  overlayUrl?: string;
 }
 
 export interface RibbonModifier {
