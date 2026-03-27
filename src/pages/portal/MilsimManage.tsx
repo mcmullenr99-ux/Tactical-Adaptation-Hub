@@ -456,7 +456,7 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
 const _PRO_STATUS_URL_MANAGE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/getProStatus";
 
 /* ─── Doctrine Tab (Info + SOPs + Org Chart + Training Docs) ──────────────── */
-type DoctrineSubTab = "info" | "sops" | "orgchart" | "training";
+type DoctrineSubTab = "info" | "sops" | "orbat" | "orgchart" | "training";
 
 function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const [sub, setSub] = useState<DoctrineSubTab>("info");
@@ -464,6 +464,7 @@ function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const SUB_TABS: { id: DoctrineSubTab; label: string; icon: typeof Shield }[] = [
     { id: "info",      label: "Unit Info",      icon: Shield },
     { id: "sops",      label: "SOPs",           icon: BookOpen },
+    { id: "orbat",     label: "ORBAT",          icon: GitBranch },
     { id: "orgchart",  label: "Org Chart",      icon: GitBranch },
     { id: "training",  label: "Training Docs",  icon: Brain },
   ];
@@ -489,6 +490,7 @@ function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
       <motion.div key={sub} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.12 }}>
         {sub === "info"     && <InfoTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
         {sub === "sops"     && <SopsOnlyTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+        {sub === "orbat"    && <OrbatOnlyTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
         {sub === "orgchart" && <OrgChartTab group={group} />}
         {sub === "training" && <TrainingDocsTab group={group} showMsg={showMsg} />}
       </motion.div>
@@ -1010,11 +1012,10 @@ function AwardImage({ path, fallbackIcon: FIcon }: { path: string | null | undef
 
 // ─── Recognition Tab (Awards + Commendations + Qualifications merged) ────────
 function RecognitionTab({ group, showMsg }: any) {
-  const [sub, setSub] = useState<"awards" | "commendations" | "quals">("awards");
+  const [sub, setSub] = useState<"awards" | "quals">("awards");
   const SUB_TABS = [
-    { id: "awards" as const,        label: "Awards",         icon: Medal },
-    { id: "commendations" as const, label: "Commendations",  icon: Megaphone },
-    { id: "quals" as const,         label: "Qualifications", icon: GraduationCap },
+    { id: "awards" as const, label: "Awards",         icon: Medal },
+    { id: "quals" as const,  label: "Qualifications", icon: GraduationCap },
   ];
   return (
     <div className="space-y-4">
@@ -1029,9 +1030,8 @@ function RecognitionTab({ group, showMsg }: any) {
           </button>
         ))}
       </div>
-      {sub === "awards"        && <AwardsTab        group={group} showMsg={showMsg} />}
-      {sub === "commendations" && <CommendationsTab group={group} />}
-      {sub === "quals"         && <QualsTab         group={group} showMsg={showMsg} />}
+      {sub === "awards" && <AwardsTab group={group} showMsg={showMsg} />}
+      {sub === "quals"  && <QualsTab  group={group} showMsg={showMsg} />}
     </div>
   );
 }
@@ -1129,8 +1129,9 @@ function AwardsTab({ group, showMsg }: any) {
   const [ribbonConfig, setRibbonConfig] = useState<RibbonConfig>({ colors: ["#1a3a6b","#c8102e","#ffffff"], pattern: "thirds" });
   const [awardName, setAwardName] = useState("");
   const [pickerCountry, setPickerCountry] = useState<string>("");
-  const [pickerBranch, setPickerBranch] = useState<string>("");
+  const [pickerBranch, setPickerBranch] = useState<string>("US Army");
   const [pickerSearch, setPickerSearch] = useState<string>("");
+  const [pickerPage, setPickerPage] = useState<number>(0);
   const [selectedTemplate, setSelectedTemplate] = useState<RibbonTemplate | null>(null);
   const [desc, setDesc] = useState("");
   const [creating, setCreating] = useState(false);
@@ -1145,9 +1146,9 @@ function AwardsTab({ group, showMsg }: any) {
     setLoading(true);
     try {
       const [defsData, issuedData, rosterData] = await Promise.all([
-        apiFetch<any>(`/milsimAwards?path=${group.id}/award-defs`),
-        apiFetch<any>(`/milsimAwards?path=${group.id}/awards`),
-        apiFetch<any>(`/milsimGroups?path=roster&group_id=${group.id}`),
+        apiFetch<any>(`/milsimAwards?path=${group.id}/award-defs`).catch(() => []),
+        apiFetch<any>(`/milsimAwards?path=${group.id}/awards`).catch(() => []),
+        apiFetch<any>(`/milsimGroups?path=mine/own`).catch(() => ({ roster: [] })),
       ]);
       setDefs(Array.isArray(defsData) ? defsData : []);
       setIssued(Array.isArray(issuedData) ? issuedData : []);
@@ -1159,20 +1160,28 @@ function AwardsTab({ group, showMsg }: any) {
   useEffect(() => { load(); }, [load]);
 
   // Derive available branches based on selected country
-  const availableBranches = pickerCountry ? (RIBBON_BRANCHES_BY_COUNTRY[pickerCountry] ?? []) : [];
+  const availableBranches = pickerCountry
+    ? (RIBBON_BRANCHES_BY_COUNTRY[pickerCountry] ?? [])
+    : [];
 
   // Filter ribbon templates
   const filteredTemplates = RIBBON_TEMPLATES.filter(r => {
     if (pickerCountry && r.country !== pickerCountry) return false;
     if (pickerBranch && r.branch !== pickerBranch) return false;
-    if (pickerSearch && !r.name.toLowerCase().includes(pickerSearch.toLowerCase())) return false;
+    if (pickerSearch) {
+      const q = pickerSearch.toLowerCase();
+      if (!r.name.toLowerCase().includes(q) && !(r.sku ?? '').toLowerCase().includes(q)) return false;
+    }
     return true;
   });
+  const RIBBONS_PER_PAGE = 48;
+  const totalPages = Math.ceil(filteredTemplates.length / RIBBONS_PER_PAGE);
+  const pagedTemplates = filteredTemplates.slice(pickerPage * RIBBONS_PER_PAGE, (pickerPage + 1) * RIBBONS_PER_PAGE);
 
   const resetForm = () => {
     setShowCreate(false);
     setSelectedTemplate(null);
-    setPickerCountry(""); setPickerBranch(""); setPickerSearch(""); setDesc("");
+    setPickerCountry(""); setPickerBranch("US Army"); setPickerSearch(""); setDesc(""); setPickerPage(0);
     setAwardName(""); setRibbonConfig({ colors: ["#1a3a6b","#c8102e","#ffffff"], pattern: "thirds" });
     setCreateMode("build");
   };
@@ -1325,7 +1334,7 @@ function AwardsTab({ group, showMsg }: any) {
               <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="font-display font-black text-xs uppercase tracking-widest text-primary">Add Award from Ribbon Library</p>
-                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">392 real-world ribbons — US (all branches), UK, Australia, Canada, New Zealand</p>
+                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">1,172 curated military ribbons — US, UK, Australia, Canada, NATO & 23 nations</p>
                 </div>
                 <button onClick={resetForm} className="text-muted-foreground hover:text-foreground transition-colors ml-4 shrink-0">
                   <XCircle className="w-4 h-4" />
@@ -1339,7 +1348,7 @@ function AwardsTab({ group, showMsg }: any) {
                   <div>
                     <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Country</label>
                     <select value={pickerCountry}
-                      onChange={e => { setPickerCountry(e.target.value); setPickerBranch(""); setSelectedTemplate(null); }}
+                      onChange={e => { const v = e.target.value; setPickerCountry(v); const brs = RIBBON_BRANCHES_BY_COUNTRY[v] ?? []; setPickerBranch(brs.length === 1 ? brs[0] : ""); setSelectedTemplate(null); setPickerPage(0); }}
                       className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground">
                       <option value="">All countries</option>
                       {RIBBON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -1348,7 +1357,7 @@ function AwardsTab({ group, showMsg }: any) {
                   <div>
                     <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Branch / Force</label>
                     <select value={pickerBranch}
-                      onChange={e => { setPickerBranch(e.target.value); setSelectedTemplate(null); }}
+                      onChange={e => { setPickerBranch(e.target.value); setSelectedTemplate(null); setPickerPage(0); }}
                       disabled={!pickerCountry}
                       className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground disabled:opacity-40">
                       <option value="">All branches</option>
@@ -1358,7 +1367,7 @@ function AwardsTab({ group, showMsg }: any) {
                   <div className="col-span-2 sm:col-span-1">
                     <label className="block text-[10px] font-display uppercase tracking-widest text-muted-foreground mb-1">Search</label>
                     <input value={pickerSearch}
-                      onChange={e => { setPickerSearch(e.target.value); setSelectedTemplate(null); }}
+                      onChange={e => { setPickerSearch(e.target.value); setSelectedTemplate(null); setPickerPage(0); }}
                       placeholder="e.g. Bronze Star, Victoria Cross..."
                       className="w-full bg-background border border-border rounded px-2 py-1.5 text-sm font-sans text-foreground" />
                   </div>
@@ -1383,14 +1392,37 @@ function AwardsTab({ group, showMsg }: any) {
                 {/* Ribbon grid */}
                 {!selectedTemplate && (
                   <div className="border border-border rounded-lg overflow-hidden">
-                    <div className="bg-secondary/40 border-b border-border px-3 py-2">
+                    <div className="bg-secondary/40 border-b border-border px-3 py-2 flex items-center justify-between gap-2">
                       <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">
-                        {filteredTemplates.length} ribbons {pickerSearch || pickerCountry ? "matching filters" : "available"} — click to select
+                        {filteredTemplates.length} ribbons {pickerSearch || pickerCountry ? "matching filters" : "available"}
+                        {totalPages > 1 && <span className="ml-1 text-primary">— page {pickerPage + 1}/{totalPages}</span>}
                       </p>
+                      {totalPages > 1 && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            disabled={pickerPage === 0}
+                            onClick={() => setPickerPage(p => Math.max(0, p - 1))}
+                            className="w-6 h-6 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs font-bold">
+                            ‹
+                          </button>
+                          {Array.from({ length: totalPages }, (_, i) => (
+                            <button key={i} onClick={() => setPickerPage(i)}
+                              className={`w-6 h-6 flex items-center justify-center rounded border text-[9px] font-display font-bold transition-colors ${pickerPage === i ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}>
+                              {i + 1}
+                            </button>
+                          ))}
+                          <button
+                            disabled={pickerPage >= totalPages - 1}
+                            onClick={() => setPickerPage(p => Math.min(totalPages - 1, p + 1))}
+                            className="w-6 h-6 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs font-bold">
+                            ›
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="max-h-72 overflow-y-auto p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                      {filteredTemplates.slice(0, 120).map((r, i) => (
-                        <button key={i} onClick={() => setSelectedTemplate(r)}
+                      {pagedTemplates.map((r, i) => (
+                        <button key={pickerPage * RIBBONS_PER_PAGE + i} onClick={() => setSelectedTemplate(r)}
                           title={`${r.name} (${r.country})`}
                           className="flex flex-col items-center gap-1 p-1.5 rounded border border-transparent hover:border-primary/50 hover:bg-primary/5 transition-all group">
                           <img src={r.url} alt={r.name}
@@ -1404,11 +1436,6 @@ function AwardsTab({ group, showMsg }: any) {
                       {filteredTemplates.length === 0 && (
                         <div className="col-span-6 text-center py-8 text-xs text-muted-foreground font-sans">
                           No ribbons match — try clearing filters
-                        </div>
-                      )}
-                      {filteredTemplates.length > 120 && (
-                        <div className="col-span-6 text-center py-2 text-[10px] text-muted-foreground font-sans">
-                          Showing 120 of {filteredTemplates.length} — use filters to narrow down
                         </div>
                       )}
                     </div>
@@ -1760,10 +1787,9 @@ function QuestionsTab({ group, onUpdated, showMsg }: any) {
 function CommendationsTab({ group }: any) {
   const [awards, setAwards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const ICONS: Record<string, typeof Medal> = { medal: Medal, star: Star, award: Award, shield: Shield };
   useEffect(() => {
     apiFetch<any[]>(`/api/milsim-groups/${group.id}/awards`)
-      .then(setAwards).catch(() => {}).finally(() => setLoading(false));
+      .then(d => setAwards(Array.isArray(d) ? d : [])).catch(() => setAwards([])).finally(() => setLoading(false));
   }, [group.id]);
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   return (
@@ -1775,23 +1801,27 @@ function CommendationsTab({ group }: any) {
         </div>
       ) : (
         <div className="space-y-3">
-          {awards.map((a: any) => {
-            const IconComp = ICONS[a.icon] ?? Medal;
-            return (
-              <div key={a.id} className="flex items-center gap-4 bg-card border border-border rounded-lg px-5 py-4">
-                <div className="w-11 h-11 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shrink-0"><IconComp className="w-5 h-5" /></div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{a.title}</p>
-                    <span className="text-xs text-muted-foreground">{a.awarded_at ? formatDistanceToNow(new Date(a.awarded_at), { addSuffix: true }) : ""}</span>
-                  </div>
-                  {a.callsign && <p className="text-xs text-primary font-display font-bold mt-0.5">Awarded to {a.callsign}</p>}
-                  {a.description && <p className="text-xs text-muted-foreground font-sans mt-1">{a.description}</p>}
-                  {a.awarded_by && <p className="text-xs text-muted-foreground">By {a.awarded_by}</p>}
-                </div>
+          {awards.map((a: any) => (
+            <div key={a.id} className="flex items-center gap-4 bg-card border border-border rounded-lg px-5 py-4">
+              <div className="w-11 h-11 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shrink-0">
+                {a.award_image_url ? (
+                  <img src={a.award_image_url} alt={a.award_name} className="w-8 h-8 object-contain" />
+                ) : (
+                  <Medal className="w-5 h-5" />
+                )}
               </div>
-            );
-          })}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{a.award_name}</p>
+                  <span className="text-xs text-muted-foreground">{a.created_date ? formatDistanceToNow(new Date(a.created_date), { addSuffix: true }) : ""}</span>
+                </div>
+                {a.recipient_callsign && <p className="text-xs text-primary font-display font-bold mt-0.5">Awarded to {a.recipient_callsign}</p>}
+                {a.award_description && <p className="text-xs text-muted-foreground font-sans mt-1">{a.award_description}</p>}
+                {a.reason && <p className="text-xs text-muted-foreground font-sans mt-0.5 italic">"{a.reason}"</p>}
+                {a.awarded_by && <p className="text-xs text-muted-foreground mt-0.5">By {a.awarded_by}</p>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -2183,7 +2213,7 @@ function AARField({ label, value }: { label: string; value: string }) {
 /* ─── WARNOs Tab ─────────────────────────────────────────────────────────── */
 function WarnosTab({ group, showMsg }: any) {
   const emptyForm = {
-    title: "", op_date: "", status: "draft",
+    title: "", op_date: "", op_id: "", status: "draft",
     situation_ground: "", situation_enemy: "", situation_friendly: "",
     mission: "",
     timings_hh: "", timings_nmb: "", timings_other: "",
@@ -2206,6 +2236,11 @@ function WarnosTab({ group, showMsg }: any) {
       .catch(() => {})
       .finally(() => setLoading(false));
   };
+  const [ops, setOps] = useState<any[]>([]);
+  useEffect(() => {
+    apiFetch<any>(`/api/milsim-groups/${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
+  }, [group.id]);
+
   useEffect(() => { load(); }, [group.id]);
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -2284,6 +2319,7 @@ function WarnosTab({ group, showMsg }: any) {
               <div className="col-span-2"><label className="mf-label">Title *</label><input value={form.title} onChange={setF("title")} className="mf-input" placeholder="Op IRON FIST — WARNO 1" /></div>
               <div><label className="mf-label">Op Date</label><input type="datetime-local" value={form.op_date} onChange={setF("op_date")} className="mf-input" /></div>
             </div>
+            <div><label className="mf-label">Linked Op</label><select value={form.op_id ?? ""} onChange={setF("op_id")} className="mf-input"><option value="">— No op —</option>{ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}</select></div>
             <div className="w-40"><label className="mf-label">Status</label>
               <select value={form.status} onChange={setF("status")} className="mf-input">
                 <option value="draft">Draft</option>
@@ -2454,12 +2490,17 @@ function AARsTab({ group, showMsg }: any) {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const emptyForm = { op_name: "", op_date: "", summary: "", objectives_hit: "", objectives_missed: "", casualties: "", commendations: "", recommendations: "", classification: "unclassified" };
+  const emptyForm = { op_name: "", op_date: "", op_id: "", summary: "", objectives_hit: "", objectives_missed: "", casualties: "", commendations: "", recommendations: "", classification: "unclassified" };
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).then(setAars).catch(() => {}).finally(() => setLoading(false)); };
   useEffect(() => { load(); }, [group.id]);
+  const [ops, setOps] = useState<any[]>([]);
+  useEffect(() => {
+    apiFetch<any>(`/api/milsim-groups/${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
+  }, [group.id]);
+
   const submit = async () => {
     if (!form.op_name.trim()) return; setSaving(true);
     try {
@@ -2485,6 +2526,7 @@ function AARsTab({ group, showMsg }: any) {
         <div className="bg-card border border-primary/30 rounded-lg p-6 space-y-4">
           <h3 className="font-display font-bold uppercase tracking-widest text-sm">{editId ? "Edit AAR" : "New AAR"}</h3>
           <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Op Name *</label><input value={form.op_name} onChange={setF("op_name")} className="mf-input" placeholder="Operation Iron Fist" /></div><div><label className="mf-label">Op Date</label><input type="date" value={form.op_date} onChange={setF("op_date")} className="mf-input" /></div></div>
+          <div><label className="mf-label">Linked Op</label><select value={form.op_id ?? ""} onChange={setF("op_id")} className="mf-input"><option value="">— No op —</option>{ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}</select></div>
           <div><label className="mf-label">Classification</label><select value={form.classification} onChange={setF("classification")} className="mf-input">{["unclassified","confidential","classified","top-secret"].map(c => <option key={c} value={c}>{c.replace("-"," ").toUpperCase()}</option>)}</select></div>
           <div><label className="mf-label">Summary</label><textarea rows={3} value={form.summary} onChange={setF("summary")} className="mf-input resize-none" placeholder="Overall mission summary..." /></div>
           <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Objectives Hit</label><textarea rows={3} value={form.objectives_hit} onChange={setF("objectives_hit")} className="mf-input resize-none" /></div><div><label className="mf-label">Objectives Missed</label><textarea rows={3} value={form.objectives_missed} onChange={setF("objectives_missed")} className="mf-input resize-none" /></div></div>
@@ -2565,7 +2607,7 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
       const [d, opsData, rosterData] = await Promise.all([
         apiFetch(`/milsimLace?path=list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
-        apiFetch(`/milsimGroups?path=roster&group_id=${group.id}`),
+        apiFetch(`/milsimGroups?path=mine/own`),
       ]);
       setReports(d.lace_reports ?? []);
       setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned"].includes(o.status)));
@@ -2807,7 +2849,7 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
       const [d, opsData, rosterData] = await Promise.all([
         apiFetch(`/milsimSitrep?path=list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
-        apiFetch(`/milsimGroups?path=roster&group_id=${group.id}`),
+        apiFetch(`/milsimGroups?path=mine/own`),
       ]);
       setReports(d.sitreps ?? []);
       setOps((opsData.events ?? []).filter((o:any) => ["Active","Confirmed","Planned"].includes(o.status)));
@@ -3141,7 +3183,7 @@ function MedevacTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "
       const [d, opsData, rosterData] = await Promise.all([
         apiFetch(`/milsimSitrep?path=medevac_list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
-        apiFetch(`/milsimGroups?path=roster&group_id=${group.id}`),
+        apiFetch(`/milsimGroups?path=mine/own`),
       ]);
       setRequests(d.medevacs ?? []);
       setOps((opsData.events ?? []).filter((o:any) => ["Active","Confirmed","Planned"].includes(o.status)));
@@ -3509,7 +3551,7 @@ function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string,
       const [d, opsData, rosterData] = await Promise.all([
         apiFetch(`/milsimConductReport?path=list&group_id=${group.id}`),
         apiFetch(`/activityCalendar?path=list&group_id=${group.id}`),
-        apiFetch(`/milsimGroups?path=roster&group_id=${group.id}`),
+        apiFetch(`/milsimGroups?path=mine/own`),
       ]);
       setReports(d.reports ?? []);
       setOps((opsData.events ?? []).filter((o: any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)));
@@ -3701,12 +3743,17 @@ function BriefingsTab({ group, showMsg }: any) {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const emptyForm = { title: "", op_date: "", ao: "", objectives: "", comms_plan: "", roe: "", additional_notes: "", status: "draft" };
+  const emptyForm = { title: "", op_date: "", op_id: "", ao: "", objectives: "", comms_plan: "", roe: "", additional_notes: "", status: "draft" };
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/briefings`).then(setBriefings).catch(() => {}).finally(() => setLoading(false)); };
   useEffect(() => { load(); }, [group.id]);
+  const [ops, setOps] = useState<any[]>([]);
+  useEffect(() => {
+    apiFetch<any>(`/api/milsim-groups/${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
+  }, [group.id]);
+
   const submit = async () => {
     if (!form.title.trim()) return; setSaving(true);
     try {
@@ -3732,6 +3779,7 @@ function BriefingsTab({ group, showMsg }: any) {
         <div className="bg-card border border-primary/30 rounded-lg p-6 space-y-4">
           <h3 className="font-display font-bold uppercase tracking-widest text-sm">{editId ? "Edit Briefing" : "New Briefing"}</h3>
           <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Title *</label><input value={form.title} onChange={setF("title")} className="mf-input" placeholder="Operation Iron Fist — OPORD" /></div><div><label className="mf-label">Op Date / Time</label><input type="datetime-local" value={form.op_date} onChange={setF("op_date")} className="mf-input" /></div></div>
+          <div><label className="mf-label">Linked Op</label><select value={form.op_id ?? ""} onChange={setF("op_id")} className="mf-input"><option value="">— No op —</option>{ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}</select></div>
           <div><label className="mf-label">Status</label><select value={form.status} onChange={setF("status")} className="mf-input"><option value="draft">Draft</option><option value="published">Published (visible to all members)</option><option value="archived">Archived</option></select></div>
           <div><label className="mf-label">Area of Operations (AO)</label><input value={form.ao} onChange={setF("ao")} className="mf-input" placeholder="Grid reference, map name..." /></div>
           <div><label className="mf-label">Objectives</label><textarea rows={4} value={form.objectives} onChange={setF("objectives")} className="mf-input resize-none" placeholder="1. Secure FOB Alpha&#10;2. Eliminate HVT Bravo..." /></div>
@@ -4052,7 +4100,7 @@ function ReputationTab({ group }: any) {
   useEffect(() => {
     Promise.all([
       apiFetch<any>(`/api/milsim-groups/${group.id}/full`),
-      apiFetch<any>(`/api/milsim-groups/${group.id}/pro-status`).catch(() => ({ is_pro: false })),
+      apiFetch<any>(`/getProStatus?group_id=${group.id}`).catch(() => ({ is_pro: false })),
     ]).then(([g, proStatus]) => {
       setRoster(g.roster ?? []);
       setIsProUnit(!!proStatus?.is_pro);
@@ -4336,7 +4384,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
     try {
       const [data, proStatus] = await Promise.all([
         apiFetch<any[]>(`/api/training-docs/${group.id}`),
-        apiFetch<any>(`/api/milsim-groups/${group.id}/pro-status`).catch(() => ({ is_pro: false })),
+        apiFetch<any>(`/getProStatus?group_id=${group.id}`).catch(() => ({ is_pro: false })),
       ]);
       setDocs(data ?? []);
       setIsProUnit(!!proStatus?.is_pro);
@@ -6112,10 +6160,10 @@ function RecruitPipelineTab({ group, showMsg }: any) {
     setMoving(true);
     const token = localStorage.getItem("tag_auth_token") ?? "";
     try {
-      await fetch(`${PIPELINE_URL}?path=${encodeURIComponent(`/${app.id}/review`)}`, {
-        method: "POST",
+      await fetch(`${PIPELINE_URL}?path=${encodeURIComponent(`/${group.id}/applications/${app.id}`)}`, {
+        method: "PATCH",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus, review_note: note ?? reviewNote }),
+        body: JSON.stringify({ status: newStatus, reviewNote: note ?? reviewNote }),
       });
       const updated = { ...app, status: newStatus, review_note: note ?? reviewNote };
       setApps(prev => prev.map(a => a.id === app.id ? updated : a));
@@ -6255,15 +6303,23 @@ function RecruitPipelineTab({ group, showMsg }: any) {
             </div>
 
             {/* Answers */}
-            {selected.answers && Object.keys(selected.answers).length > 0 && (
+            {selected.answers && (Array.isArray(selected.answers) ? selected.answers.length > 0 : Object.keys(selected.answers).length > 0) && (
               <div className="space-y-3">
                 <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Application Answers</p>
-                {Object.entries(selected.answers).map(([q, a]: any) => (
-                  <div key={q} className="bg-secondary/30 rounded p-3 border border-border">
-                    <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-1">{q}</p>
-                    <p className="text-sm font-sans text-foreground leading-relaxed">{a}</p>
-                  </div>
-                ))}
+                {Array.isArray(selected.answers)
+                  ? selected.answers.map((item: any, i: number) => (
+                    <div key={i} className="bg-secondary/30 rounded p-3 border border-border">
+                      <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-1">{item.question}</p>
+                      <p className="text-sm font-sans text-foreground leading-relaxed">{item.answer || <span className="italic text-muted-foreground">No answer provided</span>}</p>
+                    </div>
+                  ))
+                  : Object.entries(selected.answers).map(([q, a]: any) => (
+                    <div key={q} className="bg-secondary/30 rounded p-3 border border-border">
+                      <p className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground mb-1">{q}</p>
+                      <p className="text-sm font-sans text-foreground leading-relaxed">{a}</p>
+                    </div>
+                  ))
+                }
               </div>
             )}
 
@@ -6319,7 +6375,7 @@ function UnitLegacyTab({ group }: any) {
       apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`).catch(() => []),
       apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).catch(() => []),
       fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`, { headers }).then(r => r.json()).catch(() => []),
-      apiFetch<any>(`/api/milsim-groups/${group.id}/pro-status`).catch(() => ({ is_pro: false })),
+      apiFetch<any>(`/getProStatus?group_id=${group.id}`).catch(() => ({ is_pro: false })),
     ]).then(([o, a, c, proStatus]) => {
       setOps(Array.isArray(o) ? o : []);
       setAars(Array.isArray(a) ? a : []);

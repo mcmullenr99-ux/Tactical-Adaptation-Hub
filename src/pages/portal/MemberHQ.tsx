@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { useAuth } from "@/components/auth/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
@@ -10,6 +10,7 @@ import {
   GripVertical, Rows3, Save, RefreshCw, Info, Crown
 } from "lucide-react";
 import { Link } from "wouter";
+import { getRibbonModifiers } from '@/lib/ribbonModifiers';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 const CL: Record<string, string> = {
@@ -1140,7 +1141,9 @@ const RIBBON_SLUG_MAP: Record<string, string> = {
   "Superior Unit Award":                        "army_superior_unit_award_ribbon",
 };
 
-function ribbonImageUrl(award: any): string {
+function ribbonImageUrl(award: any, modifierUrl?: string): string {
+  // 0. Modifier override (e.g. w. bar, clasps)
+  if (modifierUrl) return modifierUrl;
   // 1. Custom image uploaded by commander
   if (award.award_image_url) return award.award_image_url;
   // 2. Try mapping name to uniformribbons.com asset
@@ -1163,8 +1166,8 @@ function CssRibbon({ award, size = 40 }: { award: any; size?: number }) {
   );
 }
 
-function RibbonImage({ award, size = 40 }: { award: any; size?: number }) {
-  const url = ribbonImageUrl(award);
+function RibbonImage({ award, size = 40, modifierUrl }: { award: any; size?: number; modifierUrl?: string }) {
+  const url = ribbonImageUrl(award, modifierUrl);
   if (!url) return <CssRibbon award={award} size={size} />;
   return (
     <img
@@ -1181,11 +1184,17 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
   const [isPro, setIsPro]               = useState<boolean | null>(null);
   const [allRibbons, setAllRibbons]     = useState<any[]>([]); // all awarded ribbons
   const [barIds, setBarIds]             = useState<string[]>([]); // IDs in current bar
+  const [barMods, setBarMods]           = useState<Record<string, Record<string, string>>>({}); // modifier selections per ribbon id
   const [dragging, setDragging]         = useState<string | null>(null);
   const [dragOver, setDragOver]         = useState<string | null>(null);
   const [saving, setSaving]             = useState(false);
   const [loading, setLoading]           = useState(true);
   const [hovered, setHovered]           = useState<string | null>(null);
+  const [localRoster, setLocalRoster]   = useState<any | null>(null);
+  const [ribbonSearch, setRibbonSearch] = useState("");
+  const [ribbonCountry, setRibbonCountry] = useState("all");
+  const [ribbonPage, setRibbonPage]     = useState(1);
+  const RIBBONS_PER_PAGE = 24;
 
   useEffect(() => {
     if (!group?.id || !user?.id) return;
@@ -1193,7 +1202,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
       setLoading(true);
       try {
         // Check pro status
-        const proData = await apiFetch(`/getProStatus?path=status&group_id=${group.id}`);
+        const proData = await apiFetch(`/getProStatus?path=status&group_id=${group.id}`) as any;
         setIsPro(!!proData.is_pro);
         if (!proData.is_pro) { setLoading(false); return; }
 
@@ -1201,7 +1210,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
         const [awardsData, rosterData] = await Promise.all([
           apiFetch(`/milsimAwards?path=member_awards&group_id=${group.id}&user_id=${user.id}`),
           apiFetch(`/milsimGroups?path=roster_member&group_id=${group.id}&user_id=${user.id}`),
-        ]);
+        ]) as any[];
 
         // Only include ribbon-type awards
         const ribbons = (awardsData.awards ?? []).filter((a: any) =>
@@ -1210,10 +1219,14 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
         setAllRibbons(ribbons);
 
         // Load saved bar order from roster entry
-        const savedOrder: string[] = rosterData.roster_member?.ribbon_bar_order ?? [];
+        const member = rosterData.roster_member ?? null;
+        setLocalRoster(member);
+        const savedOrder: string[] = member?.ribbon_bar_order ?? [];
+        const savedMods: Record<string, Record<string, string>> = member?.ribbon_bar_mods ?? {};
         // Keep only IDs that still exist in granted ribbons
         const validIds = savedOrder.filter((id: string) => ribbons.some((r: any) => r.id === id));
         setBarIds(validIds);
+        setBarMods(savedMods);
       } catch {}
       setLoading(false);
     };
@@ -1246,14 +1259,15 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
   };
 
   const saveBar = async () => {
-    if (!rosterEntry?.id) return;
+    const rosterId = localRoster?.id ?? rosterEntry?.id;
+    if (!rosterId) { console.warn('[RibbonBar] saveBar: no roster id available'); return; }
     setSaving(true);
     try {
       await apiFetch(`/milsimGroups?path=update_roster_member`, {
         method: "POST",
-        body: JSON.stringify({ roster_id: rosterEntry.id, ribbon_bar_order: barIds }),
+        body: JSON.stringify({ roster_id: rosterId, ribbon_bar_order: barIds, ribbon_bar_mods: barMods }),
       });
-    } catch {}
+    } catch (e) { console.error('[RibbonBar] saveBar error:', e); }
     setSaving(false);
   };
 
@@ -1269,12 +1283,78 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
     </div>
   );
 
-  const barRibbons = barIds.map(id => allRibbons.find(r => r.id === id)).filter(Boolean);
-  const availableRibbons = allRibbons.filter(r => !barIds.includes(r.id));
+  // Compute active modifier image URL for a given ribbon
+  const getModifierUrl = (ribbon: any): string | undefined => {
+    const mods = barMods[ribbon.id];
+    if (!mods) return undefined;
+    const baseUrl = ribbonImageUrl(ribbon);
+    const modifiers = getRibbonModifiers(baseUrl);
+    // Select modifiers: find one with a value set
+    for (const mod of modifiers) {
+      if (mod.type === 'select' && mod.options) {
+        const selected = mods[mod.name];
+        if (selected) {
+          const opt = mod.options.find(o => o.value === selected);
+          if (opt?.url) return opt.url;
+        }
+      }
+    }
+    // Checkbox modifiers
+    for (const mod of modifiers) {
+      if (mod.type === 'checkbox' && mod.affectsImage && mods[mod.name] === '1') {
+        return mod.variantUrl;
+      }
+    }
+    return undefined;
+  };
 
-  // Chunk bar into rows of 3
+  const setMod = (ribbonId: string, modName: string, value: string) => {
+    setBarMods(prev => ({
+      ...prev,
+      [ribbonId]: { ...(prev[ribbonId] ?? {}), [modName]: value }
+    }));
+  };
+
+  const clearMod = (ribbonId: string, modName: string) => {
+    setBarMods(prev => {
+      const updated = { ...(prev[ribbonId] ?? {}) };
+      delete updated[modName];
+      return { ...prev, [ribbonId]: updated };
+    });
+  };
+
+  const barRibbons = barIds.map(id => allRibbons.find(r => r.id === id)).filter(Boolean);
+
+  // Derive unique countries from awarded ribbons for filter dropdown
+  const ribbonCountries = useMemo(() => {
+    const seen = new Set<string>();
+    allRibbons.forEach((r: any) => {
+      const country = r.source_country ?? r.award_description?.match(/^([A-Z]{2,3})\s/)?.[1] ?? null;
+      if (country) seen.add(country);
+    });
+    return Array.from(seen).sort();
+  }, [allRibbons]);
+
+  const filteredRibbons = useMemo(() => {
+    return allRibbons.filter((r: any) => {
+      const name = (r.award_name ?? r.name ?? "").toLowerCase();
+      const matchSearch = ribbonSearch === "" || name.includes(ribbonSearch.toLowerCase());
+      const country = r.source_country ?? null;
+      const matchCountry = ribbonCountry === "all" || country === ribbonCountry;
+      return matchSearch && matchCountry;
+    });
+  }, [allRibbons, ribbonSearch, ribbonCountry]);
+
+  const totalPages = Math.ceil(filteredRibbons.length / RIBBONS_PER_PAGE);
+  const pagedRibbons = filteredRibbons.slice((ribbonPage - 1) * RIBBONS_PER_PAGE, ribbonPage * RIBBONS_PER_PAGE);
+
+  // Reset to page 1 when search/filter changes
+  const handleRibbonSearch = (v: string) => { setRibbonSearch(v); setRibbonPage(1); };
+  const handleRibbonCountry = (v: string) => { setRibbonCountry(v); setRibbonPage(1); };
+
+  // Chunk bar into rows of 5
   const rows: any[][] = [];
-  for (let i = 0; i < barRibbons.length; i += 3) rows.push(barRibbons.slice(i, i + 3));
+  for (let i = 0; i < barRibbons.length; i += 5) rows.push(barRibbons.slice(i, i + 5));
 
   return (
     <div className="space-y-8 max-w-3xl">
@@ -1333,7 +1413,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
                       onMouseEnter={() => setHovered(ribbon.id)}
                       onMouseLeave={() => setHovered(null)}
                     >
-                      <RibbonImage award={ribbon} size={52} />
+                      <RibbonImage award={ribbon} size={52} modifierUrl={getModifierUrl(ribbon)} />
                       {hovered === ribbon.id && (
                         <button
                           onClick={() => toggleInBar(ribbon.id)}
@@ -1352,9 +1432,30 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
 
       {/* Available Awards */}
       <div className="border border-border rounded-lg overflow-hidden">
-        <div className="bg-secondary/40 border-b border-border px-5 py-3 flex items-center gap-2">
-          <p className="font-display font-black text-xs uppercase tracking-widest">Awarded Ribbons — Select to Add</p>
-          <span className="text-xs text-muted-foreground font-sans">({allRibbons.length} total granted)</span>
+        <div className="bg-secondary/40 border-b border-border px-5 py-3 flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <p className="font-display font-black text-xs uppercase tracking-widest">Awarded Ribbons — Select to Add</p>
+            <span className="text-xs text-muted-foreground font-sans">({allRibbons.length} total granted)</span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="text"
+              placeholder="Search ribbons..."
+              value={ribbonSearch}
+              onChange={e => handleRibbonSearch(e.target.value)}
+              className="text-xs bg-background border border-border rounded px-2 py-1 font-sans w-40 focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            {ribbonCountries.length > 0 && (
+              <select
+                value={ribbonCountry}
+                onChange={e => handleRibbonCountry(e.target.value)}
+                className="text-xs bg-background border border-border rounded px-2 py-1 font-sans focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="all">All Countries</option>
+                {ribbonCountries.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
+          </div>
         </div>
         <div className="p-5">
           {allRibbons.length === 0 ? (
@@ -1364,37 +1465,108 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
               <p className="text-[10px] text-muted-foreground/60 font-sans mt-1">Your commander issues ribbons from the unit's Awards section</p>
             </div>
           ) : (
+            <>
+            {filteredRibbons.length === 0 && (
+              <div className="text-center py-6 border border-dashed border-border rounded-lg mb-4">
+                <p className="text-xs font-sans text-muted-foreground">No ribbons match your search</p>
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {allRibbons.map((ribbon: any) => {
+              {pagedRibbons.map((ribbon: any) => {
                 const inBar = barIds.includes(ribbon.id);
+                const baseUrl = ribbonImageUrl(ribbon);
+                const modifiers = inBar ? getRibbonModifiers(baseUrl) : [];
+                const currentMods = barMods[ribbon.id] ?? {};
+                const modUrl = inBar ? getModifierUrl(ribbon) : undefined;
                 return (
-                  <button
+                  <div
                     key={ribbon.id}
-                    onClick={() => toggleInBar(ribbon.id)}
                     className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all ${
                       inBar
                         ? "border-primary/60 bg-primary/10 ring-1 ring-primary/30"
                         : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
                     }`}
                   >
-                    <RibbonImage award={ribbon} size={44} />
-                    <div className="text-center">
-                      <p className="text-[10px] font-display font-bold uppercase tracking-wider leading-tight line-clamp-2">
-                        {ribbon.award_name ?? ribbon.name ?? "Ribbon"}
-                      </p>
-                      {ribbon.reason && (
-                        <p className="text-[9px] text-muted-foreground font-sans mt-0.5 line-clamp-1">{ribbon.reason}</p>
-                      )}
-                    </div>
-                    <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
-                      inBar ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
-                    }`}>
-                      {inBar ? "In Rack ✓" : "Add to Rack"}
-                    </span>
-                  </button>
+                    {/* Clickable top area to toggle in/out of rack */}
+                    <button className="flex flex-col items-center gap-2 w-full" onClick={() => toggleInBar(ribbon.id)}>
+                      <RibbonImage award={ribbon} size={44} modifierUrl={modUrl} />
+                      <div className="text-center">
+                        <p className="text-[10px] font-display font-bold uppercase tracking-wider leading-tight line-clamp-2">
+                          {ribbon.award_name ?? ribbon.name ?? "Ribbon"}
+                        </p>
+                        {ribbon.reason && (
+                          <p className="text-[9px] text-muted-foreground font-sans mt-0.5 line-clamp-1">{ribbon.reason}</p>
+                        )}
+                      </div>
+                      <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
+                        inBar ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
+                      }`}>
+                        {inBar ? "In Rack ✓" : "Add to Rack"}
+                      </span>
+                    </button>
+                    {/* Modifier controls — only when ribbon is in rack and has modifiers */}
+                    {inBar && modifiers.length > 0 && (
+                      <div className="w-full border-t border-primary/20 pt-2 space-y-1.5" onClick={e => e.stopPropagation()}>
+                        {modifiers.map((mod) => (
+                          <div key={mod.name} className="flex flex-col gap-0.5">
+                            {mod.type === 'select' && mod.options && (
+                              <>
+                                <label className="text-[8px] text-muted-foreground font-sans uppercase tracking-wider">{mod.label}</label>
+                                <select
+                                  value={currentMods[mod.name] ?? mod.options[0].value}
+                                  onChange={e => setMod(ribbon.id, mod.name, e.target.value)}
+                                  className="text-[9px] bg-background border border-border rounded px-1 py-0.5 w-full font-sans"
+                                >
+                                  {mod.options.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                  ))}
+                                </select>
+                              </>
+                            )}
+                            {mod.type === 'checkbox' && (
+                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={currentMods[mod.name] === '1'}
+                                  onChange={e => e.target.checked ? setMod(ribbon.id, mod.name, '1') : clearMod(ribbon.id, mod.name)}
+                                  className="w-3 h-3 accent-primary"
+                                />
+                                <span className="text-[9px] text-muted-foreground font-sans">{mod.label}</span>
+                              </label>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
+                <button
+                  onClick={() => setRibbonPage(p => Math.max(1, p - 1))}
+                  disabled={ribbonPage === 1}
+                  className="px-3 py-1 text-xs font-display uppercase tracking-widest border border-border rounded hover:bg-secondary disabled:opacity-40"
+                >← Prev</button>
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(pg => (
+                    <button
+                      key={pg}
+                      onClick={() => setRibbonPage(pg)}
+                      className={`w-7 h-7 text-xs font-display rounded ${pg === ribbonPage ? "bg-primary text-primary-foreground" : "border border-border hover:bg-secondary"}`}
+                    >{pg}</button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setRibbonPage(p => Math.min(totalPages, p + 1))}
+                  disabled={ribbonPage === totalPages}
+                  className="px-3 py-1 text-xs font-display uppercase tracking-widest border border-border rounded hover:bg-secondary disabled:opacity-40"
+                >Next →</button>
+              </div>
+            )}
+            </>
           )}
         </div>
       </div>
@@ -1403,9 +1575,10 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
       <div className="flex items-start gap-3 p-4 bg-secondary/30 border border-border rounded-lg">
         <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
         <div className="text-xs text-muted-foreground font-sans space-y-1">
-          <p><strong className="text-foreground">Real ribbon assets</strong> — US-standard ribbons are sourced from uniformribbons.com. Custom unit ribbons use the image your commander uploaded.</p>
-          <p><strong className="text-foreground">Drag to reorder</strong> — within the rack preview, drag ribbons left/right to set your precedence order. Rows fill 3 per line, left to right.</p>
-          <p><strong className="text-foreground">Saving</strong> — click Save Bar to persist your arrangement. It will be visible on your public profile.</p>
+          <p><strong className="text-foreground">Ribbon images</strong> — Ribbons are sourced from an international medals database covering UK, Commonwealth, NATO and allied nations. Your unit's custom ribbons use the image uploaded by your commander.</p>
+          <p><strong className="text-foreground">Adding ribbons</strong> — Click any awarded ribbon below to toggle it into your rack. Only awards granted to you by your unit appear here.</p>
+          <p><strong className="text-foreground">Drag to reorder</strong> — Drag ribbons within the rack preview to set your precedence order. Rows fill 3 per line, left to right.</p>
+          <p><strong className="text-foreground">Saving</strong> — Click Save Bar to persist your arrangement. It will be visible on your public profile.</p>
         </div>
       </div>
     </div>
