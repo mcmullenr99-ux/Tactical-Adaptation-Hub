@@ -277,7 +277,7 @@ export default function RibbonRack() {
                         className={`relative cursor-grab active:cursor-grabbing transition-all ${dragging === ribbon.id ? "opacity-40" : ""} ${dragOver === ribbon.id ? "ring-2 ring-primary" : ""}`}
                         title={ribbon.award_name ?? ribbon.name ?? ""}
                         onMouseEnter={() => setHovered(ribbon.id)} onMouseLeave={() => setHovered(null)}>
-                        (() => { const r = getModifierResult(ribbon); return <RibbonImage award={ribbon} size={52} modifierUrl={r.url} overlayUrl={r.overlayUrl} />; })()
+                        {(() => { const r = getModifierResult(ribbon); return <RibbonImage award={ribbon} size={52} modifierUrl={r.url} overlayUrl={r.overlayUrl} />; })()}
                         {hovered === ribbon.id && (
                           <button onClick={() => toggleInBar(ribbon.id)}
                             className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center hover:bg-red-600 z-10"
