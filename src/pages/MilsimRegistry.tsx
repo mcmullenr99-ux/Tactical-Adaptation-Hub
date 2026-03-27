@@ -203,7 +203,7 @@ function WorldMap({ groups }: { groups: MilsimGroup[] }) {
   return (
     <div
       className="relative w-full border-b border-border overflow-hidden"
-      style={{ background: isDark ? "#0d0f14" : "#ffffff" }}
+      style={{ background: isDark ? "#0d0d0d" : "#ffffff" }}
     >
       {/* subtle scanline */}
       <div
