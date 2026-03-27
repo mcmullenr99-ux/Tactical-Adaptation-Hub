@@ -1319,7 +1319,7 @@ function AwardsTab({ group, showMsg }: any) {
                     <div className="flex items-center gap-4 p-4">
                       <div className="shrink-0 w-14 flex items-center justify-center">
                         {imgUrl
-                          ? <img src={imgUrl} alt={d.name} className="h-7 w-auto object-fill rounded-sm" />
+                          ? <img src={imgUrl} alt={d.name} className="h-7 w-20 object-cover rounded-sm" />
                           : <Medal className="w-6 h-6 text-muted-foreground opacity-40" />}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1461,7 +1461,7 @@ function AwardsTab({ group, showMsg }: any) {
                 {selectedTemplate && (
                   <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/30 rounded-lg">
                     <img src={selectedTemplate.url} alt={selectedTemplate.name}
-                      className="h-8 w-auto object-fill rounded-sm border border-white/10"
+                      className="h-8 w-24 object-cover rounded-sm border border-white/10"
                       onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }} />
                     <div className="flex-1 min-w-0">
                       <p className="font-display font-bold text-sm uppercase tracking-wider text-primary truncate">{selectedTemplate.name}</p>
@@ -1510,7 +1510,7 @@ function AwardsTab({ group, showMsg }: any) {
                           title={`${r.name} (${r.country})`}
                           className="flex flex-col items-center gap-1 p-1.5 rounded border border-transparent hover:border-primary/50 hover:bg-primary/5 transition-all group">
                           <img src={r.url} alt={r.name}
-                            className="h-5 w-auto object-fill rounded-sm"
+                            className="h-5 w-16 object-cover rounded-sm"
                             onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.15"; }} />
                           <p className="text-[8px] font-sans text-muted-foreground text-center leading-tight line-clamp-2 group-hover:text-foreground w-full">
                             {r.name.split(" (")[0]}
@@ -1564,7 +1564,7 @@ function AwardsTab({ group, showMsg }: any) {
               <div key={a.id} className="flex items-center gap-4 p-4 bg-card border border-border rounded-lg">
                 <div className="shrink-0 w-14 flex justify-center">
                   {a.award_image_url
-                    ? <img src={a.award_image_url} alt={a.award_name} className="h-7 w-auto object-fill rounded-sm" />
+                    ? <img src={a.award_image_url} alt={a.award_name} className="h-7 w-20 object-cover rounded-sm" />
                     : <Medal className="w-6 h-6 text-muted-foreground opacity-40" />}
                 </div>
                 <div className="flex-1 min-w-0">
