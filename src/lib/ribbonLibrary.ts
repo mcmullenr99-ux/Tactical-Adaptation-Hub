@@ -12,7 +12,7 @@ export interface RibbonTemplate {
   sku?: string;
 }
 
-export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand', 'Belgium', 'France', 'Italy', 'Greece', 'Norway', 'Netherlands', 'Russia', 'Poland', 'Luxembourg'];
+export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand', 'Belgium', 'France', 'Italy', 'Greece', 'Norway', 'Netherlands', 'Russia', 'Germany (NVA)', 'Poland', 'Luxembourg'];
 
 export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'United States': ['US Gallantry', 'US Orders & Distinguished Service', 'US Commendations', 'US Campaign Medals', 'US Service Medals', 'US Long Service', 'US Commemorative'],
@@ -28,7 +28,8 @@ export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'Greece': ['Greece Orders', 'Greece Gallantry & Crosses', 'Greece Campaign Medals'],
   'Norway': ['Norway Orders', 'Norway Gallantry & Crosses', 'Norway Campaign Medals'],
   'Netherlands': ['Netherlands Orders', 'Netherlands Gallantry & Crosses', 'Netherlands Campaign Medals'],
-  'Russia': ['Russia Orders'],
+  'Russia': ['Russia Gallantry', 'Russia Orders & Distinguished Service', 'Russia Commendations'],
+  'Germany (NVA)': ['Germany (NVA) Orders & Distinguished Service', 'Germany (NVA) Long Service', 'Germany (NVA) Commemorative'],
   'Poland': ['Poland Orders', 'Poland Gallantry & Crosses'],
   'Luxembourg': ['Luxembourg Orders', 'Luxembourg Gallantry & Crosses'],
 };
@@ -260,7 +261,50 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Netherlands', branch: 'Netherlands Gallantry & Crosses', name: 'Cross of Merit', url: 'https://www.medals.pl/nl/r/nl1cme.gif' },
 
   // ─── RUSSIA ─────────────────────────────────────────────────────────────────
-  { country: 'Russia', branch: 'Russia Orders', name: 'Cross/Medal of St. George', url: 'https://www.medals.pl/ru/r/ru1ogeo.gif' },
+  // Gallantry
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Order of Saint George - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/b/bf/RUS_Order_of_Saint_George_1st_class_ribbon_2000.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Order of Saint George - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/4/47/RUS_Order_of_Saint_George_2nd_class_ribbon_2000.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Order of Saint George - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/3/3f/RUS_Order_of_Saint_George_3rd_class_ribbon_2000.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Order of Saint George - 4th Class', url: 'https://upload.wikimedia.org/wikipedia/commons/1/18/RUS_Order_of_Saint_George_4th_class_ribbon_2000.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Cross of Saint George - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/1/1c/RUS_Cross_of_Saint_George_1st_class_ribbon_2000.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Cross of Saint George - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/7/78/RUS_Cross_of_Saint_George_2nd_class_ribbon_2000.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Cross of Saint George - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/2/2e/RUS_Cross_of_Saint_George_3rd_class_ribbon_2000.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Cross of Saint George - 4th Class', url: 'https://upload.wikimedia.org/wikipedia/commons/3/3e/RUS_Cross_of_Saint_George_4th_class_ribbon_2000.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Order of Courage', url: 'https://upload.wikimedia.org/wikipedia/commons/f/f5/RUS_Order_of_Courage_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Medal for Courage', url: 'https://upload.wikimedia.org/wikipedia/commons/f/f5/RUS_Medal_For_Courage_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Medal for Bravery - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/5/56/RUS_Medal_for_Bravery_1-st_BAR_2023.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Medal for Bravery - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/b/bd/RUS_Medal_for_Bravery_2-st_BAR_2023.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Order of Saint Andrew the Apostle (with Swords)', url: 'https://upload.wikimedia.org/wikipedia/commons/9/97/RUS_Saint_Andrew_the_Apostle_the_First-Called_Order_with_swords_ribbon.svg' },
+  // Orders & Distinguished Service
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Alexander Nevsky', url: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Order_of_Alexander_Nevsky_2010_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Suvorov', url: 'https://upload.wikimedia.org/wikipedia/commons/e/ea/RUS_Order_of_Suvorov_ribbon_2010.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Kutuzov', url: 'https://upload.wikimedia.org/wikipedia/commons/a/a3/RUS_Order_of_Kutuzov_ribbon_2010.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Ushakov', url: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/RUS_Order_of_Ushakov_ribbon_2010.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Nakhimov', url: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/RUS_Order_of_Nakhimov_ribbon_2010.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Zhukov', url: 'https://upload.wikimedia.org/wikipedia/commons/8/80/RUS_Order_of_Zhukov_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Military Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/9/93/RUS_Order_of_Military_Merit_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Naval Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/c/c0/RUS_Order_of_Naval_Merit_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order For Merit to the Fatherland - 3rd Class (with Swords)', url: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/RUS_For_Merit_to_the_Fatherland_Order_3rd_class_with_swords_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order For Merit to the Fatherland - 4th Class (with Swords)', url: 'https://upload.wikimedia.org/wikipedia/commons/c/cc/RUS_For_Merit_to_the_Fatherland_Order_4th_class_with_swords_ribbon.svg' },
+  // Commendations
+  { country: 'Russia', branch: 'Russia Commendations', name: 'Medal of Suvorov', url: 'https://upload.wikimedia.org/wikipedia/commons/6/66/RUS_Medal_of_Suvorov_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Commendations', name: 'Medal of Ushakov', url: 'https://upload.wikimedia.org/wikipedia/commons/2/2d/RUS_Medal_of_Ushakov_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Commendations', name: 'Medal of Zhukov', url: 'https://upload.wikimedia.org/wikipedia/commons/c/c6/RUS_Medal_of_Zhukov_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Commendations', name: 'Medal of Nesterov', url: 'https://upload.wikimedia.org/wikipedia/commons/2/23/RUS_Medal_of_Nesterov_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Commendations', name: 'Medal for Distinction in Protection of State Borders', url: 'https://upload.wikimedia.org/wikipedia/commons/c/cc/RUS_Medal_For_Distinction_in_the_Protection_of_the_State_Borders_ribbon.svg' },
+
+  // ─── GERMANY (NVA) ──────────────────────────────────────────────────────────
+  // Orders & Distinguished Service
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Orders & Distinguished Service', name: 'Militarischer Verdienstorden - Gold (Order of Military Merit - Gold)', url: 'https://www.medals.pl/de/r/drmvo1.gif' },
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Orders & Distinguished Service', name: 'Militarischer Verdienstorden - Silver (Order of Military Merit - Silver)', url: 'https://www.medals.pl/de/r/drmvo2.gif' },
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Orders & Distinguished Service', name: 'Militarischer Verdienstorden - Bronze (Order of Military Merit - Bronze)', url: 'https://www.medals.pl/de/r/drmvo3.gif' },
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Orders & Distinguished Service', name: 'Militarische Verdienstmedaille (Medal of Military Merit)', url: 'https://www.medals.pl/de/r/drmvm.gif' },
+  // Long Service
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Long Service', name: 'Ehrenzeichen fur Verdienste in der Reservistenarbeit - Gold (Reserve Service Medal - Gold)', url: 'https://www.medals.pl/de/r/drmvres1.gif' },
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Long Service', name: 'Ehrenzeichen fur Verdienste in der Reservistenarbeit - Silver (Reserve Service Medal - Silver)', url: 'https://www.medals.pl/de/r/drmvres2.gif' },
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Long Service', name: 'Ehrenzeichen fur Verdienste in der Reservistenarbeit - Bronze (Reserve Service Medal - Bronze)', url: 'https://www.medals.pl/de/r/drmvres3.gif' },
+  // Commemorative
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Commemorative', name: 'Ehrenmedaille 30 Jahre Nationale Volksarmee (30th Anniversary of NVA Medal)', url: 'https://www.medals.pl/de/r/drmnva30.gif' },
 
   // ─── POLAND ─────────────────────────────────────────────────────────────────
   { country: 'Poland', branch: 'Poland Orders', name: 'Order Virtuti Militari', url: 'https://www.medals.pl/pl/r/pl4ovm.gif' },
