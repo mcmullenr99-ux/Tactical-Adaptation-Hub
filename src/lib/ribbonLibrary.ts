@@ -30,7 +30,7 @@ export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'Netherlands': ['Netherlands Orders', 'Netherlands Gallantry & Crosses'],
   'Russia': ['Russia Gallantry', 'Russia Orders & Distinguished Service', 'Russia Commendations'],
   'Germany (NVA)': ['Germany (NVA) Orders & Distinguished Service', 'Germany (NVA) Long Service', 'Germany (NVA) Commemorative'],
-  'Poland': ['Poland Orders', 'Poland Gallantry & Crosses'],
+  'Poland': ['Poland Orders', 'Poland Gallantry & Crosses', 'Poland Service Medals', 'Poland Campaign Medals', 'Poland Commemorative'],
   'Luxembourg': ['Luxembourg Orders', 'Luxembourg Gallantry & Crosses'],
   'Switzerland': ['Switzerland Gallantry', 'Switzerland Service Medals', 'Switzerland Long Service', 'Switzerland Campaign Medals'],
   'Croatia': ['Croatia Gallantry', 'Croatia Orders & Distinguished Service', 'Croatia Service Medals', 'Croatia Campaign Medals'],
@@ -547,10 +547,99 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Germany (NVA)', branch: 'Germany (NVA) Commemorative', name: 'Ehrenmedaille 30 Jahre Nationale Volksarmee (30th Anniversary of NVA Medal)', url: 'https://www.medals.pl/de/r/drmnva30.gif' },
 
   // ─── POLAND ─────────────────────────────────────────────────────────────────
-  { country: 'Poland', branch: 'Poland Orders', name: 'Order Virtuti Militari', url: 'https://www.medals.pl/pl/r/pl4ovm.gif' },
-  { country: 'Poland', branch: 'Poland Orders', name: 'Order of Polonia Restituta', url: 'https://www.medals.pl/pl/r/pl4opr.gif' },
-  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Valor', url: 'https://www.medals.pl/pl/r/pl2cvab.gif' },
-  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Merit', url: 'https://www.medals.pl/pl/r/pl2cme.gif' },
+  // Orders
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order of the White Eagle', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/POL_Order_Or%C5%82a_Bia%C5%82ego_BAR.svg/250px-POL_Order_Or%C5%82a_Bia%C5%82ego_BAR.svg.png' },
+  // Order Virtuti Militari - 5 grades
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Virtuti Militari - Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/POL_Virtuti_Militari_Wielki_BAR.svg/250px-POL_Virtuti_Militari_Wielki_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Virtuti Militari - Commander', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/POL_Virtuti_Militari_Komandorski_BAR.svg/250px-POL_Virtuti_Militari_Komandorski_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Virtuti Militari - Gold Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/POL_Virtuti_Militari_Z%C5%82oty_BAR.svg/250px-POL_Virtuti_Militari_Z%C5%82oty_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Virtuti Militari - Silver Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/POL_Virtuti_Militari_Srebrny_BAR.svg/250px-POL_Virtuti_Militari_Srebrny_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Virtuti Militari - Knight', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/POL_Virtuti_Militari_Kawalerski_BAR.svg/250px-POL_Virtuti_Militari_Kawalerski_BAR.svg.png' },
+  // Order of the Military Cross (Krzyz Wojskowy) - established 2014
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order of the Military Cross - Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/POL_Order_Krzy%C5%BCa_Wojskowego_Wielki_BAR.svg/250px-POL_Order_Krzy%C5%BCa_Wojskowego_Wielki_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order of the Military Cross - Commander', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/POL_Order_Krzy%C5%BCa_Wojskowego_Komandorski_BAR.svg/250px-POL_Order_Krzy%C5%BCa_Wojskowego_Komandorski_BAR.svg.png' },
+  // Order Polonia Restituta - 5 grades
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Polonia Restituta - Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/POL_Polonia_Restituta_Wielki_BAR.svg/250px-POL_Polonia_Restituta_Wielki_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Polonia Restituta - Commander with Star', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/POL_Polonia_Restituta_Komandorski_ZG_BAR.svg/250px-POL_Polonia_Restituta_Komandorski_ZG_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Polonia Restituta - Commander', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/POL_Polonia_Restituta_Komandorski_BAR.svg/250px-POL_Polonia_Restituta_Komandorski_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Polonia Restituta - Officer', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/POL_Polonia_Restituta_Oficerski_BAR.svg/250px-POL_Polonia_Restituta_Oficerski_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Polonia Restituta - Knight', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/POL_Polonia_Restituta_Kawalerski_BAR.svg/250px-POL_Polonia_Restituta_Kawalerski_BAR.svg.png' },
+  // Order of Merit of the Republic of Poland - 5 grades
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order of Merit of the Republic of Poland - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/POL_Order_Zaslugi_RP_kl1_BAR.svg/250px-POL_Order_Zaslugi_RP_kl1_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order of Merit of the Republic of Poland - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/POL_Order_Zaslugi_RP_kl2_BAR.svg/250px-POL_Order_Zaslugi_RP_kl2_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order of Merit of the Republic of Poland - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/POL_Order_Zaslugi_RP_kl3_BAR.svg/250px-POL_Order_Zaslugi_RP_kl3_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order of Merit of the Republic of Poland - 4th Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/POL_Order_Zaslugi_RP_kl4_BAR.svg/250px-POL_Order_Zaslugi_RP_kl4_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order of Merit of the Republic of Poland - 5th Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/POL_Order_Zaslugi_RP_kl5_BAR.svg/250px-POL_Order_Zaslugi_RP_kl5_BAR.svg.png' },
+  // Gallantry & Crosses
+  // Cross of Valour - up to 4 awards
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Valour', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/POL_Krzy%C5%BC_Walecznych_BAR.svg/250px-POL_Krzy%C5%BC_Walecznych_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Valour - 2nd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/POL_Krzy%C5%BC_Walecznych_2r_BAR.svg/250px-POL_Krzy%C5%BC_Walecznych_2r_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Valour - 3rd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/POL_Krzy%C5%BC_Walecznych_3r_BAR.svg/250px-POL_Krzy%C5%BC_Walecznych_3r_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Valour - 4th Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/POL_Krzy%C5%BC_Walecznych_4r_BAR.svg/250px-POL_Krzy%C5%BC_Walecznych_4r_BAR.svg.png' },
+  // Military Cross (Krzyz Wojskowy - cross, not the Order)
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Military Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/POL_Krzy%C5%BC_Wojskowy_BAR.svg/250px-POL_Krzy%C5%BC_Wojskowy_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Military Cross - 2nd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/POL_Krzy%C5%BC_Wojskowy_2r_BAR.svg/250px-POL_Krzy%C5%BC_Wojskowy_2r_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Military Cross - 3rd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/POL_Krzy%C5%BC_Wojskowy_3r_BAR.svg/250px-POL_Krzy%C5%BC_Wojskowy_3r_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Military Cross - 4th Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/POL_Krzy%C5%BC_Wojskowy_4r_BAR.svg/250px-POL_Krzy%C5%BC_Wojskowy_4r_BAR.svg.png' },
+  // Cross of Merit for Bravery
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Merit for Bravery', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/POL_Krzy%C5%BC_Zas%C5%82ugi_za_Dzielno%C5%9B%C4%87_BAR.svg/250px-POL_Krzy%C5%BC_Zas%C5%82ugi_za_Dzielno%C5%9B%C4%87_BAR.svg.png' },
+  // Cross of Merit with Swords (Army, Air Force, Navy)
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Army Cross of Merit with Swords', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Army Cross of Merit with Swords - 2nd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg/250px-POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Air Force Cross of Merit with Swords', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Air Force Cross of Merit with Swords - 2nd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg/250px-POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Navy Cross of Merit with Swords', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Navy Cross of Merit with Swords - 2nd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg/250px-POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg.png' },
+  // Service Medals (Army/Air/Navy merit medals, multi-award)
+  // Medal Wojska (Army Service Medal)
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Army Medal - Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/POL_Z%C5%82oty_Medal_Wojska_Polskiego_BAR.svg/250px-POL_Z%C5%82oty_Medal_Wojska_Polskiego_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Army Medal - Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/POL_Srebrny_Medal_Wojska_Polskiego_BAR.svg/250px-POL_Srebrny_Medal_Wojska_Polskiego_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Army Medal - Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/POL_Br%C4%85zowy_Medal_Wojska_Polskiego_BAR.svg/250px-POL_Br%C4%85zowy_Medal_Wojska_Polskiego_BAR.svg.png' },
+  // Medal Wojska (multi-award service medal)
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Medal of the Armed Forces', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/POL_Medal_Wojska_BAR.svg/250px-POL_Medal_Wojska_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Medal of the Armed Forces - 2nd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/POL_Medal_Wojska_2r_BAR.svg/250px-POL_Medal_Wojska_2r_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Medal of the Armed Forces - 3rd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/POL_Medal_Wojska_3r_BAR.svg/250px-POL_Medal_Wojska_3r_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Medal of the Armed Forces - 4th Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/POL_Medal_Wojska_4r_BAR.svg/250px-POL_Medal_Wojska_4r_BAR.svg.png' },
+  // Medal Lotniczy (Air Force Medal)
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Air Force Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/POL_Medal_Lotniczy_BAR.svg/250px-POL_Medal_Lotniczy_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Air Force Medal - 2nd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/POL_Medal_Lotniczy_2r_BAR.svg/250px-POL_Medal_Lotniczy_2r_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Air Force Medal - 3rd Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/POL_Medal_Lotniczy_3r_BAR.svg/250px-POL_Medal_Lotniczy_3r_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Air Force Medal - 4th Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/POL_Medal_Lotniczy_4r_BAR.svg/250px-POL_Medal_Lotniczy_4r_BAR.svg.png' },
+  // Medal Morski (Navy Medal)
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Navy Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/POL_Medal_Morski_BAR.svg/250px-POL_Medal_Morski_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Navy Medal - 1st Oak Leaf', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/POL_Medal_Morski_1ok_BAR.svg/250px-POL_Medal_Morski_1ok_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Navy Medal - 2nd Oak Leaf', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/POL_Medal_Morski_2ok_BAR.svg/250px-POL_Medal_Morski_2ok_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Navy Medal - 3rd Oak Leaf', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/POL_Medal_Morski_3ok_BAR.svg/250px-POL_Medal_Morski_3ok_BAR.svg.png' },
+  // Medal Gloria Intrepidis (for distinguished acts in military operations)
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Medal Gloria Intrepidis et Animi Promptis', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/POL_Medal_Gloria_Intrepidis_et_Animi_Promptis_BAR.svg/250px-POL_Medal_Gloria_Intrepidis_et_Animi_Promptis_BAR.svg.png' },
+  // Campaign Medals - Afghanistan (PKW RS rotations)
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW Afghanistan Commemorative Medal (10th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/POL_Medal_Pam_Xzm_PKW_Afganistan_RS_BAR.svg/250px-POL_Medal_Pam_Xzm_PKW_Afganistan_RS_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW Afghanistan Commemorative Medal (11th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/POL_Medal_Pam_XIzm_PKW_Afganistan_RS_BAR.svg/250px-POL_Medal_Pam_XIzm_PKW_Afganistan_RS_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW Afghanistan Commemorative Medal (12th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/POL_Medal_Pam_XIIzm_PKW_Afganistan_RS_BAR.svg/250px-POL_Medal_Pam_XIIzm_PKW_Afganistan_RS_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW Afghanistan Commemorative Medal (13th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/POL_Medal_Pam_XIIIzm_PKW_Afganistan_RS_BAR.svg/250px-POL_Medal_Pam_XIIIzm_PKW_Afganistan_RS_BAR.svg.png' },
+  // Campaign Medals - Iraq
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW Iraq Commemorative Medal (NMI)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/POL_Medal_Pam_PKW_Irak_NMI_BAR.svg/250px-POL_Medal_Pam_PKW_Irak_NMI_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW Iraq Commemorative Medal (12th rotation, 2022)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/POL_Medal_Pam_PKW_Irak_XIIzm_%282022%29_BAR.svg/250px-POL_Medal_Pam_PKW_Irak_XIIzm_%282022%29_BAR.svg.png' },
+  // Campaign Medals - KFOR (Kosovo)
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW KFOR Commemorative Badge (generic)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/POL_Odznaka_pam_PKW_KFOR_BAR.svg/250px-POL_Odznaka_pam_PKW_KFOR_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW KFOR Commemorative Badge (35th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/POL_Odznaka_pam_XXXVzm_PKW_KFOR_BAR.svg/250px-POL_Odznaka_pam_XXXVzm_PKW_KFOR_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW KFOR Commemorative Badge (36th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/POL_Odznaka_pam_XXXVIzm_PKW_KFOR_BAR.svg/250px-POL_Odznaka_pam_XXXVIzm_PKW_KFOR_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW KFOR Commemorative Badge (37th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/POL_Odznaka_pam_XXXVIIzm_PKW_KFOR_BAR.svg/250px-POL_Odznaka_pam_XXXVIIzm_PKW_KFOR_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW KFOR Commemorative Badge (39th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/POL_Odznaka_pam_XXXIXzm_PKW_KFOR_BAR.svg/250px-POL_Odznaka_pam_XXXIXzm_PKW_KFOR_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW KFOR Commemorative Badge (41st rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/POL_Odznaka_pam_XLIzm_PKW_KFOR_BAR.svg/250px-POL_Odznaka_pam_XLIzm_PKW_KFOR_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW KFOR Commemorative Badge (42nd rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/POL_Odznaka_pam_XLIIzm_PKW_KFOR_BAR.svg/250px-POL_Odznaka_pam_XLIIzm_PKW_KFOR_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW KFOR Commemorative Badge (43rd rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/POL_Odznaka_pam_XLIIIzm_PKW_KFOR_BAR.svg/250px-POL_Odznaka_pam_XLIIIzm_PKW_KFOR_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW KFOR Commemorative Badge (46th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/POL_Odznaka_pam_XLVIzm_PKW_KFOR_BAR.svg/250px-POL_Odznaka_pam_XLVIzm_PKW_KFOR_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW KFOR Commemorative Badge (47th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/POL_Odznaka_pam_XLVIIzm_PKW_KFOR_BAR.svg/250px-POL_Odznaka_pam_XLVIIzm_PKW_KFOR_BAR.svg.png' },
+  // Campaign Medals - EUFOR Althea (Bosnia)
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW EUFOR Althea Commemorative Medal (16th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/POL_Medal_Pam_XVIzm_PKW_EUFOR_Althea_BAR.svg/250px-POL_Medal_Pam_XVIzm_PKW_EUFOR_Althea_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW EUFOR Althea Commemorative Medal (19th-23rd rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/POL_Medal_Pam_XIXzm_XXIIIzm_PKW_EUFOR_Althea_BAR.svg/250px-POL_Medal_Pam_XIXzm_XXIIIzm_PKW_EUFOR_Althea_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW EUFOR Althea Commemorative Medal (25th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/POL_Medal_Pam_XXVzm_PKW_EUFOR_Althea_BAR.svg/250px-POL_Medal_Pam_XXVzm_PKW_EUFOR_Althea_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW EUFOR Althea Commemorative Medal (27th rotation)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/POL_Medal_Pam_XXVIIzm_PKW_EUFOR_Althea_BAR.svg/250px-POL_Medal_Pam_XXVIIzm_PKW_EUFOR_Althea_BAR.svg.png' },
+  // Campaign Medals - Lebanon
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW Lebanon Commemorative Medal (2023)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/POL_Medal_Pam_PKW_Liban_%282023%29_BAR.svg/250px-POL_Medal_Pam_PKW_Liban_%282023%29_BAR.svg.png' },
+  // Commemorative
+  { country: 'Poland', branch: 'Poland Commemorative', name: 'Medal of the Centenary of Regained Independence', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/POL_Medal_Stulecia_Odzyskanej_Niepodl_BAR.svg/250px-POL_Medal_Stulecia_Odzyskanej_Niepodl_BAR.svg.png' },
 
   // ─── LUXEMBOURG ─────────────────────────────────────────────────────────────
   { country: 'Luxembourg', branch: 'Luxembourg Orders', name: 'Order of Adolph of Nassau', url: 'https://www.medals.pl/lu/r/lu1oan.gif' },
