@@ -42,6 +42,15 @@ All ribbons/medals in the library MUST meet ALL of the following criteria:
 - Categories: Gallantry, Orders & Distinguished Service, Commendations, Campaign Medals, Service Medals, Long Service, Commemorative
 - US ribbons specifically use: `US Gallantry`, `US Orders & Distinguished Service`, `US Commendations`, `US Campaign Medals`, `US Service Medals`, `US Long Service`, `US Commemorative`
 
+### No-Duplicate / International Body Rule
+- ❌ **International body awards (UN, NATO, MFO, IADB etc.) must appear ONCE only — in their own category**
+- ❌ They must NOT be duplicated under any national category (e.g. US, UK, Australia) even if that nation's personnel wear them
+- ✅ UN awards → `United Nations` category only
+- ✅ NATO awards → `NATO` category only
+- ✅ Multinational Force and Observers (MFO) Medal → `NATO` category only
+- ✅ Inter-American Defense Board (IADB) Medal → `NATO` category only
+- **Rule of thumb:** if the issuing body is an international organisation rather than a sovereign military, it belongs in the international category and nowhere else
+
 ---
 
 ## Reference: Removals Made 2026-03-27 (Audit Pass 1)
@@ -76,6 +85,15 @@ The following types were systematically removed during the initial eligibility a
 **Pre-1980:** China Service Medal (last awarded 1957), Philippines Republic Presidential Unit Citation (1944/45), Republic of Korea Presidential Unit Citation (Korean War era)  
 **Deduplication:** 122 duplicate entries removed (same ribbon was listed under each branch — now deduplicated to 1 per ribbon)  
 **Recategorisation:** All US ribbons moved from branch-based to 7 purpose-based categories
+
+## Reference: Removals Made 2026-03-27 (Audit Pass 4 — International Body Deduplication)
+
+**Removed from US Commemorative (international body awards, now live in their own categories only):**  
+United Nations Medal, United Nations Ribbon, Multinational Forces and Observers Medal, Multinational Forces and Observers Ribbon, Multinational Force and Observers Medal Ribbon, Inter American Defense Board Medal, Inter American Defense Board Ribbon, Inter-American Defense Board Medal Ribbon  
+
+**Added to correct categories:**  
+United Nations Medal + UN Special Service Medal → `United Nations`  
+Multinational Force and Observers Medal + Inter-American Defense Board Medal → `NATO`
 
 ---
 
