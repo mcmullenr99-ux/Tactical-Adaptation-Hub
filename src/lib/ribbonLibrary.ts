@@ -26,7 +26,7 @@ export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'France': ['France Gallantry', 'France Orders & Distinguished Service', 'France Service Medals', 'France Campaign Medals'],
   'Italy': ['Italy Orders', 'Italy Gallantry & Crosses'],
   'Greece': ['Greece Orders', 'Greece Gallantry & Crosses'],
-  'Norway': ['Norway Orders', 'Norway Gallantry & Crosses'],
+  'Norway': ['Norway Orders', 'Norway Gallantry', 'Norway Service Medals', 'Norway Long Service', 'Norway Campaign Medals', 'Norway Commemorative'],
   'Netherlands': ['Netherlands Orders', 'Netherlands Gallantry & Crosses'],
   'Russia': ['Russia Gallantry', 'Russia Orders & Distinguished Service', 'Russia Commendations'],
   'Germany (NVA)': ['Germany (NVA) Orders & Distinguished Service', 'Germany (NVA) Long Service', 'Germany (NVA) Commemorative'],
@@ -347,9 +347,51 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Greece', branch: 'Greece Gallantry & Crosses', name: 'Medal for Outstanding Acts', url: 'https://www.medals.pl/gr/r/gr1moab.gif' },
 
   // ─── NORWAY ─────────────────────────────────────────────────────────────────
-  { country: 'Norway', branch: 'Norway Orders', name: 'Order of St. Olaf', url: 'https://www.medals.pl/no/r/no1ool.gif' },
-  { country: 'Norway', branch: 'Norway Gallantry & Crosses', name: 'War Cross', url: 'https://www.medals.pl/no/r/no1cw.gif' },
-  { country: 'Norway', branch: 'Norway Orders', name: "St. Olaf's Medal with Oak Wreath", url: 'https://www.medals.pl/no/r/no1molo.gif' },
+  // Orders
+  { country: 'Norway', branch: 'Norway Orders', name: 'Royal Norwegian Order of St. Olav', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/St._Olavs_Orden_stripe.svg/250px-St._Olavs_Orden_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Orders', name: 'Royal Norwegian Order of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Den_kongelige_norske_fortjenstorden.svg/250px-Den_kongelige_norske_fortjenstorden.svg.png' },
+  // Gallantry
+  { country: 'Norway', branch: 'Norway Gallantry', name: 'War Cross with Sword', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Krigskorset_med_sverd_stripe.svg/250px-Krigskorset_med_sverd_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Gallantry', name: 'War Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Krigskorset_stripe.svg/250px-Krigskorset_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Gallantry', name: 'Norwegian Defence Cross of Honour', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Forsvarets_hederskors_stripe.svg/250px-Forsvarets_hederskors_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Gallantry', name: 'Armed Forces Medal for Heroic Deeds', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Forsvarets_medalje_for_edel_d%C3%A5d.svg/250px-Forsvarets_medalje_for_edel_d%C3%A5d.svg.png' },
+  { country: 'Norway', branch: 'Norway Gallantry', name: 'Wounded in Action Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Forsvarets_medalje_for_s%C3%A5rede_i_strid.svg/250px-Forsvarets_medalje_for_s%C3%A5rede_i_strid.svg.png' },
+  // Service Medals
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Defence Service Medal with Laurel Branch', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Forsvarsmedaljen_med_laurb%C3%A6rgren_stripe.svg/250px-Forsvarsmedaljen_med_laurb%C3%A6rgren_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Home Guard Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Heimevernets_fortjenstmedalje_stripe.svg/250px-Heimevernets_fortjenstmedalje_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Army Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/H%C3%A6rens_fortjenstmedalje_stripe.png/250px-H%C3%A6rens_fortjenstmedalje_stripe.png' },
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Navy Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Sj%C3%B8forsvarets_fortjenstmedalje_stripe.png/250px-Sj%C3%B8forsvarets_fortjenstmedalje_stripe.png' },
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Air Force Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Luftforsvarets_fortjenstmedalje_stripe.png/250px-Luftforsvarets_fortjenstmedalje_stripe.png' },
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Intelligence Service Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Etterretningstjenestens_fortjenstmedalje_stripe.png/250px-Etterretningstjenestens_fortjenstmedalje_stripe.png' },
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Armed Forces Medal for International Operations', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Forsvarets_medalje_for_internasjonale_operasjoner_stripe.svg/250px-Forsvarets_medalje_for_internasjonale_operasjoner_stripe.svg.png' },
+  // Long Service
+  { country: 'Norway', branch: 'Norway Long Service', name: 'Defence Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Forsvarsmedaljen_stripe.svg/250px-Forsvarsmedaljen_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Long Service', name: 'National Service Medal - Army', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Vernedyktighetsmedaljen_H%C3%A6ren_stripe.svg/250px-Vernedyktighetsmedaljen_H%C3%A6ren_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Long Service', name: 'National Service Medal - Navy', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Vernedyktighetsmedaljen_Sj%C3%B8forsvaret_stripe.svg/250px-Vernedyktighetsmedaljen_Sj%C3%B8forsvaret_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Long Service', name: 'National Service Medal - Air Force', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Vernedyktighetsmedaljen_Luftforsvaret_stripe.svg/250px-Vernedyktighetsmedaljen_Luftforsvaret_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Long Service', name: 'National Service Medal - Home Guard', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Vernedyktighetsmedaljen_Heimevernet_stripe.svg/250px-Vernedyktighetsmedaljen_Heimevernet_stripe.svg.png' },
+  // Campaign Medals - Defence Service Abroad (older series)
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Service Abroad', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Forsvarets_innsatsmedalje_stripe.svg/250px-Forsvarets_innsatsmedalje_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Service Abroad - Saudi Arabia', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Forsvarets_innsatsmedalje_-_Saudi_Arabia_stripe.svg/250px-Forsvarets_innsatsmedalje_-_Saudi_Arabia_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Service Abroad - Balkans', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Forsvarets_innsatsmedalje_-_Balkan_stripe.svg/250px-Forsvarets_innsatsmedalje_-_Balkan_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Service Abroad - Afghanistan', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Forsvarets_innsatsmedalje_med_rosett_-_Afghanistan_stripe.svg/250px-Forsvarets_innsatsmedalje_med_rosett_-_Afghanistan_stripe.svg.png' },
+  // Campaign Medals - Defence Operations Abroad (newer series, theatre-specific)
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Kosovo', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Forsvarets_operasjonsmedalje_Kosovo_Serbia-Montenegro_stripe.svg/250px-Forsvarets_operasjonsmedalje_Kosovo_Serbia-Montenegro_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Active Endeavour', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Forsvarets_operasjonsmedalje_Active_Endeavour_stripe.svg/250px-Forsvarets_operasjonsmedalje_Active_Endeavour_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Afghanistan', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Forsvarets_operasjonsmedalje_Afghanistan_stripe.svg/250px-Forsvarets_operasjonsmedalje_Afghanistan_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Iraq', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Forsvarets_operasjonsmedalje_Irak_stripe.svg/250px-Forsvarets_operasjonsmedalje_Irak_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Baltic Accession', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Forsvarets_operasjonsmedalje_Baltic_Accession-Litauen_stripe.svg/250px-Forsvarets_operasjonsmedalje_Baltic_Accession-Litauen_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Bosnia-Herzegovina', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Forsvarets_operasjonsmedalje_Bosnia_stripe.svg/250px-Forsvarets_operasjonsmedalje_Bosnia_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Sudan', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Forsvarets_operasjonsmedalje_Sudan_stripe.svg/250px-Forsvarets_operasjonsmedalje_Sudan_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Lebanon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Forsvarets_operasjonsmedalje_Libanon_stripe.svg/250px-Forsvarets_operasjonsmedalje_Libanon_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Chad', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Forsvarets_operasjonsmedalje_Tsjad_stripe.svg/250px-Forsvarets_operasjonsmedalje_Tsjad_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Somalia', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Forsvarets_operasjonsmedalje_Somalia_stripe.svg/250px-Forsvarets_operasjonsmedalje_Somalia_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Libya', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Forsvarets_operasjonsmedalje_Libya_stripe.svg/250px-Forsvarets_operasjonsmedalje_Libya_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Syria', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Forsvarets_operasjonsmedalje_Syria_stripe.svg/250px-Forsvarets_operasjonsmedalje_Syria_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Mali', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Forsvarets_operasjonsmedalje_Mali_stripe.png/250px-Forsvarets_operasjonsmedalje_Mali_stripe.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Mediterranean Sea', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Forsvarets_operasjonsmedalje_Middelhavet_stripe.png/250px-Forsvarets_operasjonsmedalje_Middelhavet_stripe.png' },
+  // Commemorative
+  { country: 'Norway', branch: 'Norway Commemorative', name: 'King Harald V's Jubilee Medal 1991-2016', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Kong_Harald_Vs_jubileumsmedalje_1991-2016.png/250px-Kong_Harald_Vs_jubileumsmedalje_1991-2016.png' },
 
   // ─── NETHERLANDS ────────────────────────────────────────────────────────────
   { country: 'Netherlands', branch: 'Netherlands Orders', name: 'Military Order of William', url: 'https://www.medals.pl/nl/r/nl1owi.gif' },
