@@ -104,6 +104,18 @@ Deno.serve(async (req) => {
       return new Response(null, { status: 204 });
     }
 
+    // POST /admin/users/:id/force-verify — admin: manually verify email & activate account
+    if (method === 'POST' && parts[0] === 'users' && parts[2] === 'force-verify') {
+      if (!isAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const updated = await base44.asServiceRole.entities.User.update(parts[1], {
+        email_verified: true,
+        status: 'active',
+        email_verify_token: null,
+        email_verify_expires: null,
+      });
+      return Response.json(updated);
+    }
+
     // GET /admin/reset-tokens — mod+
     if (method === 'GET' && parts[0] === 'reset-tokens') {
       if (!isMod) return Response.json({ error: 'Forbidden' }, { status: 403 });

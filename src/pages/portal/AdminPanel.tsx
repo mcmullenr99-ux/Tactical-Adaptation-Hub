@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import {
   Settings, Shield, Radio, Send, Loader2, KeyRound, Link as LinkIcon, MessageSquare, Save, Trash2,
-  Users, CheckCircle2, XCircle, Globe, AlertTriangle, Ban, Flag, RotateCcw, Eye, FileText,
+  Users, CheckCircle2, XCircle, Globe, AlertTriangle, Ban, Flag, RotateCcw, Eye, FileText, UserCheck, RefreshCw, MailCheck,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +26,7 @@ export default function AdminPanel() {
   });
 
   const { toast } = useToast();
-  const [tab, setTab] = useState<"roster" | "broadcast" | "resets" | "motd" | "groups" | "aar_flags">("roster");
+  const [tab, setTab] = useState<"roster" | "broadcast" | "resets" | "motd" | "groups" | "aar_flags" | "pending_verify">("roster");
   const [bSubject, setBSubject] = useState("");
   const [bBody, setBBody] = useState("");
 
@@ -79,6 +79,7 @@ export default function AdminPanel() {
             { key: "motd",      label: "MOTD / SITRAP",   icon: <MessageSquare className="w-4 h-4" /> },
             { key: "groups",    label: "MilSim Groups",    icon: <Globe className="w-4 h-4" /> },
             { key: "aar_flags", label: "AAR Flags",        icon: <Flag className="w-4 h-4" /> },
+            { key: "pending_verify", label: "Pending Verify", icon: <UserCheck className="w-4 h-4" /> },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key as any)}
               className={`flex items-center gap-2 px-5 py-3 font-display font-bold uppercase tracking-widest text-sm transition-colors border-b-2 ${tab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
@@ -203,6 +204,7 @@ export default function AdminPanel() {
         {tab === "motd" && <MotdTab toast={toast} />}
         {tab === "groups" && <GroupsTab toast={toast} />}
         {tab === "aar_flags" && <AarFlagsTab toast={toast} />}
+        {tab === "pending_verify" && <PendingVerifyTab toast={toast} />}
       </div>
     </PortalLayout>
   );
@@ -689,6 +691,172 @@ function AarFlagsTab({ toast }: { toast: any }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── PENDING VERIFICATION TAB ─────────────────────────────────────────────────
+function PendingVerifyTab({ toast }: { toast: any }) {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionId, setActionId] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const all = await apiFetch<any[]>("/api/users");
+      const stuck = (all || []).filter((u: any) =>
+        u.status === "pending_verification" || u.email_verified === false
+      );
+      // Sort newest first
+      stuck.sort((a: any, b: any) =>
+        new Date(b.createdAt || b.created_at || 0).getTime() -
+        new Date(a.createdAt || a.created_at || 0).getTime()
+      );
+      setUsers(stuck);
+    } catch (e: any) {
+      toast({ title: "Load failed", description: e.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const resendVerification = async (user: any) => {
+    setActionId(user.id + "_resend");
+    try {
+      await apiFetch("/api/auth/resend-verification", {
+        method: "POST",
+        body: JSON.stringify({ email: user.email }),
+      });
+      toast({ title: "Verification email sent", description: `New link sent to ${user.email}` });
+    } catch (e: any) {
+      toast({ title: "Send failed", description: e.message, variant: "destructive" });
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const forceVerify = async (user: any) => {
+    setActionId(user.id + "_verify");
+    try {
+      await apiFetch(`/api/admin/users/${user.id}/force-verify`, { method: "POST" });
+      toast({ title: "Account verified", description: `${user.username} is now fully active.` });
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+    } catch (e: any) {
+      toast({ title: "Force verify failed", description: e.message, variant: "destructive" });
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const deleteUser = async (user: any) => {
+    if (!confirm(`Delete ${user.username}? This cannot be undone.`)) return;
+    setActionId(user.id + "_delete");
+    try {
+      await apiFetch(`/api/admin/users/${user.id}`, { method: "DELETE" });
+      toast({ title: "User deleted", description: `${user.username} removed.` });
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+    } catch (e: any) {
+      toast({ title: "Delete failed", description: e.message, variant: "destructive" });
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-lg overflow-hidden shadow-lg">
+      <div className="p-6 border-b border-border bg-secondary/30 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <UserCheck className="w-5 h-5 text-yellow-400" />
+          <div>
+            <h2 className="font-display font-bold uppercase tracking-wider text-lg">Pending Email Verification</h2>
+            <p className="text-xs text-muted-foreground font-sans mt-0.5">
+              Users who registered but haven&apos;t verified their email yet.
+            </p>
+          </div>
+        </div>
+        <button onClick={load} disabled={loading}
+          className="flex items-center gap-2 px-3 py-2 border border-border rounded text-xs font-display font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="p-12 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : users.length === 0 ? (
+        <div className="p-12 text-center text-muted-foreground font-display uppercase tracking-widest text-sm">
+          <CheckCircle2 className="w-8 h-8 mx-auto mb-3 text-green-500" />
+          No users stuck in verification
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left font-sans text-sm">
+            <thead className="bg-secondary/50 font-display font-bold uppercase tracking-wider text-muted-foreground text-xs">
+              <tr>
+                <th className="px-5 py-4">Username</th>
+                <th className="px-5 py-4">Email</th>
+                <th className="px-5 py-4">Registered</th>
+                <th className="px-5 py-4">Status</th>
+                <th className="px-5 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {users.map((u: any) => (
+                <tr key={u.id} className="hover:bg-secondary/20 transition-colors">
+                  <td className="px-5 py-4 font-bold text-foreground">{u.username}</td>
+                  <td className="px-5 py-4 text-muted-foreground font-mono text-xs">{u.email}</td>
+                  <td className="px-5 py-4 text-muted-foreground text-xs">
+                    {u.createdAt || u.created_at ? format(new Date(u.createdAt || u.created_at), "dd MMM yyyy HH:mm") : "—"}
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className="text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">
+                      {u.status || "unverified"}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center justify-end gap-2">
+                      {/* Resend verification email */}
+                      <button
+                        onClick={() => resendVerification(u)}
+                        disabled={!!actionId}
+                        title="Resend verification email"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-display font-bold uppercase tracking-wider rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-50">
+                        {actionId === u.id + "_resend" ? <Loader2 className="w-3 h-3 animate-spin" /> : <MailCheck className="w-3 h-3" />}
+                        Resend
+                      </button>
+                      {/* Force verify — bypass email, mark account active */}
+                      <button
+                        onClick={() => forceVerify(u)}
+                        disabled={!!actionId}
+                        title="Manually verify this account"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-display font-bold uppercase tracking-wider rounded bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50">
+                        {actionId === u.id + "_verify" ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                        Force Verify
+                      </button>
+                      {/* Delete — nuke spam/fake accounts */}
+                      <button
+                        onClick={() => deleteUser(u)}
+                        disabled={!!actionId}
+                        title="Delete this user"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-display font-bold uppercase tracking-wider rounded bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50">
+                        {actionId === u.id + "_delete" ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="p-4 border-t border-border bg-secondary/20 text-xs text-muted-foreground font-sans">
+            {users.length} user{users.length !== 1 ? "s" : ""} awaiting verification
+          </div>
+        </div>
+      )}
     </div>
   );
 }
