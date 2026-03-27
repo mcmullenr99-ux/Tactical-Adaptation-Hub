@@ -410,7 +410,6 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United States', branch: 'US Army', name: 'Coast Guard Meritorious Unit Commendation Ribbon', url: 'https://www.uniformribbons.com/image/coast_guard_meritorious_unit_commendation_ribbon.png' },
   { country: 'United States', branch: 'US Army', name: 'Philippines Republic Presidential Unit Citation', url: 'https://www.uniformribbons.com/image/philippines_republic_presidential_unit_citation_ribbon.png' },
   { country: 'United States', branch: 'US Army', name: 'Republic of Korea Presidential Unit Citation', url: 'https://www.uniformribbons.com/image/republic_of_korea_presidential_unit_citation_ribbon.png' },
-  { country: 'United States', branch: 'US Army', name: 'Soldier's Medal Ribbon', url: 'https://www.uniformribbons.com/image/soldier_medal_ribbon.png' },
   { country: 'United States', branch: 'US Army', name: 'Korea Service Ribbon', url: 'https://www.uniformribbons.com/image/korea_service_ribbon.png' },
   { country: 'United States', branch: 'US Army', name: 'Multinational Force and Observers Medal Ribbon', url: 'https://www.uniformribbons.com/image/multinational_forces_and_observer_ribbon.png' },
   { country: 'United States', branch: 'US Army', name: 'Inter-American Defense Board Medal Ribbon', url: 'https://www.uniformribbons.com/image/inter_american_defense_board_ribbon.png' },
