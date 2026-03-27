@@ -1201,7 +1201,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
   const [ribbonSearch, setRibbonSearch] = useState("");
   const [ribbonCountry, setRibbonCountry] = useState("all");
   const [ribbonPage, setRibbonPage]     = useState(1);
-  const RIBBONS_PER_PAGE = 24;
+  const RIBBONS_PER_PAGE = 30;
 
   useEffect(() => {
     if (!group?.id || !user?.id) return;
