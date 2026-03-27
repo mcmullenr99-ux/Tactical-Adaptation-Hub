@@ -293,6 +293,23 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Russia', branch: 'Russia Commendations', name: 'Medal of Nesterov', url: 'https://upload.wikimedia.org/wikipedia/commons/2/23/RUS_Medal_of_Nesterov_ribbon.svg' },
   { country: 'Russia', branch: 'Russia Commendations', name: 'Medal for Distinction in Protection of State Borders', url: 'https://upload.wikimedia.org/wikipedia/commons/c/cc/RUS_Medal_For_Distinction_in_the_Protection_of_the_State_Borders_ribbon.svg' },
 
+
+  // ─── AUSTRIA ──────────────────────────────────────────────────────────────
+  // Gallantry
+  { country: 'Austria', branch: 'Austria Gallantry', name: 'Wound Medal - 1st Wound', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/AUT_Verwundetenmedaille_BAR.svg/250px-AUT_Verwundetenmedaille_BAR.svg.png' },
+  { country: 'Austria', branch: 'Austria Gallantry', name: 'Wound Medal - 2nd Wound', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/AUT_Verwundetenmedaille_2x_BAR.svg/250px-AUT_Verwundetenmedaille_2x_BAR.svg.png' },
+  // Commendations
+  { country: 'Austria', branch: 'Austria Commendations', name: 'Military Recognition Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/AUT_Milit%C3%A4r-Anerkennungsmedaille_BAR.svg/250px-AUT_Milit%C3%A4r-Anerkennungsmedaille_BAR.svg.png' },
+  // Campaign Medals
+  { country: 'Austria', branch: 'Austria Campaign Medals', name: 'Armed Forces Operations Medal - Foreign Operations', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/AUT_Einsatzmedaille_a_BAR.svg/250px-AUT_Einsatzmedaille_a_BAR.svg.png' },
+  // Service Medals
+  { country: 'Austria', branch: 'Austria Service Medals', name: 'Armed Forces Operations Medal - Military Defence', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/AUT_Einsatzmedaille_d_BAR.svg/250px-AUT_Einsatzmedaille_d_BAR.svg.png' },
+  // Long Service
+  { country: 'Austria', branch: 'Austria Long Service', name: 'Military Service Award - 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/AUT_Wehrdienstzeichen_1._Klasse_BAR.svg/250px-AUT_Wehrdienstzeichen_1._Klasse_BAR.svg.png' },
+  { country: 'Austria', branch: 'Austria Long Service', name: 'Military Service Award - 2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/AUT_Wehrdienstzeichen_2._Klasse_BAR.svg/250px-AUT_Wehrdienstzeichen_2._Klasse_BAR.svg.png' },
+  { country: 'Austria', branch: 'Austria Long Service', name: 'Military Service Award - 3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/AUT_Wehrdienstzeichen_3._Klasse_BAR.svg/250px-AUT_Wehrdienstzeichen_3._Klasse_BAR.svg.png' },
+  { country: 'Austria', branch: 'Austria Long Service', name: 'Militia Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/AUT_Milizmedaille_BAR.svg/250px-AUT_Milizmedaille_BAR.svg.png' },
+
   // ─── GERMANY (NVA) ──────────────────────────────────────────────────────────
   // Orders & Distinguished Service
   { country: 'Germany (NVA)', branch: 'Germany (NVA) Orders & Distinguished Service', name: 'Militarischer Verdienstorden - Gold (Order of Military Merit - Gold)', url: 'https://www.medals.pl/de/r/drmvo1.gif' },
