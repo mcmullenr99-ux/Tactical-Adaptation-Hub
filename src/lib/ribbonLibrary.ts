@@ -330,6 +330,18 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   // Commemorative
   { country: 'Estonia', branch: 'Estonia Commemorative', name: 'Memorial Medal - 10 Years of the Re-Established Defence Forces', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/EST_Memorial_Medal_10_Years_of_the_Re-Established_Defence_Forces.png/250px-EST_Memorial_Medal_10_Years_of_the_Re-Established_Defence_Forces.png' },
 
+
+  // ─── FINLAND ──────────────────────────────────────────────────────────────
+  // Gallantry
+  { country: 'Finland', branch: 'Finland Gallantry', name: 'Order of the Cross of Liberty - Grand Cross (Military)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/FIN_Order_of_the_Cross_of_Liberty_GCross_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_GCross_peace_military_BAR.svg.png' },
+  { country: 'Finland', branch: 'Finland Gallantry', name: 'Order of the Cross of Liberty - 1st Class with Star (Military)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/FIN_Order_of_the_Cross_of_Liberty_1Class_Star_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_1Class_Star_peace_military_BAR.svg.png' },
+  { country: 'Finland', branch: 'Finland Gallantry', name: 'Order of the Cross of Liberty - 1st Class (Military)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/FIN_Order_of_the_Cross_of_Liberty_1Class_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_1Class_peace_military_BAR.svg.png' },
+  { country: 'Finland', branch: 'Finland Gallantry', name: 'Order of the Cross of Liberty - 2nd Class (Military)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/FIN_Order_of_the_Cross_of_Liberty_2Class_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_2Class_peace_military_BAR.svg.png' },
+  { country: 'Finland', branch: 'Finland Gallantry', name: 'Order of the Cross of Liberty - 3rd Class (Military)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/FIN_Order_of_the_Cross_of_Liberty_3Class_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_3Class_peace_military_BAR.svg.png' },
+  { country: 'Finland', branch: 'Finland Gallantry', name: 'Order of the Cross of Liberty - 4th Class (Military)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/FIN_Order_of_the_Cross_of_Liberty_4Class_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_4Class_peace_military_BAR.svg.png' },
+  // Commendations
+  { country: 'Finland', branch: 'Finland Commendations', name: 'Medal for Military Merits', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/FIN_Military_Merit_Medal_BAR.svg/250px-FIN_Military_Merit_Medal_BAR.svg.png' },
+
   // ─── GERMANY (NVA) ──────────────────────────────────────────────────────────
   // Orders & Distinguished Service
   { country: 'Germany (NVA)', branch: 'Germany (NVA) Orders & Distinguished Service', name: 'Militarischer Verdienstorden - Gold (Order of Military Merit - Gold)', url: 'https://www.medals.pl/de/r/drmvo1.gif' },
