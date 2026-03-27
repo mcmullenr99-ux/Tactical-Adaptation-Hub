@@ -277,7 +277,7 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United States', branch: 'US Orders & Distinguished Service', name: 'Defense Superior Service Ribbon', url: 'https://www.uniformribbons.com/image/defense_superior_service_ribbon.png' },
   { country: 'United States', branch: 'US Orders & Distinguished Service', name: 'Legion of Merit Ribbon', url: 'https://www.uniformribbons.com/image/legion_of_merit_ribbon.png' },
   { country: 'United States', branch: 'US Gallantry', name: 'Distinguished Flying Cross Ribbon', url: 'https://www.uniformribbons.com/image/distinguished_flying_cross_ribbon.png' },
-  { country: 'United States', branch: 'US Gallantry', name: 'Soldier's Medal Ribbon's Medal Ribbon', url: 'https://www.uniformribbons.com/image/soldier_medal_ribbon.png' },
+  { country: 'United States', branch: 'US Gallantry', name: 'Soldier\'s Medal Ribbon', url: 'https://www.uniformribbons.com/image/soldier_medal_ribbon.png' },
   { country: 'United States', branch: 'US Gallantry', name: 'Bronze Star Ribbon', url: 'https://www.uniformribbons.com/image/bronze_star_ribbon.png' },
   { country: 'United States', branch: 'US Gallantry', name: 'Purple Heart Ribbon', url: 'https://www.uniformribbons.com/image/purple_heart_ribbon.png' },
   { country: 'United States', branch: 'US Orders & Distinguished Service', name: 'Defense Meritorious Service Ribbon', url: 'https://www.uniformribbons.com/image/defense_meritorious_service_ribbon.png' },
