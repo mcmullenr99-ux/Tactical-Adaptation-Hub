@@ -84,6 +84,245 @@ function isVerified(group: MilsimGroup): boolean {
 
 type LeaderboardCategory = "region" | "game" | "troop_count" | "op_success";
 
+
+// ─── Country → approximate SVG coords (on a 1000×500 equirectangular projection) ──
+const COUNTRY_COORDS: Record<string, [number, number]> = {
+  "🇬🇧 United Kingdom":     [480, 155],
+  "🇩🇪 Germany":            [500, 165],
+  "🇫🇷 France":             [487, 175],
+  "🇮🇹 Italy":              [503, 185],
+  "🇵🇱 Poland":             [515, 160],
+  "🇳🇱 Netherlands":        [493, 158],
+  "🇳🇴 Norway":             [495, 140],
+  "🇸🇪 Sweden":             [505, 142],
+  "🇩🇰 Denmark":            [500, 152],
+  "🇧🇪 Belgium":            [490, 162],
+  "🇪🇸 Spain":              [475, 185],
+  "🇵🇹 Portugal":           [467, 187],
+  "🇨🇿 Czech Republic":     [510, 163],
+  "🇸🇰 Slovakia":           [515, 165],
+  "🇭🇺 Hungary":            [518, 170],
+  "🇷🇴 Romania":            [525, 170],
+  "🇧🇬 Bulgaria":           [523, 177],
+  "🇬🇷 Greece":             [520, 187],
+  "🇭🇷 Croatia":            [510, 173],
+  "🇷🇸 Serbia":             [517, 173],
+  "🇺🇦 Ukraine":            [535, 162],
+  "🇫🇮 Finland":            [520, 138],
+  "🇦🇹 Austria":            [507, 167],
+  "🇨🇭 Switzerland":        [497, 170],
+  "🇱🇺 Luxembourg":         [493, 163],
+  "🇮🇪 Ireland":            [472, 153],
+  "🇱🇹 Lithuania":          [522, 152],
+  "🇱🇻 Latvia":             [522, 148],
+  "🇪🇪 Estonia":            [522, 144],
+  "🇸🇮 Slovenia":           [507, 170],
+  "🇺🇸 United States":      [200, 195],
+  "🇨🇦 Canada":             [190, 160],
+  "🇲🇽 Mexico":             [175, 220],
+  "🇧🇷 Brazil":             [290, 290],
+  "🇦🇷 Argentina":          [270, 340],
+  "🇨🇱 Chile":              [255, 330],
+  "🇨🇴 Colombia":           [255, 265],
+  "🇵🇪 Peru":               [248, 290],
+  "🇻🇪 Venezuela":          [267, 255],
+  "🇺🇾 Uruguay":            [280, 335],
+  "🇪🇨 Ecuador":            [242, 278],
+  "🇧🇴 Bolivia":            [262, 305],
+  "🇹🇷 Turkey":             [545, 183],
+  "🇸🇦 Saudi Arabia":       [570, 218],
+  "🇮🇱 Israel":             [547, 204],
+  "🇦🇪 UAE":                [587, 218],
+  "🇶🇦 Qatar":              [582, 218],
+  "🇰🇼 Kuwait":             [572, 208],
+  "🇮🇶 Iraq":               [562, 200],
+  "🇮🇷 Iran":               [578, 195],
+  "🇯🇴 Jordan":             [550, 207],
+  "🇱🇧 Lebanon":            [547, 201],
+  "🇪🇬 Egypt":              [537, 207],
+  "🇲🇦 Morocco":            [473, 200],
+  "🇿🇦 South Africa":       [530, 365],
+  "🇳🇬 Nigeria":            [493, 272],
+  "🇰🇪 Kenya":              [553, 285],
+  "🇬🇭 Ghana":              [483, 270],
+  "🇪🇹 Ethiopia":           [557, 270],
+  "🇹🇿 Tanzania":           [548, 300],
+  "🇯🇵 Japan":              [795, 185],
+  "🇰🇷 South Korea":        [785, 188],
+  "🇨🇳 China":              [740, 190],
+  "🇮🇳 India":              [660, 218],
+  "🇵🇰 Pakistan":           [638, 205],
+  "🇧🇩 Bangladesh":         [678, 217],
+  "🇻🇳 Vietnam":            [735, 240],
+  "🇹🇭 Thailand":           [723, 238],
+  "🇵🇭 Philippines":        [770, 248],
+  "🇮🇩 Indonesia":          [755, 278],
+  "🇲🇾 Malaysia":           [740, 268],
+  "🇸🇬 Singapore":          [742, 272],
+  "🇹🇼 Taiwan":             [775, 207],
+  "🇭🇰 Hong Kong":          [762, 212],
+  "🇦🇺 Australia":          [800, 340],
+  "🇳🇿 New Zealand":        [870, 385],
+  "🇵🇬 Papua New Guinea":   [830, 295],
+  "🇫🇯 Fiji":               [895, 330],
+};
+
+function WorldMap({ groups }: { groups: MilsimGroup[] }) {
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; names: string[] } | null>(null);
+
+  // Count groups per country (approved/featured only)
+  const countryGroups = useMemo(() => {
+    const map: Record<string, MilsimGroup[]> = {};
+    groups.forEach(g => {
+      if (g.status !== "approved" && g.status !== "featured") return;
+      if (!g.country) return;
+      if (!map[g.country]) map[g.country] = [];
+      map[g.country].push(g);
+    });
+    return map;
+  }, [groups]);
+
+  const dots = useMemo(() => {
+    return Object.entries(countryGroups).map(([country, grps]) => {
+      const coords = COUNTRY_COORDS[country];
+      if (!coords) return null;
+      return { country, grps, x: coords[0], y: coords[1] };
+    }).filter(Boolean) as { country: string; grps: MilsimGroup[]; x: number; y: number }[];
+  }, [countryGroups]);
+
+  const totalOnMap = dots.reduce((s, d) => s + d.grps.length, 0);
+
+  return (
+    <div className="relative w-full bg-secondary/30 border-b border-border overflow-hidden" style={{ minHeight: 220 }}>
+      {/* scanline texture */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 3px)" }} />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest text-primary">Live Deployment Map</span>
+          <span className="text-[9px] font-sans text-muted-foreground ml-auto">{totalOnMap} unit{totalOnMap !== 1 ? "s" : ""} plotted across {dots.length} countr{dots.length !== 1 ? "ies" : "y"}</span>
+        </div>
+
+        <div className="relative w-full" style={{ aspectRatio: "2/1", maxHeight: 420 }}>
+          <svg
+            viewBox="0 0 1000 500"
+            className="w-full h-full"
+            style={{ display: "block" }}
+            onMouseLeave={() => setTooltip(null)}
+          >
+            {/* Ocean */}
+            <rect width="1000" height="500" fill="#0a0f1a" />
+
+            {/* Grid lines */}
+            {[0,1,2,3,4,5,6,7,8,9,10].map(i => (
+              <line key={`v${i}`} x1={i*100} y1={0} x2={i*100} y2={500} stroke="#1a2535" strokeWidth="0.5" />
+            ))}
+            {[0,1,2,3,4,5].map(i => (
+              <line key={`h${i}`} x1={0} y1={i*100} x2={1000} y2={i*100} stroke="#1a2535" strokeWidth="0.5" />
+            ))}
+
+            {/* Simplified continent land masses */}
+            {/* North America */}
+            <path d="M 80 100 L 140 80 L 250 90 L 280 130 L 290 200 L 270 250 L 230 270 L 200 260 L 160 240 L 130 200 L 100 160 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
+            {/* South America */}
+            <path d="M 200 250 L 270 245 L 310 270 L 320 320 L 300 370 L 260 395 L 225 370 L 210 320 L 205 280 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
+            {/* Europe */}
+            <path d="M 440 120 L 560 120 L 575 145 L 565 190 L 530 200 L 500 195 L 455 190 L 440 165 L 435 140 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
+            {/* Africa */}
+            <path d="M 460 205 L 575 200 L 590 230 L 585 300 L 555 375 L 510 395 L 465 370 L 445 310 L 450 250 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
+            {/* Middle East */}
+            <path d="M 540 190 L 610 185 L 620 220 L 590 240 L 555 235 L 540 215 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
+            {/* Asia (main) */}
+            <path d="M 575 100 L 820 95 L 840 150 L 820 220 L 780 240 L 710 250 L 660 235 L 620 220 L 610 185 L 590 160 L 575 130 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
+            {/* SE Asia islands */}
+            <path d="M 730 255 L 780 250 L 800 270 L 800 295 L 760 300 L 730 285 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
+            {/* Australia */}
+            <path d="M 750 300 L 870 295 L 885 330 L 875 375 L 830 395 L 775 385 L 750 355 L 745 325 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
+            {/* New Zealand */}
+            <path d="M 865 375 L 885 370 L 895 390 L 880 405 L 862 395 Z" fill="#111c2e" stroke="#1e3050" strokeWidth="0.8" />
+
+            {/* Group dots */}
+            {dots.map(dot => {
+              const count = dot.grps.length;
+              const baseR = count === 1 ? 4 : count <= 3 ? 6 : count <= 8 ? 9 : 13;
+              const hasFeatured = dot.grps.some(g => g.status === "featured");
+              const dotColor = hasFeatured ? "#f59e0b" : "#ef4444";
+              const pulseColor = hasFeatured ? "rgba(245,158,11,0.3)" : "rgba(239,68,68,0.25)";
+
+              return (
+                <g key={dot.country}
+                  style={{ cursor: "pointer" }}
+                  onMouseEnter={e => {
+                    const svg = (e.currentTarget as SVGGElement).closest("svg");
+                    const rect = svg?.getBoundingClientRect();
+                    if (!rect) return;
+                    const svgX = (dot.x / 1000) * rect.width + rect.left;
+                    const svgY = (dot.y / 500) * rect.height + rect.top;
+                    setTooltip({ x: svgX - rect.left, y: svgY - rect.top, names: dot.grps.map(g => g.name) });
+                  }}
+                  onMouseLeave={() => setTooltip(null)}
+                >
+                  {/* Pulse ring */}
+                  <circle cx={dot.x} cy={dot.y} r={baseR + 5} fill={pulseColor}>
+                    <animate attributeName="r" values={`${baseR + 2};${baseR + 9};${baseR + 2}`} dur="2.5s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.6;0;0.6" dur="2.5s" repeatCount="indefinite" />
+                  </circle>
+                  {/* Main dot */}
+                  <circle cx={dot.x} cy={dot.y} r={baseR} fill={dotColor} stroke="rgba(0,0,0,0.5)" strokeWidth="1" />
+                  {/* Count label if >1 */}
+                  {count > 1 && (
+                    <text x={dot.x} y={dot.y + 1} textAnchor="middle" dominantBaseline="middle"
+                      fill="white" fontSize={baseR > 7 ? "7" : "6"} fontWeight="bold" fontFamily="monospace">
+                      {count}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Tooltip */}
+          {tooltip && (
+            <div
+              className="absolute z-20 pointer-events-none"
+              style={{
+                left: Math.min(tooltip.x + 10, 800),
+                top: Math.max(tooltip.y - 10, 0),
+                transform: "translateY(-100%)",
+              }}
+            >
+              <div className="bg-card border border-primary/40 rounded shadow-lg px-3 py-2 min-w-[140px] max-w-[220px]">
+                {tooltip.names.map((n, i) => (
+                  <p key={i} className="text-[10px] font-display font-bold uppercase tracking-wider text-foreground leading-relaxed">{n}</p>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 mt-3">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+            <span className="text-[9px] font-sans text-muted-foreground">Registered Unit</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+            <span className="text-[9px] font-sans text-muted-foreground">Featured Unit</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500 flex items-center justify-center">
+              <span className="text-[6px] text-white font-bold">3</span>
+            </div>
+            <span className="text-[9px] font-sans text-muted-foreground">Cluster (multiple units)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MilsimRegistry() {
   useSEO({ title: "MilSim Registry", description: "Browse TAG's registered MilSim groups — find your unit and enlist in organised tactical play." });
   const [groups, setGroups] = useState<MilsimGroup[]>([]);
@@ -190,6 +429,8 @@ export default function MilsimRegistry() {
           </motion.div>
         </div>
       </div>
+
+      <WorldMap groups={groups} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {loading ? (
