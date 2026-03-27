@@ -6,6 +6,7 @@ import { PortalLayout } from "@/components/layout/PortalLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import { BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST as MC_GAMES, type Branch } from "@/lib/milsimConstants";
 import { RIBBON_TEMPLATES, RIBBON_COUNTRIES, RIBBON_BRANCHES_BY_COUNTRY, type RibbonTemplate } from "@/lib/ribbonLibrary";
+import { getRibbonModifiers } from "@/lib/ribbonModifiers";
 import { RibbonBuilder, RibbonPreview, ribbonToSvgDataUri, type RibbonConfig, type StripePattern } from "@/components/RibbonBuilder";
 import {
   Activity,
@@ -1133,6 +1134,7 @@ function AwardsTab({ group, showMsg }: any) {
   const [pickerSearch, setPickerSearch] = useState<string>("");
   const [pickerPage, setPickerPage] = useState<number>(0);
   const [selectedTemplate, setSelectedTemplate] = useState<RibbonTemplate | null>(null);
+  const [pickerMods, setPickerMods] = useState<Record<string, string>>({}); // modifier selections for picker preview
   const [desc, setDesc] = useState("");
   const [creating, setCreating] = useState(false);
 
@@ -1208,14 +1210,25 @@ function AwardsTab({ group, showMsg }: any) {
     setSelectedTemplate(null);
     setPickerCountry(""); setPickerBranch("US Army"); setPickerSearch(""); setDesc(""); setPickerPage(0);
     setAwardName(""); setRibbonConfig({ colors: ["#1a3a6b","#c8102e","#ffffff"], pattern: "thirds" });
-    setCreateMode("build");
+    setCreateMode("build"); setPickerMods({});
   };
 
   const createDef = async () => {
     if (!selectedTemplate) { showMsg(false, "Select a ribbon first."); return; }
     setCreating(true);
     try {
-      const payload = { name: selectedTemplate!.name, description: desc || undefined, award_type: "ribbon", image_url: selectedTemplate!.url, source_country: selectedTemplate!.country, source_branch: selectedTemplate!.branch, sort_order: defs.length };
+      // Resolve modifier URL if user selected a grade variant
+      const modifiers = getRibbonModifiers(selectedTemplate!.url);
+      let resolvedUrl = selectedTemplate!.url;
+      let resolvedName = selectedTemplate!.name;
+      for (const mod of modifiers) {
+        if (mod.type === "select" && mod.options && pickerMods[mod.name]) {
+          const opt = mod.options.find(o => o.value === pickerMods[mod.name]);
+          if (opt?.url) resolvedUrl = opt.url;
+          resolvedName = `${selectedTemplate!.name} - ${pickerMods[mod.name]}`;
+        }
+      }
+      const payload = { name: resolvedName, description: desc || undefined, award_type: "ribbon", image_url: resolvedUrl, source_country: selectedTemplate!.country, source_branch: selectedTemplate!.branch, sort_order: defs.length };
       await apiFetch(`/milsimAwards?path=${group.id}/award-defs`, { method: "POST", body: JSON.stringify(payload) });
       resetForm();
       showMsg(true, "Award added to library.");
@@ -1458,20 +1471,58 @@ function AwardsTab({ group, showMsg }: any) {
                 </div>
 
                 {/* Selected ribbon preview */}
-                {selectedTemplate && (
-                  <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/30 rounded-lg">
-                    <img src={selectedTemplate.url} alt={selectedTemplate.name}
-                      className="h-8 w-24 object-cover rounded-sm border border-white/10"
-                      onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-display font-bold text-sm uppercase tracking-wider text-primary truncate">{selectedTemplate.name}</p>
-                      <p className="text-[10px] text-muted-foreground font-sans">{selectedTemplate.country} — {selectedTemplate.branch}</p>
+                {selectedTemplate && (() => {
+                  const modifiers = getRibbonModifiers(selectedTemplate.url);
+                  const activeImg = (() => {
+                    for (const mod of modifiers) {
+                      if (mod.type === "select" && mod.options && pickerMods[mod.name]) {
+                        const opt = mod.options.find(o => o.value === pickerMods[mod.name]);
+                        if (opt?.url) return opt.url;
+                      }
+                    }
+                    return selectedTemplate.url;
+                  })();
+                  return (
+                    <div className="p-3 bg-primary/10 border border-primary/30 rounded-lg space-y-3">
+                      <div className="flex items-center gap-3">
+                        <img src={activeImg} alt={selectedTemplate.name}
+                          className="h-8 w-24 object-cover rounded-sm border border-white/10"
+                          onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }} />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display font-bold text-sm uppercase tracking-wider text-primary truncate">
+                            {selectedTemplate.name}{pickerMods["class"] || pickerMods["branch"] ? ` — ${pickerMods["class"] || pickerMods["branch"]}` : ""}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-sans">{selectedTemplate.country} — {selectedTemplate.branch}</p>
+                        </div>
+                        <button onClick={() => { setSelectedTemplate(null); setPickerMods({}); }} className="text-muted-foreground hover:text-foreground shrink-0">
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {modifiers.length > 0 && (
+                        <div className="border-t border-primary/20 pt-2 space-y-2">
+                          <p className="text-[9px] font-display font-bold uppercase tracking-widest text-primary">Select Grade / Variant</p>
+                          {modifiers.map((mod) => (
+                            <div key={mod.name}>
+                              {mod.type === "select" && mod.options && (
+                                <div className="flex items-center gap-2">
+                                  <label className="text-[9px] text-muted-foreground font-sans uppercase tracking-wider w-20 shrink-0">{mod.label}</label>
+                                  <select
+                                    value={pickerMods[mod.name] ?? mod.options[0].value}
+                                    onChange={e => setPickerMods(prev => ({ ...prev, [mod.name]: e.target.value }))}
+                                    className="flex-1 text-[11px] bg-background border border-border rounded px-2 py-1 font-sans focus:outline-none focus:ring-1 focus:ring-primary/40">
+                                    {mod.options.map(opt => (
+                                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <button onClick={() => setSelectedTemplate(null)} className="text-muted-foreground hover:text-foreground shrink-0">
-                      <XCircle className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Ribbon grid */}
                 {!selectedTemplate && (

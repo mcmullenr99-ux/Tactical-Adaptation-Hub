@@ -1033,4 +1033,91 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Conspicuous Gallantry Cross", label: "Conspicuous Gallantry Cross", url: "https://www.medals.pl/bc/r/uk1bqcb.gif" }, { value: "Conspicuous Gallantry Cross (1st Clasp)", label: "Conspicuous Gallantry Cross (1st Clasp)", url: "https://www.medals.pl/bc/r/uk1bqcba.gif" }] },
   ],
 
+  // ── ITALY: Order of Merit of the Republic (OMRI) — 6 grades ────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/ITA_OMRI_2001_Cav_BAR.svg/250px-ITA_OMRI_2001_Cav_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Cavaliere', label: 'Cavaliere', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/ITA_OMRI_2001_Cav_BAR.svg/250px-ITA_OMRI_2001_Cav_BAR.svg.png' },
+      { value: 'Ufficiale', label: 'Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/ITA_OMRI_2001_Uff_BAR.svg/250px-ITA_OMRI_2001_Uff_BAR.svg.png' },
+      { value: 'Commendatore', label: 'Commendatore', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/ITA_OMRI_2001_Com_BAR.svg/250px-ITA_OMRI_2001_Com_BAR.svg.png' },
+      { value: 'Grande Ufficiale', label: 'Grande Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/ITA_OMRI_2001_GUff_BAR.svg/250px-ITA_OMRI_2001_GUff_BAR.svg.png' },
+      { value: 'Gran Croce', label: 'Gran Croce', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/ITA_OMRI_2001_GC_BAR.svg/250px-ITA_OMRI_2001_GC_BAR.svg.png' },
+      { value: 'Gran Cordone', label: 'Gran Cordone', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/ITA_OMRI_2001_GC-GCord_BAR.svg/250px-ITA_OMRI_2001_GC-GCord_BAR.svg.png' },
+    ] },
+  ],
+  // ── ITALY: Order of Saints Maurice and Lazarus — 3 grades ──────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Cavaliere_SSML_BAR.svg/250px-Cavaliere_SSML_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Cavaliere', label: 'Cavaliere', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Cavaliere_SSML_BAR.svg/250px-Cavaliere_SSML_BAR.svg.png' },
+      { value: 'Ufficiale', label: 'Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Ufficiale_SSML_BAR.svg/250px-Ufficiale_SSML_BAR.svg.png' },
+      { value: 'Commendatore', label: 'Commendatore', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Commendatore_SSML_BAR.svg/250px-Commendatore_SSML_BAR.svg.png' },
+    ] },
+  ],
+  // ── FRANCE: Croix de la Valeur Militaire — 5 grades ────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/a/af/Ruban_de_la_Croix_de_la_Valeur_militaire.PNG": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Plain (no device)', label: 'Plain (no device)', url: 'https://upload.wikimedia.org/wikipedia/commons/a/af/Ruban_de_la_Croix_de_la_Valeur_militaire.PNG' },
+      { value: 'Etoile de Bronze', label: 'Etoile de Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Croix_de_la_Valeur_Militaire_avec_l%27etoile_bronze_ribbon.svg/250px-Croix_de_la_Valeur_Militaire_avec_l%27etoile_bronze_ribbon.svg.png' },
+      { value: 'Etoile d\'Argent', label: 'Etoile d\'Argent', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Croix_de_la_Valeur_Militaire_avec_l%27etoile_argent_ribbon.svg/250px-Croix_de_la_Valeur_Militaire_avec_l%27etoile_argent_ribbon.svg.png' },
+      { value: 'Etoile de Vermeil', label: 'Etoile de Vermeil', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Croix_de_la_Valeur_Militaire_avec_l%27etoile_vermeil_ribbon.svg/250px-Croix_de_la_Valeur_Militaire_avec_l%27etoile_vermeil_ribbon.svg.png' },
+      { value: 'Palme de Bronze', label: 'Palme de Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Croix_de_la_Valeur_militaire_avec_palme_de_bronze.svg/250px-Croix_de_la_Valeur_militaire_avec_palme_de_bronze.svg.png' },
+    ] },
+  ],
+  // ── FRANCE: Ordre National du Merite — 5 grades ─────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Ordre_national_du_Merite_Chevalier_ribbon.svg/250px-Ordre_national_du_Merite_Chevalier_ribbon.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Chevalier', label: 'Chevalier', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Ordre_national_du_Merite_Chevalier_ribbon.svg/250px-Ordre_national_du_Merite_Chevalier_ribbon.svg.png' },
+      { value: 'Officier', label: 'Officier', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Ordre_national_du_Merite_Officier_ribbon.svg/250px-Ordre_national_du_Merite_Officier_ribbon.svg.png' },
+      { value: 'Commandeur', label: 'Commandeur', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Ordre_national_du_Merite_Commandeur_ribbon.svg/250px-Ordre_national_du_Merite_Commandeur_ribbon.svg.png' },
+      { value: 'Grand Officier', label: 'Grand Officier', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Ordre_national_du_Merite_GO_ribbon.svg/250px-Ordre_national_du_Merite_GO_ribbon.svg.png' },
+      { value: 'Grand Croix', label: 'Grand Croix', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Ordre_national_du_Merite_GC_ribbon.svg/250px-Ordre_national_du_Merite_GC_ribbon.svg.png' },
+    ] },
+  ],
+  // ── FRANCE: Medaille de la Defense Nationale — 4 grades ────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Medaille_de_la_Defense_Nationale_Bronze_ribbon.svg/250px-Medaille_de_la_Defense_Nationale_Bronze_ribbon.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Bronze', label: 'Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Medaille_de_la_Defense_Nationale_Bronze_ribbon.svg/250px-Medaille_de_la_Defense_Nationale_Bronze_ribbon.svg.png' },
+      { value: 'Argent', label: 'Argent', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Medaille_de_la_Defense_Nationale_Argent_ribbon.svg/250px-Medaille_de_la_Defense_Nationale_Argent_ribbon.svg.png' },
+      { value: 'Or', label: 'Or', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Medaille_de_la_Defense_Nationale_Or_ribbon.svg/250px-Medaille_de_la_Defense_Nationale_Or_ribbon.svg.png' },
+      { value: 'Or avec Citation', label: 'Or avec Citation', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Medaille_d%27Or_de_la_Defense_Nationale_pour_citation_sans_croix_ribbon.svg/250px-Medaille_d%27Or_de_la_Defense_Nationale_pour_citation_sans_croix_ribbon.svg.png' },
+    ] },
+  ],
+  // ── FRANCE: Medaille des Services Militaires Volontaires — 3 grades ─────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Bronze', label: 'Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg.png' },
+      { value: 'Argent', label: 'Argent', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Medaille_des_Services_Militaires_Volontaires_Argent_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Argent_ribbon.svg.png' },
+      { value: 'Or', label: 'Or', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Medaille_des_Services_Militaires_Volontaires_Or_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Or_ribbon.svg.png' },
+    ] },
+  ],
+  // ── NORWAY: National Service Medal — 4 branches ─────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Vernedyktighetsmedaljen_H%C3%A6ren_stripe.svg/250px-Vernedyktighetsmedaljen_H%C3%A6ren_stripe.svg.png": [
+    { type: 'select', name: 'branch', label: 'Branch', options: [
+      { value: 'Army', label: 'Army', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Vernedyktighetsmedaljen_H%C3%A6ren_stripe.svg/250px-Vernedyktighetsmedaljen_H%C3%A6ren_stripe.svg.png' },
+      { value: 'Navy', label: 'Navy', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Vernedyktighetsmedaljen_Sj%C3%B8forsvaret_stripe.svg/250px-Vernedyktighetsmedaljen_Sj%C3%B8forsvaret_stripe.svg.png' },
+      { value: 'Air Force', label: 'Air Force', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Vernedyktighetsmedaljen_Luftforsvaret_stripe.svg/250px-Vernedyktighetsmedaljen_Luftforsvaret_stripe.svg.png' },
+      { value: 'Home Guard', label: 'Home Guard', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Vernedyktighetsmedaljen_Heimevernet_stripe.svg/250px-Vernedyktighetsmedaljen_Heimevernet_stripe.svg.png' },
+    ] },
+  ],
+  // ── SWEDEN: Armed Forces Medal of Merit with Sword (1995-2007) — Gold/Silver ─
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_guld.png/250px-F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_guld.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Gold', label: 'Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_guld.png/250px-F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_guld.png' },
+      { value: 'Silver', label: 'Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_silver.png/250px-F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_silver.png' },
+    ] },
+  ],
+  // ── SWEDEN: Armed Forces Medal of Merit (2008-2023) — Gold/Silver ───────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/FMGM.png/250px-FMGM.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Gold', label: 'Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/FMGM.png/250px-FMGM.png' },
+      { value: 'Silver', label: 'Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/FMGMmsv.png/250px-FMGMmsv.png' },
+    ] },
+  ],
+  // ── SWEDEN: Armed Forces Medal for Wounded in Battle — Silver w/ Star / Silver
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/FMSMsismstj.png/250px-FMSMsismstj.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Silver with Star', label: 'Silver with Star', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/FMSMsismstj.png/250px-FMSMsismstj.png' },
+      { value: 'Silver', label: 'Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/FMSNsismstj2.png/250px-FMSNsismstj2.png' },
+    ] },
+  ],
+
 };
