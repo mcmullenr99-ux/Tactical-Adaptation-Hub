@@ -117,6 +117,8 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Victoria Cross (VC)', url: 'https://www.medals.pl/bc/r/uk1vc.gif' },
   { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Conspicuous Gallantry Cross (CGC)', url: 'https://www.medals.pl/bc/r/uk1cgc.gif' },
   { country: 'United Kingdom', branch: 'UK Commendations', name: 'King\'s/Queen\'s Commendation for Bravery (KCB/QCB)', url: 'https://www.medals.pl/bc/r/uk1bqcb.gif' },
+  { country: 'United Kingdom', branch: 'UK Commendations', name: 'King\'s/Queen\'s Commendation for Valuable Service (KCVS/QCVS)', url: 'https://www.medals.pl/bc/r/uk1bqcvs.gif' },
+  { country: 'United Kingdom', branch: 'UK Commendations', name: 'King\'s/Queen\'s Commendation for Bravery in the Air (KCBA/QCBA)', url: 'https://www.medals.pl/bc/r/uk1bqcba.gif' },
   { country: 'United Kingdom', branch: 'UK Commendations', name: 'Mention in Despatches (MID)', url: 'https://www.medals.pl/bc/r/uk1bmid2.gif' },
   { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'South Atlantic Medal 1982 (Falklands)', url: 'https://www.medals.pl/bc/r/uk1msa1.gif' },
   { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Gulf Medal 1991', url: 'https://www.medals.pl/bc/r/uk1mgu.gif' },
