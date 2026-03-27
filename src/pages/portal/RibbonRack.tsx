@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import { useAuth } from "@/components/auth/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
 import { useToast } from "@/hooks/use-toast";
 import { getRibbonModifiers } from "@/lib/ribbonModifiers";
-import { Loader2, Award, Save, Rows3, Crown, Info } from "lucide-react";
+import { Loader2, Award, Save, Rows3, Crown, Info, Search, ChevronLeft, ChevronRight } from "lucide-react";
+
+const NON_RIBBON_TYPES = ["medal", "badge", "patch", "coin", "certificate"];
 
 function ribbonImageUrl(award: any, modifierUrl?: string): string {
   if (modifierUrl) return modifierUrl;
@@ -34,22 +36,29 @@ function RibbonImage({ award, size = 40, modifierUrl }: { award: any; size?: num
   );
 }
 
+const RIBBONS_PER_PAGE = 30;
+
 export default function RibbonRack() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [loading, setLoading]         = useState(true);
-  const [isPro, setIsPro]             = useState<boolean | null>(null);
-  const [groups, setGroups]           = useState<any[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [isPro, setIsPro]                 = useState<boolean | null>(null);
+  const [groups, setGroups]               = useState<any[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
-  const [allRibbons, setAllRibbons]   = useState<any[]>([]);
-  const [barIds, setBarIds]           = useState<string[]>([]);
-  const [barMods, setBarMods]         = useState<Record<string, Record<string, string>>>({});
-  const [dragging, setDragging]       = useState<string | null>(null);
-  const [dragOver, setDragOver]       = useState<string | null>(null);
-  const [saving, setSaving]           = useState(false);
-  const [hovered, setHovered]         = useState<string | null>(null);
-  const [localRoster, setLocalRoster] = useState<any | null>(null);
+  const [allRibbons, setAllRibbons]       = useState<any[]>([]);
+  const [barIds, setBarIds]               = useState<string[]>([]);
+  const [barMods, setBarMods]             = useState<Record<string, Record<string, string>>>({});
+  const [dragging, setDragging]           = useState<string | null>(null);
+  const [dragOver, setDragOver]           = useState<string | null>(null);
+  const [saving, setSaving]               = useState(false);
+  const [hovered, setHovered]             = useState<string | null>(null);
+  const [localRoster, setLocalRoster]     = useState<any | null>(null);
+
+  // Search / filter / pagination
+  const [search, setSearch]               = useState("");
+  const [filterCountry, setFilterCountry] = useState("all");
+  const [page, setPage]                   = useState(1);
 
   useEffect(() => {
     if (!user?.id) { setLoading(false); return; }
@@ -77,10 +86,11 @@ export default function RibbonRack() {
           apiFetch<any>(`/milsimGroups?path=roster_member&group_id=${selectedGroupId}&user_id=${user.id}`),
         ]);
 
-        const ribbons = (awardsData.awards ?? []).filter((a: any) =>
-          (a.award_type ?? "").toLowerCase() === "ribbon" ||
-          (a.award_type ?? "").toLowerCase() === "service ribbon"
-        );
+        // Accept all ribbon-type awards — null award_type is included (library ribbons have null)
+        const ribbons = (awardsData.awards ?? []).filter((a: any) => {
+          const t = (a.award_type ?? "").toLowerCase().trim();
+          return t === "" || t === "ribbon" || t === "service ribbon" || !NON_RIBBON_TYPES.includes(t);
+        });
         setAllRibbons(ribbons);
 
         const member = rosterData.roster_member ?? null;
@@ -95,6 +105,29 @@ export default function RibbonRack() {
     };
     go();
   }, [selectedGroupId, user?.id]);
+
+  // Derive unique countries from awarded ribbons
+  const countries = useMemo(() => {
+    const set = new Set<string>();
+    allRibbons.forEach(r => { if (r.source_country) set.add(r.source_country); });
+    return Array.from(set).sort();
+  }, [allRibbons]);
+
+  // Filtered + paged ribbons for the picker section
+  const filteredRibbons = useMemo(() => {
+    const q = search.toLowerCase();
+    return allRibbons.filter(r => {
+      if (filterCountry !== "all" && r.source_country !== filterCountry) return false;
+      if (q && !(r.award_name ?? r.name ?? "").toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [allRibbons, search, filterCountry]);
+
+  const totalPages = Math.ceil(filteredRibbons.length / RIBBONS_PER_PAGE);
+  const pagedRibbons = filteredRibbons.slice((page - 1) * RIBBONS_PER_PAGE, page * RIBBONS_PER_PAGE);
+
+  const handleSearch = (v: string) => { setSearch(v); setPage(1); };
+  const handleCountry = (v: string) => { setFilterCountry(v); setPage(1); };
 
   const toggleInBar = (id: string) =>
     setBarIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -138,7 +171,6 @@ export default function RibbonRack() {
 
   const saveBar = async () => {
     let rosterId = localRoster?.id;
-    // If localRoster not yet hydrated, re-fetch it now
     if (!rosterId && selectedGroupId && user?.id) {
       try {
         const rd = await apiFetch<any>(`/milsimGroups?path=roster_member&group_id=${selectedGroupId}&user_id=${user.id}`);
@@ -146,7 +178,7 @@ export default function RibbonRack() {
         if (member) { setLocalRoster(member); rosterId = member.id; }
       } catch {}
     }
-    if (!rosterId) { toast({ title: "No roster entry found — are you on E-Squadron's roster?", variant: "destructive" }); return; }
+    if (!rosterId) { toast({ title: "No roster entry found — are you on this unit's roster?", variant: "destructive" }); return; }
     setSaving(true);
     try {
       await apiFetch("/milsimGroups?path=update_roster_member", {
@@ -217,7 +249,7 @@ export default function RibbonRack() {
             </select>
           )}
           <button onClick={saveBar} disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90 disabled:opacity-50">
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded font-display text-xs uppercase tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors">
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             Save Bar
           </button>
@@ -225,7 +257,8 @@ export default function RibbonRack() {
       </div>
 
       <div className="space-y-8 max-w-4xl">
-        {/* Live Rack */}
+
+        {/* Live Ribbon Rack */}
         <div className="border border-primary/30 rounded-lg overflow-hidden">
           <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center gap-2">
             <Rows3 className="w-4 h-4 text-primary" />
@@ -236,7 +269,7 @@ export default function RibbonRack() {
             {barRibbons.length === 0 ? (
               <div className="text-center py-6 border border-dashed border-border rounded-lg">
                 <Rows3 className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                <p className="text-xs font-sans text-muted-foreground">No ribbons in your rack yet — click <strong>Add to Rack</strong> on any award below</p>
+                <p className="text-xs font-sans text-muted-foreground">No ribbons in your rack yet — select from your awards below</p>
               </div>
             ) : (
               <div className="space-y-0.5 inline-block">
@@ -264,12 +297,39 @@ export default function RibbonRack() {
           </div>
         </div>
 
-        {/* Available Awards */}
+        {/* Available Awards — with search, country filter, pagination */}
         <div className="border border-border rounded-lg overflow-hidden">
-          <div className="bg-secondary/40 border-b border-border px-5 py-3 flex items-center gap-2">
-            <p className="font-display font-black text-xs uppercase tracking-widest">Awarded Ribbons</p>
-            <span className="text-xs text-muted-foreground font-sans">({allRibbons.length} granted — click to add/remove from rack)</span>
+          <div className="bg-secondary/40 border-b border-border px-5 py-3 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <p className="font-display font-black text-xs uppercase tracking-widest">Awarded Ribbons</p>
+              <span className="text-xs text-muted-foreground font-sans">({allRibbons.length} granted)</span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search ribbons..."
+                  value={search}
+                  onChange={e => handleSearch(e.target.value)}
+                  className="text-xs bg-background border border-border rounded pl-6 pr-2 py-1 font-sans w-40 focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              {/* Country filter */}
+              {countries.length > 0 && (
+                <select
+                  value={filterCountry}
+                  onChange={e => handleCountry(e.target.value)}
+                  className="text-xs bg-background border border-border rounded px-2 py-1 font-sans focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="all">All Countries</option>
+                  {countries.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
+            </div>
           </div>
+
           <div className="p-5">
             {allRibbons.length === 0 ? (
               <div className="text-center py-8 border border-dashed border-border rounded-lg">
@@ -278,70 +338,113 @@ export default function RibbonRack() {
                 <p className="text-[10px] text-muted-foreground/60 font-sans mt-1">Your commander issues ribbons from the unit Awards section</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {allRibbons.map((ribbon: any) => {
-                  const inBar = barIds.includes(ribbon.id);
-                  const baseUrl = ribbonImageUrl(ribbon);
-                  const modifiers = inBar ? getRibbonModifiers(baseUrl) : [];
-                  const currentMods = barMods[ribbon.id] ?? {};
-                  const modUrl = inBar ? getModifierUrl(ribbon) : undefined;
-                  return (
-                    <div key={ribbon.id}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all ${
-                        inBar ? "border-primary/60 bg-primary/10 ring-1 ring-primary/30" : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
-                      }`}>
-                      <button className="flex flex-col items-center gap-2 w-full" onClick={() => toggleInBar(ribbon.id)}>
-                        <RibbonImage award={ribbon} size={44} modifierUrl={modUrl} />
-                        <div className="text-center">
-                          <p className="text-[10px] font-display font-bold uppercase tracking-wider leading-tight line-clamp-2">
-                            {ribbon.award_name ?? ribbon.name ?? "Ribbon"}
-                          </p>
-                          {ribbon.reason && (
-                            <p className="text-[9px] text-muted-foreground font-sans mt-0.5 line-clamp-1">{ribbon.reason}</p>
-                          )}
-                        </div>
-                        <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
-                          inBar ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
-                        }`}>
-                          {inBar ? "In Rack ✓" : "Add to Rack"}
-                        </span>
-                      </button>
+              <>
+                {filteredRibbons.length === 0 && (
+                  <div className="text-center py-6 border border-dashed border-border rounded-lg mb-4">
+                    <p className="text-xs font-sans text-muted-foreground">No ribbons match your search</p>
+                  </div>
+                )}
 
-                      {/* Variant / clasp modifiers — only when in rack — OUTSIDE the toggle button to prevent click propagation */}
-                      {inBar && modifiers.length > 0 && (
-                        <div className="w-full border-t border-primary/20 pt-2 space-y-1.5" onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
-                          <p className="text-[8px] font-display font-bold uppercase tracking-widest text-primary mb-1">Variants &amp; Clasps</p>
-                          {modifiers.map((mod) => (
-                            <div key={mod.name} className="flex flex-col gap-0.5">
-                              {mod.type === "select" && mod.options && (
-                                <>
-                                  <label className="text-[8px] text-muted-foreground font-sans uppercase tracking-wider">{mod.label}</label>
-                                  <select
-                                    value={currentMods[mod.name] ?? mod.options[0].value}
-                                    onChange={e => { e.stopPropagation(); setMod(ribbon.id, mod.name, e.target.value); }}
-                                    className="text-[9px] bg-background border border-border rounded px-1 py-0.5 w-full font-sans">
-                                    {mod.options.map(opt => (
-                                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                    ))}
-                                  </select>
-                                </>
-                              )}
-                              {mod.type === "checkbox" && (
-                                <label className="flex items-center gap-1.5 cursor-pointer" onClick={e => e.stopPropagation()}>
-                                  <input type="checkbox" checked={currentMods[mod.name] === "1"}
-                                    onChange={e => { e.stopPropagation(); e.target.checked ? setMod(ribbon.id, mod.name, "1") : clearMod(ribbon.id, mod.name); }}
-                                    className="w-3 h-3 accent-primary" />
-                                  <span className="text-[9px] text-muted-foreground font-sans">{mod.label}</span>
-                                </label>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {pagedRibbons.map((ribbon: any) => {
+                    const inBar = barIds.includes(ribbon.id);
+                    const baseUrl = ribbonImageUrl(ribbon);
+                    const modifiers = inBar ? getRibbonModifiers(baseUrl) : [];
+                    const currentMods = barMods[ribbon.id] ?? {};
+                    const modUrl = inBar ? getModifierUrl(ribbon) : undefined;
+                    return (
+                      <div key={ribbon.id}
+                        className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all ${
+                          inBar ? "border-primary/60 bg-primary/10 ring-1 ring-primary/30" : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
+                        }`}>
+                        <button className="flex flex-col items-center gap-2 w-full" onClick={() => toggleInBar(ribbon.id)}>
+                          <RibbonImage award={ribbon} size={44} modifierUrl={modUrl} />
+                          <div className="text-center">
+                            <p className="text-[10px] font-display font-bold uppercase tracking-wider leading-tight line-clamp-2">
+                              {ribbon.award_name ?? ribbon.name ?? "Ribbon"}
+                            </p>
+                            {ribbon.source_country && (
+                              <p className="text-[9px] text-muted-foreground font-sans mt-0.5">{ribbon.source_country}</p>
+                            )}
+                            {ribbon.reason && (
+                              <p className="text-[9px] text-muted-foreground font-sans mt-0.5 line-clamp-1 italic">{ribbon.reason}</p>
+                            )}
+                          </div>
+                          <span className={`text-[9px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
+                            inBar ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
+                          }`}>
+                            {inBar ? "In Rack ✓" : "Add to Rack"}
+                          </span>
+                        </button>
+
+                        {/* Modifiers — only when in rack */}
+                        {inBar && modifiers.length > 0 && (
+                          <div className="w-full border-t border-primary/20 pt-2 space-y-1.5" onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
+                            <p className="text-[8px] font-display font-bold uppercase tracking-widest text-primary mb-1">Variants &amp; Clasps</p>
+                            {modifiers.map((mod) => (
+                              <div key={mod.name} className="flex flex-col gap-0.5">
+                                {mod.type === "select" && mod.options && (
+                                  <>
+                                    <label className="text-[8px] text-muted-foreground font-sans uppercase tracking-wider">{mod.label}</label>
+                                    <select
+                                      value={currentMods[mod.name] ?? mod.options[0].value}
+                                      onChange={e => { e.stopPropagation(); setMod(ribbon.id, mod.name, e.target.value); }}
+                                      className="text-[9px] bg-background border border-border rounded px-1 py-0.5 w-full font-sans">
+                                      {mod.options.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                      ))}
+                                    </select>
+                                  </>
+                                )}
+                                {mod.type === "checkbox" && (
+                                  <label className="flex items-center gap-1.5 cursor-pointer" onClick={e => e.stopPropagation()}>
+                                    <input type="checkbox" checked={currentMods[mod.name] === "1"}
+                                      onChange={e => { e.stopPropagation(); e.target.checked ? setMod(ribbon.id, mod.name, "1") : clearMod(ribbon.id, mod.name); }}
+                                      className="w-3 h-3 accent-primary" />
+                                    <span className="text-[9px] text-muted-foreground font-sans">{mod.label}</span>
+                                  </label>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-5 flex-wrap">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-display uppercase tracking-widest border border-border rounded hover:bg-secondary disabled:opacity-40 transition-colors">
+                      <ChevronLeft className="w-3 h-3" /> Prev
+                    </button>
+                    <div className="flex gap-1 flex-wrap justify-center">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(pg => (
+                        <button key={pg} onClick={() => setPage(pg)}
+                          className={`w-7 h-7 text-xs font-display rounded transition-colors ${
+                            pg === page ? "bg-primary text-primary-foreground" : "border border-border hover:bg-secondary text-muted-foreground"
+                          }`}>{pg}</button>
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-display uppercase tracking-widest border border-border rounded hover:bg-secondary disabled:opacity-40 transition-colors">
+                      Next <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-muted-foreground font-sans text-center mt-3">
+                  Showing {pagedRibbons.length} of {filteredRibbons.length} ribbons
+                  {filterCountry !== "all" || search ? ` matching filters` : ""}
+                  {totalPages > 1 ? ` — page ${page} of ${totalPages}` : ""}
+                </p>
+              </>
             )}
           </div>
         </div>
@@ -350,8 +453,8 @@ export default function RibbonRack() {
         <div className="flex items-start gap-3 p-4 bg-secondary/30 border border-border rounded-lg">
           <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
           <div className="text-xs text-muted-foreground font-sans space-y-1">
-            <p><strong className="text-foreground">Adding to rack</strong> — Click any ribbon below to add it to your rack. Click it again (or the × on hover) to remove it.</p>
-            <p><strong className="text-foreground">Variants &amp; clasps</strong> — When a ribbon is in your rack, a dropdown or checkbox appears below it if variants exist (e.g. MID, clasps, bars).</p>
+            <p><strong className="text-foreground">Adding to rack</strong> — Click any ribbon to toggle it in/out of your rack. Click the × on hover in the rack to remove it.</p>
+            <p><strong className="text-foreground">Variants &amp; clasps</strong> — When a ribbon is in your rack, dropdowns appear below it if variants exist (e.g. MID, clasps, bars).</p>
             <p><strong className="text-foreground">Saving</strong> — Click <strong className="text-foreground">Save Bar</strong> to persist. Your rack displays on your public service profile.</p>
           </div>
         </div>
