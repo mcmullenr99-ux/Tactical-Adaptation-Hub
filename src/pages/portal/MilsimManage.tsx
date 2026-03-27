@@ -1431,7 +1431,7 @@ function AwardsTab({ group, showMsg }: any) {
               <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="font-display font-black text-xs uppercase tracking-widest text-primary">Add Award from Ribbon Library</p>
-                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">1,172 curated military ribbons — US, UK, Australia, Canada, NATO & 23 nations</p>
+                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">564 curated military ribbons — US, UK, Australia, Canada, NATO & 23 nations</p>
                 </div>
                 <button onClick={resetForm} className="text-muted-foreground hover:text-foreground transition-colors ml-4 shrink-0">
                   <XCircle className="w-4 h-4" />
@@ -1532,6 +1532,10 @@ function AwardsTab({ group, showMsg }: any) {
                         {filteredTemplates.length} ribbons {pickerSearch || pickerCountry ? "matching filters" : "available"}
                         {totalPages > 1 && <span className="ml-1 text-primary">— page {pickerPage + 1}/{totalPages}</span>}
                       </p>
+                      <p className="text-[9px] font-sans text-muted-foreground/60 ml-auto">
+                        <span className="inline-block w-2 h-2 rounded-full bg-primary/70 mr-1 align-middle" />
+                        = has grade variants
+                      </p>
                       {totalPages > 1 && (
                         <div className="flex items-center gap-1">
                           <button
@@ -1556,18 +1560,24 @@ function AwardsTab({ group, showMsg }: any) {
                       )}
                     </div>
                     <div className="max-h-72 overflow-y-auto p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                      {pagedTemplates.map((r, i) => (
-                        <button key={pickerPage * RIBBONS_PER_PAGE + i} onClick={() => setSelectedTemplate(r)}
-                          title={`${r.name} (${r.country})`}
-                          className="flex flex-col items-center gap-1 p-1.5 rounded border border-transparent hover:border-primary/50 hover:bg-primary/5 transition-all group">
-                          <img src={r.url} alt={r.name}
-                            className="h-5 w-16 object-cover rounded-sm"
-                            onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.15"; }} />
-                          <p className="text-[8px] font-sans text-muted-foreground text-center leading-tight line-clamp-2 group-hover:text-foreground w-full">
-                            {r.name.split(" (")[0]}
-                          </p>
-                        </button>
-                      ))}
+                      {pagedTemplates.map((r, i) => {
+                        const tileMods = getRibbonModifiers(r.url);
+                        return (
+                          <button key={pickerPage * RIBBONS_PER_PAGE + i} onClick={() => { setSelectedTemplate(r); setPickerMods({}); }}
+                            title={`${r.name} (${r.country})${tileMods.length > 0 ? ' — has grade variants' : ''}`}
+                            className="relative flex flex-col items-center gap-1 p-1.5 rounded border border-transparent hover:border-primary/50 hover:bg-primary/5 transition-all group">
+                            {tileMods.length > 0 && (
+                              <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-primary/70" title="Has grade variants" />
+                            )}
+                            <img src={r.url} alt={r.name}
+                              className="h-5 w-16 object-cover rounded-sm"
+                              onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.15"; }} />
+                            <p className="text-[8px] font-sans text-muted-foreground text-center leading-tight line-clamp-2 group-hover:text-foreground w-full">
+                              {r.name.split(" (")[0]}
+                            </p>
+                          </button>
+                        );
+                      })}
                       {filteredTemplates.length === 0 && (
                         <div className="col-span-6 text-center py-8 text-xs text-muted-foreground font-sans">
                           No ribbons match — try clearing filters
