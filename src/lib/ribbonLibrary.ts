@@ -220,7 +220,6 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Canada', branch: 'Canada Campaign Medals', name: 'General Service Medal - South West Asia', url: 'https://www.medals.pl/bc/r/ca2mgsswa.gif' },
   { country: 'Canada', branch: 'Canada Campaign Medals', name: 'General Service Medal - Expedition', url: 'https://www.medals.pl/bc/r/ca2mgsexp.gif' },
   { country: 'Canada', branch: 'Canada Campaign Medals', name: 'Operational Service Medal - South Sudan', url: 'https://www.medals.pl/bc/r/ca2moss.gif' },
-  { country: 'Canada', branch: 'Canada Campaign Medals', name: 'Operational Service Medal - Expedition', url: 'https://www.medals.pl/bc/r/ca2mosexp.gif' },
   { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'New Zealand Antarctic Medal (NZAM)', url: 'https://www.medals.pl/bc/r/nz2manz.gif' },
   { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Army Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsa.gif' },
   { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Naval Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsn.gif' },
