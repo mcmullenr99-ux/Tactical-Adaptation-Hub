@@ -248,9 +248,9 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
 
   // ─── FRANCE ─────────────────────────────────────────────────────────────────
   // Gallantry
-  { country: 'France', branch: 'France Gallantry', name: 'Legion d'Honneur', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Legion_Honneur_Chevalier_ribbon.svg/250px-Legion_Honneur_Chevalier_ribbon.svg.png' },
+  { country: 'France', branch: 'France Gallantry', name: 'Legion d\'Honneur', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Legion_Honneur_Chevalier_ribbon.svg/250px-Legion_Honneur_Chevalier_ribbon.svg.png' },
   { country: 'France', branch: 'France Gallantry', name: 'Medaille Militaire', url: 'https://upload.wikimedia.org/wikipedia/commons/0/0c/Ruban_de_la_M%C3%A9daille_militaire.PNG' },
-  { country: 'France', branch: 'France Gallantry', name: 'Croix de Guerre - Theatres d'Operations Exterieures', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Croix_de_Guerre_des_Theatres_d%27Operations_Exterieurs_ribbon.svg/250px-Croix_de_Guerre_des_Theatres_d%27Operations_Exterieurs_ribbon.svg.png' },
+  { country: 'France', branch: 'France Gallantry', name: 'Croix de Guerre - Theatres d\'Operations Exterieures', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Croix_de_Guerre_des_Theatres_d%27Operations_Exterieurs_ribbon.svg/250px-Croix_de_Guerre_des_Theatres_d%27Operations_Exterieurs_ribbon.svg.png' },
   { country: 'France', branch: 'France Gallantry', name: 'Croix de la Valeur Militaire', url: 'https://upload.wikimedia.org/wikipedia/commons/a/af/Ruban_de_la_Croix_de_la_Valeur_militaire.PNG' },
   { country: 'France', branch: 'France Gallantry', name: 'Croix de la Valeur Militaire - Etoile de Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Croix_de_la_Valeur_Militaire_avec_l%27etoile_bronze_ribbon.svg/250px-Croix_de_la_Valeur_Militaire_avec_l%27etoile_bronze_ribbon.svg.png' },
   { country: 'France', branch: 'France Gallantry', name: 'Croix de la Valeur Militaire - Etoile d\'Argent', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Croix_de_la_Valeur_Militaire_avec_l%27etoile_argent_ribbon.svg/250px-Croix_de_la_Valeur_Militaire_avec_l%27etoile_argent_ribbon.svg.png' },
@@ -269,7 +269,7 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'France', branch: 'France Service Medals', name: 'Medaille de la Defense Nationale - Argent', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Medaille_de_la_Defense_Nationale_Argent_ribbon.svg/250px-Medaille_de_la_Defense_Nationale_Argent_ribbon.svg.png' },
   { country: 'France', branch: 'France Service Medals', name: 'Medaille de la Defense Nationale - Or', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Medaille_de_la_Defense_Nationale_Or_ribbon.svg/250px-Medaille_de_la_Defense_Nationale_Or_ribbon.svg.png' },
   { country: 'France', branch: 'France Service Medals', name: 'Medaille de la Defense Nationale - Or avec Citation', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Medaille_d%27Or_de_la_Defense_Nationale_pour_citation_sans_croix_ribbon.svg/250px-Medaille_d%27Or_de_la_Defense_Nationale_pour_citation_sans_croix_ribbon.svg.png' },
-  { country: 'France', branch: 'France Service Medals', name: 'Medaille d'Outre-Mer', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Medaille_d%27Outre-Mer_%28Coloniale%29_ribbon.svg/250px-Medaille_d%27Outre-Mer_%28Coloniale%29_ribbon.svg.png' },
+  { country: 'France', branch: 'France Service Medals', name: 'Medaille d\'Outre-Mer', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Medaille_d%27Outre-Mer_%28Coloniale%29_ribbon.svg/250px-Medaille_d%27Outre-Mer_%28Coloniale%29_ribbon.svg.png' },
   { country: 'France', branch: 'France Service Medals', name: 'Medaille des Services Militaires Volontaires - Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg.png' },
   { country: 'France', branch: 'France Service Medals', name: 'Medaille des Services Militaires Volontaires - Argent', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Medaille_des_Services_Militaires_Volontaires_Argent_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Argent_ribbon.svg.png' },
   { country: 'France', branch: 'France Service Medals', name: 'Medaille des Services Militaires Volontaires - Or', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Medaille_des_Services_Militaires_Volontaires_Or_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Or_ribbon.svg.png' },
@@ -358,7 +358,7 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Mali', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Forsvarets_operasjonsmedalje_Mali_stripe.png/250px-Forsvarets_operasjonsmedalje_Mali_stripe.png' },
   { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Mediterranean Sea', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Forsvarets_operasjonsmedalje_Middelhavet_stripe.png/250px-Forsvarets_operasjonsmedalje_Middelhavet_stripe.png' },
   // Commemorative
-  { country: 'Norway', branch: 'Norway Commemorative', name: 'King Harald V's Jubilee Medal 1991-2016', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Kong_Harald_Vs_jubileumsmedalje_1991-2016.png/250px-Kong_Harald_Vs_jubileumsmedalje_1991-2016.png' },
+  { country: 'Norway', branch: 'Norway Commemorative', name: 'King Harald V\'s Jubilee Medal 1991-2016', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Kong_Harald_Vs_jubileumsmedalje_1991-2016.png/250px-Kong_Harald_Vs_jubileumsmedalje_1991-2016.png' },
 
   // ─── NETHERLANDS ────────────────────────────────────────────────────────────
   { country: 'Netherlands', branch: 'Netherlands Orders', name: 'Military Order of William', url: 'https://www.medals.pl/nl/r/nl1owi.gif' },
@@ -823,7 +823,7 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Norway', branch: 'Norway Gallantry', name: 'War Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Krigsmedaljen_stripe.svg/250px-Krigsmedaljen_stripe.svg.png' },
   { country: 'Norway', branch: 'Norway Gallantry', name: 'Medal for Heroism in Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Medaljen_for_edel_d%C3%A5d_stripe.svg/250px-Medaljen_for_edel_d%C3%A5d_stripe.svg.png' },
   // Orders
-  { country: 'Norway', branch: 'Norway Orders', name: 'King's Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Kongens_fortjenstmedalje.svg/250px-Kongens_fortjenstmedalje.svg.png' },
+  { country: 'Norway', branch: 'Norway Orders', name: 'King\'s Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Kongens_fortjenstmedalje.svg/250px-Kongens_fortjenstmedalje.svg.png' },
   // Service Medals
   // Long Service
 
