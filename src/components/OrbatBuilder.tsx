@@ -965,23 +965,41 @@ interface OrbatBuilderProps {
 }
 
 export default function OrbatBuilder({ initialData, onSave, value, onChange, readOnly = false }: OrbatBuilderProps) {
-  // Parse legacy JSON string prop
-  const parsedInitial: OrbatNode[] = React.useMemo(() => {
-    if (initialData) return initialData;
-    if (value) {
-      try { return JSON.parse(value) as OrbatNode[]; } catch { return []; }
-    }
+  const [nodes, setNodes] = useState<OrbatNode[]>(() => {
+    if (initialData && initialData.length > 0) return initialData;
+    if (value) { try { const p = JSON.parse(value); if (Array.isArray(p) && p.length > 0) return p; } catch {} }
     return [];
-  }, []);
-
-  const [nodes, setNodes] = useState<OrbatNode[]>(parsedInitial);
+  });
   const [editingNode, setEditingNode] = useState<OrbatNode | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [initialised, setInitialised] = useState(false);
 
-  // Fire legacy onChange when nodes change
+  // When value prop arrives async (group data loaded after mount), seed nodes once
   React.useEffect(() => {
-    if (onChange) onChange(JSON.stringify(nodes));
+    if (!initialised && value) {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setNodes(parsed);
+        }
+      } catch {}
+      setInitialised(true);
+    } else if (!initialised && value === "") {
+      setInitialised(true);
+    }
+  }, [value, initialised]);
+
+  // Fire onChange only after user edits (not on initial seed)
+  const userEditedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (userEditedRef.current && onChange) {
+      onChange(JSON.stringify(nodes));
+    }
   }, [nodes]);
+
+  function notifyEdit<T>(fn: (p: T) => T): (p: T) => T {
+    return (prev: T) => { userEditedRef.current = true; return fn(prev); };
+  }
 
   function updateById(tree: OrbatNode[], id: string, u: Partial<OrbatNode>): OrbatNode[] {
     return tree.map(n => n.id === id ? { ...n, ...u } : { ...n, children: updateById(n.children, id, u) });
@@ -1007,27 +1025,27 @@ export default function OrbatBuilder({ initialData, onSave, value, onChange, rea
 
   function handleAddChild(pid: string) {
     const child = defaultNode({ echelon: "squad" });
-    setNodes(p => addChildTo(p, pid, child));
+    setNodes(notifyEdit(p => addChildTo(p, pid, child)));
     setEditingNode(child);
   }
   function handleAddRoot() {
     const node = defaultNode({ echelon: "battalion" });
-    setNodes(p => [...p, node]);
+    setNodes(notifyEdit(p => [...p, node]));
     setEditingNode(node);
   }
   function handleSaveEdit(updated: OrbatNode) {
-    setNodes(prev => {
+    setNodes(notifyEdit(prev => {
       const flat = JSON.stringify(prev);
       return flat.includes(`"id":"${updated.id}"`)
         ? replaceById(prev, updated.id, updated)
         : [...prev, updated];
-    });
+    }));
   }
   function handleDuplicate(node: OrbatNode) {
     function deepCopy(n: OrbatNode): OrbatNode {
       return { ...n, id: generateId(), label: n.label + " (copy)", children: n.children.map(deepCopy) };
     }
-    setNodes(p => [...p, deepCopy(node)]);
+    setNodes(notifyEdit(p => [...p, deepCopy(node)]));
   }
   function handleExport() {
     const blob = new Blob([JSON.stringify(nodes, null, 2)], { type: "application/json" });
@@ -1107,9 +1125,9 @@ export default function OrbatBuilder({ initialData, onSave, value, onChange, rea
                 roots={nodes}
                 onEdit={setEditingNode}
                 onAddChild={handleAddChild}
-                onDelete={id => setNodes(p => deleteById(p, id))}
+                onDelete={id => setNodes(notifyEdit(p => deleteById(p, id)))}
                 onDuplicate={handleDuplicate}
-                onToggle={id => setNodes(p => updateById(p, id, { collapsed: !findNode(p, id)?.collapsed }))}
+                onToggle={id => setNodes(notifyEdit(p => updateById(p, id, { collapsed: !findNode(p, id)?.collapsed })))}
                 readOnly={readOnly}
               />
             </div>
