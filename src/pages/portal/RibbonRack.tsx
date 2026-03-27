@@ -51,6 +51,8 @@ export default function RibbonRack() {
   const [dragOver, setDragOver]           = useState<string | null>(null);
   const [saving, setSaving]               = useState(false);
   const [hovered, setHovered]             = useState<string | null>(null);
+  // Per-ribbon modifier preview state — used in the picker cards (not persisted until Save Bar)
+  const [previewMods, setPreviewMods]     = useState<Record<string, Record<string, string>>>({});
   const [localRoster, setLocalRoster]     = useState<any | null>(null);
 
   // Search / filter / pagination
@@ -147,21 +149,34 @@ export default function RibbonRack() {
   const clearMod = (ribbonId: string, modName: string) =>
     setBarMods(prev => { const u = { ...(prev[ribbonId] ?? {}) }; delete u[modName]; return { ...prev, [ribbonId]: u }; });
 
-  const getModifierUrl = (ribbon: any): string | undefined => {
-    const mods = barMods[ribbon.id];
-    if (!mods) return undefined;
+  // Resolve modifier URL for a ribbon — uses barMods when in rack, previewMods when previewing
+  const getModifierResult = (ribbon: any, usePreview = false): { url?: string; overlayUrl?: string } => {
     const baseUrl = ribbonImageUrl(ribbon);
     const modifiers = getRibbonModifiers(baseUrl);
+    if (!modifiers.length) return {};
+    const mods = usePreview ? (previewMods[ribbon.id] ?? barMods[ribbon.id] ?? {}) : (barMods[ribbon.id] ?? previewMods[ribbon.id] ?? {});
+    let resultUrl: string | undefined;
+    let overlayUrl: string | undefined;
     for (const mod of modifiers) {
       if (mod.type === "select" && mod.options) {
-        const sel = mods[mod.name];
-        if (sel) { const opt = mod.options.find(o => o.value === sel); if (opt?.url) return opt.url; }
+        const sel = mods[mod.name] ?? mod.options[0]?.value;
+        if (sel) {
+          const opt = mod.options.find(o => o.value === sel);
+          if (opt?.url) resultUrl = opt.url;
+          if (opt?.overlayUrl) overlayUrl = opt.overlayUrl;
+        }
+      }
+      if (mod.type === "checkbox" && mod.affectsImage && mods[mod.name] === "1") {
+        resultUrl = mod.variantUrl;
       }
     }
-    for (const mod of modifiers) {
-      if (mod.type === "checkbox" && mod.affectsImage && mods[mod.name] === "1") return mod.variantUrl;
-    }
-    return undefined;
+    return { url: resultUrl, overlayUrl };
+  };
+
+  const setPreviewMod = (ribbonId: string, modName: string, value: string) => {
+    setPreviewMods(prev => ({ ...prev, [ribbonId]: { ...(prev[ribbonId] ?? {}), [modName]: value } }));
+    // If already in bar, also update bar mods
+    if (barIds.includes(ribbonId)) setMod(ribbonId, modName, value);
   };
 
   const saveBar = async () => {
@@ -277,7 +292,7 @@ export default function RibbonRack() {
                         className={`relative cursor-grab active:cursor-grabbing transition-all ${dragging === ribbon.id ? "opacity-40" : ""} ${dragOver === ribbon.id ? "ring-2 ring-primary" : ""}`}
                         title={ribbon.award_name ?? ribbon.name ?? ""}
                         onMouseEnter={() => setHovered(ribbon.id)} onMouseLeave={() => setHovered(null)}>
-                        {(() => { const r = getModifierResult(ribbon); return <RibbonImage award={ribbon} size={52} modifierUrl={r.url} overlayUrl={r.overlayUrl} />; })()}
+                        {(() => { const r = getModifierResult(ribbon, true); return <RibbonImage award={ribbon} size={52} modifierUrl={r.url} overlayUrl={r.overlayUrl} />; })()}
                         {hovered === ribbon.id && (
                           <button onClick={() => toggleInBar(ribbon.id)}
                             className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center hover:bg-red-600 z-10"
@@ -344,9 +359,13 @@ export default function RibbonRack() {
                   {pagedRibbons.map((ribbon: any) => {
                     const inBar = barIds.includes(ribbon.id);
                     const baseUrl = ribbonImageUrl(ribbon);
-                    const modifiers = inBar ? getRibbonModifiers(baseUrl) : [];
-                    const currentMods = barMods[ribbon.id] ?? {};
-                    const modResult = inBar ? getModifierResult(ribbon) : {};
+                    const modifiers = getRibbonModifiers(baseUrl);
+                    const hasModifiers = modifiers.length > 0;
+                    // Always use preview mods for display; bar mods take precedence when in rack
+                    const activeMods = inBar
+                      ? { ...(previewMods[ribbon.id] ?? {}), ...(barMods[ribbon.id] ?? {}) }
+                      : (previewMods[ribbon.id] ?? {});
+                    const modResult = getModifierResult(ribbon, true);
                     const modUrl = modResult.url;
                     const modOverlay = modResult.overlayUrl;
                     return (
@@ -374,19 +393,22 @@ export default function RibbonRack() {
                           </span>
                         </button>
 
-                        {/* Modifiers — only when in rack */}
-                        {inBar && modifiers.length > 0 && (
-                          <div className="w-full border-t border-primary/20 pt-2 space-y-1.5" onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
-                            <p className="text-[8px] font-display font-bold uppercase tracking-widest text-primary mb-1">Variants &amp; Clasps</p>
+                        {/* Modifiers — always visible when ribbon has variants, preview even when not in rack */}
+                        {hasModifiers && (
+                          <div className={`w-full pt-2 space-y-1.5 border-t ${inBar ? "border-primary/20" : "border-border/60"}`}
+                            onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
+                            <p className={`text-[8px] font-display font-bold uppercase tracking-widest mb-1 ${inBar ? "text-primary" : "text-muted-foreground"}`}>
+                              {inBar ? "Variants & Clasps" : "Preview Grade"}
+                            </p>
                             {modifiers.map((mod) => (
                               <div key={mod.name} className="flex flex-col gap-0.5">
                                 {mod.type === "select" && mod.options && (
                                   <>
                                     <label className="text-[8px] text-muted-foreground font-sans uppercase tracking-wider">{mod.label}</label>
                                     <select
-                                      value={currentMods[mod.name] ?? mod.options[0].value}
-                                      onChange={e => { e.stopPropagation(); setMod(ribbon.id, mod.name, e.target.value); }}
-                                      className="text-[9px] bg-background border border-border rounded px-1 py-0.5 w-full font-sans">
+                                      value={activeMods[mod.name] ?? mod.options[0].value}
+                                      onChange={e => { e.stopPropagation(); setPreviewMod(ribbon.id, mod.name, e.target.value); }}
+                                      className="text-[9px] bg-background border border-border rounded px-1 py-0.5 w-full font-sans focus:outline-none focus:ring-1 focus:ring-primary/40">
                                       {mod.options.map(opt => (
                                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                                       ))}
@@ -395,8 +417,8 @@ export default function RibbonRack() {
                                 )}
                                 {mod.type === "checkbox" && (
                                   <label className="flex items-center gap-1.5 cursor-pointer" onClick={e => e.stopPropagation()}>
-                                    <input type="checkbox" checked={currentMods[mod.name] === "1"}
-                                      onChange={e => { e.stopPropagation(); e.target.checked ? setMod(ribbon.id, mod.name, "1") : clearMod(ribbon.id, mod.name); }}
+                                    <input type="checkbox" checked={activeMods[mod.name] === "1"}
+                                      onChange={e => { e.stopPropagation(); setPreviewMod(ribbon.id, mod.name, e.target.checked ? "1" : ""); }}
                                       className="w-3 h-3 accent-primary" />
                                     <span className="text-[9px] text-muted-foreground font-sans">{mod.label}</span>
                                   </label>
