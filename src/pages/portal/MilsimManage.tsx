@@ -75,6 +75,24 @@ import OrbatBuilder from "@/components/OrbatBuilder";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthContext";
 
+class TabErrorBoundary extends React.Component<{children: React.ReactNode; tabName?: string}, {error: Error | null}> {
+  constructor(props: any) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: React.ErrorInfo) { console.error("[TabErrorBoundary]", error, info); }
+  render() {
+    if (this.state.error) return (
+      <div className="p-6 border border-red-500/40 rounded-lg bg-red-500/10 space-y-2">
+        <p className="font-display font-bold uppercase tracking-wider text-sm text-red-400">Component Error — {this.props.tabName ?? "Tab"}</p>
+        <pre className="text-xs text-red-300 whitespace-pre-wrap break-all">{this.state.error.message}</pre>
+        <pre className="text-xs text-red-300/60 whitespace-pre-wrap break-all">{this.state.error.stack?.slice(0,500)}</pre>
+        <button onClick={() => this.setState({ error: null })} className="text-xs text-red-400 underline">Retry</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
+
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
 interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
 interface RosterEntry { id: number; callsign: string; rankId: number | null; roleId: number | null; notes: string | null; status?: string; specialisations?: string[]; join_date?: string | null; ops_count?: number | null; }
@@ -275,7 +293,7 @@ export default function MilsimManage() {
               {tab === "roles" && <RolesTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-              {tab === "recognition" && <CustomisationTab group={group} showMsg={showMsg} />}
+              {tab === "recognition" && <TabErrorBoundary tabName="Customisation"><CustomisationTab group={group} showMsg={showMsg} /></TabErrorBoundary>}
               {tab === "eventhub" && <EventHubTab group={group} showMsg={showMsg} />}
               {tab === "onboarding" && <OnboardingTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "events" && <EventsTab group={group} showMsg={showMsg} />}
