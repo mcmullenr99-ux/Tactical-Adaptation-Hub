@@ -201,7 +201,7 @@ function WorldMap({ groups }: { groups: MilsimGroup[] }) {
   return (
     <div
       className="relative w-full border-b border-border overflow-hidden"
-      style={{ background: isDark ? "#070e1a" : "#e8eef4" }}
+      style={{ background: isDark ? "#0d1117" : "#ffffff" }}
     >
       {/* subtle scanline */}
       <div
@@ -236,16 +236,15 @@ function WorldMap({ groups }: { groups: MilsimGroup[] }) {
               Dark mode: show white lines as-is on dark ocean bg.
               Light mode: invert so lines become dark on light bg. */}
           <img
-            src="/world-map.png"
+            src="/world-map.svg"
             alt="World map"
             draggable={false}
             className="absolute inset-0 w-full h-full"
             style={{
               filter: isDark
-                ? "brightness(0.55) sepia(1) hue-rotate(180deg) saturate(0.4)"
-                : "invert(1) brightness(0.65) sepia(0.2) saturate(0.8)",
-              mixBlendMode: isDark ? "screen" : "multiply",
-              opacity: isDark ? 1 : 0.85,
+                ? "invert(1) brightness(0.25) contrast(1.1)"
+                : "brightness(0.55) contrast(1.05) saturate(0)",
+              opacity: 1,
             }}
           />
 
