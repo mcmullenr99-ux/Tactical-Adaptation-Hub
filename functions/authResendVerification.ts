@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
+import { createClient } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET     = Deno.env.get('JWT_SECRET')     ?? 'tag-secret-fallback-change-in-production';
@@ -17,9 +17,8 @@ function generateToken(length = 48): string {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   try {
-    const base44 = createClientFromRequest(req);
+    const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID')!, serviceToken: Deno.env.get('BASE44_SERVICE_TOKEN')! });
 
-    // Can be called with a Bearer token (dashboard) OR with just an email (login page pre-auth)
     const authHeader = req.headers.get('Authorization') ?? '';
     const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
     const body = await req.json().catch(() => ({}));
@@ -29,9 +28,9 @@ Deno.serve(async (req) => {
     if (bearerToken) {
       let payload: any;
       try { payload = verify(bearerToken, JWT_SECRET); } catch { return Response.json({ error: 'Invalid token' }, { status: 401 }); }
-      user = await base44.asServiceRole.entities.User.get(payload.sub);
+      user = await base44.entities.User.get(payload.sub);
     } else if (body.email) {
-      const found = await base44.asServiceRole.entities.User.filter({ email: body.email.toLowerCase().trim() });
+      const found = await base44.entities.User.filter({ email: body.email.toLowerCase().trim() });
       user = found[0] ?? null;
     } else {
       return Response.json({ error: 'Email or authentication token required' }, { status: 400 });
@@ -40,24 +39,22 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
     if (user.email_verified) return Response.json({ error: 'Email is already verified' }, { status: 400 });
 
-    // Rate limit: don't allow spamming resend (check if last token was created < 5 mins ago)
     if (user.email_verify_expires) {
-      const expiresAt  = new Date(user.email_verify_expires).getTime();
-      const issuedAt   = expiresAt - 24 * 60 * 60 * 1000; // token was issued 24h before expiry
+      const expiresAt = new Date(user.email_verify_expires).getTime();
+      const issuedAt  = expiresAt - 24 * 60 * 60 * 1000;
       const secsSinceIssue = (Date.now() - issuedAt) / 1000;
-      if (secsSinceIssue < 300) // less than 5 mins since last issue
+      if (secsSinceIssue < 300)
         return Response.json({ error: 'Please wait a few minutes before requesting another verification email.' }, { status: 429 });
     }
 
     const newToken   = generateToken(48);
     const newExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    await base44.asServiceRole.entities.User.update(user.id, {
+    await base44.entities.User.update(user.id, {
       email_verify_token:   newToken,
       email_verify_expires: newExpires,
     });
 
-    // Send email
     if (RESEND_API_KEY) {
       const verifyUrl = `${APP_URL}/portal/verify-email?token=${newToken}`;
       await fetch('https://api.resend.com/emails', {
