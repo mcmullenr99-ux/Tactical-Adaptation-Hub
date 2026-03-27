@@ -28,7 +28,7 @@ export default function NotFound() {
                 alt="TAG Skull — Signal Lost"
                 width={240}
                 height={240}
-                className="opacity-70 mx-auto select-none pointer-events-none object-contain [mix-blend-mode:multiply] dark:invert dark:[mix-blend-mode:screen]"
+                className="opacity-90 mx-auto select-none pointer-events-none object-contain"
                 draggable={false}
               />
               <motion.span
