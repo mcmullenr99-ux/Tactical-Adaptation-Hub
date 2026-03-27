@@ -89,7 +89,7 @@ interface GroupDetail {
   roles: Role[]; ranks: Rank[]; roster: RosterEntry[]; questions: AppQuestion[];
 }
 
-type Tab = "roles" | "ranks" | "roster" | "recognition" | "stream" | "questions" | "operations" | "readiness" | "analytics" | "campaigns" | "reputation" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events" | "eventhub" | "onboarding" | "criteria" | "doctrine";
+type Tab = "roles" | "ranks" | "roster" | "recognition" | "stream" | "questions" | "operations" | "readiness" | "analytics" | "campaigns" | "reputation" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events" | "eventhub" | "onboarding" | "criteria" | "doctrine" | "orbat";
 
 export default function MilsimManage() {
   const [, setLocation] = useLocation();
@@ -163,9 +163,11 @@ export default function MilsimManage() {
       ],
     },
     {
-      label: "Recognition",
+      label: "Customization",
+      pro: true,
       items: [
-        { id: "recognition", label: "Recognition", icon: Medal },
+        { id: "recognition", label: "Recognition", icon: Medal, pro: true },
+        { id: "orbat", label: "ORBAT Builder", icon: GitBranch, pro: true },
         { id: "legacy", label: "Unit Legacy", icon: Archive, pro: true },
         { id: "developer", label: "API & Webhooks", icon: GitBranch, pro: true },
       ],
@@ -226,7 +228,14 @@ export default function MilsimManage() {
           <nav className="w-52 shrink-0 space-y-5">
             {NAV_GROUPS.map((group_nav) => (
               <div key={group_nav.label}>
-                <p className="text-[9px] font-display font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-3 mb-1.5">{group_nav.label}</p>
+                <div className="flex items-center gap-1.5 px-3 mb-1.5">
+                  <p className="text-[9px] font-display font-black uppercase tracking-[0.2em] text-muted-foreground/50">{group_nav.label}</p>
+                  {(group_nav as any).pro && (
+                    <span className="flex items-center gap-0.5 text-[8px] font-display font-black uppercase tracking-widest px-1 py-0.5 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30">
+                      <Crown className="w-2 h-2" /> Pro
+                    </span>
+                  )}
+                </div>
                 <div className="space-y-0.5">
                   {group_nav.items.map((item) => (
                     <button
@@ -272,6 +281,7 @@ export default function MilsimManage() {
               {tab === "developer" && <DeveloperTab group={group} showMsg={showMsg} />}
               {tab === "stream" && <StreamTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "doctrine" && <DoctrineTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
+              {tab === "orbat" && <OrbatStandaloneTab group={group} onSaved={setGroup} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
               {tab === "questions" && <QuestionsTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
             </motion.div>
           </div>
@@ -532,6 +542,33 @@ function SopsOnlyTab({ group, onSaved, setSaving, saving, showMsg }: any) {
 }
 
 function OrbatOnlyTab({ group, onSaved, setSaving, saving, showMsg }: any) {
+  const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
+
+  const saveOrbat = async () => {
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
+      onSaved(updated);
+      showMsg(true, "ORBAT saved.");
+    } catch (e: any) { showMsg(false, e.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 mb-2">
+        <GitBranch className="w-5 h-5 text-primary" />
+        <h2 className="font-display font-black text-lg uppercase tracking-wider text-foreground">ORBAT Builder</h2>
+        <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30">
+          <Crown className="w-2.5 h-2.5" /> Pro
+        </span>
+      </div>
+      <OrbatProGate group={group} orbatJson={orbatJson} setOrbatJson={setOrbatJson} saveOrbat={saveOrbat} saving={saving} />
+    </div>
+  );
+}
+
+function OrbatStandaloneTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
 
   const saveOrbat = async () => {
