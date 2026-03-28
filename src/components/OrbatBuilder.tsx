@@ -763,46 +763,57 @@ function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];on
 
 
 // ─── Canvas ───────────────────────────────────────────────────────────────────
-// ─── Per-chart canvas card — no outer box, just the chart content ─────────────
+// ─── Per-chart canvas card — no outer box, inline scale controls above chart ──
 function CanvasChartCard({node, pathMap}:{node:OrbatNode; pathMap:Record<string,string>}){
+  const [cz, setCz] = useState(1);
   const hasW = node.weaponsChart && node.weaponsChart.length>0;
   const hasV = node.vehiclesChart && node.vehiclesChart.length>0;
   const baseName = pathMap[node.id] || node.label;
+  const btnStyle = {background:"none",border:`1px solid ${T.border}`,color:T.textMuted,cursor:"pointer",borderRadius:3,padding:"1px 6px",fontSize:11,lineHeight:"16px"};
 
   return(
     <div style={{marginBottom:28}}>
-      {hasW&&(
-        <div style={{marginBottom: hasV ? 24 : 0}}>
-          <div style={{fontSize:9,fontWeight:700,color:T.textMuted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
-            {node.weaponsChartFor ? `${baseName} / ${node.weaponsChartFor}` : baseName} — Weapons
+      {/* Inline scale controls — sits flush above the chart, no wrapping box */}
+      <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:8}}>
+        <button onClick={()=>setCz(z=>Math.max(0.4,+(z-0.1).toFixed(1)))} style={btnStyle}>−</button>
+        <span style={{fontSize:10,color:T.textMuted,fontFamily:"monospace",width:34,textAlign:"center"}}>{Math.round(cz*100)}%</span>
+        <button onClick={()=>setCz(z=>Math.min(2,+(z+0.1).toFixed(1)))} style={btnStyle}>+</button>
+        <button onClick={()=>setCz(1)} style={{...btnStyle,fontSize:9,marginLeft:2}}>↺</button>
+      </div>
+      <div style={{transform:`scale(${cz})`,transformOrigin:"top left",display:"inline-block"}}>
+        {hasW&&(
+          <div style={{marginBottom: hasV ? 24 : 0}}>
+            <div style={{fontSize:9,fontWeight:700,color:T.textMuted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+              {node.weaponsChartFor ? `${baseName} / ${node.weaponsChartFor}` : baseName} — Weapons
+            </div>
+            <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
+              <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Equipment</th>{(node.weaponsCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
+              <tbody>{(node.weaponsChart||[]).map((row,i)=>(
+                <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
+                  <td style={{...TD,textAlign:"left" as const,fontWeight:600}}>{row.name}</td>
+                  {(node.weaponsCols||[]).map(c=><td key={c.id} style={TD}>{row[c.id]??"—"}</td>)}
+                </tr>
+              ))}</tbody>
+            </table>
           </div>
-          <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
-            <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Equipment</th>{(node.weaponsCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
-            <tbody>{(node.weaponsChart||[]).map((row,i)=>(
-              <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
-                <td style={{...TD,textAlign:"left" as const,fontWeight:600}}>{row.name}</td>
-                {(node.weaponsCols||[]).map(c=><td key={c.id} style={TD}>{row[c.id]??"—"}</td>)}
-              </tr>
-            ))}</tbody>
-          </table>
-        </div>
-      )}
-      {hasV&&(
-        <div>
-          <div style={{fontSize:9,fontWeight:700,color:T.textMuted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
-            {node.vehiclesChartFor ? `${baseName} / ${node.vehiclesChartFor}` : baseName} — Vehicles
+        )}
+        {hasV&&(
+          <div>
+            <div style={{fontSize:9,fontWeight:700,color:T.textMuted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+              {node.vehiclesChartFor ? `${baseName} / ${node.vehiclesChartFor}` : baseName} — Vehicles
+            </div>
+            <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
+              <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Vehicle</th>{(node.vehiclesCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
+              <tbody>{(node.vehiclesChart||[]).map((row,i)=>(
+                <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
+                  <td style={{...TD,textAlign:"left" as const,fontWeight:600}}>{row.name}</td>
+                  {(node.vehiclesCols||[]).map(c=><td key={c.id} style={TD}>{row[c.id]??"—"}</td>)}
+                </tr>
+              ))}</tbody>
+            </table>
           </div>
-          <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
-            <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Vehicle</th>{(node.vehiclesCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
-            <tbody>{(node.vehiclesChart||[]).map((row,i)=>(
-              <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
-                <td style={{...TD,textAlign:"left" as const,fontWeight:600}}>{row.name}</td>
-                {(node.vehiclesCols||[]).map(c=><td key={c.id} style={TD}>{row[c.id]??"—"}</td>)}
-              </tr>
-            ))}</tbody>
-          </table>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
