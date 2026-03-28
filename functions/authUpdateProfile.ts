@@ -9,7 +9,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+    return await base44.asServiceRole.entities.AppUser.get(payload.sub) ?? null;
   } catch { return null; }
 }
 
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       const base64 = btoa(String.fromCharCode(...bytes));
       const dataUrl = `data:${file.type};base64,${base64}`;
 
-      await base44.asServiceRole.entities.User.update(full.id, { avatar_url: dataUrl });
+      await base44.asServiceRole.entities.AppUser.update(full.id, { avatar_url: dataUrl });
       return Response.json({ avatar_url: dataUrl });
     }
 
@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
         updates.password_hash = await bcrypt.hash(newPassword, 10);
       }
 
-      const updated = await base44.asServiceRole.entities.User.update(full.id, updates);
+      const updated = await base44.asServiceRole.entities.AppUser.update(full.id, updates);
 
       return Response.json({
         id: updated.id,

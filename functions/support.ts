@@ -24,7 +24,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+    return await base44.asServiceRole.entities.AppUser.get(payload.sub) ?? null;
   } catch { return null; }
 }
 

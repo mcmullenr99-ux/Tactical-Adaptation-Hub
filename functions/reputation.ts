@@ -9,7 +9,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    const user = await base44.asServiceRole.entities.User.get(payload.sub);
+    const user = await base44.asServiceRole.entities.AppUser.get(payload.sub);
     return user ?? null;
   } catch { return null; }
 }
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
       }
 
       const userId = parts[0];
-      const subject = await base44.asServiceRole.entities.User.get(userId);
+      const subject = await base44.asServiceRole.entities.AppUser.get(userId);
       if (!subject) return Response.json({ error: 'User not found' }, { status: 404 });
 
       const body = await req.json().catch(() => ({}));

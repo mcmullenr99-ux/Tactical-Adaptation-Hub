@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     } else if (group.owner_id) {
       // Try to find user email
       try {
-        const users = await base44.asServiceRole.entities.User.filter({ id: group.owner_id });
+        const users = await base44.asServiceRole.entities.AppUser.filter({ id: group.owner_id });
         if (users.length > 0 && users[0].email) {
           params.set('customer_email', users[0].email);
         }

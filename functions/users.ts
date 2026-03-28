@@ -33,7 +33,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    const user = await base44.asServiceRole.entities.User.get(payload.sub);
+    const user = await base44.asServiceRole.entities.AppUser.get(payload.sub);
     return user ?? null;
   } catch {
     return null;
@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
 
     // GET /users — list users (public, limited fields)
     if (method === 'GET' && parts.length === 0) {
-      const users = await base44.asServiceRole.entities.User.list();
+      const users = await base44.asServiceRole.entities.AppUser.list();
       return Response.json(users
         .filter((u: any) => u.status === 'active')
         .map((u: any) => ({
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
 
     // GET /users/:id — public profile
     if (method === 'GET' && parts.length === 1 && parts[0] !== 'me') {
-      const user = await base44.asServiceRole.entities.User.get(parts[0]);
+      const user = await base44.asServiceRole.entities.AppUser.get(parts[0]);
       if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
       return Response.json({
         id: user.id, username: user.username, role: user.role,
@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       if (full.referral_code) return Response.json({ code: full.referral_code });
       const code = full.username.toUpperCase().slice(0, 6) + Math.random().toString(36).slice(2, 6).toUpperCase();
-      await base44.asServiceRole.entities.User.update(full.id, { referral_code: code });
+      await base44.asServiceRole.entities.AppUser.update(full.id, { referral_code: code });
       return Response.json({ code });
     }
 
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
       const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       if (!full.referral_code) return Response.json([]);
-      const recruits = await base44.asServiceRole.entities.User.filter({ referred_by: full.referral_code });
+      const recruits = await base44.asServiceRole.entities.AppUser.filter({ referred_by: full.referral_code });
       return Response.json(recruits.map((u: any) => ({ id: u.id, username: u.username, createdAt: u.created_date })));
     }
 
@@ -110,14 +110,14 @@ Deno.serve(async (req) => {
       const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const body = await req.json().catch(() => ({}));
-      await base44.asServiceRole.entities.User.update(full.id, { on_duty_status: body.status ?? 'available' });
+      await base44.asServiceRole.entities.AppUser.update(full.id, { on_duty_status: body.status ?? 'available' });
       return Response.json({ on_duty_status: body.status });
     }
 
     // GET /users/profile/:username — public profile by username
     if (method === 'GET' && parts.length === 2 && parts[0] === 'profile') {
       const username = parts[1];
-      const users = await base44.asServiceRole.entities.User.list();
+      const users = await base44.asServiceRole.entities.AppUser.list();
       const user = users.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
       if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
       return Response.json({
@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
     // GET /users/profile/:username/ribbons — public ribbon rack for a user
     if (method === 'GET' && parts.length === 3 && parts[0] === 'profile' && parts[2] === 'ribbons') {
       const username = parts[1];
-      const users = await base44.asServiceRole.entities.User.list();
+      const users = await base44.asServiceRole.entities.AppUser.list();
       const user = users.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
       if (!user) return Response.json([]);
       // Get rosters for this user

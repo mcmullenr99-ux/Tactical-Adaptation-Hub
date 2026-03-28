@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
     if (!token)
       return Response.json({ error: 'Verification token is required' }, { status: 400 });
 
-    const users = await base44.entities.User.filter({ email_verify_token: token });
+    const users = await base44.entities.AppUser.filter({ email_verify_token: token });
     const user  = users[0];
 
     if (!user)
@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     if (user.email_verify_expires && new Date(user.email_verify_expires) < new Date())
       return Response.json({ error: 'Verification link has expired. Please request a new one.' }, { status: 410 });
 
-    await base44.entities.User.update(user.id, {
+    await base44.entities.AppUser.update(user.id, {
       email_verified: true,
       status: 'active',
       email_verify_token: null,

@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     const updates: any = { password_hash, status: 'active' };
     if (username) updates.username = username;
 
-    await base44.asServiceRole.entities.User.update(user_id, updates);
+    await base44.asServiceRole.entities.AppUser.update(user_id, updates);
     return Response.json({ ok: true, message: 'Password updated.' });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

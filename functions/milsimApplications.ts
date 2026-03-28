@@ -20,7 +20,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+    return await base44.asServiceRole.entities.AppUser.get(payload.sub) ?? null;
   } catch { return null; }
 }
 
@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       if (body.status === 'approved') {
         const app = await base44.asServiceRole.entities.MilsimApplication.get(parts[2]);
         if (app) {
-          const applicantUser = await base44.asServiceRole.entities.User.get(app.applicant_id).catch(() => null);
+          const applicantUser = await base44.asServiceRole.entities.AppUser.get(app.applicant_id).catch(() => null);
           if (!applicantUser) return Response.json({ error: 'Applicant account not found.' }, { status: 404 });
           if (!applicantUser.email_verified) {
             return Response.json({ error: 'This applicant has not verified their email address. They must verify their email before being added to a roster.' }, { status: 403 });

@@ -13,7 +13,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+    return await base44.asServiceRole.entities.AppUser.get(payload.sub) ?? null;
   } catch { return null; }
 }
 
@@ -24,7 +24,7 @@ async function recordActivityDateForRoster(base44: any, rosterIds: string[]): Pr
     try {
       const entry = await base44.asServiceRole.entities.MilsimRoster.get(rosterId);
       if (!entry?.user_id) return;
-      const user = await base44.asServiceRole.entities.User.get(entry.user_id);
+      const user = await base44.asServiceRole.entities.AppUser.get(entry.user_id);
       if (!user) return;
       const existing: string[] = Array.isArray(user.activity_dates) ? user.activity_dates : [];
       if (existing.includes(today)) return;
@@ -32,7 +32,7 @@ async function recordActivityDateForRoster(base44: any, rosterIds: string[]): Pr
       cutoff.setDate(cutoff.getDate() - 90);
       const cutoffStr = cutoff.toISOString().slice(0, 10);
       const updated = [...existing.filter((d: string) => d >= cutoffStr), today];
-      await base44.asServiceRole.entities.User.update(entry.user_id, { activity_dates: updated });
+      await base44.asServiceRole.entities.AppUser.update(entry.user_id, { activity_dates: updated });
     } catch {}
   }));
 }

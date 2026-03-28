@@ -28,9 +28,9 @@ Deno.serve(async (req) => {
     if (bearerToken) {
       let payload: any;
       try { payload = verify(bearerToken, JWT_SECRET); } catch { return Response.json({ error: 'Invalid token' }, { status: 401 }); }
-      user = await base44.entities.User.get(payload.sub);
+      user = await base44.entities.AppUser.get(payload.sub);
     } else if (body.email) {
-      const found = await base44.entities.User.filter({ email: body.email.toLowerCase().trim() });
+      const found = await base44.entities.AppUser.filter({ email: body.email.toLowerCase().trim() });
       user = found[0] ?? null;
     } else {
       return Response.json({ error: 'Email or authentication token required' }, { status: 400 });
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     const newToken   = generateToken(48);
     const newExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    await base44.entities.User.update(user.id, {
+    await base44.entities.AppUser.update(user.id, {
       email_verify_token:   newToken,
       email_verify_expires: newExpires,
     });

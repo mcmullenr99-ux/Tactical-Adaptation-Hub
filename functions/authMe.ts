@@ -10,7 +10,7 @@ async function getUserFromRequest(req: Request, base44: any): Promise<any | null
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    const user = await base44.asServiceRole.entities.User.get(payload.sub);
+    const user = await base44.asServiceRole.entities.AppUser.get(payload.sub);
     return user ?? null;
   } catch {
     return null;
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       if (!body.password) return Response.json({ error: 'Password required to delete account' }, { status: 400 });
       const valid = await bcrypt.compare(body.password, user.password_hash ?? '');
       if (!valid) return Response.json({ error: 'Incorrect password' }, { status: 400 });
-      await base44.asServiceRole.entities.User.delete(user.id);
+      await base44.asServiceRole.entities.AppUser.delete(user.id);
       return new Response(null, { status: 204 });
     }
 

@@ -814,7 +814,7 @@ Deno.serve(async (req) => {
       const rosterUsers: any[] = [];
       for (const uid of userIds) {
         try {
-          const u = await base44.asServiceRole.entities.User.get(uid);
+          const u = await base44.asServiceRole.entities.AppUser.get(uid);
           if (u) rosterUsers.push(u);
         } catch { /* skip */ }
       }
