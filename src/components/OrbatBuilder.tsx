@@ -763,67 +763,46 @@ function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];on
 
 
 // ─── Canvas ───────────────────────────────────────────────────────────────────
-// ─── Per-chart canvas card with independent zoom ─────────────────────────────
+// ─── Per-chart canvas card — no outer box, just the chart content ─────────────
 function CanvasChartCard({node, pathMap}:{node:OrbatNode; pathMap:Record<string,string>}){
-  // T uses module-level theme constant
-  const [cz, setCz] = useState(1);
-  const contentRef = React.useRef<HTMLDivElement>(null);
-  const [naturalH, setNaturalH] = React.useState<number|null>(null);
-  React.useEffect(()=>{
-    if(contentRef.current && naturalH===null){
-      setNaturalH(contentRef.current.scrollHeight);
-    }
-  },[naturalH]);
   const hasW = node.weaponsChart && node.weaponsChart.length>0;
   const hasV = node.vehiclesChart && node.vehiclesChart.length>0;
   const baseName = pathMap[node.id] || node.label;
 
   return(
-    <div style={{marginBottom:16,background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:6,padding:16,overflow:"hidden",transition:"height 0.15s ease",height: naturalH ? `calc(${Math.round(naturalH*cz)}px + 48px)` : undefined}}>
-      {/* Card header with zoom controls */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-        <span style={{fontSize:10,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1}}>{baseName}</span>
-        <div style={{display:"flex",alignItems:"center",gap:4}}>
-          <button onClick={()=>setCz(z=>Math.max(0.4,+(z-0.1).toFixed(1)))} style={{background:"none",border:`1px solid ${T.border}`,color:T.textMuted,cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:11}}>−</button>
-          <span style={{fontSize:10,color:T.textMuted,fontFamily:"monospace",width:34,textAlign:"center"}}>{Math.round(cz*100)}%</span>
-          <button onClick={()=>setCz(z=>Math.min(2,+(z+0.1).toFixed(1)))} style={{background:"none",border:`1px solid ${T.border}`,color:T.textMuted,cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:11}}>+</button>
-          <button onClick={()=>setCz(1)} style={{background:"none",border:`1px solid ${T.border}`,color:T.textMuted,cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:9,marginLeft:2}}>↺</button>
+    <div style={{marginBottom:28}}>
+      {hasW&&(
+        <div style={{marginBottom: hasV ? 24 : 0}}>
+          <div style={{fontSize:9,fontWeight:700,color:T.textMuted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+            {node.weaponsChartFor ? `${baseName} / ${node.weaponsChartFor}` : baseName} — Weapons
+          </div>
+          <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
+            <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Equipment</th>{(node.weaponsCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
+            <tbody>{(node.weaponsChart||[]).map((row,i)=>(
+              <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
+                <td style={{...TD,textAlign:"left" as const,fontWeight:600}}>{row.name}</td>
+                {(node.weaponsCols||[]).map(c=><td key={c.id} style={TD}>{row[c.id]??"—"}</td>)}
+              </tr>
+            ))}</tbody>
+          </table>
         </div>
-      </div>
-      <div ref={contentRef} style={{transform:`scale(${cz})`,transformOrigin:"top left",display:"inline-block",minWidth:"100%"}}>
-        {hasW&&(
-          <div style={{marginBottom: hasV ? 20 : 0}}>
-            <div style={{fontSize:9,fontWeight:700,color:T.textMuted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
-              {node.weaponsChartFor ? `${baseName} / ${node.weaponsChartFor}` : baseName} — Weapons
-            </div>
-            <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
-              <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Equipment</th>{(node.weaponsCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
-              <tbody>{(node.weaponsChart||[]).map((row,i)=>(
-                <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
-                  <td style={{...TD,textAlign:"left" as const,fontWeight:600}}>{row.name}</td>
-                  {(node.weaponsCols||[]).map(c=><td key={c.id} style={TD}>{row[c.id]??"—"}</td>)}
-                </tr>
-              ))}</tbody>
-            </table>
+      )}
+      {hasV&&(
+        <div>
+          <div style={{fontSize:9,fontWeight:700,color:T.textMuted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+            {node.vehiclesChartFor ? `${baseName} / ${node.vehiclesChartFor}` : baseName} — Vehicles
           </div>
-        )}
-        {hasV&&(
-          <div>
-            <div style={{fontSize:9,fontWeight:700,color:T.textMuted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
-              {node.vehiclesChartFor ? `${baseName} / ${node.vehiclesChartFor}` : baseName} — Vehicles
-            </div>
-            <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
-              <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Vehicle</th>{(node.vehiclesCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
-              <tbody>{(node.vehiclesChart||[]).map((row,i)=>(
-                <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
-                  <td style={{...TD,textAlign:"left" as const,fontWeight:600}}>{row.name}</td>
-                  {(node.vehiclesCols||[]).map(c=><td key={c.id} style={TD}>{row[c.id]??"—"}</td>)}
-                </tr>
-              ))}</tbody>
-            </table>
-          </div>
-        )}
-      </div>
+          <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
+            <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Vehicle</th>{(node.vehiclesCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
+            <tbody>{(node.vehiclesChart||[]).map((row,i)=>(
+              <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
+                <td style={{...TD,textAlign:"left" as const,fontWeight:600}}>{row.name}</td>
+                {(node.vehiclesCols||[]).map(c=><td key={c.id} style={TD}>{row[c.id]??"—"}</td>)}
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
