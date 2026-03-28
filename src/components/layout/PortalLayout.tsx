@@ -3,7 +3,7 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { MainLayout } from "./MainLayout";
 import { useLocation, Link } from "wouter";
 import {
-  Mail, PenTool, LayoutDashboard, ShieldCheck, Settings,
+  PenTool, LayoutDashboard, ShieldCheck, Settings,
   LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert, Calendar, KeyRound,
   LifeBuoy,
 } from "lucide-react";
@@ -77,11 +77,9 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     admin: "text-destructive",
   };
 
-  const unreadMsgs: number = (notifCounts as any)?.unreadMessages ?? 0;
 
   const navLinks = [
     { href: "/portal/dashboard", icon: <LayoutDashboard className="w-4 h-4 text-primary" />, label: "Dashboard" },
-    { href: "/portal/inbox", icon: <Mail className="w-4 h-4 text-primary" />, label: "Comms", badge: unreadMsgs > 0 ? unreadMsgs : 0 },
     { href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "Unit HQ" },
     { href: "/portal/member-hq", icon: <Users className="w-4 h-4 text-primary" />, label: "Member HQ" },
     { href: "/portal/support", icon: <LifeBuoy className="w-4 h-4 text-primary" />, label: "Support" },
