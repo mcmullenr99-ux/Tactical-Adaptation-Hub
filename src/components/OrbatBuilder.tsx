@@ -710,8 +710,20 @@ function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];on
           )}
           {tab==="charts"&&(
             <div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+                <span style={{fontSize:9,color:T.textMuted,textTransform:"uppercase",letterSpacing:1}}>Weapons Chart</span>
+                {(d.weaponsChart&&d.weaponsChart.length>0)||(d.weaponsCols&&d.weaponsCols.length>0) ? (
+                  <button onClick={()=>{s("weaponsChart",[]);s("weaponsCols",[]);s("weaponsChartFor","");}} style={{...BSm,background:"rgba(220,50,50,0.15)",color:T.danger,borderColor:T.danger}} title="Clear weapons chart">✕ Clear Chart</button>
+                ) : null}
+              </div>
               <ChartBuilder title="Weapons Chart" rows={d.weaponsChart||[]} cols={d.weaponsCols||[]} chartFor={d.weaponsChartFor||""} onR={r=>s("weaponsChart",r)} onC={c=>s("weaponsCols",c)} onChartFor={v=>s("weaponsChartFor",v)} isWeapons={true} flagCode={d.flagCode}/>
               <div style={{height:1,background:T.border,margin:"20px 0"}}/>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+                <span style={{fontSize:9,color:T.textMuted,textTransform:"uppercase",letterSpacing:1}}>Vehicles Chart</span>
+                {(d.vehiclesChart&&d.vehiclesChart.length>0)||(d.vehiclesCols&&d.vehiclesCols.length>0) ? (
+                  <button onClick={()=>{s("vehiclesChart",[]);s("vehiclesCols",[]);s("vehiclesChartFor","");}} style={{...BSm,background:"rgba(220,50,50,0.15)",color:T.danger,borderColor:T.danger}} title="Clear vehicles chart">✕ Clear Chart</button>
+                ) : null}
+              </div>
               <ChartBuilder title="Vehicles Chart" rows={d.vehiclesChart||[]} cols={d.vehiclesCols||[]} chartFor={d.vehiclesChartFor||""} onR={r=>s("vehiclesChart",r)} onC={c=>s("vehiclesCols",c)} onChartFor={v=>s("vehiclesChartFor",v)} isWeapons={false} flagCode={d.flagCode}/>
             </div>
           )}
