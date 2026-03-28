@@ -648,38 +648,81 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
     }
   }, [tool, getEvtPt, color, lw, dashed]);
 
-  const onMouseUp = useCallback((e: React.MouseEvent) => {
-    dragId.current = null; dragPrev.current = null;
-    if (!isDrawing.current) return;
-    isDrawing.current = false;
-    setPreview(null);
+  // Use refs for color/lw/dashed so the window mouseup listener always has fresh values
+  const colorRef  = useRef(color);
+  const lwRef     = useRef(lw);
+  const dashedRef = useRef(dashed);
+  const toolRef   = useRef(tool);
+  useEffect(() => { colorRef.current  = color;  }, [color]);
+  useEffect(() => { lwRef.current     = lw;     }, [lw]);
+  useEffect(() => { dashedRef.current = dashed; }, [dashed]);
+  useEffect(() => { toolRef.current   = tool;   }, [tool]);
 
-    const cp = getEvtPt(e);
-    const start = drawStart.current;
-    if (!start) return;
+  // Commit stroke — attached to window so mouse-up off-canvas still fires
+  useEffect(() => {
+    const commitStroke = (clientX: number, clientY: number) => {
+      dragId.current = null; dragPrev.current = null;
+      if (!isDrawing.current) return;
+      isDrawing.current = false;
 
-    if (tool === "draw") {
-      if (drawPath.current.length >= 2) {
-        setElements(prev => [...prev, { id:uid(), type:"draw", points:[...drawPath.current], color, lw, dashed }]);
+      const t     = toolRef.current;
+      const c     = colorRef.current;
+      const w     = lwRef.current;
+      const d     = dashedRef.current;
+      const start = drawStart.current;
+
+      if (t === "draw") {
+        if (drawPath.current.length >= 2) {
+          setElements(prev => [...prev, { id:uid(), type:"draw", points:[...drawPath.current], color:c, lw:w, dashed:d }]);
+        }
+        drawPath.current = [];
+        drawStart.current = null;
+        setPreview(null);
+        return;
       }
-      drawPath.current = []; drawStart.current = null; return;
-    }
-    if (tool === "line" || tool === "arrow") {
-      if (dist(start, cp) < 5) return;
-      setElements(prev => [...prev, { id:uid(), type:tool, points:[start,cp], color, lw, dashed, label:"" }]);
-    }
-    if (tool === "rect") {
-      const w = Math.abs(cp.x-start.x); const h = Math.abs(cp.y-start.y);
-      if (w < 5 || h < 5) return;
-      setElements(prev => [...prev, { id:uid(), type:"rect", x:Math.min(start.x,cp.x), y:Math.min(start.y,cp.y), w, h, color, lw, dashed }]);
-    }
-    if (tool === "circle") {
-      const r = dist(start, cp);
-      if (r < 5) return;
-      setElements(prev => [...prev, { id:uid(), type:"circle", x:start.x, y:start.y, r, color, lw, dashed }]);
-    }
-    drawStart.current = null;
-  }, [tool, getEvtPt, color, lw, dashed]);
+
+      setPreview(null);
+      if (!start) return;
+
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const cp = { x: clientX - rect.left, y: clientY - rect.top };
+
+      if (t === "line" || t === "arrow") {
+        if (dist(start, cp) < 5) return;
+        setElements(prev => [...prev, { id:uid(), type:t, points:[start,cp], color:c, lw:w, dashed:d, label:"" }]);
+      }
+      if (t === "rect") {
+        const rw = Math.abs(cp.x-start.x); const rh = Math.abs(cp.y-start.y);
+        if (rw < 5 || rh < 5) return;
+        setElements(prev => [...prev, { id:uid(), type:"rect", x:Math.min(start.x,cp.x), y:Math.min(start.y,cp.y), w:rw, h:rh, color:c, lw:w, dashed:d }]);
+      }
+      if (t === "circle") {
+        const r = dist(start, cp);
+        if (r < 5) return;
+        setElements(prev => [...prev, { id:uid(), type:"circle", x:start.x, y:start.y, r, color:c, lw:w, dashed:d }]);
+      }
+      drawStart.current = null;
+    };
+
+    const onWindowMouseUp = (e: MouseEvent) => commitStroke(e.clientX, e.clientY);
+    const onWindowTouchEnd = (e: TouchEvent) => {
+      const t = e.changedTouches[0];
+      if (t) commitStroke(t.clientX, t.clientY);
+    };
+
+    window.addEventListener("mouseup",   onWindowMouseUp);
+    window.addEventListener("touchend",  onWindowTouchEnd);
+    return () => {
+      window.removeEventListener("mouseup",  onWindowMouseUp);
+      window.removeEventListener("touchend", onWindowTouchEnd);
+    };
+  }, []);  // intentionally empty — refs keep values fresh
+
+  const onMouseUp = useCallback((_e: React.MouseEvent) => {
+    // no-op: handled by window listener above
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -1005,7 +1048,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
-          onMouseLeave={()=>{ isDrawing.current=false; dragId.current=null; setPreview(null); }}
+          onMouseLeave={()=>{ dragId.current=null; isPanning.current=false; panAnchor.current=null; }}
         />
 
         {/* Tool mode indicator */}
