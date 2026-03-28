@@ -121,7 +121,7 @@ const GAME_MAPS: GameMap[] = [
     openUrl:"https://squadmaps.com/" },
 
   // ── Custom ────────────────────────────────────────────────────────────────
-  { id:"custom",           game:"Custom", name:"Upload Image",
+  { id:"custom",           game:"Custom", name:"Custom URL",
     iframeUrl:null, fallbackColor:"#1a1a1a", previewColor:"#444",
     attribution:"", openUrl:"" },
 ];
@@ -770,12 +770,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
     setLabelPrompt(null); setLabelText("");
   };
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCustomBgUrl(URL.createObjectURL(file));
-    setMapId("custom"); setShowMapPicker(false);
-  };
+
 
   const gameGroups = useMemo(() => {
     const out: Record<string, GameMap[]> = {};
@@ -839,11 +834,21 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
                   </div>
                 </div>
               ))}
-              <div className="border-t border-border pt-2">
-                <label className="flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded border border-dashed border-border hover:border-primary/40 text-xs text-muted-foreground hover:text-foreground transition-all">
-                  <Layers className="w-3.5 h-3.5"/>Upload custom map image
-                  <input type="file" accept="image/*" className="hidden" onChange={handleUpload}/>
-                </label>
+              <div className="border-t border-border pt-2 space-y-1.5">
+                <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground px-1">Custom Map URL</p>
+                <input
+                  className="w-full bg-background border border-border rounded px-2.5 py-1.5 text-xs text-foreground placeholder-muted-foreground focus:border-primary/50 focus:outline-none"
+                  placeholder="https://atlas.plan-ops.fr/maps/..."
+                  value={customBgUrl ?? ""}
+                  onChange={e => setCustomBgUrl(e.target.value || null)}
+                  onKeyDown={e => { if (e.key === "Enter" && customBgUrl) { setMapId("custom"); setShowMapPicker(false); } }}
+                />
+                <button
+                  onClick={() => { if (customBgUrl) { setMapId("custom"); setShowMapPicker(false); setIframeBlocked(false); } }}
+                  disabled={!customBgUrl}
+                  className="w-full px-2.5 py-1.5 rounded border border-primary/40 bg-primary/10 text-primary text-xs font-display font-bold uppercase tracking-wider hover:bg-primary/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                  Load Map
+                </button>
               </div>
             </div>
           )}
@@ -1011,11 +1016,16 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
           />
         )}
 
-        {/* LAYER 1 (custom): uploaded image bg */}
+        {/* LAYER 1 (custom): user-supplied URL — iframe so it works for both images and live map pages */}
         {mapId === "custom" && customBgUrl && (
-          <div className="absolute inset-0" style={{ pointerEvents: canvasCapture ? "none" : "auto" }}>
-            <img src={customBgUrl} alt="Custom map" className="w-full h-full object-contain"/>
-          </div>
+          <iframe
+            key={customBgUrl}
+            src={customBgUrl}
+            title="Custom map"
+            className="absolute inset-0 w-full h-full border-0"
+            style={{ pointerEvents: canvasCapture ? "none" : "auto" }}
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          />
         )}
 
         {/* LAYER 1 (fallback): solid colour when no iframe and no custom */}
