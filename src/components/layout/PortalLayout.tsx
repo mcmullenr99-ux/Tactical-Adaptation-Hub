@@ -86,7 +86,6 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     { href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "Unit HQ" },
     { href: "/portal/member-hq", icon: <Users className="w-4 h-4 text-primary" />, label: "Member HQ" },
     { href: "/portal/friends", icon: <Users className="w-4 h-4 text-primary" />, label: "Connections", badge: pendingFriends > 0 ? pendingFriends : 0 },
-    { href: "/portal/profile", icon: <User className="w-4 h-4 text-primary" />, label: "My Profile" },
     { href: "/portal/support", icon: <LifeBuoy className="w-4 h-4 text-primary" />, label: "Support" },
     { href: "/portal/2fa", icon: <KeyRound className="w-4 h-4 text-primary" />, label: "2FA Security" },
     { href: "/ops", icon: <Calendar className="w-4 h-4 text-primary" />, label: "Ops Calendar" },
