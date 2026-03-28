@@ -59,65 +59,55 @@ interface GameMap {
 const GAME_MAPS: GameMap[] = [
   // ── Arma 3 Vanilla ────────────────────────────────────────────────────────
   { id:"a3_altis",    game:"Arma 3 — Vanilla",  name:"Altis",
-    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/altis/150",
-    fallbackColor:"#2d3a2e", previewColor:"#4a7c59",
-    attribution:"© Bohemia Interactive / PLANOPS Atlas",
+    iframeUrl:null, fallbackColor:"#2d3a2e", previewColor:"#4a7c59",
+    attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/altis/150" },
 
   { id:"a3_stratis",  game:"Arma 3 — Vanilla",  name:"Stratis",
-    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/stratis/150",
-    fallbackColor:"#2d3a2e", previewColor:"#5a8c6a",
-    attribution:"© Bohemia Interactive / PLANOPS Atlas",
+    iframeUrl:null, fallbackColor:"#2d3a2e", previewColor:"#5a8c6a",
+    attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/stratis/150" },
 
   { id:"a3_malden",   game:"Arma 3 — Vanilla",  name:"Malden",
-    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/malden/150",
-    fallbackColor:"#2d3a2e", previewColor:"#6a9c7a",
-    attribution:"© Bohemia Interactive / PLANOPS Atlas",
+    iframeUrl:null, fallbackColor:"#2d3a2e", previewColor:"#6a9c7a",
+    attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/malden/150" },
 
   { id:"a3_tanoa",    game:"Arma 3 — Vanilla",  name:"Tanoa",
-    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/tanoa/150",
-    fallbackColor:"#1a3a2a", previewColor:"#3a7a5a",
-    attribution:"© Bohemia Interactive / PLANOPS Atlas",
+    iframeUrl:null, fallbackColor:"#1a3a2a", previewColor:"#3a7a5a",
+    attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/tanoa/150" },
 
   // ── Arma 3 Top Modded ─────────────────────────────────────────────────────
   { id:"a3_chernarus",     game:"Arma 3 — Modded", name:"Chernarus (Summer)",
-    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/chernarus/150",
-    fallbackColor:"#263326", previewColor:"#4a7a55",
-    attribution:"© Bohemia Interactive / PLANOPS Atlas",
+    iframeUrl:null, fallbackColor:"#263326", previewColor:"#4a7a55",
+    attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/chernarus/150" },
 
   { id:"a3_takistan",      game:"Arma 3 — Modded", name:"Takistan",
-    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/takistan/150",
-    fallbackColor:"#3a3020", previewColor:"#7a7040",
-    attribution:"© Bohemia Interactive / PLANOPS Atlas",
+    iframeUrl:null, fallbackColor:"#3a3020", previewColor:"#7a7040",
+    attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/takistan/150" },
 
   { id:"a3_lingor",        game:"Arma 3 — Modded", name:"Lingor",
-    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/lingor/150",
-    fallbackColor:"#1a3020", previewColor:"#3a6a40",
-    attribution:"© IceBreakr / PLANOPS Atlas",
+    iframeUrl:null, fallbackColor:"#1a3020", previewColor:"#3a6a40",
+    attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/lingor/150" },
 
   { id:"a3_fallujah",      game:"Arma 3 — Modded", name:"Fallujah",
-    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/fallujah/150",
-    fallbackColor:"#3a2a10", previewColor:"#8a7040",
-    attribution:"© Shezan74 / PLANOPS Atlas",
+    iframeUrl:null, fallbackColor:"#3a2a10", previewColor:"#8a7040",
+    attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/fallujah/150" },
 
   { id:"a3_lythium",       game:"Arma 3 — Modded", name:"Lythium",
-    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/lythium/150",
-    fallbackColor:"#2a2010", previewColor:"#7a6030",
-    attribution:"© Jakerod / PLANOPS Atlas",
+    iframeUrl:null, fallbackColor:"#2a2010", previewColor:"#7a6030",
+    attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/lythium/150" },
 
   // ── Squad ── squadmaps.com ─────────────────────────────────────────────────
-  { id:"sq_all",           game:"Squad", name:"All Maps (squadmaps.com)",
-    iframeUrl:"https://squadmaps.com/",
-    fallbackColor:"#2a2a1e", previewColor:"#6a7a3a",
-    attribution:"© Offworld Industries / squadmaps.com",
+  { id:"sq_all",           game:"Squad", name:"All Maps",
+    iframeUrl:null, fallbackColor:"#2a2a1e", previewColor:"#6a7a3a",
+    attribution:"squadmaps.com",
     openUrl:"https://squadmaps.com/" },
 
   // ── Custom ────────────────────────────────────────────────────────────────
@@ -414,7 +404,6 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
   const [linkedOpId,     setLinkedOpId]     = useState<string | null>(null);
   const [cmdNote,        setCmdNote]        = useState("");
   const [showNotes,      setShowNotes]      = useState(false);
-  const [iframeBlocked,  setIframeBlocked]  = useState(false);
   const [preview,        setPreview]        = useState<PlanElement | null>(null);
 
   // Drawing refs
@@ -798,7 +787,6 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
   ];
 
   const linkedOp = ops.find(o => o.id === linkedOpId);
-  const iframeUrl = mapId === "custom" ? null : gameMap.iframeUrl;
   // Canvas is on top and captures input only during drawing tools
   const canvasPointerEvents = canvasCapture ? "auto" : "none";
 
@@ -822,7 +810,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
                   <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">{game}</p>
                   <div className="space-y-0.5">
                     {maps.filter(m=>m.id!=="custom").map(m=>(
-                      <button key={m.id} onClick={()=>{setMapId(m.id);setShowMapPicker(false);setIframeBlocked(false);}}
+                      <button key={m.id} onClick={()=>{setMapId(m.id);setShowMapPicker(false);}}
                         className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-xs text-left transition-all ${
                           m.id===mapId?"bg-primary/15 text-primary border border-primary/40":"text-foreground hover:bg-secondary/50 border border-transparent"
                         }`}>
@@ -1003,18 +991,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
       {/* ── Map + canvas stack ────────────────────────────────────────────── */}
       <div ref={containerRef} className="flex-1 relative overflow-hidden bg-[#0a0c0e]">
 
-        {/* LAYER 1: Live iframe map */}
-        {iframeUrl && !iframeBlocked && (
-          <iframe
-            key={mapId}
-            src={iframeUrl}
-            title={`${gameMap.game} — ${gameMap.name}`}
-            className="absolute inset-0 w-full h-full border-0"
-            style={{ pointerEvents: canvasCapture ? "none" : "auto" }}
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-            onError={()=>setIframeBlocked(true)}
-          />
-        )}
+        {/* iframe maps removed — external sites block embedding */}
 
         {/* LAYER 1 (custom): user-supplied URL — iframe so it works for both images and live map pages */}
         {mapId === "custom" && customBgUrl && (
@@ -1028,19 +1005,35 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
           />
         )}
 
-        {/* LAYER 1 (fallback): solid colour when no iframe and no custom */}
-        {(!iframeUrl || iframeBlocked) && mapId !== "custom" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3"
-            style={{background: gameMap.fallbackColor}}>
-            <p className="text-white/40 text-sm font-display uppercase tracking-wider">
-              {iframeBlocked ? "Map blocked by browser" : "No live map for this selection"}
-            </p>
+        {/* LAYER 1: Map reference panel — draw your plan here, use the link to open the real map alongside */}
+        {mapId !== "custom" && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-5"
+            style={{background: `radial-gradient(ellipse at center, ${gameMap.fallbackColor}ee 0%, #0a0c0ecc 100%)`}}>
+
+            {/* Colour swatch + map name */}
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-16 h-16 rounded-xl border-2 border-white/10 shadow-2xl"
+                style={{background: gameMap.previewColor}}/>
+              <p className="text-white font-display font-bold text-xl uppercase tracking-widest">{gameMap.name}</p>
+              <p className="text-white/40 text-xs font-mono">{gameMap.game}</p>
+            </div>
+
+            {/* Open map button */}
             {gameMap.openUrl && (
               <a href={gameMap.openUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded text-white text-sm font-display uppercase tracking-wider hover:bg-white/20 transition-all">
-                <ExternalLink className="w-4 h-4"/> Open {gameMap.name} in new tab
+                className="flex items-center gap-2.5 px-5 py-2.5 bg-primary/20 border border-primary/50 rounded-lg text-primary font-display font-bold text-sm uppercase tracking-wider hover:bg-primary/30 transition-all shadow-lg">
+                <ExternalLink className="w-4 h-4"/>
+                Open {gameMap.name} on {gameMap.attribution}
               </a>
             )}
+
+            {/* Instruction */}
+            <div className="flex flex-col items-center gap-1 max-w-xs text-center">
+              <p className="text-white/30 text-xs leading-relaxed">
+                Open the map in a second browser tab, then use the drawing tools here to annotate your plan on top of this canvas.
+              </p>
+              <p className="text-white/20 text-[10px] font-mono mt-1">Select a drawing tool above to begin</p>
+            </div>
           </div>
         )}
 
