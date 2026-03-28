@@ -4,7 +4,7 @@ import { sign } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET     = Deno.env.get('JWT_SECRET')     ?? 'tag-secret-fallback-change-in-production';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
-const APP_URL        = Deno.env.get('APP_URL')        ?? 'https://tacticaladaptationgroup.co.uk';
+const APP_URL        = (Deno.env.get('APP_URL') ?? 'https://tacticaladaptationgroup.co.uk').replace(/\/+$/, '');
 
 // ─── DISPOSABLE EMAIL BLOCKLIST ───────────────────────────────────────────────
 // Covers the most common throwaway / burner providers used for smurf accounts.

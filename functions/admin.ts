@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
       const users = await base44.asServiceRole.entities.User.list();
       return Response.json(users.map((u: any) => ({
         id: u.id, username: u.username, email: u.email, role: u.role, status: u.status,
-        bio: u.bio ?? null, discordTag: u.discord_tag ?? null, createdAt: u.created_date,
+        email_verified: u.email_verified ?? false, bio: u.bio ?? null, discordTag: u.discord_tag ?? null, createdAt: u.created_date,
       })));
     }
 

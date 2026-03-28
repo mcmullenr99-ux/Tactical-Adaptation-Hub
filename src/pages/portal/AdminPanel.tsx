@@ -704,7 +704,7 @@ function PendingVerifyTab({ toast }: { toast: any }) {
   const load = async () => {
     setLoading(true);
     try {
-      const all = await apiFetch<any[]>("/api/users");
+      const all = await apiFetch<any[]>("/api/admin/users");
       const stuck = (all || []).filter((u: any) =>
         u.status === "pending_verification" || u.email_verified === false
       );

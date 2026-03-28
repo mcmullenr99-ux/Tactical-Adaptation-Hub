@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@base44/sdk@0.8.21';
 
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://tacticaladaptationgroup.co.uk';
+const APP_URL = (Deno.env.get('APP_URL') ?? 'https://tacticaladaptationgroup.co.uk').replace(/\/+$/, '');
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
