@@ -1,7 +1,7 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
-import { QueryClient } from "@tanstack/react-query";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/components/auth/AuthContext";
@@ -71,12 +71,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Persist cache to localStorage — survives page refreshes and browser restarts
-// buster key = update this string any time you want to wipe old caches
-const persister = createSyncStoragePersister({
-  storage: window.localStorage,
-  key: "tag-query-cache-v1",
-});
 
 function Router() {
   return (
@@ -129,7 +123,7 @@ function Router() {
 function App() {
   return (
     <ThemeProvider>
-    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 24 * 60 * 60 * 1000 }}>
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
           <WouterRouter>
@@ -139,7 +133,7 @@ function App() {
           <MacEasterEgg />
         </TooltipProvider>
       </AuthProvider>
-    </PersistQueryClientProvider>
+    </QueryClientProvider>
     </ThemeProvider>
   );
 }
