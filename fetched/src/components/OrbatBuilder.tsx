@@ -19,6 +19,7 @@ export interface OrbatNode {
   collapsed?: boolean; children: OrbatNode[];
   officers?: number; enlisted?: number; rosterSlots?: string[];
   weaponsChart?: WeaponEntry[]; vehiclesChart?: WeaponEntry[];
+  weaponsChartFor?: string; vehiclesChartFor?: string;
   weaponsCols?: ChartColumn[]; vehiclesCols?: ChartColumn[];
 }
 
@@ -367,68 +368,208 @@ function Fld({label,children}:{label:string;children:React.ReactNode}){
 
 // ─── ORBAT structure templates ────────────────────────────────────────────────
 interface OrbatTemplate { label:string; build:()=>OrbatNode; }
+// ─── Structure Templates ──────────────────────────────────────────────────────
+interface OrbatTemplate { label:string; build:()=>OrbatNode; }
 const ORBAT_TEMPLATES:OrbatTemplate[] = [
   { label:"Infantry Section (Sect + 2 Fireteams)",
-    build:()=>{ const s=defaultNode({label:"Section",unitType:"infantry",echelon:"section"}); const f1=defaultNode({label:"Alpha Team",unitType:"infantry",echelon:"fireteam"}); const f2=defaultNode({label:"Bravo Team",unitType:"infantry",echelon:"fireteam"}); s.children=[f1,f2]; return s; } },
+    build:()=>{ const s=defaultNode({label:"Section",unitType:"infantry",echelon:"section"}); s.children=[defaultNode({label:"Alpha Team",unitType:"infantry",echelon:"fireteam"}),defaultNode({label:"Bravo Team",unitType:"infantry",echelon:"fireteam"})]; return s; } },
   { label:"Infantry Platoon (Pl + 3 Sections)",
-    build:()=>{ const pl=defaultNode({label:"1 Platoon",unitType:"infantry",echelon:"platoon"}); for(let i=1;i<=3;i++){const s=defaultNode({label:`${i} Section`,unitType:"infantry",echelon:"section",designation:String(i)});pl.children.push(s);}return pl; } },
+    build:()=>{ const pl=defaultNode({label:"1 Platoon",unitType:"infantry",echelon:"platoon"}); for(let i=1;i<=3;i++){pl.children.push(defaultNode({label:`${i} Section`,unitType:"infantry",echelon:"section",designation:String(i)}));}return pl; } },
   { label:"Infantry Company (Coy + 3 Platoons + Support)",
     build:()=>{ const coy=defaultNode({label:"A Company",unitType:"infantry",echelon:"company",designation:"A"}); for(let i=1;i<=3;i++){const pl=defaultNode({label:`${i} Platoon`,unitType:"infantry",echelon:"platoon",designation:String(i)});for(let j=1;j<=3;j++){pl.children.push(defaultNode({label:`${j} Section`,unitType:"infantry",echelon:"section",designation:String(j)}));}coy.children.push(pl);} coy.children.push(defaultNode({label:"Support Platoon",unitType:"weapons",echelon:"platoon"})); return coy; } },
   { label:"Armour Troop (Tp HQ + 3 MBT)",
     build:()=>{ const tp=defaultNode({label:"1 Troop",unitType:"armor",echelon:"platoon",modifier:"hq"}); for(let i=1;i<=3;i++){tp.children.push(defaultNode({label:`Callsign ${i}${i}`,unitType:"armor",echelon:"",designation:String(i)}));}return tp; } },
+  { label:"Armour Squadron (Sqn HQ + 3 Troops)",
+    build:()=>{ const sq=defaultNode({label:"A Squadron",unitType:"armor",echelon:"company",modifier:"hq",designation:"A"}); for(let i=1;i<=3;i++){const tp=defaultNode({label:`${i} Troop`,unitType:"armor",echelon:"platoon",designation:String(i)});for(let j=1;j<=3;j++){tp.children.push(defaultNode({label:`Callsign ${i}${j}`,unitType:"armor",echelon:"",designation:`${i}${j}`}));}sq.children.push(tp);}return sq; } },
   { label:"Mechanised Platoon (Pl + 3 Sections in IFV)",
     build:()=>{ const pl=defaultNode({label:"1 Platoon",unitType:"mechanized",echelon:"platoon"}); for(let i=1;i<=3;i++){pl.children.push(defaultNode({label:`${i} Section`,unitType:"mechanized",echelon:"section",designation:String(i)}));}return pl; } },
   { label:"Artillery Battery (Bty HQ + 3 Guns)",
     build:()=>{ const b=defaultNode({label:"Alpha Battery",unitType:"artillery",echelon:"company",modifier:"hq"}); for(let i=1;i<=3;i++){b.children.push(defaultNode({label:`${i} Gun Sect`,unitType:"artillery",echelon:"section",designation:String(i)}));}return b; } },
+  { label:"Artillery Regiment (RHQ + 3 Batteries)",
+    build:()=>{ const rg=defaultNode({label:"1st Artillery Regt",unitType:"artillery",echelon:"regiment",modifier:"hq"}); ["A","B","C"].forEach(l=>{const b=defaultNode({label:`${l} Battery`,unitType:"artillery",echelon:"company",designation:l});for(let i=1;i<=3;i++){b.children.push(defaultNode({label:`${i} Gun Sect`,unitType:"artillery",echelon:"section",designation:String(i)}));}rg.children.push(b);});rg.children.push(defaultNode({label:"HQ Battery",unitType:"hq",echelon:"company",modifier:"hq"}));return rg; } },
   { label:"Engineer Troop (Tp + Bridging + Construction)",
     build:()=>{ const tp=defaultNode({label:"1 Engr Troop",unitType:"engineer",echelon:"platoon"}); tp.children.push(defaultNode({label:"Bridging Sect",unitType:"bridging",echelon:"section"})); tp.children.push(defaultNode({label:"Construction Sect",unitType:"construction",echelon:"section"})); return tp; } },
   { label:"Battalion HQ + 3 Companies",
     build:()=>{ const bn=defaultNode({label:"1st Battalion",unitType:"infantry",echelon:"battalion",modifier:"hq"}); ["A","B","C"].forEach(l=>{const coy=defaultNode({label:`${l} Company`,unitType:"infantry",echelon:"company",designation:l});for(let i=1;i<=3;i++){coy.children.push(defaultNode({label:`${i} Platoon`,unitType:"infantry",echelon:"platoon",designation:String(i)}));}bn.children.push(coy);});bn.children.push(defaultNode({label:"HQ Company",unitType:"hq",echelon:"company",modifier:"hq"}));return bn; } },
+  { label:"Brigade (Bde HQ + 3 Battalions + CS/CSS)",
+    build:()=>{ const bde=defaultNode({label:"1st Brigade",unitType:"infantry",echelon:"brigade",modifier:"hq"}); for(let i=1;i<=3;i++){const bn=defaultNode({label:`${i}${i===1?"st":i===2?"nd":"rd"} Battalion`,unitType:"infantry",echelon:"battalion",designation:String(i)});["A","B","C"].forEach(l=>{bn.children.push(defaultNode({label:`${l} Coy`,unitType:"infantry",echelon:"company",designation:l}));});bde.children.push(bn);}bde.children.push(defaultNode({label:"Armd Sqn",unitType:"armor",echelon:"company"}));bde.children.push(defaultNode({label:"Arty Bty",unitType:"artillery",echelon:"company"}));bde.children.push(defaultNode({label:"Engr Sqn",unitType:"engineer",echelon:"company"}));bde.children.push(defaultNode({label:"Log Regt",unitType:"logistics",echelon:"regiment"}));return bde; } },
+  { label:"Regiment (RHQ + 3 Squadrons/Companies)",
+    build:()=>{ const rg=defaultNode({label:"1st Regiment",unitType:"infantry",echelon:"regiment",modifier:"hq"}); ["A","B","C"].forEach(l=>{const sq=defaultNode({label:`${l} Squadron`,unitType:"cavalry",echelon:"company",designation:l});for(let i=1;i<=3;i++){sq.children.push(defaultNode({label:`${i} Troop`,unitType:"cavalry",echelon:"platoon",designation:String(i)}));}rg.children.push(sq);});rg.children.push(defaultNode({label:"HQ Squadron",unitType:"hq",echelon:"company",modifier:"hq"}));return rg; } },
+  { label:"Division (Div HQ + 2 Brigades + Div Troops)",
+    build:()=>{ const div=defaultNode({label:"1st Division",unitType:"infantry",echelon:"division",modifier:"hq"}); for(let i=1;i<=2;i++){div.children.push(defaultNode({label:`${i}${i===1?"st":"nd"} Brigade`,unitType:"infantry",echelon:"brigade",designation:String(i)}));}div.children.push(defaultNode({label:"Div Arty Bde",unitType:"artillery",echelon:"brigade"}));div.children.push(defaultNode({label:"Div Log Bde",unitType:"logistics",echelon:"brigade"}));div.children.push(defaultNode({label:"Div Engr Regt",unitType:"engineer",echelon:"regiment"}));return div; } },
+  { label:"Corps (Corps HQ + 2 Divisions)",
+    build:()=>{ const corp=defaultNode({label:"I Corps",unitType:"hq",echelon:"corps",modifier:"hq"}); for(let i=1;i<=2;i++){corp.children.push(defaultNode({label:`${i}${i===1?"st":"nd"} Division`,unitType:"infantry",echelon:"division",designation:String(i)}));}corp.children.push(defaultNode({label:"Corps Artillery Bde",unitType:"artillery",echelon:"brigade"}));corp.children.push(defaultNode({label:"Corps Log Comd",unitType:"logistics",echelon:"brigade"}));corp.children.push(defaultNode({label:"Corps Engr Bde",unitType:"engineer",echelon:"brigade"}));corp.children.push(defaultNode({label:"Corps Avn Regt",unitType:"aviation",echelon:"regiment"}));return corp; } },
 ];
 
-// ─── Chart templates ──────────────────────────────────────────────────────────
-const CHART_TEMPLATES:Record<string,{cols:ChartColumn[];rows:WeaponEntry[]}> = {
-  "Infantry Section — Weapons": {
+// ─── Weapons Templates (weapons only) ────────────────────────────────────────
+const WEAPONS_TEMPLATES:Record<string,{cols:ChartColumn[];rows:WeaponEntry[]}> = {
+  "Infantry Section": {
     cols:[{id:"cmd",label:"Sect Cmd"},{id:"s1",label:"Alpha Tm"},{id:"s2",label:"Bravo Tm"},{id:"wpn",label:"Wpn Tm"}],
-    rows:[{name:"Rifle (SA80/M4/HK416)",cmd:"1",s1:"4",s2:"4",wpn:"2"},{name:"LMG (Minimi/M249/L110)",cmd:"",s1:"1",s2:"1",wpn:"2"},{name:"UGL (L123/M203)",cmd:"",s1:"1",s2:"1",wpn:""},{name:"GPMG (L7/M240)",cmd:"",s1:"",s2:"",wpn:"1"},{name:"Sniper Rifle",cmd:"",s1:"",s2:"",wpn:"1"}],
+    rows:[{name:"Rifle",cmd:"1",s1:"4",s2:"4",wpn:"2"},{name:"LMG",cmd:"",s1:"1",s2:"1",wpn:"2"},{name:"UGL",cmd:"",s1:"1",s2:"1",wpn:""},{name:"GPMG",cmd:"",s1:"",s2:"",wpn:"1"},{name:"Sniper Rifle",cmd:"",s1:"",s2:"",wpn:"1"}],
   },
-  "Infantry Platoon — Weapons": {
+  "Infantry Platoon": {
     cols:[{id:"pl",label:"Pl HQ"},{id:"s1",label:"1 Sect"},{id:"s2",label:"2 Sect"},{id:"s3",label:"3 Sect"}],
-    rows:[{name:"Rifle",pl:"4",s1:"8",s2:"8",s3:"8"},{name:"LMG",pl:"",s1:"2",s2:"2",s3:"2"},{name:"GPMG",pl:"1",s1:"",s2:"",s3:""},{name:"UGL",pl:"",s1:"2",s2:"2",s3:"2"},{name:"AT Launcher (NLAW/Javelin)",pl:"1",s1:"1",s2:"1",s3:"1"}],
+    rows:[{name:"Rifle",pl:"4",s1:"8",s2:"8",s3:"8"},{name:"LMG",pl:"",s1:"2",s2:"2",s3:"2"},{name:"GPMG",pl:"1",s1:"",s2:"",s3:""},{name:"UGL",pl:"",s1:"2",s2:"2",s3:"2"},{name:"AT Launcher",pl:"1",s1:"1",s2:"1",s3:"1"},{name:"Sniper Rifle",pl:"1",s1:"",s2:"",s3:""}],
   },
-  "Armour Troop — Vehicles": {
-    cols:[{id:"hq",label:"Tp HQ"},{id:"t1",label:"1 Tk"},{id:"t2",label:"2 Tk"},{id:"t3",label:"3 Tk"}],
-    rows:[{name:"MBT (Challenger 2 / M1 Abrams)",hq:"1",t1:"1",t2:"1",t3:"1"},{name:"ARV",hq:"1",t1:"",t2:"",t3:""},{name:"CRARRV",hq:"",t1:"",t2:"",t3:""}],
+  "Infantry Company": {
+    cols:[{id:"hq",label:"Coy HQ"},{id:"p1",label:"1 Pl"},{id:"p2",label:"2 Pl"},{id:"p3",label:"3 Pl"},{id:"sp",label:"Sp Pl"}],
+    rows:[{name:"Rifle",hq:"8",p1:"24",p2:"24",p3:"24",sp:"12"},{name:"LMG",hq:"2",p1:"6",p2:"6",p3:"6",sp:"4"},{name:"GPMG",hq:"1",p1:"1",p2:"1",p3:"1",sp:"4"},{name:"AT Launcher",hq:"1",p1:"3",p2:"3",p3:"3",sp:""},{name:"HMG (.50 cal)",hq:"",p1:"",p2:"",p3:"",sp:"2"},{name:"Mortar (60/81mm)",hq:"",p1:"",p2:"",p3:"",sp:"2"}],
   },
-  "Mechanised Platoon — Vehicles": {
+  "Mechanised Platoon": {
     cols:[{id:"pl",label:"Pl HQ"},{id:"s1",label:"1 Sect"},{id:"s2",label:"2 Sect"},{id:"s3",label:"3 Sect"}],
-    rows:[{name:"IFV (Warrior / Bradley / CV90)",pl:"1",s1:"1",s2:"1",s3:"1"},{name:"Riflemen (dismount)",pl:"3",s1:"6",s2:"6",s3:"6"},{name:"LMG",pl:"",s1:"1",s2:"1",s3:"1"},{name:"ATGM",pl:"",s1:"1",s2:"1",s3:"1"}],
+    rows:[{name:"Rifle",pl:"3",s1:"6",s2:"6",s3:"6"},{name:"LMG",pl:"",s1:"1",s2:"1",s3:"1"},{name:"ATGM",pl:"",s1:"1",s2:"1",s3:"1"},{name:"AT Launcher",pl:"1",s1:"1",s2:"1",s3:"1"}],
   },
-  "Artillery Battery — Equipment": {
-    cols:[{id:"hq",label:"Bty HQ"},{id:"g1",label:"No.1 Gun"},{id:"g2",label:"No.2 Gun"},{id:"g3",label:"No.3 Gun"}],
-    rows:[{name:"Howitzer (AS90 / M109)",hq:"",g1:"2",g2:"2",g3:"2"},{name:"FDC Vehicle",hq:"1",g1:"",g2:"",g3:""},{name:"Ammo Carrier",hq:"1",g1:"1",g2:"1",g3:"1"},{name:"MET/Survey",hq:"1",g1:"",g2:"",g3:""}],
-  },
-  "Recce / Cavalry — Vehicles": {
-    cols:[{id:"hq",label:"Sqn HQ"},{id:"t1",label:"1 Tp"},{id:"t2",label:"2 Tp"},{id:"t3",label:"3 Tp"}],
-    rows:[{name:"Recce Vehicle (Jackal / LRSOV)",hq:"2",t1:"4",t2:"4",t3:"4"},{name:"WMIK / GPMG Mount",hq:"1",t1:"2",t2:"2",t3:"2"}],
+  "Support / Weapons Platoon": {
+    cols:[{id:"pl",label:"Pl HQ"},{id:"mg",label:"MG Sect"},{id:"mor",label:"Mor Sect"},{id:"at",label:"AT Sect"}],
+    rows:[{name:"GPMG / HMG",pl:"",mg:"4",mor:"",at:""},{name:"Mortar (81mm)",pl:"",mg:"",mor:"4",at:""},{name:"ATGM (Javelin/NLAW/Milan)",pl:"",mg:"",mor:"",at:"4"},{name:"Sniper Rifle",pl:"2",mg:"",mor:"",at:""}],
   },
 };
 
-function ChartBuilder({title,rows,cols,onR,onC}:{title:string;rows:WeaponEntry[];cols:ChartColumn[];onR:(r:WeaponEntry[])=>void;onC:(c:ChartColumn[])=>void;}){
+// ─── Vehicles Templates (vehicles only) ──────────────────────────────────────
+const VEHICLES_TEMPLATES:Record<string,{cols:ChartColumn[];rows:WeaponEntry[]}> = {
+  "Armour Troop": {
+    cols:[{id:"hq",label:"Tp HQ"},{id:"t1",label:"1 Tk"},{id:"t2",label:"2 Tk"},{id:"t3",label:"3 Tk"}],
+    rows:[{name:"MBT",hq:"1",t1:"1",t2:"1",t3:"1"},{name:"ARV / Recovery",hq:"1",t1:"",t2:"",t3:""},{name:"CRARRV / BREM",hq:"",t1:"",t2:"",t3:""}],
+  },
+  "Armour Squadron": {
+    cols:[{id:"sqn",label:"Sqn HQ"},{id:"t1",label:"1 Tp"},{id:"t2",label:"2 Tp"},{id:"t3",label:"3 Tp"}],
+    rows:[{name:"MBT",sqn:"2",t1:"3",t2:"3",t3:"3"},{name:"ARV",sqn:"1",t1:"",t2:"",t3:""},{name:"AVRE / CEV",sqn:"",t1:"",t2:"",t3:""}],
+  },
+  "Mechanised Platoon": {
+    cols:[{id:"pl",label:"Pl HQ"},{id:"s1",label:"1 Sect"},{id:"s2",label:"2 Sect"},{id:"s3",label:"3 Sect"}],
+    rows:[{name:"IFV (e.g. Warrior/Bradley/CV90)",pl:"1",s1:"1",s2:"1",s3:"1"},{name:"APC (e.g. M113/Bulldog)",pl:"",s1:"",s2:"",s3:""},{name:"ARV / Recovery",pl:"1",s1:"",s2:"",s3:""}],
+  },
+  "Recce / Cavalry Troop": {
+    cols:[{id:"hq",label:"Tp HQ"},{id:"t1",label:"1 Sect"},{id:"t2",label:"2 Sect"}],
+    rows:[{name:"Recce Vehicle (e.g. Jackal/LRSOV)",hq:"2",t1:"4",t2:"4"},{name:"WMIK / Gun Truck",hq:"1",t1:"2",t2:"2"},{name:"Motorcycle / Quad",hq:"",t1:"2",t2:"2"}],
+  },
+  "Artillery Battery": {
+    cols:[{id:"hq",label:"Bty HQ"},{id:"g1",label:"No.1 Gun"},{id:"g2",label:"No.2 Gun"},{id:"g3",label:"No.3 Gun"}],
+    rows:[{name:"Self-Propelled / Towed Gun",hq:"",g1:"2",g2:"2",g3:"2"},{name:"FDC / Command Vehicle",hq:"1",g1:"",g2:"",g3:""},{name:"Ammo Carrier / PLS",hq:"1",g1:"1",g2:"1",g3:"1"},{name:"MET / Survey Vehicle",hq:"1",g1:"",g2:"",g3:""}],
+  },
+  "Aviation Flight": {
+    cols:[{id:"flt",label:"Flight HQ"},{id:"a1",label:"Aircraft 1"},{id:"a2",label:"Aircraft 2"},{id:"a3",label:"Aircraft 3"}],
+    rows:[{name:"Attack Helicopter",flt:"",a1:"1",a2:"1",a3:"1"},{name:"Utility Helicopter",flt:"1",a1:"",a2:"",a3:""},{name:"Recce / ISTAR Aircraft",flt:"",a1:"",a2:"",a3:""},{name:"UAV / Drone",flt:"2",a1:"1",a2:"1",a3:"1"}],
+  },
+  "Aviation Squadron": {
+    cols:[{id:"sqn",label:"Sqn HQ"},{id:"f1",label:"1 Flt"},{id:"f2",label:"2 Flt"},{id:"f3",label:"3 Flt"}],
+    rows:[{name:"Attack Helicopter",sqn:"",f1:"4",f2:"4",f3:"4"},{name:"Utility / Lift Helicopter",sqn:"2",f1:"",f2:"",f3:""},{name:"Recce Helicopter",sqn:"",f1:"2",f2:"2",f3:""},{name:"UAV",sqn:"4",f1:"2",f2:"2",f3:"2"}],
+  },
+  "Logistics Company": {
+    cols:[{id:"hq",label:"Coy HQ"},{id:"t1",label:"1 Tp"},{id:"t2",label:"2 Tp"},{id:"t3",label:"3 Tp"}],
+    rows:[{name:"4-Tonne Truck / LSVW",hq:"2",t1:"6",t2:"6",t3:"6"},{name:"8-Tonne HET / DROPS",hq:"",t1:"4",t2:"4",t3:"4"},{name:"Fuel Tanker",hq:"",t1:"2",t2:"2",t3:"2"},{name:"Ambulance",hq:"2",t1:"1",t2:"1",t3:"1"},{name:"Recovery Vehicle",hq:"1",t1:"1",t2:"1",t3:"1"}],
+  },
+  "Engineer Squadron": {
+    cols:[{id:"sqn",label:"Sqn HQ"},{id:"t1",label:"1 Tp"},{id:"t2",label:"2 Tp"},{id:"t3",label:"Sp Tp"}],
+    rows:[{name:"AEV / Combat Engineer Vehicle",sqn:"",t1:"2",t2:"2",t3:""},{name:"AVLB / Bridgelayer",sqn:"",t1:"1",t2:"1",t3:""},{name:"D9 / Dozer",sqn:"",t1:"1",t2:"1",t3:"2"},{name:"Pontoon Bridge Set",sqn:"",t1:"",t2:"",t3:"1"}],
+  },
+};
+
+// ─── Nationality Equipment Presets ────────────────────────────────────────────
+// Personal weapons / crew-served / IFV / MBT / helicopter / logistics
+interface NationPreset {
+  rifle:string; lmg:string; gpmg:string; ugl:string; sniper:string;
+  atLauncher:string; hmg:string; mortar:string;
+  ifv:string; apc:string; mbt:string; arv:string; spGun:string;
+  attackHelo:string; utilHelo:string; uav:string; recceVeh:string;
+  logTruck:string; atgm:string;
+}
+const NATION_PRESETS:Record<string,NationPreset> = {
+  gb: { rifle:"SA80 A3 (L85A3)",lmg:"Minimi Mk3 (L110A3)",gpmg:"GPMG (L7A2)",ugl:"AG36 UGL",sniper:"L115A3 / L129A1",atLauncher:"NLAW / Javelin",hmg:".50 cal M2HB",mortar:"81mm L16A2",ifv:"Warrior TES(H)",apc:"Bulldog (FV432 Mk3)",mbt:"Challenger 3 (CR3)",arv:"CRARRV",spGun:"AS90 (155mm)",attackHelo:"Apache AH-64E",utilHelo:"Wildcat AH1 / Chinook HC6",uav:"Watchkeeper WK450",recceVeh:"Jackal 2",logTruck:"MAN SV 4-Tonne",atgm:"Javelin ATGM" },
+  us: { rifle:"M4A1 Carbine",lmg:"M249 SAW",gpmg:"M240B",ugl:"M203 / M320",sniper:"M110A1 CSASS / M2010",atLauncher:"JLTV-mounted / M72 LAW",hmg:"M2HB .50 cal",mortar:"M252 81mm",ifv:"M2A4 Bradley",apc:"M113A3 / Stryker M1126",mbt:"M1A2 SEPv3 Abrams",arv:"M88A2 HERCULES",spGun:"M109A7 Paladin",attackHelo:"AH-64E Apache",utilHelo:"UH-60M Black Hawk",uav:"MQ-1C Gray Eagle",recceVeh:"JLTV / M1114 HMMWV",logTruck:"M1083 LMTV 5-Tonne",atgm:"FGM-148 Javelin" },
+  de: { rifle:"HK416 A8",lmg:"MG5",gpmg:"MG3",ugl:"HK269 UGL",sniper:"G28 / DSR-1",atLauncher:"Panzerfaust 3 / MELLS (Spike)",hmg:".50 cal M3P",mortar:"120mm Tampella",ifv:"Puma IFV",apc:"GTK Boxer",mbt:"Leopard 2A7+",arv:"Bergepanzer 3 Büffel",spGun:"PzH 2000",attackHelo:"Tiger ARH",utilHelo:"NH90 / CH-53G",uav:"KZO / Heron",recceVeh:"Fennek / Eagle IV",logTruck:"MAN HX 5-Tonne",atgm:"MELLS (Spike LR2)" },
+  ca: { rifle:"C8A3 Carbine",lmg:"C9A2 Minimi",gpmg:"C6A1 GPMG",ugl:"C79 / M203",sniper:"C14 Timberwolf",atLauncher:"Carl Gustav M4 / AT4",hmg:".50 cal C2 M2HB",mortar:"C3 81mm",ifv:"LAV 6.0",apc:"Bison APC",mbt:"Leopard 2A4M CAN",arv:"AEV (Leopard 2 chassis)",spGun:"M109A4B/A6 Paladin",attackHelo:"CH-146 Griffon (armed)",utilHelo:"CH-147F Chinook",uav:"Heron UAV",recceVeh:"Coyote / TAPV",logTruck:"LSVW 1.25T / MLVW",atgm:"TOW 2 / Javelin" },
+  au: { rifle:"EF88 Austeyr (F90)",lmg:"F89 Minimi",gpmg:"MAG-58 (L7A2)",ugl:"M203 / AG36",sniper:"SR-98 / Barrett M82A1",atLauncher:"Carl Gustav M4 / Javelin",hmg:".50 cal M2HB",mortar:"81mm F2",ifv:"AS LAV 6.0 (LAND 400 Ph2)",apc:"M113AS4",mbt:"Abrams M1A2 SEPv3",arv:"M88A2",spGun:"M198 155mm",attackHelo:"Tiger ARH",utilHelo:"MRH-90 Taipan / CH-47F Chinook",uav:"Heron / Shadow 200",recceVeh:"Jackaroo / Bushmaster",logTruck:"Rheinmetall HX 5T",atgm:"Javelin / AT4" },
+  fr: { rifle:"HK416 F (A5)",lmg:"Minimi Mk3",gpmg:"FN MAG (AA-52)",ugl:"M203 / HK269",sniper:"PGM Hecate II / FR-F2",atLauncher:"AT4 / APILAS",hmg:".50 cal M2HB",mortar:"TDA 120mm MO-120",ifv:"VBCI-2",apc:"VAB Mk.3 / VBMR Griffon",mbt:"Leclerc XLR",arv:"VBCM (Leclerc chassis)",spGun:"CAESAR 155mm (8x8)",attackHelo:"Tiger HAD",utilHelo:"NH90 TTH / AS532 Cougar",uav:"Patroller / Harfang",recceVeh:"VBL / VLTP Serval",logTruck:"PL Renault TRM 10000",atgm:"Milan ER / MMP Akeron" },
+  nl: { rifle:"HK416 A5 / C7A2",lmg:"Minimi Para",gpmg:"FN MAG (C9)",ugl:"M203",sniper:"Barrett M107 / Accuracy International",atLauncher:"AT4 / Spike LR",hmg:".50 cal M3M",mortar:"81mm M252",ifv:"CV9035NL",apc:"YPR-765 / Bushmaster",mbt:"Leopard 2A6",arv:"ARV Leopard 2",spGun:"PzH 2000",attackHelo:"AH-64D Apache",utilHelo:"CH-47D Chinook / NH90",uav:"Shadow 400",recceVeh:"Fennek / Bushmaster",logTruck:"DAF YA 4440 / MAN HX",atgm:"Spike LR2" },
+  no: { rifle:"HK416 N",lmg:"Minimi M249",gpmg:"MG3",ugl:"HK269 / M203",sniper:"Barret M82A1 / PGM Hécate II",atLauncher:"NM72 AT4 / Javelin",hmg:".50 cal M2HB",mortar:"81mm M252",ifv:"CV9030N",apc:"M113F3 / Sisu XA-203",mbt:"Leopard 2A4NO",arv:"ARV Bergepanzer",spGun:"M109A3GNM",attackHelo:"Bell 412SP (armed)",utilHelo:"NH90",uav:"Black Hornet / RQ-20",recceVeh:"LRSOV Dingo / M1114",logTruck:"Scania / MAN",atgm:"Javelin / Spike LR" },
+  pl: { rifle:"Beryl M762 / MSBS Grot",lmg:"UKM-2000 / Minimi",gpmg:"PKM / UKM-2000P",ugl:"PALLAD-D",sniper:"SWD Dragunov / SAKO TRG",atLauncher:"RPG-7 / Spike LR",hmg:"WKM-B .50 cal / NSV",mortar:"M-98 120mm",ifv:"BWP-1 (BMP-1) / Rosomak M1",apc:"Rosomak / KTO",mbt:"Leopard 2PL / PT-91 Twardy",arv:"WZT-3M",spGun:"AHS Krab 155mm / 2S1 Gvozdika",attackHelo:"Mi-24V Hind",utilHelo:"W-3A Sokol / Mi-8",uav:"FlyEye / Orlik",recceVeh:"AMZ Dzik / BRDM-2",logTruck:"Star 266 / Jelcz",atgm:"Spike LR / 9M113 Konkurs" },
+  ua: { rifle:"Malyuk / AK-74M",lmg:"RPK-74M / Ultimax 100",gpmg:"PKM / NSV",ugl:"GP-25 / GP-30",sniper:"SVD Dragunov / UAR-10",atLauncher:"RPG-7 / Stugna-P",hmg:"DShKM / Kord",mortar:"2B9 Vasilek / M-120 Rak",ifv:"BMP-1/2 / BTR-4 Bucephalus",apc:"BTR-80 / Kirpich",mbt:"T-64BV / T-72AMT",arv:"BREM-1",spGun:"2S3 Akatsiya / PzH 2000",attackHelo:"Mi-24P Hind / Mi-28",utilHelo:"Mi-8MSB-V",uav:"Bayraktar TB2 / Leleka-100",recceVeh:"BRDM-2 / Kozak",logTruck:"KrAZ / Ural-4320",atgm:"Stugna-P / FGM-148 Javelin" },
+};
+
+// Flag code → nation name → preset key mapping
+const FLAG_TO_NATION:Record<string,string> = {
+  gb:"gb",us:"us",de:"de",ca:"ca",au:"au",fr:"fr",nl:"nl",no:"no",pl:"pl",ua:"ua",
+};
+
+function genWeaponsFromNation(flagCode:string|undefined, template:string):{ cols:ChartColumn[]; rows:WeaponEntry[] } | null {
+  if(!flagCode) return null;
+  const pKey = FLAG_TO_NATION[flagCode];
+  if(!pKey) return null;
+  const p = NATION_PRESETS[pKey];
+  const base = WEAPONS_TEMPLATES[template];
+  if(!base) return null;
+  // Replace generic names with nation-specific equipment
+  const nameMap:Record<string,string> = {
+    "Rifle": p.rifle, "LMG": p.lmg, "GPMG": p.gpmg, "UGL": p.ugl,
+    "Sniper Rifle": p.sniper, "AT Launcher": p.atLauncher, "ATGM": p.atgm,
+    "HMG (.50 cal)": p.hmg, "Mortar (60/81mm)": p.mortar,
+    "GPMG / HMG": p.gpmg, "Mortar (81mm)": p.mortar,
+    "ATGM (Javelin/NLAW/Milan)": p.atgm,
+  };
+  const rows = base.rows.map(r => ({ ...r, name: nameMap[r.name] || r.name }));
+  return { cols: base.cols, rows };
+}
+
+function genVehiclesFromNation(flagCode:string|undefined, template:string):{ cols:ChartColumn[]; rows:WeaponEntry[] } | null {
+  if(!flagCode) return null;
+  const pKey = FLAG_TO_NATION[flagCode];
+  if(!pKey) return null;
+  const p = NATION_PRESETS[pKey];
+  const base = VEHICLES_TEMPLATES[template];
+  if(!base) return null;
+  const nameMap:Record<string,string> = {
+    "MBT": p.mbt, "IFV (e.g. Warrior/Bradley/CV90)": p.ifv, "APC (e.g. M113/Bulldog)": p.apc,
+    "ARV / Recovery": p.arv, "Self-Propelled / Towed Gun": p.spGun,
+    "Attack Helicopter": p.attackHelo, "Utility Helicopter": p.utilHelo,
+    "Utility / Lift Helicopter": p.utilHelo, "UAV": p.uav, "UAV / Drone": p.uav,
+    "Recce Vehicle (e.g. Jackal/LRSOV)": p.recceVeh,
+    "4-Tonne Truck / LSVW": p.logTruck, "8-Tonne HET / DROPS": p.logTruck,
+  };
+  const rows = base.rows.map(r => ({ ...r, name: nameMap[r.name] || r.name }));
+  return { cols: base.cols, rows };
+}
+
+// ─── Chart Builder ────────────────────────────────────────────────────────────
+function ChartBuilder({title,rows,cols,chartFor,onR,onC,onChartFor,isWeapons,flagCode}:{
+  title:string; rows:WeaponEntry[]; cols:ChartColumn[]; chartFor:string;
+  onR:(r:WeaponEntry[])=>void; onC:(c:ChartColumn[])=>void;
+  onChartFor:(v:string)=>void; isWeapons:boolean; flagCode?:string;
+}){
+  const templates = isWeapons ? WEAPONS_TEMPLATES : VEHICLES_TEMPLATES;
+  const canGenNation = !!(flagCode && FLAG_TO_NATION[flagCode]);
   const addC=()=>{const id=generateId();onC([...cols,{id,label:"Unit"}]);};
   const remC=(id:string)=>onC(cols.filter(c=>c.id!==id));
   const upCL=(id:string,l:string)=>onC(cols.map(c=>c.id===id?{...c,label:l}:c));
   const addR=()=>{const r:WeaponEntry={name:"New Item"};cols.forEach(c=>{r[c.id]="";});onR([...rows,r]);};
   const remR=(i:number)=>onR(rows.filter((_,idx)=>idx!==i));
   const upCell=(ri:number,k:string,v:string)=>onR(rows.map((r,i)=>i===ri?{...r,[k]:v}:r));
+
+  const loadTemplate=(key:string)=>{
+    const tpl = canGenNation
+      ? (isWeapons ? genWeaponsFromNation(flagCode,key) : genVehiclesFromNation(flagCode,key))
+      : null;
+    const base = templates[key];
+    const result = tpl || base;
+    if(result){ onC(result.cols); onR(result.rows); }
+  };
+
   return(
     <div style={{marginTop:12}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-        <span style={{fontSize:11,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1}}>{title}</span>
-        <div style={{display:"flex",gap:6,alignItems:"center"}}>
-          <select onChange={e=>{if(!e.target.value)return;const tpl=CHART_TEMPLATES[e.target.value];if(tpl){onC(tpl.cols);onR(tpl.rows);}e.target.value="";}} style={{...IS,fontSize:10,padding:"2px 6px",width:"auto"}}>
-            <option value="">Load template…</option>
-            {Object.keys(CHART_TEMPLATES).map(k=><option key={k} value={k}>{k}</option>)}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,flexWrap:"wrap",gap:6}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:11,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1}}>{title}</span>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>
+            <span style={{fontSize:9,color:T.textMuted}}>for:</span>
+            <input value={chartFor} onChange={e=>onChartFor(e.target.value)} placeholder="e.g. 1 Platoon, A Company…"
+              style={{...IS,fontSize:10,padding:"2px 8px",width:150}} title="Specify which unit/subunit this chart covers"/>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+          {canGenNation&&<span style={{fontSize:9,color:T.textMuted,fontStyle:"italic"}}>🌍 Nation kit loaded</span>}
+          <select onChange={e=>{if(!e.target.value)return;loadTemplate(e.target.value);(e.target as HTMLSelectElement).value="";}} style={{...IS,fontSize:10,padding:"2px 6px",width:"auto"}}>
+            <option value="">{canGenNation ? "Load template (nation kit)…" : "Load template…"}</option>
+            {Object.keys(templates).map(k=><option key={k} value={k}>{k}</option>)}
           </select>
           <button onClick={addC} style={BSm}>+ Col</button>
           <button onClick={addR} style={BSm}>+ Row</button>
@@ -440,10 +581,10 @@ function ChartBuilder({title,rows,cols,onR,onC}:{title:string;rows:WeaponEntry[]
         <div style={{overflowX:"auto"}}>
           <table style={{borderCollapse:"collapse",fontSize:10,color:T.text,width:"100%"}}>
             <thead><tr>
-              <th style={{...TH,textAlign:"left" as const,minWidth:130}}>Equipment / Item</th>
+              <th style={{...TH,textAlign:"left" as const,minWidth:160}}>Equipment / Item</th>
               {cols.map(c=><th key={c.id} style={{...TH,minWidth:70}}>
                 <div style={{display:"flex",alignItems:"center",gap:3}}>
-                  <input value={c.label} onChange={e=>upCL(c.id,e.target.value)} style={{background:"transparent",border:"none",color:T.text,fontSize:10,fontWeight:700,width:55,textAlign:"center"}}/>
+                  <input value={c.label} onChange={e=>upCL(c.id,e.target.value)} style={{background:"transparent",border:"none",color:T.text,fontSize:10,fontWeight:700,width:60,textAlign:"center"}}/>
                   <button onClick={()=>remC(c.id)} style={{background:"none",border:"none",cursor:"pointer",color:T.danger,padding:0,lineHeight:1}}>×</button>
                 </div>
               </th>)}
@@ -452,7 +593,7 @@ function ChartBuilder({title,rows,cols,onR,onC}:{title:string;rows:WeaponEntry[]
             <tbody>{rows.map((row,i)=>(
               <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
                 <td style={{...TD,textAlign:"left" as const}}><input value={row.name} onChange={e=>upCell(i,"name",e.target.value)} style={{background:"transparent",border:"none",color:T.text,fontSize:10,width:"100%"}}/></td>
-                {cols.map(c=><td key={c.id} style={TD}><input value={String(row[c.id]??"")} onChange={e=>upCell(i,c.id,e.target.value)} style={{background:"transparent",border:"none",color:T.text,fontSize:10,width:50,textAlign:"center"}}/></td>)}
+                {cols.map(c=><td key={c.id} style={TD}><input value={String(row[c.id]??"")} onChange={e=>upCell(i,c.id,e.target.value)} style={{background:"transparent",border:"none",color:T.text,fontSize:10,width:55,textAlign:"center"}}/></td>)}
                 <td style={TD}><button onClick={()=>remR(i)} style={{background:"none",border:"none",cursor:"pointer",color:T.danger,fontSize:12}}>×</button></td>
               </tr>
             ))}</tbody>
@@ -462,7 +603,6 @@ function ChartBuilder({title,rows,cols,onR,onC}:{title:string;rows:WeaponEntry[]
     </div>
   );
 }
-
 
 // ─── Node Editor ──────────────────────────────────────────────────────────────
 function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];onSave:(n:OrbatNode)=>void;onClose:()=>void;}){
@@ -570,9 +710,9 @@ function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];on
           )}
           {tab==="charts"&&(
             <div>
-              <ChartBuilder title="Weapons Chart" rows={d.weaponsChart||[]} cols={d.weaponsCols||[]} onR={r=>s("weaponsChart",r)} onC={c=>s("weaponsCols",c)}/>
+              <ChartBuilder title="Weapons Chart" rows={d.weaponsChart||[]} cols={d.weaponsCols||[]} chartFor={d.weaponsChartFor||""} onR={r=>s("weaponsChart",r)} onC={c=>s("weaponsCols",c)} onChartFor={v=>s("weaponsChartFor",v)} isWeapons={true} flagCode={d.flagCode}/>
               <div style={{height:1,background:T.border,margin:"20px 0"}}/>
-              <ChartBuilder title="Vehicles Chart" rows={d.vehiclesChart||[]} cols={d.vehiclesCols||[]} onR={r=>s("vehiclesChart",r)} onC={c=>s("vehiclesCols",c)}/>
+              <ChartBuilder title="Vehicles Chart" rows={d.vehiclesChart||[]} cols={d.vehiclesCols||[]} chartFor={d.vehiclesChartFor||""} onR={r=>s("vehiclesChart",r)} onC={c=>s("vehiclesCols",c)} onChartFor={v=>s("vehiclesChartFor",v)} isWeapons={false} flagCode={d.flagCode}/>
             </div>
           )}
         </div>
@@ -691,7 +831,7 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
               <div style={{marginTop:24,background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:6,padding:16}}>
                 {allNodes.filter(n=>n.weaponsChart&&n.weaponsChart.length>0).map(n=>(
                   <div key={n.id} style={{marginBottom:16}}>
-                    <div style={{fontSize:10,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{n.label} — Weapons</div>
+                    <div style={{fontSize:10,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{n.weaponsChartFor ? n.weaponsChartFor : n.label} — Weapons</div>
                     <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
                       <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Equipment</th>{(n.weaponsCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
                       <tbody>{(n.weaponsChart||[]).map((row,i)=>(
@@ -709,7 +849,7 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
               <div style={{marginTop:16,background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:6,padding:16}}>
                 {allNodes.filter(n=>n.vehiclesChart&&n.vehiclesChart.length>0).map(n=>(
                   <div key={n.id} style={{marginBottom:16}}>
-                    <div style={{fontSize:10,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{n.label} — Vehicles</div>
+                    <div style={{fontSize:10,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{n.vehiclesChartFor ? n.vehiclesChartFor : n.label} — Vehicles</div>
                     <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
                       <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Vehicle</th>{(n.vehiclesCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
                       <tbody>{(n.vehiclesChart||[]).map((row,i)=>(
