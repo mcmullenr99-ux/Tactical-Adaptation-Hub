@@ -840,7 +840,7 @@ function LbTable({ rows, startRank }: { rows: LbRow[]; startRank: number }) {
             {/* Logo */}
             <div className="w-8 h-8 shrink-0 flex items-center justify-center">
               {row.group.logoUrl
-                ? <img src={row.group.logoUrl} alt={row.group.name} className="w-8 h-8 object-contain rounded" />
+                ? <img src={row.group.logoUrl} alt={row.group.name} className="w-8 h-8 object-contain rounded" onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                 : <Shield className="w-6 h-6 text-muted-foreground/30" />
               }
             </div>
@@ -904,7 +904,7 @@ function GroupCard({ group, index, featured = false, upvoteCount = 0 }: { group:
           </div>
         )}
         {group.logoUrl ? (
-          <img src={group.logoUrl} alt={`${group.name} logo`} className="w-20 h-20 object-contain" />
+          <img src={group.logoUrl} alt={`${group.name} logo`} className="w-20 h-20 object-contain" onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
         ) : (
           <Shield className="w-12 h-12 text-muted-foreground/30" />
         )}
