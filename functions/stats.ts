@@ -585,7 +585,8 @@ function buildReadinessReport(params: {
 
   // ─── FLAGS ───────────────────────────────────────────────────────────────
   const flags: ReadinessFlag[] = [];
-  const gameName = Array.isArray(group.games) ? (group.games as string[]).join(', ') : (group.games ?? 'your game');
+  const primaryGame = gameProfile.game;
+  const gameName = primaryGame;
   const mPts = manpowerScore(verifiedTotal, gameProfile);
 
   // Anti-gaming integrity flags
@@ -633,64 +634,64 @@ function buildReadinessReport(params: {
   // Standard readiness flags
   if (capacityGradeNew === 'undermanned') {
     const needed = gameProfile.minimal - verifiedTotal;
-    flags.push({ severity: 'red', code: 'CRITICAL_UNDERMANNED', label: `Undermanned for ${gameName}`,
-      detail: `This unit has only ${verifiedTotal} verified member${verifiedTotal !== 1 ? 's' : ''} on roster. For ${gameName}, the minimum for meaningful ops is ${gameProfile.minimal} — ${needed} short. Scoring ${mPts}/20 on manpower.` });
+    flags.push({ severity: 'red', code: 'CRITICAL_UNDERMANNED', label: `Undermanned — ${gameName}`,
+      detail: `Only ${verifiedTotal} verified member${verifiedTotal !== 1 ? 's' : ''} on roster — minimum ${gameProfile.minimal} required for meaningful ops in ${gameName}.` });
   } else if (capacityGradeNew === 'minimal') {
     const needed = gameProfile.adequate - verifiedTotal;
-    flags.push({ severity: 'red', code: 'UNDERMANNED', label: `Below Adequate Strength for ${gameName}`,
-      detail: `This unit has ${verifiedTotal} verified roster member${verifiedTotal !== 1 ? 's' : ''} — ${needed} short of adequate strength for ${gameName} (${gameProfile.adequate}+). Earning ${mPts}/20 on manpower.` });
+    flags.push({ severity: 'red', code: 'UNDERMANNED', label: `Below Adequate Strength — ${gameName}`,
+      detail: `${verifiedTotal} verified member${verifiedTotal !== 1 ? 's' : ''} — ${needed} short of adequate strength (${gameProfile.adequate}+) for ${gameName}.` });
   } else if (capacityGradeNew === 'adequate') {
     const needed = gameProfile.fullStrength - verifiedTotal;
-    flags.push({ severity: 'amber', code: 'LIMITED_STRENGTH', label: `Adequate but Below Full Strength for ${gameName}`,
-      detail: `This unit fields ${verifiedTotal} verified member${verifiedTotal !== 1 ? 's' : ''} — ${needed} short of full strength for ${gameName} (${gameProfile.fullStrength}). Earning ${mPts}/20 on manpower (${utilPct}% utilisation).` });
+    flags.push({ severity: 'amber', code: 'LIMITED_STRENGTH', label: `Adequate but Below Full Strength — ${gameName}`,
+      detail: `${verifiedTotal} of ${gameProfile.fullStrength} full-strength for ${gameName} — ${utilPct}% utilisation.` });
   }
 
   if (!has_discord) {
     flags.push({ severity: 'red', code: 'NO_DISCORD', label: 'No Discord Server Linked',
-      detail: 'No Discord server is linked — scoring 0/5 on the Discord category.' });
+      detail: 'No Discord server linked. Connect one to improve your readiness score.' });
   }
   if (activityRatio < 0.3 && verifiedTotal > 0) {
     const inactive = verifiedTotal - active_this_month;
     flags.push({ severity: 'red', code: 'HIGH_INACTIVITY', label: 'High Member Inactivity',
-      detail: `Only ${active_this_month} of ${verifiedTotal} verified members (${Math.round(activityRatio * 100)}%) were active in the last 30 days — ${inactive} members inactive. Scoring 0/15 on activity.` });
+      detail: `Only ${Math.round(activityRatio * 100)}% of verified roster active in the last 30 days (${active_this_month}/${verifiedTotal}).` });
   } else if (activityRatio < 0.5 && verifiedTotal > 0) {
     const inactive = verifiedTotal - active_this_month;
     flags.push({ severity: 'amber', code: 'MODERATE_INACTIVITY', label: 'Moderate Member Inactivity',
-      detail: `${active_this_month} of ${verifiedTotal} members (${Math.round(activityRatio * 100)}%) active in the last 30 days — ${inactive} currently inactive.` });
+      detail: `${Math.round(activityRatio * 100)}% of roster active in the last 30 days (${active_this_month}/${verifiedTotal}).` });
   }
   if (days_since_page_update !== null && days_since_page_update > 60) {
     flags.push({ severity: 'amber', code: 'STALE_PAGE', label: 'Commander Not Maintaining Page',
-      detail: `Group profile has not been updated in ${days_since_page_update} days — scoring 0/5 on page maintenance.` });
+      detail: `Group profile has not been updated in ${days_since_page_update} days. Keep your page current to maintain credibility.` });
   } else if (days_since_page_update !== null && days_since_page_update > 30) {
     flags.push({ severity: 'amber', code: 'PAGE_AGEING', label: 'Group Page Ageing',
-      detail: `Group profile was last updated ${days_since_page_update} days ago — earning 1/5 on page maintenance.` });
+      detail: `Group profile last updated ${days_since_page_update} days ago. Regular updates signal an active, maintained unit.` });
   }
   if (validOpsCount === 0) {
     flags.push({ severity: 'amber', code: 'NO_OPS_HISTORY', label: 'No Verified Operations Logged',
-      detail: `Zero operations with confirmed attendance logged — scoring 0/20 on operational history and 0/10 on op recency.` });
+      detail: `Zero operations with confirmed attendance logged — Ops history and recency score 0%.` });
   } else {
     if (aarRatio < 0.2 && validOpsCount >= 3) {
       const missing = validOpsCount - validAARsCount;
       flags.push({ severity: 'amber', code: 'POOR_AAR_DISCIPLINE', label: 'Low AAR Discipline',
-        detail: `Only ${validAARsCount} valid AAR${validAARsCount !== 1 ? 's' : ''} for ${validOpsCount} verified operations — ${Math.round(aarRatio * 100)}% coverage. ${missing} op${missing !== 1 ? 's are' : ' is'} missing post-op reports.` });
+        detail: `Only ${Math.round(aarRatio * 100)}% AAR coverage — ${missing} op${missing !== 1 ? 's are' : ' is'} missing post-op reports.` });
     } else if (aarRatio < 0.5 && validOpsCount >= 2) {
       flags.push({ severity: 'amber', code: 'WEAK_AAR_DISCIPLINE', label: 'Inconsistent AAR Discipline',
-        detail: `${validAARsCount} valid AAR${validAARsCount !== 1 ? 's' : ''} for ${validOpsCount} verified operations (${Math.round(aarRatio * 100)}% coverage).` });
+        detail: `${Math.round(aarRatio * 100)}% AAR coverage across ${validOpsCount} verified operations.` });
     }
     if (days_since_last_op !== null && days_since_last_op > 45) {
       flags.push({ severity: 'amber', code: 'OPS_DORMANT', label: 'No Recent Operations',
-        detail: `Last operation was ${days_since_last_op} days ago — scoring 0/10 on operational recency.` });
+        detail: `Last operation was ${days_since_last_op} days ago — boost recency by running regular ops.` });
     } else if (days_since_last_op !== null && days_since_last_op > 30) {
       flags.push({ severity: 'amber', code: 'OPS_SLOWING', label: 'Operational Tempo Slowing',
-        detail: `Last operation was ${days_since_last_op} days ago — earning 3/10 on recency.` });
+        detail: `Last operation was ${days_since_last_op} days ago — operational tempo is slowing.` });
     }
   }
   if (training.knowledge_grade === 'none') {
     flags.push({ severity: 'amber', code: 'NO_TRAINING_DOCS', label: 'No Training Documentation Filed',
-      detail: 'Zero qualifying training resources uploaded — scoring 0/15 on training doctrine.' });
+      detail: 'Zero qualifying training resources uploaded — Training doctrine scores 0%.' });
   } else if (training.knowledge_grade === 'minimal') {
     flags.push({ severity: 'amber', code: 'MINIMAL_TRAINING_DOCS', label: 'Training Documentation Insufficient',
-      detail: `${training.doc_count} qualifying document${training.doc_count !== 1 ? 's' : ''} on file — knowledge factor ${training.knowledge_factor}/100.` });
+      detail: `${training.doc_count} qualifying training document${training.doc_count !== 1 ? 's' : ''} on file. Upload more comprehensive materials to improve your doctrine score.` });
   } else if (training.outdated_count > 0) {
     const pct = training.doc_count > 0 ? Math.round((training.outdated_count / training.doc_count) * 100) : 0;
     flags.push({ severity: 'amber', code: 'STALE_TRAINING_DOCS', label: `${training.outdated_count} Training Doc${training.outdated_count !== 1 ? 's' : ''} Outdated`,
@@ -698,7 +699,7 @@ function buildReadinessReport(params: {
   }
   if (clean_review_count === 0) {
     flags.push({ severity: 'amber', code: 'NO_REPUTATION_DATA', label: 'No Independent Reputation Reviews',
-      detail: 'No peer reputation reviews from independent parties on file — scoring 0/5 on reputation.' });
+      detail: 'No peer reputation reviews from independent parties. Encourage former members or allied groups to leave a review.' });
   } else if (clean_review_count < 3) {
     flags.push({ severity: 'amber', code: 'INSUFFICIENT_REPUTATION_DATA', label: 'Insufficient Reputation Sample',
       detail: `Only ${clean_review_count} independent reputation review${clean_review_count !== 1 ? 's' : ''} on file. Minimum 3 required for full points.` });
