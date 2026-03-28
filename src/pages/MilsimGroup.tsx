@@ -267,6 +267,16 @@ export default function MilsimGroup() {
               {group.tagLine && (
                 <p className="font-display font-bold uppercase tracking-widest text-primary text-sm mb-3">{group.tagLine}</p>
               )}
+              {(group.owner_username ?? group.ownerUsername) && (
+                <p className="text-xs text-muted-foreground font-sans mb-3 flex items-center gap-1">
+                  <span className="font-display uppercase tracking-widest text-[10px]">Commander:</span>
+                  <Link href={`/u/${group.owner_username ?? group.ownerUsername}`}>
+                    <span className="text-primary hover:underline underline-offset-2 cursor-pointer font-display uppercase tracking-widest text-[10px]">
+                      {group.owner_username ?? group.ownerUsername}
+                    </span>
+                  </Link>
+                </p>
+              )}
 
               {/* Branch + unit type + capability tier */}
               <div className="flex flex-wrap items-center gap-2 mb-4">

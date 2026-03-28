@@ -139,18 +139,59 @@ Deno.serve(async (req) => {
       return Response.json({ on_duty_status: body.status });
     }
 
-    // GET /users/profile/:username — public profile by username
+    // GET /users/profile/:username — public profile by username (enriched)
     if (method === 'GET' && parts.length === 2 && parts[0] === 'profile') {
       const username = parts[1];
       const users = await base44.asServiceRole.entities.AppUser.list();
       const user = users.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
       if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
+
+      // Get milsim roster memberships
+      const rosters = await base44.asServiceRole.entities.MilsimRoster.filter({ user_id: user.id });
+      const milsimGroups: any[] = [];
+      for (const r of (rosters ?? [])) {
+        if (!r.group_id || r.status === 'inactive') continue;
+        try {
+          const g = await base44.asServiceRole.entities.MilsimGroup.get(r.group_id);
+          if (!g) continue;
+          // Get rank label
+          let rankLabel = null;
+          if (r.rank_id) {
+            try { const rank = await base44.asServiceRole.entities.MilsimRank.get(r.rank_id); rankLabel = rank ? `${rank.abbreviation ?? ''} ${rank.name ?? ''}`.trim() : null; } catch {}
+          }
+          // Get role label
+          let roleLabel = null;
+          if (r.role_id) {
+            try { const role = await base44.asServiceRole.entities.MilsimRole.get(r.role_id); roleLabel = role?.name ?? null; } catch {}
+          }
+          milsimGroups.push({
+            group_id: g.id, group_name: g.name, group_slug: g.slug,
+            logo_url: g.logo_url ?? null, country: g.country ?? null,
+            callsign: r.callsign ?? null, rank: rankLabel, role: roleLabel,
+            join_date: r.join_date ?? r.created_date, ops_count: r.ops_count ?? 0,
+            owner_id: g.owner_id, owner_username: g.owner_username,
+            is_owner: g.owner_id === user.id,
+          });
+        } catch {}
+      }
+
+      // Total op count across all groups
+      const total_ops = milsimGroups.reduce((s, g) => s + (g.ops_count ?? 0), 0);
+
+      // Post count
+      let post_count = 0;
+      try { const posts = await base44.asServiceRole.entities.Post.filter({ user_id: user.id }); post_count = (posts ?? []).length; } catch {}
+
       return Response.json({
         id: user.id, username: user.username, role: user.role,
         bio: user.bio ?? null, nationality: user.nationality ?? null,
-        discordTag: user.discord_tag ?? null,
-        on_duty_status: computeDutyStatus(user.activity_dates),
+        discord_tag: user.discord_tag ?? null,
+        avatar_url: user.avatar_url ?? null,
+        is_verified: user.is_verified ?? false,
         createdAt: user.created_date,
+        milsim_groups: milsimGroups,
+        total_ops, post_count,
+        login_count: user.login_count ?? 0,
       });
     }
 
