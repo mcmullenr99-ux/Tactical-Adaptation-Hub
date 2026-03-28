@@ -75,6 +75,27 @@ import OrbatBuilder from "@/components/OrbatBuilder";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthContext";
 
+class PageErrorBoundary extends React.Component<{children: React.ReactNode}, {error: Error | null, info: string}> {
+  constructor(props: any) { super(props); this.state = { error: null, info: "" }; }
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("[PageErrorBoundary] CRASH:", error.message, info.componentStack);
+    this.setState({ info: info.componentStack ?? "" });
+  }
+  render() {
+    if (this.state.error) return (
+      <div style={{padding: 24, background: "#1a0000", border: "2px solid red", color: "red", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all", zIndex: 9999, position: "relative"}}>
+        <h2 style={{marginBottom: 8}}>PAGE CRASH — MilsimManage</h2>
+        <p style={{marginBottom: 8}}>{this.state.error.message}</p>
+        <pre style={{fontSize: 11}}>{this.state.error.stack?.slice(0,800)}</pre>
+        <pre style={{fontSize: 10, color: "#ff8888"}}>{this.state.info}</pre>
+        <button onClick={() => this.setState({error: null, info: ""})} style={{marginTop: 12, color: "white", background: "#600", padding: "4px 12px"}}>Retry</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
 class TabErrorBoundary extends React.Component<{children: React.ReactNode; tabName?: string}, {error: Error | null}> {
   constructor(props: any) { super(props); this.state = { error: null }; }
   static getDerivedStateFromError(error: Error) { return { error }; }
@@ -109,7 +130,9 @@ interface GroupDetail {
 
 type Tab = "roles" | "ranks" | "roster" | "recognition" | "stream" | "questions" | "operations" | "readiness" | "analytics" | "campaigns" | "reputation" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events" | "eventhub" | "onboarding" | "criteria" | "doctrine";
 
-export default function MilsimManage() {
+export default function MilsimManage() { return <PageErrorBoundary><MilsimManageInner /></PageErrorBoundary>; }
+
+function MilsimManageInner() {
   const [, setLocation] = useLocation();
   const [tab, setTabState] = useState<Tab>(() => {
     try {
