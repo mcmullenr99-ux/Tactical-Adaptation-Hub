@@ -19,8 +19,8 @@ type ComposeFormValues = z.infer<typeof composeSchema>;
 
 interface UserResult { id: number; username: string; role: string; }
 
-function RecipientSearch({ onChange }: { onChange: (id: number) => void }) {
-  const [q, setQ] = useState("");
+function RecipientSearch({ onChange, initialUsername }: { onChange: (id: number) => void; initialUsername?: string }) {
+  const [q, setQ] = useState(initialUsername ?? "");
   const [selectedName, setSelectedName] = useState("");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -28,9 +28,18 @@ function RecipientSearch({ onChange }: { onChange: (id: number) => void }) {
   const { data: results = [] } = useQuery<UserResult[]>({
     queryKey: ["user-search", q],
     queryFn: () => apiFetch(`/api/users/search?q=${encodeURIComponent(q)}`),
-    enabled: q.length >= 2,
+    enabled: q.length >= 2 && !selectedName,
     staleTime: 5_000,
   });
+
+  // Auto-select when results come back and we have an initialUsername waiting
+  useEffect(() => {
+    if (initialUsername && !selectedName && results.length > 0) {
+      const match = results.find((u: UserResult) => u.username.toLowerCase() === initialUsername.toLowerCase());
+      if (match) { setSelectedName(match.username); onChange(match.id); setOpen(false); setQ(""); }
+      else setOpen(true);
+    }
+  }, [results, initialUsername, selectedName]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -97,12 +106,16 @@ export default function Compose() {
     defaultValues: { recipientId: 0 },
   });
 
+  const [toUsername, setToUsername] = useState<string | undefined>(undefined);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const replyTo = params.get("replyTo");
     const subject = params.get("subject");
+    const toUser = params.get("to");
     if (replyTo) setValue("recipientId", parseInt(replyTo, 10));
     if (subject) setValue("subject", subject);
+    if (toUser) setToUsername(toUser);
   }, [setValue]);
 
   const bodyValue = watch("body") ?? "";
@@ -133,7 +146,7 @@ export default function Compose() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
               <label className="block text-sm font-display font-bold uppercase tracking-wider text-muted-foreground mb-2">Recipient</label>
-              <RecipientSearch onChange={id => setValue("recipientId", id, { shouldValidate: true })} />
+              <RecipientSearch onChange={id => setValue("recipientId", id, { shouldValidate: true })} initialUsername={toUsername} />
               {errors.recipientId && <p className="text-destructive text-sm mt-1 font-sans">{errors.recipientId.message}</p>}
             </div>
             <div>
