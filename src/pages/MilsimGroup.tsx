@@ -378,7 +378,7 @@ export default function MilsimGroup() {
                         style={{ width: `${readiness.readiness_pct}%`, background: readiness.status === "green" ? "#4ade80" : readiness.status === "amber" ? "#facc15" : "#f87171" }} />
                     </div>
                     <p className="text-xs text-muted-foreground font-sans">
-                      {readiness.total} members · {readiness.active_this_month} active 30d · {readiness.review_count} rep review{readiness.review_count !== 1 ? "s" : ""} · Score: {readiness.readiness_score ?? readiness.readiness_pct}/220
+                      {readiness.total} members · {readiness.active_this_month} active 30d · {readiness.review_count} rep review{readiness.review_count !== 1 ? "s" : ""} · Score: {readiness.readiness_pct}%
                     </p>
                   </div>
                 </div>
@@ -402,7 +402,7 @@ export default function MilsimGroup() {
                         <p className={`font-display font-black text-2xl uppercase ${
                           readiness.status === "green" ? "text-green-400" : readiness.status === "amber" ? "text-yellow-400" : "text-red-400"
                         }`}>{readiness.status.toUpperCase()}</p>
-                        <p className="text-xs text-muted-foreground mt-1 font-sans">{readiness.readiness_score ?? readiness.readiness_pct}/220pts ({readiness.readiness_pct}%)</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-sans">{readiness.readiness_pct}% composite readiness</p>
                       </div>
                     </div>
                     <div className="bg-card border border-border rounded-lg p-6 flex items-center gap-5">
@@ -463,7 +463,7 @@ export default function MilsimGroup() {
                       ))}
                     </div>
                     <p className="text-[10px] text-muted-foreground/60 pt-1 border-t border-border/40">
-                      Max 220pts normalised to 0–100% · GREEN ≥68% · AMBER 41–67% · RED &lt;41% · Anti-gaming checks exclude fake ops, thin AARs, and new-account padding
+                      All scores shown as % of max · GREEN ≥68% · AMBER 41–67% · RED &lt;41% · Anti-gaming checks exclude fake ops, thin AARs, and new-account padding
                     </p>
                   </div>
 
@@ -537,7 +537,7 @@ export default function MilsimGroup() {
                       })}
                     </div>
                     <p className="text-[10px] text-muted-foreground font-sans pt-3 border-t border-border">
-                      Tier is computed from operations logged, AAR discipline, average troop experience, troop utilisation, training documentation depth, and game breadth. The Op Capability Score (0–100) feeds the tier — it does not use the composite readiness score. Win rate and objective data influence the Composite Readiness Score (0–220pts, normalised to 0–100% for display) via the Combat Intel factor, which unlocks after 3+ AARs with outcomes filed.
+                      Tier is computed from operations logged, AAR discipline, average troop experience, troop utilisation, training documentation depth, and game breadth. The Op Capability Score (0–100) feeds the tier — it does not use the composite readiness score. Win rate and objective data influence the Composite Readiness Score (shown as % of max) via the Combat Intel factor, which unlocks after 3+ AARs with outcomes filed.
                     </p>
                   </div>
                 </>

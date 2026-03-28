@@ -4541,12 +4541,12 @@ function ReadinessTab({ group }: any) {
         </div>
         <div className="space-y-1">
           <div className="flex justify-between text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">
-            <span>Composite Readiness Score</span><span>{readiness.readiness_score ?? readiness.readiness_pct} / 220</span>
+            <span>Composite Readiness Score</span><span>{readiness.readiness_pct}%</span>
           </div>
           <div className="h-3 bg-secondary rounded-full overflow-hidden">
             <div className={`h-full rounded-full transition-all ${bc}`} style={{ width: `${readiness.readiness_pct}%` }} />
           </div>
-          <p className={`text-right text-xs font-display font-bold ${sc}`}>{readiness.readiness_score ?? readiness.readiness_pct}/220 pts — {readiness.readiness_pct}% of max</p>
+          <p className={`text-right text-xs font-display font-bold ${sc}`}>{readiness.readiness_pct}% composite readiness</p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-border text-center">
           {[
@@ -4585,7 +4585,7 @@ function ReadinessTab({ group }: any) {
 
       {/* ── Score Breakdown ───────────────────────────────────────────────── */}
       <div className="bg-card border border-border rounded-lg p-5 space-y-3">
-        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Score Breakdown — {readiness.readiness_score ?? readiness.readiness_pct}/220pts ({readiness.readiness_pct}%)</p>
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Score Breakdown — {readiness.readiness_pct}% Composite Readiness</p>
         <div className="space-y-2">
           {scoreBreakdown.map(row => (
             <div key={row.label} className="flex items-center gap-3 text-xs">
@@ -4595,13 +4595,13 @@ function ReadinessTab({ group }: any) {
                   style={{ width: `${Math.min(100, (row.earned / row.max) * 100)}%`,
                     background: row.earned === 0 ? '#ef4444' : row.earned >= row.max * 0.75 ? '#22c55e' : row.earned >= row.max * 0.4 ? '#eab308' : '#f97316' }} />
               </div>
-              <span className="text-[10px] font-display shrink-0 w-14 text-right" style={{ color: row.earned === 0 ? '#ef4444' : row.earned >= row.max * 0.75 ? '#22c55e' : row.earned >= row.max * 0.4 ? '#eab308' : '#f97316' }}>{row.earned}/{row.max}</span>
+              <span className="text-[10px] font-display shrink-0 w-14 text-right" style={{ color: row.earned === 0 ? '#ef4444' : row.earned >= row.max * 0.75 ? '#22c55e' : row.earned >= row.max * 0.4 ? '#eab308' : '#f97316' }}>{Math.round((row.earned / row.max) * 100)}%</span>
               <span className="text-[10px] text-muted-foreground font-sans shrink-0 hidden sm:block">{row.note}</span>
             </div>
           ))}
         </div>
         <p className="text-[10px] text-muted-foreground font-sans pt-1 border-t border-border/50">
-          Max score = 220pts (normalised to 0–100% for display). Green ≥68% · Amber 41–67% · Red &lt;41%. Units below minimum game strength are forced Red regardless of score. Combat Intel (up to 20pts) unlocks after filing 3+ AARs with outcomes set. Doctrine Bonus (+15pts) requires SOP + TTP + ROE + Drill with avg depth ≥70.
+          All scores shown as % of max. GREEN ≥68% · AMBER 41–67% · RED &lt;41%. Units below minimum game strength are forced Red regardless of score. Combat Intel unlocks after filing 3+ AARs with outcomes. Doctrine Bonus (+15pts) requires SOP + TTP + ROE + Drill at avg depth ≥70.
         </p>
       </div>
 
