@@ -4511,16 +4511,18 @@ function ReadinessTab({ group }: any) {
   // Score breakdown for transparency
   const sb = readiness.score_breakdown ?? {};
   const scoreBreakdown = [
-    { label: "Manpower",            max: 20, earned: sb.manpower ?? 0,         note: `${readiness.verified_total ?? readiness.total} verified members` },
-    { label: "Member Activity",     max: 15, earned: sb.activity ?? 0,         note: `${readiness.active_this_month}/${readiness.total} active (30d)` },
-    { label: "Operations History",  max: 20, earned: sb.ops_history ?? 0,      note: `${readiness.valid_ops ?? readiness.total_ops ?? 0} verified ops` },
-    { label: "Op Recency",          max: 10, earned: sb.op_recency ?? 0,       note: readiness.days_since_last_op != null ? `Last op ${readiness.days_since_last_op}d ago` : "No ops" },
-    { label: "AAR Discipline",      max: 10, earned: sb.aar_discipline ?? 0,   note: `${readiness.completed_ops ?? 0} AARs for ${readiness.valid_ops ?? readiness.total_ops ?? 0} ops` },
-    { label: "Training Doctrine",   max: 15, earned: sb.training_doctrine ?? 0,note: `Knowledge factor ${readiness.training?.knowledge_factor ?? 0}/100` },
-    { label: "Discord Linked",      max: 5,  earned: sb.discord ?? 0,          note: readiness.has_discord ? "Linked" : "Not linked" },
-    { label: "Page Maintenance",    max: 5,  earned: sb.page_maintenance ?? 0, note: readiness.days_since_page_update != null ? `Updated ${readiness.days_since_page_update}d ago` : "Never updated" },
-    { label: "Reputation / Reviews",max: 5,  earned: sb.reputation ?? 0,       note: `${readiness.review_count} review${readiness.review_count !== 1 ? "s" : ""}, avg ${readiness.avg_rep_score || "—"}` },
+    { label: "Manpower",            max: 30, earned: sb.manpower ?? 0,         note: `${readiness.verified_total ?? readiness.total} verified members` },
+    { label: "Member Activity",     max: 20, earned: sb.activity ?? 0,         note: `${readiness.active_this_month}/${readiness.total} active (30d)` },
+    { label: "Operations History",  max: 25, earned: sb.ops_history ?? 0,      note: `${readiness.valid_ops ?? readiness.total_ops ?? 0} verified ops` },
+    { label: "Op Recency",          max: 15, earned: sb.op_recency ?? 0,       note: readiness.days_since_last_op != null ? `Last op ${readiness.days_since_last_op}d ago` : "No ops" },
+    { label: "AAR Discipline",      max: 15, earned: sb.aar_discipline ?? 0,   note: `${readiness.completed_ops ?? 0} AARs for ${readiness.valid_ops ?? readiness.total_ops ?? 0} ops` },
+    { label: "Training Doctrine",   max: 50, earned: sb.training_doctrine ?? 0,note: `Knowledge factor ${readiness.training?.knowledge_factor ?? 0}/100` },
+    { label: "Discord Linked",      max: 10, earned: sb.discord ?? 0,          note: readiness.has_discord ? "Linked" : "Not linked" },
+    { label: "Page Maintenance",    max: 10, earned: sb.page_maintenance ?? 0, note: readiness.days_since_page_update != null ? `Updated ${readiness.days_since_page_update}d ago` : "Never updated" },
+    { label: "Reputation / Reviews",max: 10, earned: sb.reputation ?? 0,       note: `${readiness.review_count} review${readiness.review_count !== 1 ? "s" : ""}, avg ${readiness.avg_rep_score || "—"}` },
     { label: "Combat Intel",         max: 20, earned: sb.combat_intel ?? 0,      note: sb.combat_intel > 0 ? `${sb.combat_intel}/20 — win rate & objective data` : "File 3+ AARs with outcomes to score" },
+    { label: "Game Breadth",         max: 15, earned: sb.game_breadth ?? 0,      note: "Min-strength capability across all games listed" },
+    { label: "Doctrine Bonus",       max: 15, earned: sb.doctrine_bonus ?? 0,    note: sb.doctrine_bonus > 0 ? "Full doctrine set — SOP + TTP + ROE + Drill (depth ≥70)" : "Requires SOP + TTP + ROE + Drill uploaded with avg depth ≥70" },
   ];
 
   return (
@@ -4539,12 +4541,12 @@ function ReadinessTab({ group }: any) {
         </div>
         <div className="space-y-1">
           <div className="flex justify-between text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">
-            <span>Composite Readiness Score</span><span>{readiness.readiness_pct} / 100</span>
+            <span>Composite Readiness Score</span><span>{readiness.readiness_score ?? readiness.readiness_pct} / 220</span>
           </div>
           <div className="h-3 bg-secondary rounded-full overflow-hidden">
             <div className={`h-full rounded-full transition-all ${bc}`} style={{ width: `${readiness.readiness_pct}%` }} />
           </div>
-          <p className={`text-right text-xs font-display font-bold ${sc}`}>{readiness.readiness_pct}% COMPOSITE</p>
+          <p className={`text-right text-xs font-display font-bold ${sc}`}>{readiness.readiness_score ?? readiness.readiness_pct}/220 pts — {readiness.readiness_pct}% of max</p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-border text-center">
           {[
@@ -4583,7 +4585,7 @@ function ReadinessTab({ group }: any) {
 
       {/* ── Score Breakdown ───────────────────────────────────────────────── */}
       <div className="bg-card border border-border rounded-lg p-5 space-y-3">
-        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Score Breakdown — How Your {readiness.readiness_pct}pts Were Calculated</p>
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Score Breakdown — {readiness.readiness_score ?? readiness.readiness_pct}/220pts ({readiness.readiness_pct}%)</p>
         <div className="space-y-2">
           {scoreBreakdown.map(row => (
             <div key={row.label} className="flex items-center gap-3 text-xs">
@@ -4599,7 +4601,7 @@ function ReadinessTab({ group }: any) {
           ))}
         </div>
         <p className="text-[10px] text-muted-foreground font-sans pt-1 border-t border-border/50">
-          Max score = 100pts. Green ≥75 · Amber 45–74 · Red &lt;45. Units below squad strength (9 members) are forced Red regardless of score.
+          Max score = 220pts (normalised to 0–100% for display). Green ≥68% · Amber 41–67% · Red &lt;41%. Units below minimum game strength are forced Red regardless of score. Combat Intel (up to 20pts) unlocks after filing 3+ AARs with outcomes set. Doctrine Bonus (+15pts) requires SOP + TTP + ROE + Drill with avg depth ≥70.
         </p>
       </div>
 

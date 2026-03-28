@@ -378,7 +378,7 @@ export default function MilsimGroup() {
                         style={{ width: `${readiness.readiness_pct}%`, background: readiness.status === "green" ? "#4ade80" : readiness.status === "amber" ? "#facc15" : "#f87171" }} />
                     </div>
                     <p className="text-xs text-muted-foreground font-sans">
-                      {readiness.total} members · {readiness.active_this_month} active 30d · {readiness.review_count} rep review{readiness.review_count !== 1 ? "s" : ""}
+                      {readiness.total} members · {readiness.active_this_month} active 30d · {readiness.review_count} rep review{readiness.review_count !== 1 ? "s" : ""} · Score: {readiness.readiness_score ?? readiness.readiness_pct}/220
                     </p>
                   </div>
                 </div>
@@ -402,7 +402,7 @@ export default function MilsimGroup() {
                         <p className={`font-display font-black text-2xl uppercase ${
                           readiness.status === "green" ? "text-green-400" : readiness.status === "amber" ? "text-yellow-400" : "text-red-400"
                         }`}>{readiness.status.toUpperCase()}</p>
-                        <p className="text-xs text-muted-foreground mt-1 font-sans">{readiness.readiness_pct}% composite score</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-sans">{readiness.readiness_score ?? readiness.readiness_pct}/220pts ({readiness.readiness_pct}%)</p>
                       </div>
                     </div>
                     <div className="bg-card border border-border rounded-lg p-6 flex items-center gap-5">
@@ -436,6 +436,35 @@ export default function MilsimGroup() {
                         <p className="text-[10px] text-muted-foreground font-sans mt-0.5">{s.sub}</p>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Scoring method explainer */}
+                  <div className="bg-card border border-border/50 rounded-lg p-4 space-y-2">
+                    <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">How This Score Is Calculated</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] font-sans text-muted-foreground">
+                      {[
+                        { label: "Manpower",         max: 30, desc: "Verified members vs game full-strength threshold" },
+                        { label: "Member Activity",  max: 20, desc: "% of roster active in last 30 days" },
+                        { label: "Ops History",      max: 25, desc: "Verified ops with real RSVPs" },
+                        { label: "Op Recency",       max: 15, desc: "Days since last operation" },
+                        { label: "AAR Discipline",   max: 15, desc: "AARs filed per verified op" },
+                        { label: "Training Doctrine",max: 50, desc: "Document quality, depth, breadth & recency" },
+                        { label: "Discord",          max: 10, desc: "Discord server linked" },
+                        { label: "Page Maintenance", max: 10, desc: "How recently the group page was updated" },
+                        { label: "Reputation",       max: 10, desc: "External reviews from non-members" },
+                        { label: "Combat Intel",     max: 20, desc: "Win rate + objective success across 3+ AARs" },
+                        { label: "Game Breadth",     max: 15, desc: "Capability across multiple titles" },
+                        { label: "Doctrine Bonus",   max: 15, desc: "+15 for full SOP+TTP+ROE+Drill set at depth ≥70" },
+                      ].map(f => (
+                        <div key={f.label} className="flex items-start gap-1.5">
+                          <span className="text-primary font-display font-bold shrink-0">{f.label}</span>
+                          <span className="text-muted-foreground/70">(0–{f.max}): {f.desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/60 pt-1 border-t border-border/40">
+                      Max 220pts normalised to 0–100% · GREEN ≥68% · AMBER 41–67% · RED &lt;41% · Anti-gaming checks exclude fake ops, thin AARs, and new-account padding
+                    </p>
                   </div>
 
                   {/* System-generated narrative */}
@@ -508,7 +537,7 @@ export default function MilsimGroup() {
                       })}
                     </div>
                     <p className="text-[10px] text-muted-foreground font-sans pt-3 border-t border-border">
-                      Tier is computed from operations logged, AAR discipline, average troop experience, troop utilisation, training documentation depth, and game breadth — units that operate across multiple titles demonstrate wider mixed-force skillsets. Win rate is not used — we can only assess what commanders actually log.
+                      Tier is computed from operations logged, AAR discipline, average troop experience, troop utilisation, training documentation depth, and game breadth. The Op Capability Score (0–100) feeds the tier — it does not use the composite readiness score. Win rate and objective data influence the Composite Readiness Score (0–220pts, normalised to 0–100% for display) via the Combat Intel factor, which unlocks after 3+ AARs with outcomes filed.
                     </p>
                   </div>
                 </>

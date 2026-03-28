@@ -53,6 +53,7 @@ interface TrainingAssessment {
 interface ReadinessReport {
   status: 'green' | 'amber' | 'red';
   readiness_pct: number;
+  readiness_score: number;
   total: number;
   verified_total: number;           // manpower score is based on this, not raw total
   active_this_week: number;
@@ -560,11 +561,12 @@ function buildReadinessReport(params: {
   const doctrineBonusPts = (training.has_sop && training.has_ttp && training.has_roe && training.has_drill && training.avg_depth_score >= 70) ? 15 : 0;
   score += doctrineBonusPts;
 
-  const readiness_pct = Math.min(200, Math.max(0, Math.round(score)));
+  const readiness_score = Math.min(220, Math.max(0, Math.round(score)));
+  const readiness_pct   = Math.round((readiness_score / 220) * 100);
   const status: ReadinessReport['status'] =
     capacityGradeNew === 'undermanned' ? 'red' :
-    readiness_pct >= 150 ? 'green' :
-    readiness_pct >= 90  ? 'amber' : 'red';
+    readiness_pct >= 68 ? 'green' :
+    readiness_pct >= 41 ? 'amber' : 'red';
 
   const opCapScore =
     (Math.min(validOpsCount, 20) / 20) * 30 +
@@ -793,7 +795,7 @@ function buildReadinessReport(params: {
   const repPts        = clean_review_count >= 5 && avg_rep_score >= 75 ? 10 : clean_review_count >= 3 && avg_rep_score >= 70 ? 7 : clean_review_count >= 3 && avg_rep_score >= 50 ? 5 : clean_review_count >= 1 && avg_rep_score >= 50 ? 3 : clean_review_count >= 1 ? 1 : 0;
 
   return {
-    status, readiness_pct, total, verified_total: verifiedTotal,
+    status, readiness_score, readiness_pct, total, verified_total: verifiedTotal,
     active_this_week, active_this_month,
     capacity_grade, capacity_utilisation_pct: utilPct,
     game_profile: { game: gameProfile.game, fullStrength: gameProfile.fullStrength, adequate: gameProfile.adequate, minimal: gameProfile.minimal, label: gameProfile.label, category: gameProfile.category },
