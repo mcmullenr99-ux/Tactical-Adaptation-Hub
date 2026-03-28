@@ -22,11 +22,11 @@
     "liquid": {
       "type": "string",
       "enum": [
-        "Green",
-        "Yellow",
-        "Red",
-        "N/A"
-      ]
+        "GREEN",
+        "ORANGE",
+        "RED"
+      ],
+      "default": "GREEN"
     },
     "liquid_note": {
       "type": "string"
@@ -34,11 +34,11 @@
     "ammo": {
       "type": "string",
       "enum": [
-        "Green",
-        "Yellow",
-        "Red",
-        "N/A"
-      ]
+        "GREEN",
+        "ORANGE",
+        "RED"
+      ],
+      "default": "GREEN"
     },
     "ammo_note": {
       "type": "string"
@@ -46,11 +46,12 @@
     "casualty": {
       "type": "string",
       "enum": [
-        "Green",
-        "Yellow",
-        "Red",
-        "N/A"
-      ]
+        "NONE",
+        "LOW",
+        "MODERATE",
+        "HEAVY"
+      ],
+      "default": "NONE"
     },
     "casualty_note": {
       "type": "string"
@@ -58,14 +59,35 @@
     "equipment": {
       "type": "string",
       "enum": [
-        "Green",
-        "Yellow",
-        "Red",
-        "N/A"
-      ]
+        "GREEN",
+        "ORANGE",
+        "RED"
+      ],
+      "default": "GREEN"
     },
     "equipment_note": {
       "type": "string"
+    },
+    "eyewitness_confirmations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "callsign": {
+            "type": "string"
+          },
+          "confirmed_at": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "eyewitness_count": {
+      "type": "number",
+      "default": 0
     }
   },
   "required": [],

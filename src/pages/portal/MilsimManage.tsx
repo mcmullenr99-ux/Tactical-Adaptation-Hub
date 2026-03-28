@@ -2737,7 +2737,7 @@ function AARsTab({ group, showMsg }: any) {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const emptyForm = { op_name: "", op_date: "", op_id: "", summary: "", objectives_hit: "", objectives_missed: "", casualties: "", commendations: "", recommendations: "", classification: "unclassified" };
+  const emptyForm = { op_name: "", op_date: "", op_id: "", summary: "", outcome: "INCOMPLETE", objectives_hit: 0, objectives_missed: 0, casualties: "NONE", casualties_note: "", commendations: "", recommendations: "", classification: "unclassified" };
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -2776,9 +2776,57 @@ function AARsTab({ group, showMsg }: any) {
           <div><label className="mf-label">Linked Op</label><select value={form.op_id ?? ""} onChange={setF("op_id")} className="mf-input"><option value="">— No op —</option>{ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}</select></div>
           <div><label className="mf-label">Classification</label><select value={form.classification} onChange={setF("classification")} className="mf-input">{["unclassified","confidential","classified","top-secret"].map(c => <option key={c} value={c}>{c.replace("-"," ").toUpperCase()}</option>)}</select></div>
           <div><label className="mf-label">Summary</label><textarea rows={3} value={form.summary} onChange={setF("summary")} className="mf-input resize-none" placeholder="Overall mission summary..." /></div>
-          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Objectives Hit</label><textarea rows={3} value={form.objectives_hit} onChange={setF("objectives_hit")} className="mf-input resize-none" /></div><div><label className="mf-label">Objectives Missed</label><textarea rows={3} value={form.objectives_missed} onChange={setF("objectives_missed")} className="mf-input resize-none" /></div></div>
-          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Casualties</label><textarea rows={2} value={form.casualties} onChange={setF("casualties")} className="mf-input resize-none" /></div><div><label className="mf-label">Commendations</label><textarea rows={2} value={form.commendations} onChange={setF("commendations")} className="mf-input resize-none" /></div></div>
-          <div><label className="mf-label">Recommendations</label><textarea rows={3} value={form.recommendations} onChange={setF("recommendations")} className="mf-input resize-none" /></div>
+          {/* Outcome selector */}
+          <div>
+            <label className="mf-label">Op Outcome</label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {(["VICTORY","PARTIAL VICTORY","DRAW","DEFEAT","INCOMPLETE"] as const).map(o => {
+                const oc: Record<string, string> = { VICTORY: "text-green-400 border-green-500/50 bg-green-500/10", "PARTIAL VICTORY": "text-lime-400 border-lime-500/50 bg-lime-500/10", DRAW: "text-yellow-400 border-yellow-500/50 bg-yellow-500/10", DEFEAT: "text-red-400 border-red-500/50 bg-red-500/10", INCOMPLETE: "text-muted-foreground border-border bg-secondary/40" };
+                return (
+                  <button key={o} type="button" onClick={() => setForm((f: any) => ({...f, outcome: o}))}
+                    className={`px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.outcome === o ? oc[o] : "border-border text-muted-foreground hover:bg-secondary/60"}`}>
+                    {o}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Objectives — numbered inputs */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mf-label">Objectives Hit <span className="text-muted-foreground font-normal">(count)</span></label>
+              <input type="number" min={0} max={99} value={form.objectives_hit} onChange={e => setForm((f: any) => ({...f, objectives_hit: parseInt(e.target.value) || 0}))} className="mf-input w-full" placeholder="0" />
+            </div>
+            <div>
+              <label className="mf-label">Objectives Missed <span className="text-muted-foreground font-normal">(count)</span></label>
+              <input type="number" min={0} max={99} value={form.objectives_missed} onChange={e => setForm((f: any) => ({...f, objectives_missed: parseInt(e.target.value) || 0}))} className="mf-input w-full" placeholder="0" />
+            </div>
+          </div>
+
+          {/* Casualties — standardised enum */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mf-label">Casualty Level</label>
+              <div className="flex gap-2 mt-1">
+                {(["NONE","LOW","MODERATE","HEAVY"] as const).map(c => {
+                  const cc: Record<string, string> = { NONE: "text-green-400 border-green-500/50 bg-green-500/10", LOW: "text-yellow-400 border-yellow-500/50 bg-yellow-500/10", MODERATE: "text-orange-400 border-orange-500/50 bg-orange-500/10", HEAVY: "text-red-400 border-red-500/50 bg-red-500/10" };
+                  return (
+                    <button key={c} type="button" onClick={() => setForm((f: any) => ({...f, casualties: c}))}
+                      className={`flex-1 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.casualties === c ? cc[c] : "border-border text-muted-foreground hover:bg-secondary/60"}`}>
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <label className="mf-label">Casualty Notes <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <input value={form.casualties_note ?? ""} onChange={setF("casualties_note")} className="mf-input w-full" placeholder="e.g. 1 WIA extracted, 2 KIA confirmed" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Commendations</label><textarea rows={2} value={form.commendations} onChange={setF("commendations")} className="mf-input resize-none" /></div><div><label className="mf-label">Recommendations</label><textarea rows={2} value={form.recommendations} onChange={setF("recommendations")} className="mf-input resize-none" /></div></div>
           <div className="flex gap-2">
             <button onClick={submit} disabled={saving || !form.op_name.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editId ? "Update" : "File AAR"}</button>
             <button onClick={() => { setCreating(false); setEditId(null); setForm(emptyForm); }} className="px-4 py-2 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground">Cancel</button>
@@ -2794,7 +2842,7 @@ function AARsTab({ group, showMsg }: any) {
               <button onClick={() => setExpandedId(expandedId === a.id ? null : a.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
                 <div className="flex items-center gap-3 flex-wrap"><span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${CL[a.classification] ?? ""}`}>{(a.classification ?? "unclassified").replace("-"," ")}</span><span className="font-display font-bold text-sm text-foreground">{a.op_name}</span>{a.op_date && <span className="text-xs text-muted-foreground">{format(new Date(a.op_date + "T00:00:00"), "MMM dd, yyyy")}</span>}</div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ op_name: a.op_name, op_date: a.op_date?.split("T")[0] ?? "", summary: a.summary ?? a.content ?? "", objectives_hit: a.objectives_hit ?? "", objectives_missed: a.objectives_missed ?? "", casualties: a.casualties ?? "", commendations: a.commendations ?? "", recommendations: a.recommendations ?? "", classification: a.classification }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ op_name: a.op_name, op_date: a.op_date?.split("T")[0] ?? "", summary: a.summary ?? a.content ?? "", outcome: a.outcome ?? "INCOMPLETE", objectives_hit: a.objectives_hit ?? 0, objectives_missed: a.objectives_missed ?? 0, casualties: a.casualties ?? "NONE", casualties_note: a.casualties_note ?? "", commendations: a.commendations ?? "", recommendations: a.recommendations ?? "", classification: a.classification ?? "unclassified" }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={e => { e.stopPropagation(); remove(a.id); }} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                   {expandedId === a.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 </div>
@@ -2802,12 +2850,26 @@ function AARsTab({ group, showMsg }: any) {
               {expandedId === a.id && (
                 <div className="border-t border-border p-5 space-y-4 bg-secondary/10">
                   {(a.summary ?? a.content) && <AARField label="Summary" value={a.summary ?? a.content} />}
-                  {a.objectives_hit && <AARField label="Objectives Hit" value={a.objectives_hit} />}
-                  {a.objectives_missed && <AARField label="Objectives Missed" value={a.objectives_missed} />}
-                  {a.casualties && <AARField label="Casualties" value={a.casualties} />}
+                  {(a.objectives_hit !== undefined || a.objectives_missed !== undefined) && (
+                    <div className="flex gap-4">
+                      <div className="text-xs"><span className="font-display font-bold uppercase tracking-wider text-green-400">Objs Hit: </span><span className="font-mono text-foreground">{a.objectives_hit ?? 0}</span></div>
+                      <div className="text-xs"><span className="font-display font-bold uppercase tracking-wider text-red-400">Objs Missed: </span><span className="font-mono text-foreground">{a.objectives_missed ?? 0}</span></div>
+                      {((a.objectives_hit ?? 0) + (a.objectives_missed ?? 0)) > 0 && <div className="text-xs"><span className="font-display font-bold uppercase tracking-wider text-muted-foreground">Success: </span><span className="font-mono text-foreground">{Math.round(((a.objectives_hit ?? 0) / ((a.objectives_hit ?? 0) + (a.objectives_missed ?? 0))) * 100)}%</span></div>}
+                    </div>
+                  )}
+                  {a.casualties && <div className="flex items-center gap-2"><span className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground">Casualties:</span><span className={`text-xs font-display font-bold uppercase px-2 py-0.5 rounded border ${a.casualties === "HEAVY" ? "text-red-400 bg-red-500/10 border-red-500/30" : a.casualties === "MODERATE" ? "text-orange-400 bg-orange-500/10 border-orange-500/30" : a.casualties === "LOW" ? "text-yellow-400 bg-yellow-500/10 border-yellow-500/30" : "text-green-400 bg-green-500/10 border-green-500/30"}`}>{a.casualties}</span>{a.casualties_note && <span className="text-xs text-muted-foreground font-sans">{a.casualties_note}</span>}</div>}
                   {a.commendations && <AARField label="Commendations" value={a.commendations} />}
                   {a.recommendations && <AARField label="Recommendations" value={a.recommendations} />}
-                  <p className="text-xs text-muted-foreground">Filed by {a.created_by} · {formatDistanceToNow(new Date(a.created_date ?? a.created_at ?? Date.now()), { addSuffix: true })}</p>
+                  <div className="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground">Filed by {a.created_by} · {formatDistanceToNow(new Date(a.created_date ?? a.created_at ?? Date.now()), { addSuffix: true })}</p>
+                    <div className="flex items-center gap-2">
+                      {(a.eyewitness_count ?? 0) > 0 && <span className="text-[10px] font-display font-bold uppercase tracking-widest text-primary px-2 py-0.5 bg-primary/10 border border-primary/30 rounded">{a.eyewitness_count} EYEWITNESS{(a.eyewitness_count ?? 0) > 1 ? "ES" : ""}</span>}
+                      <button onClick={() => apiFetch("/opIntel?path=confirm", { method: "POST", body: JSON.stringify({ report_type: "AAR", report_id: a.id, note: "" }) }).then(() => { showMsg("Eyewitness confirmation recorded", "success"); load(); }).catch((e: any) => showMsg(e.message, "error"))}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-primary/40 bg-primary/10 text-primary text-[10px] font-display font-bold uppercase tracking-widest hover:bg-primary/20 transition-colors">
+                        <Eye className="w-3 h-3" /> Confirm Eyewitness
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -2894,7 +2956,7 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
   const FIELDS: { key: "liquid"|"ammo"|"casualty"|"equipment"; letter: string; label: string; sublabel: string; noteKey: "liquid_note"|"ammo_note"|"casualty_note"|"equipment_note"; notePlaceholder: string }[] = [
     { key: "liquid",    letter: "L", label: "LIQUID",    sublabel: "Water / hydration supply",          noteKey: "liquid_note",    notePlaceholder: "e.g. 2x water bottles remaining per man" },
     { key: "ammo",      letter: "A", label: "AMMO",      sublabel: "Ammunition across all weapons",     noteKey: "ammo_note",      notePlaceholder: "e.g. Orange 5.56, Red AT4" },
-    { key: "casualty",  letter: "C", label: "CASUALTY",  sublabel: "# up / # WIA / # KIA",             noteKey: "casualty_note",  notePlaceholder: "e.g. 4 up, 1 WIA (walking)" },
+    { key: "casualty",  letter: "C", label: "CASUALTY",  sublabel: "Friendly casualty level",           noteKey: "casualty_note",  notePlaceholder: "e.g. 2 WIA walking, 1 KIA extracted" },
     { key: "equipment", letter: "E", label: "EQUIPMENT", sublabel: "Mission-critical gear status",       noteKey: "equipment_note", notePlaceholder: "e.g. Orange bandages, Red NVG" },
   ];
 
@@ -2974,8 +3036,9 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
                   </div>
                   <div className="p-3 space-y-2.5">
                     <div className="flex gap-2">
-                      {(["GREEN","ORANGE","RED"] as const).map(status => {
-                        const cfg = STATUS[status];
+                      {(f.key === "casualty" ? ["NONE","LOW","MODERATE","HEAVY"] as const : ["GREEN","ORANGE","RED"] as const).map((status: string) => {
+                        const CAS_CFG: Record<string, { color: string; bg: string; border: string }> = { NONE: { color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/40" }, LOW: { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/40" }, MODERATE: { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/40" }, HEAVY: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/40" } };
+                        const cfg = f.key === "casualty" ? CAS_CFG[status] : STATUS[status as "GREEN"|"ORANGE"|"RED"];
                         const active = form[f.key] === status;
                         return (
                           <button key={status} onClick={() => setForm((prev:any) => ({...prev, [f.key]: status}))}
@@ -3044,6 +3107,16 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
                       </div>
                     );
                   })}
+                </div>
+                {/* Eyewitness confirmation row */}
+                <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-secondary/10">
+                  <span className="text-[10px] text-muted-foreground font-display uppercase tracking-widest">
+                    {(r.eyewitness_count ?? 0) > 0 ? `${r.eyewitness_count} eyewitness${(r.eyewitness_count ?? 0) > 1 ? "es" : ""} confirmed` : "Awaiting eyewitness confirmation"}
+                  </span>
+                  <button onClick={() => apiFetch("/opIntel?path=confirm", { method: "POST", body: JSON.stringify({ report_type: "LACE", report_id: r.id }) }).then(() => { showMsg("Eyewitness confirmation recorded", "success"); load(); }).catch((e: any) => showMsg(e.message, "error"))}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded border border-primary/40 bg-primary/10 text-primary text-[10px] font-display font-bold uppercase tracking-widest hover:bg-primary/20 transition-colors">
+                    <Eye className="w-3 h-3" /> Confirm
+                  </button>
                 </div>
               </div>
             );
@@ -3149,7 +3222,7 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
     "COMPROMISED": { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/40" },
     "ABORT":       { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/40" },
   };
-  const CAS_COLOR: Record<string, string> = { NONE:"text-green-400", MINOR:"text-yellow-400", SIGNIFICANT:"text-orange-400", CRITICAL:"text-red-400" };
+  const CAS_COLOR: Record<string, string> = { NONE:"text-green-400", LOW:"text-yellow-400", MODERATE:"text-orange-400", HEAVY:"text-red-400" };
 
   // The 5 ABCDE rows
   const ROWS: { letter: string; label: string; sublabel: string; field: string; placeholder: string; rows?: number }[] = [
@@ -3269,7 +3342,7 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
                 <div className="border border-border rounded-lg p-3 space-y-2">
                   <p className="font-display font-bold text-xs uppercase tracking-widest">Own Casualties</p>
                   <div className="flex flex-wrap gap-1">
-                    {(["NONE","MINOR","SIGNIFICANT","CRITICAL"] as const).map(v => (
+                    {(["NONE","LOW","MODERATE","HEAVY"] as const).map(v => (
                       <button key={v} onClick={() => setForm((f:any) => ({...f, friendly_casualties: v}))}
                         className={`px-2 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.friendly_casualties === v ? `bg-secondary/80 border-primary/50 ${CAS_COLOR[v]}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>
                     ))}
