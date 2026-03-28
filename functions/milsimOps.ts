@@ -104,6 +104,49 @@ Deno.serve(async (req) => {
       return new Response(null, { status: 204 });
     }
 
+
+    // GET ?path=my-rsvps&group_id=XXX  — fetch caller's RSVPs for a group's ops
+    if (method === 'GET' && parts[0] === 'my-rsvps') {
+      const caller = await getCallerUser(base44, req);
+      if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const groupId = url.searchParams.get('group_id');
+      if (!groupId) return Response.json({ error: 'group_id required' }, { status: 400 });
+      const ops = await base44.asServiceRole.entities.MilsimOp.filter({ group_id: groupId });
+      const opIds = ops.map((o: any) => o.id);
+      // Load all event RSVPs for this user across these ops
+      const allRsvps = await base44.asServiceRole.entities.EventRSVP.filter({ user_id: caller.id });
+      const relevant = allRsvps.filter((r: any) => opIds.includes(r.event_id));
+      return Response.json({ rsvps: relevant });
+    }
+
+    // POST ?path=rsvp  — submit RSVP { op_id, group_id, status }
+    if (method === 'POST' && parts[0] === 'rsvp') {
+      const caller = await getCallerUser(base44, req);
+      if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const body = await req.json().catch(() => ({}));
+      const { op_id, group_id, status } = body;
+      if (!op_id || !['attending', 'declined', 'maybe'].includes(status)) {
+        return Response.json({ error: 'op_id and valid status required' }, { status: 400 });
+      }
+      // Check roster membership
+      const roster = await base44.asServiceRole.entities.MilsimRoster.filter({ group_id, user_id: caller.id });
+      if (!roster || roster.length === 0) return Response.json({ error: 'Not on roster' }, { status: 403 });
+      const rosterEntry = roster[0];
+      // Upsert: check if RSVP exists
+      const existing = await base44.asServiceRole.entities.EventRSVP.filter({ event_id: op_id, user_id: caller.id });
+      let rsvp;
+      if (existing && existing.length > 0) {
+        rsvp = await base44.asServiceRole.entities.EventRSVP.update(existing[0].id, { status });
+      } else {
+        rsvp = await base44.asServiceRole.entities.EventRSVP.create({
+          event_id: op_id, user_id: caller.id,
+          username: caller.username ?? rosterEntry.callsign ?? '',
+          status,
+        });
+      }
+      return Response.json({ rsvp }, { status: 200 });
+    }
+
     return Response.json({ error: 'Not found' }, { status: 404 });
   } catch (error) {
     console.error('[milsimOps]', error);
