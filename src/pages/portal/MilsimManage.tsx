@@ -137,11 +137,6 @@ function MilsimManageInner() {
   const [tab, setTabState] = useState<Tab>(() => {
     try {
       const saved = localStorage.getItem("milsimManageTab") as Tab | null;
-      // "recognition" tab (Customisation) has a known crash - reset to doctrine if saved there
-      if (saved === "recognition") {
-        localStorage.removeItem("milsimManageTab");
-        return "doctrine";
-      }
       return saved ?? "doctrine";
     } catch { return "doctrine"; }
   });
