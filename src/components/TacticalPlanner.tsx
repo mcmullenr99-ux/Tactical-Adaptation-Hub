@@ -62,7 +62,7 @@ const GAME_MAPS: GameMap[] = [
   // ── Arma 3 Vanilla ──────────────────────────────────────────────────────────
   { id:"a3_altis",
     game:"Arma 3 — Vanilla",  name:"Altis",
-    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/0fb03f56b_generated_image.png",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/c6c06437c_generated_image.png",
     fallbackColor:"#2d3a2e", previewColor:"#4a7c59",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/altis/150",
@@ -70,7 +70,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_stratis",
     game:"Arma 3 — Vanilla",  name:"Stratis",
-    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/d965d7d2c_generated_image.png",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/ea6747836_generated_image.png",
     fallbackColor:"#2d3a2e", previewColor:"#5a8c6a",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/stratis/150",
@@ -78,7 +78,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_malden",
     game:"Arma 3 — Vanilla",  name:"Malden",
-    mapImageUrl:null,
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/2cd515d90_generated_image.png",
     fallbackColor:"#2d3a2e", previewColor:"#6a9c7a",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/malden/150",
@@ -86,7 +86,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_tanoa",
     game:"Arma 3 — Vanilla",  name:"Tanoa",
-    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/232b24943_generated_image.png",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/de89f0a9c_generated_image.png",
     fallbackColor:"#1a3a2a", previewColor:"#3a7a5a",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/tanoa/150",
@@ -95,7 +95,7 @@ const GAME_MAPS: GameMap[] = [
   // ── Arma 3 Modded ───────────────────────────────────────────────────────────
   { id:"a3_chernarus",
     game:"Arma 3 — Modded",  name:"Chernarus (Summer)",
-    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/462a9c157_generated_image.png",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/c0c3edd32_generated_image.png",
     fallbackColor:"#263326", previewColor:"#4a7a55",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/chernarus/150",
@@ -103,7 +103,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_takistan",
     game:"Arma 3 — Modded",  name:"Takistan",
-    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/aca91e151_generated_image.png",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/eee40b659_generated_image.png",
     fallbackColor:"#3a3020", previewColor:"#7a7040",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/takistan/150",
@@ -111,7 +111,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_lingor",
     game:"Arma 3 — Modded",  name:"Lingor",
-    mapImageUrl:null,
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/665ed628f_generated_image.png",
     fallbackColor:"#1a3020", previewColor:"#3a6a40",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/lingor/150",
@@ -119,7 +119,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_fallujah",
     game:"Arma 3 — Modded",  name:"Fallujah",
-    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/1222b5c3d_generated_image.png",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/af03413de_generated_image.png",
     fallbackColor:"#3a2a10", previewColor:"#8a7040",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/fallujah/150",
@@ -127,7 +127,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_lythium",
     game:"Arma 3 — Modded",  name:"Lythium",
-    mapImageUrl:null,
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/e61239f17_generated_image.png",
     fallbackColor:"#2a2010", previewColor:"#7a6030",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/lythium/150",
@@ -136,7 +136,7 @@ const GAME_MAPS: GameMap[] = [
   // ── Squad ────────────────────────────────────────────────────────────────────
   { id:"sq_yehorivka",
     game:"Squad",  name:"Yehorivka",
-    mapImageUrl:null,
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/279e5759b_generated_image.png",
     fallbackColor:"#2a3020", previewColor:"#6a7a3a",
     attribution:"squadmaps.com",
     openUrl:"https://squadmaps.com/map?name=Yehorivka&layer=AAS%20v1",
@@ -144,7 +144,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"sq_fallujah",
     game:"Squad",  name:"Fallujah",
-    mapImageUrl:null,
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/af03413de_generated_image.png",
     fallbackColor:"#3a2a10", previewColor:"#8a7040",
     attribution:"squadmaps.com",
     openUrl:"https://squadmaps.com/map?name=Fallujah&layer=AAS%20v1",
