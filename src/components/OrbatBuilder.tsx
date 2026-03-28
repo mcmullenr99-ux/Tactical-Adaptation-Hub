@@ -531,13 +531,36 @@ function genVehiclesFromNation(flagCode:string|undefined, template:string):{ col
 }
 
 // ─── Chart Builder ────────────────────────────────────────────────────────────
-function ChartBuilder({title,rows,cols,chartFor,onR,onC,onChartFor,isWeapons,flagCode}:{
+// Map echelon -> template keywords to surface matches first
+const ECHELON_TEMPLATE_HINTS:Record<string,string[]> = {
+  fireteam:["Section","Team"],
+  section:["Section","Team"],
+  platoon:["Platoon","Troop"],
+  company:["Company","Squadron","Battery","Support"],
+  battalion:["Battalion","Company","Squadron"],
+  regiment:["Regiment","Battalion","Squadron"],
+  brigade:["Brigade","Regiment","Battalion"],
+  division:["Division","Brigade"],
+  corps:["Corps","Division"],
+};
+
+function ChartBuilder({title,rows,cols,chartFor,onR,onC,onChartFor,isWeapons,flagCode,echelon}:{
   title:string; rows:WeaponEntry[]; cols:ChartColumn[]; chartFor:string;
   onR:(r:WeaponEntry[])=>void; onC:(c:ChartColumn[])=>void;
-  onChartFor:(v:string)=>void; isWeapons:boolean; flagCode?:string;
+  onChartFor:(v:string)=>void; isWeapons:boolean; flagCode?:string; echelon?:string;
 }){
   const templates = isWeapons ? WEAPONS_TEMPLATES : VEHICLES_TEMPLATES;
   const canGenNation = !!(flagCode && FLAG_TO_NATION[flagCode]);
+
+  // Sort template keys so echelon-relevant ones appear first
+  const hints = echelon ? (ECHELON_TEMPLATE_HINTS[echelon] || []) : [];
+  const sortedTemplateKeys = Object.keys(templates).sort((a,b)=>{
+    const aMatch = hints.some(h=>a.includes(h));
+    const bMatch = hints.some(h=>b.includes(h));
+    if(aMatch && !bMatch) return -1;
+    if(!aMatch && bMatch) return 1;
+    return 0;
+  });
   const addC=()=>{const id=generateId();onC([...cols,{id,label:"Unit"}]);};
   const remC=(id:string)=>onC(cols.filter(c=>c.id!==id));
   const upCL=(id:string,l:string)=>onC(cols.map(c=>c.id===id?{...c,label:l}:c));
@@ -569,7 +592,7 @@ function ChartBuilder({title,rows,cols,chartFor,onR,onC,onChartFor,isWeapons,fla
           {canGenNation&&<span style={{fontSize:9,color:T.textMuted,fontStyle:"italic"}}>🌍 Nation kit loaded</span>}
           <select onChange={e=>{if(!e.target.value)return;loadTemplate(e.target.value);(e.target as HTMLSelectElement).value="";}} style={{...IS,fontSize:10,padding:"2px 6px",width:"auto"}}>
             <option value="">{canGenNation ? "Load template (nation kit)…" : "Load template…"}</option>
-            {Object.keys(templates).map(k=><option key={k} value={k}>{k}</option>)}
+            {sortedTemplateKeys.map(k=><option key={k} value={k}>{hints.some(h=>k.includes(h))?"★ "+k:k}</option>)}
           </select>
           <button onClick={addC} style={BSm}>+ Col</button>
           <button onClick={addR} style={BSm}>+ Row</button>
@@ -716,7 +739,7 @@ function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];on
                   <button onClick={()=>{s("weaponsChart",[]);s("weaponsCols",[]);s("weaponsChartFor","");}} style={{...BSm,background:"rgba(220,50,50,0.15)",color:T.danger,borderColor:T.danger}} title="Clear weapons chart">✕ Clear Chart</button>
                 ) : null}
               </div>
-              <ChartBuilder title="Weapons Chart" rows={d.weaponsChart||[]} cols={d.weaponsCols||[]} chartFor={d.weaponsChartFor||""} onR={r=>s("weaponsChart",r)} onC={c=>s("weaponsCols",c)} onChartFor={v=>s("weaponsChartFor",v)} isWeapons={true} flagCode={d.flagCode}/>
+              <ChartBuilder title="Weapons Chart" rows={d.weaponsChart||[]} cols={d.weaponsCols||[]} chartFor={d.weaponsChartFor||""} onR={r=>s("weaponsChart",r)} onC={c=>s("weaponsCols",c)} onChartFor={v=>s("weaponsChartFor",v)} isWeapons={true} flagCode={d.flagCode} echelon={d.echelon}/>
               <div style={{height:1,background:T.border,margin:"20px 0"}}/>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
                 <span style={{fontSize:9,color:T.textMuted,textTransform:"uppercase",letterSpacing:1}}>Vehicles Chart</span>
@@ -724,7 +747,7 @@ function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];on
                   <button onClick={()=>{s("vehiclesChart",[]);s("vehiclesCols",[]);s("vehiclesChartFor","");}} style={{...BSm,background:"rgba(220,50,50,0.15)",color:T.danger,borderColor:T.danger}} title="Clear vehicles chart">✕ Clear Chart</button>
                 ) : null}
               </div>
-              <ChartBuilder title="Vehicles Chart" rows={d.vehiclesChart||[]} cols={d.vehiclesCols||[]} chartFor={d.vehiclesChartFor||""} onR={r=>s("vehiclesChart",r)} onC={c=>s("vehiclesCols",c)} onChartFor={v=>s("vehiclesChartFor",v)} isWeapons={false} flagCode={d.flagCode}/>
+              <ChartBuilder title="Vehicles Chart" rows={d.vehiclesChart||[]} cols={d.vehiclesCols||[]} chartFor={d.vehiclesChartFor||""} onR={r=>s("vehiclesChart",r)} onC={c=>s("vehiclesCols",c)} onChartFor={v=>s("vehiclesChartFor",v)} isWeapons={false} flagCode={d.flagCode} echelon={d.echelon}/>
             </div>
           )}
         </div>
@@ -740,6 +763,64 @@ function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];on
 
 
 // ─── Canvas ───────────────────────────────────────────────────────────────────
+// ─── Per-chart canvas card with independent zoom ─────────────────────────────
+function CanvasChartCard({node, pathMap}:{node:OrbatNode; pathMap:Record<string,string>}){
+  const T = useTheme();
+  const [cz, setCz] = useState(1);
+  const hasW = node.weaponsChart && node.weaponsChart.length>0;
+  const hasV = node.vehiclesChart && node.vehiclesChart.length>0;
+  const baseName = pathMap[node.id] || node.label;
+
+  return(
+    <div style={{marginBottom:16,background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:6,padding:16,overflow:"hidden"}}>
+      {/* Card header with zoom controls */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+        <span style={{fontSize:10,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1}}>{baseName}</span>
+        <div style={{display:"flex",alignItems:"center",gap:4}}>
+          <button onClick={()=>setCz(z=>Math.max(0.4,+(z-0.1).toFixed(1)))} style={{background:"none",border:`1px solid ${T.border}`,color:T.textMuted,cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:11}}>−</button>
+          <span style={{fontSize:10,color:T.textMuted,fontFamily:"monospace",width:34,textAlign:"center"}}>{Math.round(cz*100)}%</span>
+          <button onClick={()=>setCz(z=>Math.min(2,+(z+0.1).toFixed(1)))} style={{background:"none",border:`1px solid ${T.border}`,color:T.textMuted,cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:11}}>+</button>
+          <button onClick={()=>setCz(1)} style={{background:"none",border:`1px solid ${T.border}`,color:T.textMuted,cursor:"pointer",borderRadius:3,padding:"1px 5px",fontSize:9,marginLeft:2}}>↺</button>
+        </div>
+      </div>
+      <div style={{transform:`scale(${cz})`,transformOrigin:"top left",display:"inline-block",minWidth:"100%"}}>
+        {hasW&&(
+          <div style={{marginBottom: hasV ? 20 : 0}}>
+            <div style={{fontSize:9,fontWeight:700,color:T.textMuted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+              {node.weaponsChartFor ? `${baseName} / ${node.weaponsChartFor}` : baseName} — Weapons
+            </div>
+            <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
+              <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Equipment</th>{(node.weaponsCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
+              <tbody>{(node.weaponsChart||[]).map((row,i)=>(
+                <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
+                  <td style={{...TD,textAlign:"left" as const,fontWeight:600}}>{row.name}</td>
+                  {(node.weaponsCols||[]).map(c=><td key={c.id} style={TD}>{row[c.id]??"—"}</td>)}
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+        {hasV&&(
+          <div>
+            <div style={{fontSize:9,fontWeight:700,color:T.textMuted,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+              {node.vehiclesChartFor ? `${baseName} / ${node.vehiclesChartFor}` : baseName} — Vehicles
+            </div>
+            <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
+              <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Vehicle</th>{(node.vehiclesCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
+              <tbody>{(node.vehiclesChart||[]).map((row,i)=>(
+                <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
+                  <td style={{...TD,textAlign:"left" as const,fontWeight:600}}>{row.name}</td>
+                  {(node.vehiclesCols||[]).map(c=><td key={c.id} style={TD}>{row[c.id]??"—"}</td>)}
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function OrbatCanvas({roots,onEdit,onAdd,onDel,onDup,onToggle,ro}:{
   roots:OrbatNode[];onEdit:(n:OrbatNode)=>void;onAdd:(id:string)=>void;
   onDel:(id:string)=>void;onDup:(n:OrbatNode)=>void;onToggle:(id:string)=>void;ro:boolean;
@@ -849,44 +930,15 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
                 onDel={id=>setNodes(p=>del(p,id))} onDup={n=>setNodes(p=>[...p,dc(n)])}
                 onToggle={id=>setNodes(p=>upd(p,id,{collapsed:!find(p,id)?.collapsed}))}
                 ro={readOnly}/>
-            {/* Charts */}
-            {allNodes.some(n=>n.weaponsChart&&n.weaponsChart.length>0)&&(
-              <div style={{marginTop:24,background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:6,padding:16}}>
-                {allNodes.filter(n=>n.weaponsChart&&n.weaponsChart.length>0).map(n=>(
-                  <div key={n.id} style={{marginBottom:16}}>
-                    <div style={{fontSize:10,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{n.weaponsChartFor ? `${pathMap[n.id] || n.label} / ${n.weaponsChartFor}` : (pathMap[n.id] || n.label)} — Weapons</div>
-                    <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
-                      <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Equipment</th>{(n.weaponsCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
-                      <tbody>{(n.weaponsChart||[]).map((row,i)=>(
-                        <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
-                          <td style={{...TD,textAlign:"left" as const,fontWeight:600}}>{row.name}</td>
-                          {(n.weaponsCols||[]).map(c=><td key={c.id} style={TD}>{row[c.id]??"—"}</td>)}
-                        </tr>
-                      ))}</tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
-            )}
-            {allNodes.some(n=>n.vehiclesChart&&n.vehiclesChart.length>0)&&(
-              <div style={{marginTop:16,background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:6,padding:16}}>
-                {allNodes.filter(n=>n.vehiclesChart&&n.vehiclesChart.length>0).map(n=>(
-                  <div key={n.id} style={{marginBottom:16}}>
-                    <div style={{fontSize:10,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{n.vehiclesChartFor ? `${pathMap[n.id] || n.label} / ${n.vehiclesChartFor}` : (pathMap[n.id] || n.label)} — Vehicles</div>
-                    <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
-                      <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Vehicle</th>{(n.vehiclesCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
-                      <tbody>{(n.vehiclesChart||[]).map((row,i)=>(
-                        <tr key={i} style={{background:i%2===0?"rgba(255,255,255,0.02)":undefined}}>
-                          <td style={{...TD,textAlign:"left" as const,fontWeight:600}}>{row.name}</td>
-                          {(n.vehiclesCols||[]).map(c=><td key={c.id} style={TD}>{row[c.id]??"—"}</td>)}
-                        </tr>
-                      ))}</tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
-            )}
             </div>{/* end scaled */}
+            {/* Charts — each with independent zoom */}
+            {allNodes.some(n=>(n.weaponsChart&&n.weaponsChart.length>0)||(n.vehiclesChart&&n.vehiclesChart.length>0))&&(
+              <div style={{marginTop:16}}>
+                {allNodes.filter(n=>(n.weaponsChart&&n.weaponsChart.length>0)||(n.vehiclesChart&&n.vehiclesChart.length>0)).map(n=>(
+                  <CanvasChartCard key={n.id} node={n} pathMap={pathMap}/>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
