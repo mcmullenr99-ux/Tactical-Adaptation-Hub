@@ -418,8 +418,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
   const [preview,        setPreview]        = useState<PlanElement | null>(null);
 
   // Drawing refs
-  const isPanning  = useRef(false);
-  const panAnchor  = useRef<{ ox:number; oy:number; mx:number; my:number } | null>(null);
+  // Note: pan is handled by the iframe beneath — no pan state needed here
   const isDrawing  = useRef(false);
   const drawPath   = useRef<Pt[]>([]);
   const drawStart  = useRef<Pt | null>(null);
@@ -576,6 +575,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
   // ── Pointer events ───────────────────────────────────────────────────────────
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
+    if (tool === "pan") return;  // pan handled by iframe
     const cp = getEvtPt(e);
 
     if (tool === "select") {
@@ -611,6 +611,9 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
   }, [tool, getEvtPt, hitTest, rulerStart, pendingSym]);
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
+    // Bail if tool is pan (canvas is pointer-events:none anyway, but belt+braces)
+    if (tool === "pan") return;
+
     if (tool === "select" && dragId.current && dragPrev.current) {
       const cp = getEvtPt(e);
       const dx = cp.x - dragPrev.current.x;
@@ -1048,7 +1051,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
-          onMouseLeave={()=>{ dragId.current=null; isPanning.current=false; panAnchor.current=null; }}
+          onMouseLeave={()=>{ dragId.current=null; dragPrev.current=null; }}
         />
 
         {/* Tool mode indicator */}
