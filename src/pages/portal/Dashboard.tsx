@@ -3,7 +3,7 @@ import { PortalLayout } from "@/components/layout/PortalLayout";
 import { useAuth } from "@/components/auth/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Mail, Clock, ShieldCheck, PenTool, CalendarDays, User, ChevronRight, MailWarning, RefreshCw,
+  Mail, Clock, ShieldCheck, PenTool, CalendarDays, User, Users, ChevronRight, MailWarning, RefreshCw,
   Megaphone, Star, Activity, AlertTriangle, CheckCircle2, CreditCard
 } from "lucide-react";
 import { Link } from "wouter";
