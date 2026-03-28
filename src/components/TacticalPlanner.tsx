@@ -62,7 +62,7 @@ const GAME_MAPS: GameMap[] = [
   // ── Arma 3 Vanilla ──────────────────────────────────────────────────────────
   { id:"a3_altis",
     game:"Arma 3 — Vanilla",  name:"Altis",
-    mapImageUrl:"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/107410/header.jpg",
+    mapImageUrl:null,
     fallbackColor:"#2d3a2e", previewColor:"#4a7c59",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/altis/150",
@@ -70,7 +70,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_stratis",
     game:"Arma 3 — Vanilla",  name:"Stratis",
-    mapImageUrl:"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/107410/header.jpg",
+    mapImageUrl:null,
     fallbackColor:"#2d3a2e", previewColor:"#5a8c6a",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/stratis/150",
@@ -78,7 +78,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_malden",
     game:"Arma 3 — Vanilla",  name:"Malden",
-    mapImageUrl:"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/107410/header.jpg",
+    mapImageUrl:null,
     fallbackColor:"#2d3a2e", previewColor:"#6a9c7a",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/malden/150",
@@ -86,7 +86,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_tanoa",
     game:"Arma 3 — Vanilla",  name:"Tanoa",
-    mapImageUrl:"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/395180/header.jpg",
+    mapImageUrl:null,
     fallbackColor:"#1a3a2a", previewColor:"#3a7a5a",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/tanoa/150",
@@ -95,7 +95,7 @@ const GAME_MAPS: GameMap[] = [
   // ── Arma 3 Modded ───────────────────────────────────────────────────────────
   { id:"a3_chernarus",
     game:"Arma 3 — Modded",  name:"Chernarus (Summer)",
-    mapImageUrl:"https://images.steamusercontent.com/ugc/767236446983929084/E6866F24F7AD0E4175AE1488649161A0934D41E9/",
+    mapImageUrl:null,
     fallbackColor:"#263326", previewColor:"#4a7a55",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/chernarus/150",
@@ -103,7 +103,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_takistan",
     game:"Arma 3 — Modded",  name:"Takistan",
-    mapImageUrl:"https://images.steamusercontent.com/ugc/767236446983929084/E6866F24F7AD0E4175AE1488649161A0934D41E9/",
+    mapImageUrl:null,
     fallbackColor:"#3a3020", previewColor:"#7a7040",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/takistan/150",
@@ -111,7 +111,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_lingor",
     game:"Arma 3 — Modded",  name:"Lingor",
-    mapImageUrl:"https://images.steamusercontent.com/ugc/940586221759769492/16D8874368204643C0C14A04DA1C83B0E517AFEA/",
+    mapImageUrl:null,
     fallbackColor:"#1a3020", previewColor:"#3a6a40",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/lingor/150",
@@ -119,7 +119,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_fallujah",
     game:"Arma 3 — Modded",  name:"Fallujah",
-    mapImageUrl:"https://images.steamusercontent.com/ugc/2457352616133322205/0777B867CC1E0D4BC268E2E8AF50994036895581/",
+    mapImageUrl:null,
     fallbackColor:"#3a2a10", previewColor:"#8a7040",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/fallujah/150",
@@ -127,7 +127,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_lythium",
     game:"Arma 3 — Modded",  name:"Lythium",
-    mapImageUrl:"https://images.steamusercontent.com/ugc/1714157207248305086/F272CEA6C07D521064C09FBB387067C7C33E9A64/",
+    mapImageUrl:null,
     fallbackColor:"#2a2010", previewColor:"#7a6030",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/lythium/150",
@@ -398,86 +398,95 @@ function drawScaleBar(
   cw: number, ch: number,
   metersPerPixel: number,
 ) {
-  const TARGET_PX = 140;   // target bar width in pixels
-  const barM = niceScaleBarM(metersPerPixel, TARGET_PX);
+  const TARGET_PX = 200;        // wider bar
+  const barM  = niceScaleBarM(metersPerPixel, TARGET_PX);
   const barPx = barM / metersPerPixel;
 
-  const left   = 14;
-  const bottom = ch - 14;
-  const top    = bottom - 18;        // total bar height
-  const mid    = bottom - 9;         // halfway
-  const seg    = barPx / 5;          // 5 alternating segments
+  const left    = 16;
+  const bottom  = ch - 16;
+  const KH      = 14;           // km bar height
+  const MH      = 11;           // metres bar height
+  const GAP     = 3;            // gap between bars
+  const LABEL_H = 16;           // height reserved for top labels
+  const totalH  = LABEL_H + KH + GAP + MH + 14;  // +14 for bottom labels
+
+  const kmTop   = bottom - totalH + LABEL_H;
+  const mTop    = kmTop + KH + GAP;
+  const seg     = barPx / 5;
 
   ctx.save();
 
-  // Background pill
-  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  // Background pill — sized to contain both bars + labels
+  ctx.fillStyle = "rgba(0,0,0,0.70)";
   ctx.beginPath();
-  ctx.roundRect(left - 6, top - 16, barPx + 24, 38, 4);
+  ctx.roundRect(left - 8, bottom - totalH - 4, barPx + 28, totalH + 8, 5);
   ctx.fill();
-
-  // ── Top row: kilometres bar ─────────────────────────────────────────────────
-  ctx.strokeStyle = "#ffffff";
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
   ctx.lineWidth = 0.8;
+  ctx.stroke();
 
-  // Outer border
-  ctx.strokeRect(left, top, barPx, 9);
-
-  // 5 alternating B/W segments
+  // ── Top row: km bar ────────────────────────────────────────────────────────
+  // 5 alternating segments
   for (let i = 0; i < 5; i++) {
-    ctx.fillStyle = i % 2 === 0 ? "#111111" : "#ffffff";
-    ctx.fillRect(left + i * seg, top, seg, 9);
+    ctx.fillStyle = i % 2 === 0 ? "#1a1a1a" : "#ffffff";
+    ctx.fillRect(left + i * seg, kmTop, seg, KH);
   }
-  // Redraw outer border on top of fill
-  ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 0.8;
-  ctx.strokeRect(left, top, barPx, 9);
-  // Segment dividers
+  ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1;
+  ctx.strokeRect(left, kmTop, barPx, KH);
   for (let i = 1; i < 5; i++) {
     ctx.beginPath();
-    ctx.moveTo(left + i * seg, top);
-    ctx.lineTo(left + i * seg, top + 9);
+    ctx.moveTo(left + i * seg, kmTop);
+    ctx.lineTo(left + i * seg, kmTop + KH);
     ctx.stroke();
   }
 
-  // KM label text above bar
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 7px monospace";
-  ctx.textAlign = "left"; ctx.textBaseline = "bottom";
-  ctx.fillText("0", left - 2, top - 1);
-  ctx.textAlign = "center";
-  ctx.fillText(formatDist(barM / 2), left + barPx / 2, top - 1);
-  ctx.textAlign = "right";
-  ctx.fillText(formatDist(barM), left + barPx + 2, top - 1);
+  // Tick marks above km bar
+  ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    ctx.beginPath();
+    ctx.moveTo(left + i * seg, kmTop - 3);
+    ctx.lineTo(left + i * seg, kmTop);
+    ctx.stroke();
+  }
 
-  // ── Bottom row: metres bar ──────────────────────────────────────────────────
-  const mBarM  = barM / 2;           // show half the km bar in metres below
+  // KM labels above bar
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 11px monospace";
+  ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+  ctx.fillText("0", left, kmTop - 4);
+  ctx.textAlign = "center";
+  ctx.fillText(formatDist(barM / 2), left + barPx / 2, kmTop - 4);
+  ctx.textAlign = "right";
+  ctx.fillText(formatDist(barM), left + barPx, kmTop - 4);
+
+  // ── Bottom row: metres bar (half the km bar width) ─────────────────────────
+  const mBarM  = barM / 2;
   const mBarPx = mBarM / metersPerPixel;
   const mSeg   = mBarPx / 4;
 
-  ctx.strokeRect(left, mid, mBarPx, 7);
   for (let i = 0; i < 4; i++) {
-    ctx.fillStyle = i % 2 === 0 ? "#ffffff" : "#111111";
-    ctx.fillRect(left + i * mSeg, mid, mSeg, 7);
+    ctx.fillStyle = i % 2 === 0 ? "#ffffff" : "#1a1a1a";
+    ctx.fillRect(left + i * mSeg, mTop, mSeg, MH);
   }
-  ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 0.8;
-  ctx.strokeRect(left, mid, mBarPx, 7);
+  ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1;
+  ctx.strokeRect(left, mTop, mBarPx, MH);
   for (let i = 1; i < 4; i++) {
     ctx.beginPath();
-    ctx.moveTo(left + i * mSeg, mid);
-    ctx.lineTo(left + i * mSeg, mid + 7);
+    ctx.moveTo(left + i * mSeg, mTop);
+    ctx.lineTo(left + i * mSeg, mTop + MH);
     ctx.stroke();
   }
 
-  // Metres label text below bar
-  ctx.fillStyle = "#dddddd";
-  ctx.font = "bold 7px monospace";
+  // Metres labels below bar
+  ctx.fillStyle = "#cccccc";
+  ctx.font = "bold 10px monospace";
   ctx.textAlign = "left"; ctx.textBaseline = "top";
-  ctx.fillText("0", left - 2, mid + 8);
+  ctx.fillText("0", left, mTop + MH + 3);
   ctx.textAlign = "right";
   const mLabel = mBarM >= 1000
-    ? `${(mBarM/1000).toFixed(1)} km`
+    ? `${(mBarM / 1000).toFixed(2)} km`
     : `${Math.round(mBarM)} m`;
-  ctx.fillText(mLabel, left + mBarPx + 2, mid + 8);
+  ctx.fillText(mLabel, left + mBarPx, mTop + MH + 3);
 
   ctx.restore();
 }
@@ -539,9 +548,8 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
     gameMap.realSizeM / (canvasSize.w * zoom),
   [gameMap.realSizeM, canvasSize.w, zoom]);
 
-  // Canvas captures events for all tools except pan (which moves the background image)
+  // canvasCapture kept for iframe custom map passthrough
   const canvasCapture = tool !== "pan";
-  const canvasPointerEvents = canvasCapture ? "auto" : "none";
 
   // Canvas sizing
   useEffect(() => {
@@ -691,7 +699,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
   // ── Coordinate helper ─────────────────────────────────────────────────────────
 
   const getEvtPt = useCallback((e: React.MouseEvent): Pt => {
-    const r = canvasRef.current!.getBoundingClientRect();
+    const r = containerRef.current!.getBoundingClientRect();
     const scaleX = canvasSize.w / r.width;
     const scaleY = canvasSize.h / r.height;
     return { x: (e.clientX - r.left) * scaleX, y: (e.clientY - r.top) * scaleY };
@@ -1105,6 +1113,13 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
         ref={containerRef}
         className="flex-1 relative overflow-hidden bg-[#0a0c0e]"
         style={{ cursor: tool === "pan" ? (isPanning ? "grabbing" : "grab") : "crosshair" }}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={()=>{
+          dragId.current=null; dragPrev.current=null;
+          if (isPanning) { setIsPanning(false); panStart.current = null; }
+        }}
       >
 
         {/* LAYER 0: Map background image (panned + zoomed) */}
@@ -1129,21 +1144,16 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
                 }}
               />
             ) : (
-              <>
-                <div className="absolute inset-0" style={{background:`radial-gradient(ellipse at center, ${gameMap.fallbackColor}ee 0%, #0a0c0ecc 100%)`}}/>
-                <div className="flex flex-col items-center gap-3 z-10">
-                  <div className="w-12 h-12 rounded-lg" style={{background:gameMap.previewColor}}/>
-                  <p className="text-white/60 font-display font-bold text-lg uppercase tracking-widest">{gameMap.name}</p>
-                  <p className="text-white/30 text-xs">{gameMap.game} — No preview image</p>
-                  {gameMap.openUrl && (
-                    <a href={gameMap.openUrl} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 bg-primary/20 border border-primary/50 rounded-lg text-primary text-xs font-bold uppercase tracking-wider hover:bg-primary/30 transition-all">
-                      <ExternalLink className="w-3.5 h-3.5"/>
-                      Open {gameMap.name} on {gameMap.attribution}
-                    </a>
-                  )}
-                </div>
-              </>
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `
+                    repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(255,255,255,0.04) 59px, rgba(255,255,255,0.04) 60px),
+                    repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(255,255,255,0.04) 59px, rgba(255,255,255,0.04) 60px),
+                    radial-gradient(ellipse at 30% 40%, ${gameMap.previewColor}99 0%, ${gameMap.fallbackColor}cc 45%, #0a0c0e 100%)
+                  `,
+                }}
+              />
             )}
           </div>
         )}
@@ -1168,15 +1178,8 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
           className="absolute inset-0"
           style={{
             width:"100%", height:"100%",
-            pointerEvents: canvasPointerEvents,
+            pointerEvents: "none",
             background: "transparent",
-          }}
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onMouseLeave={()=>{
-            dragId.current=null; dragPrev.current=null;
-            if (isPanning) setIsPanning(false);
           }}
         />
 
