@@ -2198,11 +2198,10 @@ function EventHubTab({ group, showMsg }: any) {
 
 
 function EventsTab({ group, showMsg }: any) {
-  const [sub, setSub] = useState<"ops" | "aars" | "briefings" | "warnos" | "lace" | "sitrep" | "medevac" | "conduct">("ops");
+  const [sub, setSub] = useState<"ops" | "aars" | "warnos" | "lace" | "sitrep" | "medevac" | "conduct">("ops");
   const SUB_TABS = [
     { id: "ops" as const,       label: "Operations",  icon: Siren },
     { id: "aars" as const,      label: "AARs",        icon: ClipboardList },
-    { id: "briefings" as const, label: "Briefings",   icon: MapPin },
     { id: "warnos" as const,    label: "WARNOs",      icon: AlertTriangle },
     { id: "lace" as const,      label: "LACE",        icon: Radio },
     { id: "sitrep" as const,    label: "SITREPs",     icon: Target },
@@ -2223,7 +2222,6 @@ function EventsTab({ group, showMsg }: any) {
       </div>
       {sub === "ops"       && <OpsTab       group={group} showMsg={showMsg} />}
       {sub === "aars"      && <AARsTab      group={group} showMsg={showMsg} />}
-      {sub === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
       {sub === "warnos"    && <WarnosTab    group={group} showMsg={showMsg} />}
       {sub === "lace"      && <LaceTab         group={group} showMsg={showMsg} />}
       {sub === "sitrep"    && <SitrepTab        group={group} showMsg={showMsg} />}
@@ -2243,7 +2241,7 @@ function OpsTab({ group, showMsg }: any) {
   const [expandedOp, setExpandedOp] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [linkTarget, setLinkTarget] = useState<{ opId: string; type: "aar" | "briefing" } | null>(null);
+  const [linkTarget, setLinkTarget] = useState<{ opId: string; type: "aar" } | null>(null);
   const emptyForm = { name: "", description: "", game: "", event_type: "Op" as const, scheduled_at: "", end_date: "", status: "Planned" as const };
   const [form, setForm] = useState<any>(emptyForm);
   const [editOpId, setEditOpId] = useState<string | null>(null);
@@ -2304,7 +2302,7 @@ function OpsTab({ group, showMsg }: any) {
     } catch (e: any) { showMsg(e.message, "error"); }
   };
 
-  const unlinkDoc = async (docId: string, type: "aar" | "briefing") => {
+  const unlinkDoc = async (docId: string, type: "aar") => {
     try {
       if (type === "aar") await apiFetch("/milsimAars?path=link-op", { method: "POST", body: JSON.stringify({ aar_id: docId, op_id: null }) });
       else await apiFetch("/milsimBriefings?path=link-op", { method: "POST", body: JSON.stringify({ briefing_id: docId, op_id: null }) });
@@ -2334,12 +2332,12 @@ function OpsTab({ group, showMsg }: any) {
       {linkTarget && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md space-y-4">
-            <h3 className="font-display font-bold text-sm uppercase tracking-widest">Attach {linkTarget.type === "aar" ? "AAR" : "Briefing"}</h3>
+            <h3 className="font-display font-bold text-sm uppercase tracking-widest">Attach AAR</h3>
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {(linkTarget.type === "aar" ? unlinkedAars : unlinkedBriefings).length === 0 ? (
-                <p className="text-xs text-muted-foreground font-sans">No unlinked {linkTarget.type === "aar" ? "AARs" : "briefings"} available.</p>
+              {unlinkedAars.length === 0 ? (
+                <p className="text-xs text-muted-foreground font-sans">No unlinked AARs available.</p>
               ) : (
-                (linkTarget.type === "aar" ? unlinkedAars : unlinkedBriefings).map((doc: any) => (
+                unlinkedAars.map((doc: any) => (
                   <button key={doc.id} onClick={() => linkDoc(doc.id)} className="w-full text-left px-4 py-3 border border-border rounded-lg hover:bg-secondary/40 transition-colors">
                     <p className="font-display font-bold text-sm">{doc.title ?? doc.op_name}</p>
                     <p className="text-xs text-muted-foreground font-sans mt-0.5">{doc.author_username ?? doc.created_by ?? ""}</p>
@@ -2355,7 +2353,7 @@ function OpsTab({ group, showMsg }: any) {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="font-display font-bold text-lg uppercase tracking-widest">Live Ops</h2>
-          <p className="text-xs text-muted-foreground font-sans mt-0.5">Plan, run, and debrief operations. Attach briefings pre-op and AARs post-op.</p>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Plan, run, and debrief operations. Issue WARNOs pre-op and attach AARs post-op.</p>
         </div>
         <button onClick={() => { setShowCreateForm(v => !v); setEditOpId(null); setForm(emptyForm); }}
           className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
@@ -2388,7 +2386,6 @@ function OpsTab({ group, showMsg }: any) {
         <div className="space-y-3">
           {[...ops].sort((a,b) => new Date(b.scheduled_at ?? b.created_date).getTime() - new Date(a.scheduled_at ?? a.created_date).getTime()).map((op: any) => {
             const linkedAars = opAars(op.id);
-            const linkedBriefs = opBriefings(op.id);
             const isExpanded = expandedOp === op.id;
             const isActive = op.status === "Active";
             return (
@@ -2402,7 +2399,6 @@ function OpsTab({ group, showMsg }: any) {
                     {op.game && <span className="text-xs text-muted-foreground font-sans hidden md:block">{op.game}</span>}
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0 text-xs text-muted-foreground font-sans">
-                    {linkedBriefs.length > 0 && <span className="flex items-center gap-1 text-blue-400"><MapPin className="w-3 h-3" />{linkedBriefs.length}</span>}
                     {linkedAars.length > 0 && <span className="flex items-center gap-1 text-green-400"><ClipboardList className="w-3 h-3" />{linkedAars.length}</span>}
                     {op.scheduled_at && <span>{new Date(op.scheduled_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span>}
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -2419,22 +2415,7 @@ function OpsTab({ group, showMsg }: any) {
                         className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 border border-border text-muted-foreground rounded hover:text-primary transition-colors"><Pencil className="w-3 h-3" /> Edit</button>
                       <button onClick={() => deleteOp(op.id)} className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 border border-red-500/30 text-red-400 rounded hover:bg-red-500/10 transition-colors"><Trash2 className="w-3 h-3" /> Delete</button>
                     </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-display font-bold uppercase tracking-widest text-blue-400 flex items-center gap-1.5"><MapPin className="w-3 h-3" /> Briefings</p>
-                        <button onClick={() => setLinkTarget({ opId: op.id, type: "briefing" })} className="flex items-center gap-1 text-[10px] font-display font-bold uppercase text-muted-foreground border border-border rounded px-2 py-0.5 hover:text-primary transition-colors"><Plus className="w-3 h-3" /> Attach</button>
-                      </div>
-                      {linkedBriefs.length === 0 ? <p className="text-xs text-muted-foreground font-sans italic">No briefings attached.</p> : (
-                        <div className="space-y-1.5">
-                          {linkedBriefs.map((b: any) => (
-                            <div key={b.id} className="flex items-center justify-between px-3 py-2 bg-blue-500/5 border border-blue-500/20 rounded">
-                              <div><span className="text-xs font-display font-bold">{b.title}</span><span className={`ml-2 text-[10px] font-display uppercase tracking-wide px-1.5 py-0.5 rounded border ${CL[b.classification] ?? ""}`}>{b.classification ?? "unclassified"}</span></div>
-                              <button onClick={() => unlinkDoc(b.id, "briefing")} className="p-1 text-muted-foreground hover:text-destructive transition-colors"><X className="w-3 h-3" /></button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-xs font-display font-bold uppercase tracking-widest text-green-400 flex items-center gap-1.5"><ClipboardList className="w-3 h-3" /> After Action Reports</p>

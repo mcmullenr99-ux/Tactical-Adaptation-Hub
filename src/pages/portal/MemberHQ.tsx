@@ -35,7 +35,7 @@ const STATUS_OP: Record<string, string> = {
 /* ─── main component ──────────────────────────────────────────────────────── */
 export default function MemberHQ() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<"ops"|"briefings"|"aars"|"peer-review"|"unit-review"|"loa"|"service-file"|"ribbon-bar">("ops");
+  const [tab, setTab] = useState<"ops"|"aars"|"peer-review"|"unit-review"|"loa"|"service-file"|"ribbon-bar">("ops");
   const [upvoteCount, setUpvoteCount] = useState<number>(0);
   const [hasVoted, setHasVoted] = useState<boolean>(false);
   const [upvoting, setUpvoting] = useState(false);
@@ -111,7 +111,6 @@ export default function MemberHQ() {
 
   const TABS = [
     { id: "ops",          label: "Live Ops",      icon: Siren },
-    { id: "briefings",    label: "Briefings",     icon: MapPin },
     { id: "aars",         label: "AARs",          icon: ClipboardList },
     { id: "peer-review",  label: "Peer Review",   icon: Star },
     { id: "unit-review",   label: "Unit Review",   icon: Shield },
@@ -213,7 +212,6 @@ export default function MemberHQ() {
 
       {/* Tab content */}
       {selectedGroup && tab === "ops"          && <MemberOpsTab         group={selectedGroup} showMsg={showMsg} />}
-      {selectedGroup && tab === "briefings"    && <MemberBriefingsTab   group={selectedGroup} showMsg={showMsg} />}
       {selectedGroup && tab === "aars"         && <MemberAARsTab        group={selectedGroup} showMsg={showMsg} rosterEntry={rosterEntry} />}
       {selectedGroup && tab === "peer-review"  && <MemberPeerReviewTab  group={selectedGroup} showMsg={showMsg} user={user} />}
       {selectedGroup && tab === "loa"          && <MemberLOATab         group={selectedGroup} showMsg={showMsg} user={user} rosterEntry={rosterEntry} />}
