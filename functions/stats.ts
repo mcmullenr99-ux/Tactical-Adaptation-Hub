@@ -824,15 +824,26 @@ Deno.serve(async (req) => {
     if (req.method === 'GET' && parts[0] === 'readiness' && parts[1]) {
       const groupId = parts[1];
 
-      const [group, roster, ops, aars, repReviews, trainingDocs, rsvps] = await Promise.all([
+      const [group, roster, ops, aars, repReviews, trainingDocs] = await Promise.all([
         base44.asServiceRole.entities.MilsimGroup.get(groupId),
         base44.asServiceRole.entities.MilsimRoster.filter({ group_id: groupId }),
         base44.asServiceRole.entities.MilsimOp.filter({ group_id: groupId }),
         base44.asServiceRole.entities.MilsimAAR.filter({ group_id: groupId }),
         base44.asServiceRole.entities.OperatorReputation.filter({ group_id: groupId }),
         base44.asServiceRole.entities.TrainingDoc.filter({ group_id: groupId }),
-        base44.asServiceRole.entities.EventRSVP.filter({ }),  // all RSVPs — filter by op id in engine
       ]);
+      // Load RSVPs scoped to this group's op IDs only
+      const opIds = (ops ?? []).map((o: any) => o.id);
+      let rsvps: any[] = [];
+      if (opIds.length > 0) {
+        // Fetch RSVPs for each op in parallel (batch max 20 at a time)
+        const chunks: string[][] = [];
+        for (let i = 0; i < opIds.length; i += 20) chunks.push(opIds.slice(i, i + 20));
+        const results = await Promise.all(chunks.map(chunk =>
+          Promise.all(chunk.map((opId: string) => base44.asServiceRole.entities.EventRSVP.filter({ event_id: opId }).catch(() => [])))
+        ));
+        rsvps = results.flat(2);
+      }
 
       if (!group) return new Response(JSON.stringify({ error: 'Group not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
 
