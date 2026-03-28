@@ -55,108 +55,184 @@ interface GameMap {
   previewColor: string;
   attribution: string;
   openUrl: string;
-  realSizeM: number;   // real-world width of the map in metres (used for scale/ruler)
+  realSizeM: number;   // real-world width in metres
+  gridCellM: number;   // how many real metres each in-game grid square represents
+  aspectRatio?: number; // w/h if non-square (default 1)
 }
 
 const GAME_MAPS: GameMap[] = [
   // ── Arma 3 Vanilla ──────────────────────────────────────────────────────────
-  { id:"a3_altis",
-    game:"Arma 3 — Vanilla",  name:"Altis",
+  // Altis: 30,720m terrain, 1000m grid squares
+  { id:"a3_altis",    game:"Arma 3 — Vanilla", name:"Altis",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/c6c06437c_generated_image.png",
     fallbackColor:"#2d3a2e", previewColor:"#4a7c59",
-    attribution:"PLANOPS Atlas",
-    openUrl:"https://atlas.plan-ops.fr/maps/arma3/altis/150",
-    realSizeM: 30720 },
+    attribution:"BI Official", openUrl:"https://atlas.plan-ops.fr/maps/arma3/altis/150",
+    realSizeM:30720, gridCellM:1000 },
 
-  { id:"a3_stratis",
-    game:"Arma 3 — Vanilla",  name:"Stratis",
+  // Stratis: 8,192m terrain, 1000m grid squares
+  { id:"a3_stratis",  game:"Arma 3 — Vanilla", name:"Stratis",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/ea6747836_generated_image.png",
     fallbackColor:"#2d3a2e", previewColor:"#5a8c6a",
-    attribution:"PLANOPS Atlas",
-    openUrl:"https://atlas.plan-ops.fr/maps/arma3/stratis/150",
-    realSizeM: 8192 },
+    attribution:"BI Official", openUrl:"https://atlas.plan-ops.fr/maps/arma3/stratis/150",
+    realSizeM:8192, gridCellM:1000 },
 
-  { id:"a3_malden",
-    game:"Arma 3 — Vanilla",  name:"Malden",
+  // Malden: 12,800m terrain, 1000m grid squares
+  { id:"a3_malden",   game:"Arma 3 — Vanilla", name:"Malden",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/2cd515d90_generated_image.png",
     fallbackColor:"#2d3a2e", previewColor:"#6a9c7a",
-    attribution:"PLANOPS Atlas",
-    openUrl:"https://atlas.plan-ops.fr/maps/arma3/malden/150",
-    realSizeM: 12800 },
+    attribution:"BI Official", openUrl:"https://atlas.plan-ops.fr/maps/arma3/malden/150",
+    realSizeM:12800, gridCellM:1000 },
 
-  { id:"a3_tanoa",
-    game:"Arma 3 — Vanilla",  name:"Tanoa",
+  // Tanoa: 15,360m terrain, 1000m grid squares
+  { id:"a3_tanoa",    game:"Arma 3 — Vanilla", name:"Tanoa",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/de89f0a9c_generated_image.png",
     fallbackColor:"#1a3a2a", previewColor:"#3a7a5a",
-    attribution:"PLANOPS Atlas",
-    openUrl:"https://atlas.plan-ops.fr/maps/arma3/tanoa/150",
-    realSizeM: 15360 },
+    attribution:"BI Official", openUrl:"https://atlas.plan-ops.fr/maps/arma3/tanoa/150",
+    realSizeM:15360, gridCellM:1000 },
 
   // ── Arma 3 Modded ───────────────────────────────────────────────────────────
-  { id:"a3_chernarus",
-    game:"Arma 3 — Modded",  name:"Chernarus (Summer)",
+  // Chernarus: 15,360m terrain, 1000m grid squares (ArmA 2 / A3 CUP)
+  { id:"a3_chernarus", game:"Arma 3 — Modded", name:"Chernarus (Summer)",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/c0c3edd32_generated_image.png",
     fallbackColor:"#263326", previewColor:"#4a7a55",
-    attribution:"PLANOPS Atlas",
-    openUrl:"https://atlas.plan-ops.fr/maps/arma3/chernarus/150",
-    realSizeM: 15360 },
+    attribution:"BI / CUP", openUrl:"https://atlas.plan-ops.fr/maps/arma3/chernarus/150",
+    realSizeM:15360, gridCellM:1000 },
 
-  { id:"a3_takistan",
-    game:"Arma 3 — Modded",  name:"Takistan",
+  // Takistan: 12,800m terrain, 1000m grid squares
+  { id:"a3_takistan",  game:"Arma 3 — Modded", name:"Takistan",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/eee40b659_generated_image.png",
     fallbackColor:"#3a3020", previewColor:"#7a7040",
-    attribution:"PLANOPS Atlas",
-    openUrl:"https://atlas.plan-ops.fr/maps/arma3/takistan/150",
-    realSizeM: 12800 },
+    attribution:"BI / CUP", openUrl:"https://atlas.plan-ops.fr/maps/arma3/takistan/150",
+    realSizeM:12800, gridCellM:1000 },
 
-  { id:"a3_lingor",
-    game:"Arma 3 — Modded",  name:"Lingor",
+  // Lingor: 10,240m terrain, 1000m grid squares
+  { id:"a3_lingor",    game:"Arma 3 — Modded", name:"Lingor",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/665ed628f_generated_image.png",
     fallbackColor:"#1a3020", previewColor:"#3a6a40",
-    attribution:"PLANOPS Atlas",
-    openUrl:"https://atlas.plan-ops.fr/maps/arma3/lingor/150",
-    realSizeM: 10240 },
+    attribution:"IceBreakr", openUrl:"https://atlas.plan-ops.fr/maps/arma3/lingor/150",
+    realSizeM:10240, gridCellM:1000 },
 
-  { id:"a3_fallujah",
-    game:"Arma 3 — Modded",  name:"Fallujah",
+  // Fallujah (A3): 10,240m terrain, 1000m grid squares
+  { id:"a3_fallujah",  game:"Arma 3 — Modded", name:"Fallujah",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/af03413de_generated_image.png",
     fallbackColor:"#3a2a10", previewColor:"#8a7040",
-    attribution:"PLANOPS Atlas",
-    openUrl:"https://atlas.plan-ops.fr/maps/arma3/fallujah/150",
-    realSizeM: 10240 },
+    attribution:"Team Ahoy", openUrl:"https://atlas.plan-ops.fr/maps/arma3/fallujah/150",
+    realSizeM:10240, gridCellM:1000 },
 
-  { id:"a3_lythium",
-    game:"Arma 3 — Modded",  name:"Lythium",
+  // Lythium: 20,480m terrain, 1000m grid squares
+  { id:"a3_lythium",   game:"Arma 3 — Modded", name:"Lythium",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/e61239f17_generated_image.png",
     fallbackColor:"#2a2010", previewColor:"#7a6030",
-    attribution:"PLANOPS Atlas",
-    openUrl:"https://atlas.plan-ops.fr/maps/arma3/lythium/150",
-    realSizeM: 20480 },
+    attribution:"Jakerod", openUrl:"https://atlas.plan-ops.fr/maps/arma3/lythium/150",
+    realSizeM:20480, gridCellM:1000 },
 
-  // ── Squad ────────────────────────────────────────────────────────────────────
-  { id:"sq_yehorivka",
-    game:"Squad",  name:"Yehorivka",
+  // ── DayZ Official ────────────────────────────────────────────────────────────
+  // Chernarus+: 15,360m terrain (2048 cells × 7.5m), 1000m grid squares
+  { id:"dz_chernarus", game:"DayZ — Official", name:"Chernarus+",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/b0c3b721c_generated_image.png",
+    fallbackColor:"#263326", previewColor:"#4a7a55",
+    attribution:"Bohemia Interactive", openUrl:"https://www.izurvive.com/",
+    realSizeM:15360, gridCellM:1000 },
+
+  // Livonia: 12,800m terrain (confirmed via iZurvive), 1000m grid squares
+  { id:"dz_livonia",   game:"DayZ — Official", name:"Livonia",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/e4965a2d7_generated_image.png",
+    fallbackColor:"#2a3320", previewColor:"#5a7050",
+    attribution:"Bohemia Interactive", openUrl:"https://www.izurvive.com/livonia/",
+    realSizeM:12800, gridCellM:1000 },
+
+  // ── DayZ Community ────────────────────────────────────────────────────────────
+  // Namalsk: 7,680m terrain (ArmA 2 origin: 1024 cells × 7.5m), 1000m grid squares
+  { id:"dz_namalsk",   game:"DayZ — Community", name:"Namalsk",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/3dab9fe42_generated_image.png",
+    fallbackColor:"#1a1f2a", previewColor:"#3a4a6a",
+    attribution:"Sumrak / Bohemia", openUrl:"https://www.izurvive.com/namalsk/",
+    realSizeM:7680, gridCellM:1000 },
+
+  // ── Squad ─────────────────────────────────────────────────────────────────────
+  // Yehorivka: 4,180m playable (wiki confirmed), 300m grid squares
+  { id:"sq_yehorivka", game:"Squad", name:"Yehorivka",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/279e5759b_generated_image.png",
     fallbackColor:"#2a3020", previewColor:"#6a7a3a",
-    attribution:"squadmaps.com",
-    openUrl:"https://squadmaps.com/map?name=Yehorivka&layer=AAS%20v1",
-    realSizeM: 8192 },
+    attribution:"OWI Wiki", openUrl:"https://squadmaps.com/map?name=Yehorivka&layer=AAS%20v1",
+    realSizeM:4180, gridCellM:300 },
 
-  { id:"sq_fallujah",
-    game:"Squad",  name:"Fallujah",
+  // Fallujah (Squad): 4,096m playable, 300m grid squares
+  { id:"sq_fallujah",  game:"Squad", name:"Fallujah",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/af03413de_generated_image.png",
     fallbackColor:"#3a2a10", previewColor:"#8a7040",
-    attribution:"squadmaps.com",
-    openUrl:"https://squadmaps.com/map?name=Fallujah&layer=AAS%20v1",
-    realSizeM: 4096 },
+    attribution:"OWI Wiki", openUrl:"https://squadmaps.com/map?name=Fallujah&layer=AAS%20v1",
+    realSizeM:4096, gridCellM:300 },
+
+  // Al Basrah: 3,200m playable (wiki: 3200×3200m), 200m grid squares
+  { id:"sq_albasrah",  game:"Squad", name:"Al Basrah",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/af03413de_generated_image.png",
+    fallbackColor:"#3a2a10", previewColor:"#8a6030",
+    attribution:"OWI Wiki", openUrl:"https://squadmaps.com/map?name=AlBasrah&layer=AAS%20v1",
+    realSizeM:3200, gridCellM:200 },
+
+  // Sumari Bala: ~1,500m playable (small urban map), 100m grid squares
+  { id:"sq_sumari",    game:"Squad", name:"Sumari Bala",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/0485911ea_generated_image.png",
+    fallbackColor:"#3a2a15", previewColor:"#8a6a35",
+    attribution:"OWI Wiki", openUrl:"https://squadmaps.com/map?name=Sumari&layer=AAS%20v1",
+    realSizeM:1500, gridCellM:100 },
+
+  // Kokan: ~2,000m playable (Afghan mountain village), 200m grid squares
+  { id:"sq_kokan",     game:"Squad", name:"Kokan",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/a8b620acf_generated_image.png",
+    fallbackColor:"#2a2010", previewColor:"#7a6030",
+    attribution:"OWI Wiki", openUrl:"https://squadmaps.com/map?name=Kokan&layer=AAS%20v1",
+    realSizeM:2000, gridCellM:200 },
+
+  // Narva: ~2,700m playable (Estonian city), 200m grid squares
+  { id:"sq_narva",     game:"Squad", name:"Narva",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/b1f6ddf02_generated_image.png",
+    fallbackColor:"#2a2a2a", previewColor:"#5a6070",
+    attribution:"OWI Wiki", openUrl:"https://squadmaps.com/map?name=Narva&layer=AAS%20v1",
+    realSizeM:2700, gridCellM:200 },
+
+  // Gorodok: 4,340m playable (wiki: 4340×4340m), 300m grid squares
+  { id:"sq_gorodok",   game:"Squad", name:"Gorodok",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/c87ed7f69_generated_image.png",
+    fallbackColor:"#1a2218", previewColor:"#3a5030",
+    attribution:"OWI Wiki", openUrl:"https://squadmaps.com/map?name=Gorodok&layer=AAS%20v1",
+    realSizeM:4340, gridCellM:300 },
+
+  // Fool's Road: ~2,000m playable (forested highlands), 200m grid squares
+  { id:"sq_foolsroad", game:"Squad", name:"Fool's Road",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/2be1a9b15_generated_image.png",
+    fallbackColor:"#1a2210", previewColor:"#3a5025",
+    attribution:"OWI Wiki", openUrl:"https://squadmaps.com/map?name=FoolsRoad&layer=AAS%20v1",
+    realSizeM:2000, gridCellM:200 },
+
+  // Mestia: ~3,000m playable (Caucasus mountains), 200m grid squares
+  { id:"sq_mestia",    game:"Squad", name:"Mestia",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/d98f64a60_generated_image.png",
+    fallbackColor:"#1a2020", previewColor:"#3a5555",
+    attribution:"OWI Wiki", openUrl:"https://squadmaps.com/map?name=Mestia&layer=AAS%20v1",
+    realSizeM:3000, gridCellM:200 },
+
+  // Tallil Outskirts: ~4,000m playable (Iraqi desert), 300m grid squares
+  { id:"sq_tallil",    game:"Squad", name:"Tallil Outskirts",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/de6c21ee1_generated_image.png",
+    fallbackColor:"#3a2a10", previewColor:"#8a7040",
+    attribution:"OWI Wiki", openUrl:"https://squadmaps.com/map?name=Tallil&layer=AAS%20v1",
+    realSizeM:4000, gridCellM:300 },
+
+  // Skorpo: ~3,200m playable (Norwegian fjords), 200m grid squares
+  { id:"sq_skorpo",    game:"Squad", name:"Skorpo",
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/790228140_generated_image.png",
+    fallbackColor:"#1a2030", previewColor:"#3a4a6a",
+    attribution:"OWI Wiki", openUrl:"https://squadmaps.com/map?name=Skorpo&layer=AAS%20v1",
+    realSizeM:3200, gridCellM:200 },
 
   // ── Custom ────────────────────────────────────────────────────────────────
-  { id:"custom",
-    game:"Custom",  name:"Custom URL",
+  { id:"custom", game:"Custom", name:"Custom URL",
     mapImageUrl:null,
     fallbackColor:"#1a1a1a", previewColor:"#444",
     attribution:"", openUrl:"",
-    realSizeM: 10000 },
+    realSizeM:10000, gridCellM:1000 },
 ];
 
 // ─── NATO Symbols ──────────────────────────────────────────────────────────────
@@ -363,9 +439,19 @@ function drawFullCompass(
 }
 
 // ─── Grid overlay ──────────────────────────────────────────────────────────────
+// step = pixels per in-game grid cell, derived from realSizeM / gridCellM * pixelsPerMetre
 
-function drawGrid(ctx: CanvasRenderingContext2D, cw: number, ch: number) {
-  const step = 60;
+function drawGrid(
+  ctx: CanvasRenderingContext2D,
+  cw: number, ch: number,
+  realSizeM: number,
+  gridCellM: number,
+  zoom: number,
+) {
+  // pixels per grid cell at current zoom
+  const pxPerMetre = (cw / realSizeM) * zoom;
+  const step = Math.max(8, gridCellM * pxPerMetre);
+
   ctx.save();
   ctx.strokeStyle = "rgba(255,255,255,0.28)";
   ctx.lineWidth = 0.7;
@@ -376,17 +462,22 @@ function drawGrid(ctx: CanvasRenderingContext2D, cw: number, ch: number) {
   for (let y = 0; y < ch; y += step) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cw, y); ctx.stroke();
   }
-  ctx.fillStyle = "rgba(255,255,255,0.70)";
-  ctx.font = "bold 9px monospace";
-  ctx.textAlign = "left"; ctx.textBaseline = "top";
-  let ci = 0;
-  for (let x = 0; x < cw; x += step) {
-    let ri = 0;
-    for (let y = 0; y < ch; y += step) {
-      ctx.fillText(String.fromCharCode(65 + (ci % 26)) + String(ri).padStart(2,"0"), x+2, y+2);
-      ri++;
+
+  // Grid labels — only draw if step is large enough to be readable
+  if (step >= 30) {
+    ctx.fillStyle = "rgba(255,255,255,0.70)";
+    ctx.font = "bold 9px monospace";
+    ctx.textAlign = "left"; ctx.textBaseline = "top";
+    let ci = 0;
+    for (let x = 0; x < cw; x += step) {
+      let ri = 0;
+      for (let y = 0; y < ch; y += step) {
+        // Format: A00, A01 ... Z99 style grid refs
+        ctx.fillText(String.fromCharCode(65 + (ci % 26)) + String(ri).padStart(2,"0"), x+2, y+2);
+        ri++;
+      }
+      ci++;
     }
-    ci++;
   }
   ctx.restore();
 }
@@ -537,6 +628,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
   const [linkedOpId,     setLinkedOpId]     = useState<string | null>(null);
   const [cmdNote,        setCmdNote]        = useState("");
   const [showNotes,      setShowNotes]      = useState(false);
+  const [showScaleHelper,setShowScaleHelper]= useState(false);
   const [preview,        setPreview]        = useState<PlanElement | null>(null);
 
   const isDrawing  = useRef(false);
@@ -599,7 +691,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
     canvas.width = w; canvas.height = h;
     ctx.clearRect(0, 0, w, h);
 
-    if (showGrid) drawGrid(ctx, w, h);
+    if (showGrid) drawGrid(ctx, w, h, gameMap.realSizeM, gameMap.gridCellM, zoom);
 
     const allEls = preview ? [...elements, preview] : elements;
 
@@ -687,7 +779,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
     }
     if (showScaleBar) drawScaleBar(ctx, w, h, metersPerPixel);
 
-  }, [elements, preview, showGrid, showCompass, showScaleBar, canvasSize, selectedId, mapRotation, metersPerPixel, tool, rulerStart, compassPos]);
+  }, [elements, preview, showGrid, showCompass, showScaleBar, canvasSize, selectedId, mapRotation, metersPerPixel, tool, rulerStart, compassPos, gameMap, zoom]);
 
   // ── Hit test ─────────────────────────────────────────────────────────────────
 
@@ -883,20 +975,25 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
     if (t === "draw") {
       drawPath.current.push(cp);
       setPreview({ id:"__preview__", type:"draw", points:[...drawPath.current], color:c, lw:w, dashed:d });
-    } else if (t === "line") {
-      setPreview({ id:"__preview__", type:"line", points:[drawStart.current!, cp], color:c, lw:w, dashed:d });
-    } else if (t === "arrow") {
-      setPreview({ id:"__preview__", type:"arrow", points:[drawStart.current!, cp], color:c, lw:w, dashed:d });
-    } else if (t === "rect") {
-      const s = drawStart.current!;
-      setPreview({ id:"__preview__", type:"rect",
-        x:Math.min(s.x,cp.x), y:Math.min(s.y,cp.y),
-        w:Math.abs(cp.x-s.x), h:Math.abs(cp.y-s.y),
-        color:c, lw:w, dashed:d });
-    } else if (t === "circle") {
-      setPreview({ id:"__preview__", type:"circle",
-        x:drawStart.current!.x, y:drawStart.current!.y,
-        r:dist(drawStart.current!, cp), color:c, lw:w, dashed:d });
+    } else if ((t === "line" || t === "arrow") && drawStart.current) {
+      setPreview({ id:"__preview__", type:t, points:[drawStart.current, cp], color:c, lw:w, dashed:d });
+    } else if (t === "rect" && drawStart.current) {
+      const s = drawStart.current;
+      const rw = Math.abs(cp.x - s.x);
+      const rh = Math.abs(cp.y - s.y);
+      if (rw > 1 && rh > 1) {
+        setPreview({ id:"__preview__", type:"rect",
+          x:Math.min(s.x,cp.x), y:Math.min(s.y,cp.y),
+          w:rw, h:rh,
+          color:c, lw:w, dashed:d });
+      }
+    } else if (t === "circle" && drawStart.current) {
+      const cr = dist(drawStart.current, cp);
+      if (cr > 1) {
+        setPreview({ id:"__preview__", type:"circle",
+          x:drawStart.current.x, y:drawStart.current.y,
+          r:cr, color:c, lw:w, dashed:d });
+      }
     }
   }, [getEvtPt]);   // fully stable — all state read from refs
 
@@ -920,17 +1017,27 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
     } else if (t === "line" && drawStart.current) {
       setElements(p => [...p, { id:uid(), type:"line", points:[drawStart.current!, cp], color:c, lw:w, dashed:d }]);
     } else if (t === "arrow" && drawStart.current) {
-      setElements(p => [...p, { id:uid(), type:"arrow", points:[drawStart.current!, cp], color:c, lw:w, dashed:d }]);
+      const pts = [drawStart.current, cp] as [Pt, Pt];
+      if (dist(pts[0], pts[1]) > 2) {
+        setElements(p => [...p, { id:uid(), type:"arrow", points:pts, color:c, lw:w, dashed:d }]);
+      }
     } else if (t === "rect" && drawStart.current) {
       const s = drawStart.current;
-      setElements(p => [...p, { id:uid(), type:"rect",
-        x:Math.min(s.x,cp.x), y:Math.min(s.y,cp.y),
-        w:Math.abs(cp.x-s.x), h:Math.abs(cp.y-s.y),
-        color:c, lw:w, dashed:d }]);
+      const rw = Math.abs(cp.x - s.x);
+      const rh = Math.abs(cp.y - s.y);
+      if (rw > 2 && rh > 2) {
+        setElements(p => [...p, { id:uid(), type:"rect",
+          x:Math.min(s.x,cp.x), y:Math.min(s.y,cp.y),
+          w:rw, h:rh,
+          color:c, lw:w, dashed:d }]);
+      }
     } else if (t === "circle" && drawStart.current) {
-      setElements(p => [...p, { id:uid(), type:"circle",
-        x:drawStart.current!.x, y:drawStart.current!.y,
-        r:dist(drawStart.current!, cp), color:c, lw:w, dashed:d }]);
+      const cr = dist(drawStart.current, cp);
+      if (cr > 2) {
+        setElements(p => [...p, { id:uid(), type:"circle",
+          x:drawStart.current!.x, y:drawStart.current!.y,
+          r:cr, color:c, lw:w, dashed:d }]);
+      }
     }
     drawPath.current = []; drawStart.current = null;
   }, [getEvtPt]);   // reads all from refs — stable
@@ -1155,6 +1262,10 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
           <MessageSquare className="w-3.5 h-3.5"/>
           <span className="hidden xl:inline">Notes</span>
         </button>
+        <button onClick={()=>setShowScaleHelper(p=>!p)} className={btnCls(showScaleHelper)} title="Scale Helper">
+          <Map className="w-3.5 h-3.5"/>
+          <span className="hidden xl:inline">Scale</span>
+        </button>
 
         {selectedId && (
           <button onClick={()=>{setElements(p=>p.filter(e=>e.id!==selectedId));setSelectedId(null);}} className={btnCls(false,true)}>
@@ -1201,6 +1312,44 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
         </div>
       )}
 
+      {/* ── Scale Helper Panel ─────────────────────────────────────────────── */}
+      {showScaleHelper && (
+        <div className="border-b border-border bg-card/50 px-4 py-3">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">Map Scale Reference</p>
+              <p className="text-xs text-muted-foreground">Current map: <span className="text-foreground font-bold">{gameMap.name}</span></p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div className="bg-background border border-border rounded-lg p-2.5">
+                <p className="text-[9px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Terrain Size</p>
+                <p className="text-primary font-mono font-bold">{(gameMap.realSizeM / 1000).toFixed(1)} km</p>
+                <p className="text-muted-foreground text-[9px]">{gameMap.realSizeM.toLocaleString()} m × {gameMap.realSizeM.toLocaleString()} m</p>
+              </div>
+              <div className="bg-background border border-border rounded-lg p-2.5">
+                <p className="text-[9px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Grid Cell Size</p>
+                <p className="text-primary font-mono font-bold">{gameMap.gridCellM} m</p>
+                <p className="text-muted-foreground text-[9px]">per grid square</p>
+              </div>
+              <div className="bg-background border border-border rounded-lg p-2.5">
+                <p className="text-[9px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Grid Count</p>
+                <p className="text-primary font-mono font-bold">{Math.floor(gameMap.realSizeM / gameMap.gridCellM)} × {Math.floor(gameMap.realSizeM / gameMap.gridCellM)}</p>
+                <p className="text-muted-foreground text-[9px]">squares across</p>
+              </div>
+              <div className="bg-background border border-border rounded-lg p-2.5">
+                <p className="text-[9px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-0.5">Scale (at 1x zoom)</p>
+                <p className="text-primary font-mono font-bold">{metersPerPixel.toFixed(1)} m/px</p>
+                <p className="text-muted-foreground text-[9px]">metres per pixel</p>
+              </div>
+            </div>
+            <div className="text-[9px] text-muted-foreground leading-relaxed max-w-xs">
+              <p className="font-bold text-foreground/60 mb-0.5">Grid squares on this map</p>
+              <p>Each square = <span className="text-yellow-400 font-bold">{gameMap.gridCellM}m</span>. Use the ruler tool to measure distances — it reads in real-world metres/km based on this map's terrain dimensions. Zoom in to increase ruler precision.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Map + canvas stack ───────────────────────────────────────────────── */}
       <div
         ref={containerRef}
@@ -1229,7 +1378,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
                 alt={gameMap.name}
                 draggable={false}
                 style={{
-                  transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
+                  transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom}) rotate(${mapRotation}rad)`,
                   transformOrigin: "center center",
                   width: "100%",
                   height: "100%",
