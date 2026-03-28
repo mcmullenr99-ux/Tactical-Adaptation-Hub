@@ -832,12 +832,11 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
           </div>
         ):(
           <div>
-            <div style={{transform:`scale(${zoom})`,transformOrigin:"top left",display:"inline-block"}}>
+            <div style={{transform:`scale(${zoom})`,transformOrigin:"top left",display:"inline-block",minWidth:"100%"}}>
               <OrbatCanvas roots={nodes} onEdit={setEditing} onAdd={addChild}
                 onDel={id=>setNodes(p=>del(p,id))} onDup={n=>setNodes(p=>[...p,dc(n)])}
                 onToggle={id=>setNodes(p=>upd(p,id,{collapsed:!find(p,id)?.collapsed}))}
                 ro={readOnly}/>
-            </div>
             {/* Charts */}
             {allNodes.some(n=>n.weaponsChart&&n.weaponsChart.length>0)&&(
               <div style={{marginTop:24,background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:6,padding:16}}>
@@ -875,6 +874,7 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
                 ))}
               </div>
             )}
+            </div>{/* end scaled */}
           </div>
         )}
       </div>
