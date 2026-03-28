@@ -36,6 +36,7 @@ import {
   GraduationCap,
   Link2,
   Loader2,
+  Map,
   MapPin,
   Medal, Search,
   Megaphone,
@@ -72,6 +73,7 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
+import TacticalPlanner from "@/components/TacticalPlanner";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthContext";
 
@@ -1099,7 +1101,7 @@ function AwardImage({ path, fallbackIcon: FIcon }: { path: string | null | undef
 
 // ─── Customisation Tab (Awards + Qualifications + ORBAT) ─────────────────────
 function CustomisationTab({ group, showMsg }: any) {
-  const [sub, setSub] = useState<"awards" | "quals" | "orbat">("awards");
+  const [sub, setSub] = useState<"awards" | "quals" | "orbat" | "tacplanner">("awards");
   const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -1116,6 +1118,7 @@ function CustomisationTab({ group, showMsg }: any) {
     { id: "awards" as const, label: "Awards",         icon: Medal },
     { id: "quals"  as const, label: "Qualifications", icon: GraduationCap },
     { id: "orbat"  as const, label: "ORBAT Builder",  icon: GitBranch },
+    { id: "tacplanner" as const, label: "Battle Planner",  icon: Map },
   ];
   return (
     <div className="space-y-4">
@@ -1134,6 +1137,11 @@ function CustomisationTab({ group, showMsg }: any) {
       {sub === "quals"  && <QualsTab  group={group} showMsg={showMsg} />}
       {sub === "orbat"  && (
         <OrbatProGate group={group} orbatJson={orbatJson} setOrbatJson={setOrbatJson} saveOrbat={saveOrbat} saving={saving} />
+      )}
+      {sub === "tacplanner" && (
+        <div style={{ height: "calc(100vh - 280px)", minHeight: 600 }}>
+          <TacticalPlanner group={group} showMsg={showMsg} />
+        </div>
       )}
     </div>
   );
