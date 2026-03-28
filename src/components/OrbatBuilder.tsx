@@ -792,12 +792,24 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
   function dc(n:OrbatNode):OrbatNode{return{...n,id:generateId(),label:n.label+" (copy)",children:n.children.map(dc)};}
   function flat(t:OrbatNode[]):OrbatNode[]{return t.flatMap(n=>[n,...flat(n.children)]);}
 
+  // Build a map of nodeId -> full ancestor path string e.g. "A Company / 1 Platoon"
+  function buildPathMap(nodes:OrbatNode[], parent:string=""):Record<string,string>{
+    let map:Record<string,string>={};
+    for(const n of nodes){
+      const path = parent ? `${parent} / ${n.label}` : n.label;
+      map[n.id]=path;
+      Object.assign(map, buildPathMap(n.children, path));
+    }
+    return map;
+  }
+
   const addChild=(pid:string)=>{const c=defaultNode({echelon:"section"});setNodes(p=>addC(p,pid,c));setEditing(c);};
   const addRoot=()=>{const n=defaultNode({echelon:"company"});setNodes(p=>[...p,n]);setEditing(n);};
   const saveEdit=(u:OrbatNode)=>{setNodes(p=>JSON.stringify(p).includes(`"id":"${u.id}"`)?rep(p,u.id,u):[...p,u]);};
   const doExport=()=>{const b=new Blob([JSON.stringify(nodes,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="orbat.json";a.click();};
 
   const allNodes=flat(nodes);
+  const pathMap=buildPathMap(nodes);
 
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:6,overflow:"hidden",fontFamily:"Arial,sans-serif"}}>
@@ -842,7 +854,7 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
               <div style={{marginTop:24,background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:6,padding:16}}>
                 {allNodes.filter(n=>n.weaponsChart&&n.weaponsChart.length>0).map(n=>(
                   <div key={n.id} style={{marginBottom:16}}>
-                    <div style={{fontSize:10,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{n.weaponsChartFor ? n.weaponsChartFor : n.label} — Weapons</div>
+                    <div style={{fontSize:10,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{n.weaponsChartFor ? `${pathMap[n.id] || n.label} / ${n.weaponsChartFor}` : (pathMap[n.id] || n.label)} — Weapons</div>
                     <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
                       <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Equipment</th>{(n.weaponsCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
                       <tbody>{(n.weaponsChart||[]).map((row,i)=>(
@@ -860,7 +872,7 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
               <div style={{marginTop:16,background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:6,padding:16}}>
                 {allNodes.filter(n=>n.vehiclesChart&&n.vehiclesChart.length>0).map(n=>(
                   <div key={n.id} style={{marginBottom:16}}>
-                    <div style={{fontSize:10,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{n.vehiclesChartFor ? n.vehiclesChartFor : n.label} — Vehicles</div>
+                    <div style={{fontSize:10,fontWeight:700,color:T.text,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{n.vehiclesChartFor ? `${pathMap[n.id] || n.label} / ${n.vehiclesChartFor}` : (pathMap[n.id] || n.label)} — Vehicles</div>
                     <table style={{borderCollapse:"collapse",fontSize:10,color:T.text}}>
                       <thead><tr><th style={{...TH,textAlign:"left" as const,minWidth:140}}>Vehicle</th>{(n.vehiclesCols||[]).map(c=><th key={c.id} style={{...TH,minWidth:60}}>{c.label}</th>)}</tr></thead>
                       <tbody>{(n.vehiclesChart||[]).map((row,i)=>(
