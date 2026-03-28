@@ -57,82 +57,71 @@ interface GameMap {
 }
 
 const GAME_MAPS: GameMap[] = [
-  // ── Arma 3 ── PLANOPS Atlas (full Leaflet interactive map)
-  { id:"a3_altis",    game:"Arma 3",         name:"Altis",
+  // ── Arma 3 Vanilla ────────────────────────────────────────────────────────
+  { id:"a3_altis",    game:"Arma 3 — Vanilla",  name:"Altis",
     iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/altis/150",
     fallbackColor:"#2d3a2e", previewColor:"#4a7c59",
     attribution:"© Bohemia Interactive / PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/altis/150" },
 
-  { id:"a3_stratis",  game:"Arma 3",         name:"Stratis",
+  { id:"a3_stratis",  game:"Arma 3 — Vanilla",  name:"Stratis",
     iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/stratis/150",
     fallbackColor:"#2d3a2e", previewColor:"#5a8c6a",
     attribution:"© Bohemia Interactive / PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/stratis/150" },
 
-  { id:"a3_malden",   game:"Arma 3",         name:"Malden",
+  { id:"a3_malden",   game:"Arma 3 — Vanilla",  name:"Malden",
     iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/malden/150",
     fallbackColor:"#2d3a2e", previewColor:"#6a9c7a",
     attribution:"© Bohemia Interactive / PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/malden/150" },
 
-  { id:"a3_tanoa",    game:"Arma 3",         name:"Tanoa",
+  { id:"a3_tanoa",    game:"Arma 3 — Vanilla",  name:"Tanoa",
     iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/tanoa/150",
     fallbackColor:"#1a3a2a", previewColor:"#3a7a5a",
     attribution:"© Bohemia Interactive / PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/tanoa/150" },
 
-  { id:"a3_chernarus",game:"Arma 3",         name:"Chernarus",
+  // ── Arma 3 Top Modded ─────────────────────────────────────────────────────
+  { id:"a3_chernarus",     game:"Arma 3 — Modded", name:"Chernarus (Summer)",
     iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/chernarus/150",
     fallbackColor:"#263326", previewColor:"#4a7a55",
     attribution:"© Bohemia Interactive / PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/chernarus/150" },
 
-  { id:"a3_takistan", game:"Arma 3",         name:"Takistan",
+  { id:"a3_takistan",      game:"Arma 3 — Modded", name:"Takistan",
     iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/takistan/150",
     fallbackColor:"#3a3020", previewColor:"#7a7040",
     attribution:"© Bohemia Interactive / PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/takistan/150" },
 
-  { id:"a3_sahrani",  game:"Arma 3",         name:"Sahrani",
-    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/sara/150",
-    fallbackColor:"#2a3020", previewColor:"#5a7040",
-    attribution:"© Bohemia Interactive / PLANOPS Atlas",
-    openUrl:"https://atlas.plan-ops.fr/maps/arma3/sara/150" },
+  { id:"a3_lingor",        game:"Arma 3 — Modded", name:"Lingor",
+    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/lingor/150",
+    fallbackColor:"#1a3020", previewColor:"#3a6a40",
+    attribution:"© IceBreakr / PLANOPS Atlas",
+    openUrl:"https://atlas.plan-ops.fr/maps/arma3/lingor/150" },
 
-  // ── Squad ── squadmaps.com
-  { id:"sq_yeho",     game:"Squad",          name:"Yehorivka",
+  { id:"a3_fallujah",      game:"Arma 3 — Modded", name:"Fallujah",
+    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/fallujah/150",
+    fallbackColor:"#3a2a10", previewColor:"#8a7040",
+    attribution:"© Shezan74 / PLANOPS Atlas",
+    openUrl:"https://atlas.plan-ops.fr/maps/arma3/fallujah/150" },
+
+  { id:"a3_lythium",       game:"Arma 3 — Modded", name:"Lythium",
+    iframeUrl:"https://atlas.plan-ops.fr/maps/arma3/lythium/150",
+    fallbackColor:"#2a2010", previewColor:"#7a6030",
+    attribution:"© Jakerod / PLANOPS Atlas",
+    openUrl:"https://atlas.plan-ops.fr/maps/arma3/lythium/150" },
+
+  // ── Squad ── squadmaps.com ─────────────────────────────────────────────────
+  { id:"sq_all",           game:"Squad", name:"All Maps (squadmaps.com)",
     iframeUrl:"https://squadmaps.com/",
     fallbackColor:"#2a2a1e", previewColor:"#6a7a3a",
     attribution:"© Offworld Industries / squadmaps.com",
     openUrl:"https://squadmaps.com/" },
 
-  { id:"sq_kohat",    game:"Squad",          name:"Kohat Toi",
-    iframeUrl:"https://squadmaps.com/",
-    fallbackColor:"#3a2a1e", previewColor:"#7a6a3a",
-    attribution:"© Offworld Industries / squadmaps.com",
-    openUrl:"https://squadmaps.com/" },
-
-  { id:"sq_gorodok",  game:"Squad",          name:"Gorodok",
-    iframeUrl:"https://squadmaps.com/",
-    fallbackColor:"#1e2a1e", previewColor:"#4a6a4a",
-    attribution:"© Offworld Industries / squadmaps.com",
-    openUrl:"https://squadmaps.com/" },
-
-  { id:"sq_talil",    game:"Squad",          name:"Tallil Outskirts",
-    iframeUrl:"https://squadmaps.com/",
-    fallbackColor:"#3a3020", previewColor:"#8a7a4a",
-    attribution:"© Offworld Industries / squadmaps.com",
-    openUrl:"https://squadmaps.com/" },
-
-  { id:"sq_jensen",   game:"Squad",          name:"Jensen\'s Range",
-    iframeUrl:"https://squadmaps.com/",
-    fallbackColor:"#2a2a20", previewColor:"#6a6a40",
-    attribution:"© Offworld Industries / squadmaps.com",
-    openUrl:"https://squadmaps.com/" },
-
-  // ── Custom
-  { id:"custom",      game:"Custom",         name:"Upload Image",
+  // ── Custom ────────────────────────────────────────────────────────────────
+  { id:"custom",           game:"Custom", name:"Upload Image",
     iframeUrl:null, fallbackColor:"#1a1a1a", previewColor:"#444",
     attribution:"", openUrl:"" },
 ];
