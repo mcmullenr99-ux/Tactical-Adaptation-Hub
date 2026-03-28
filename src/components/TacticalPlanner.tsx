@@ -1262,9 +1262,17 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
           <MessageSquare className="w-3.5 h-3.5"/>
           <span className="hidden xl:inline">Notes</span>
         </button>
-        <button onClick={()=>setShowScaleHelper(p=>!p)} className={btnCls(showScaleHelper)} title="Scale Helper">
+        <button
+          onClick={()=>setShowScaleHelper(p=>!p)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all flex-shrink-0 ${
+            showScaleHelper
+              ? "bg-yellow-500/20 border-yellow-500/60 text-yellow-400"
+              : "border-yellow-700/40 text-yellow-600 hover:bg-yellow-500/10 hover:border-yellow-500/50 hover:text-yellow-400"
+          }`}
+          title="Map Scale Helper — terrain dimensions, grid cell size, distance reference"
+        >
           <Map className="w-3.5 h-3.5"/>
-          <span className="hidden xl:inline">Scale</span>
+          <span>Map Info</span>
         </button>
 
         {selectedId && (
