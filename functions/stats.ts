@@ -511,6 +511,31 @@ function buildReadinessReport(params: {
   else if (clean_review_count >= 1 && avg_rep_score >= 50) score += 3;
   else if (clean_review_count >= 1)                        score += 1;
 
+  // Combat Intelligence — Op Win Rate & Effectiveness (0–20): bonus for units with verified op history
+  // Pulled from opIntel function stats. Only counts if unit has filed 3+ AARs with outcomes set.
+  // This rewards units that actually record and track their performance data honestly.
+  let combatIntelPts = 0;
+  try {
+    const aarList = aars.filter((a: any) => a.outcome && a.outcome !== "INCOMPLETE" && a.group_id === group.id);
+    if (aarList.length >= 3) {
+      const OUTCOME_WIN_W: Record<string, number> = { VICTORY: 1, "PARTIAL VICTORY": 0.6, DRAW: 0.5, DEFEAT: 0, INCOMPLETE: 0 };
+      const winPts = aarList.reduce((s: number, a: any) => s + (OUTCOME_WIN_W[a.outcome] ?? 0), 0);
+      const winRate = Math.round((winPts / aarList.length) * 100);
+      // Objectives performance
+      const aarWithObjs = aarList.filter((a: any) => (a.objectives_hit ?? 0) + (a.objectives_missed ?? 0) > 0);
+      const objHit = aarWithObjs.reduce((s: number, a: any) => s + (Number(a.objectives_hit) ?? 0), 0);
+      const objTotal = aarWithObjs.reduce((s: number, a: any) => s + (Number(a.objectives_hit) ?? 0) + (Number(a.objectives_missed) ?? 0), 0);
+      const objRate = objTotal > 0 ? Math.round((objHit / objTotal) * 100) : 50; // default 50 if no obj data
+      const effectiveness = Math.round(winRate * 0.6 + objRate * 0.4);
+      if      (effectiveness >= 75) combatIntelPts = 20;
+      else if (effectiveness >= 60) combatIntelPts = 14;
+      else if (effectiveness >= 40) combatIntelPts = 8;
+      else if (effectiveness >= 20) combatIntelPts = 4;
+      else                          combatIntelPts = 2; // At least filed AARs with data
+    }
+  } catch { combatIntelPts = 0; }
+  score += combatIntelPts;
+
   // Game Breadth (0–15): units that can field operators across multiple games demonstrate
   // wider skillset flexibility and mixed-force capability.
   const gameList = Array.isArray(group.games) ? group.games as string[] : group.games ? [group.games as string] : [];
@@ -530,7 +555,7 @@ function buildReadinessReport(params: {
   else if (qualifiedGameCount >= 1) gameBreadthPts = 1;
   score += gameBreadthPts;
 
-  // MAX = 30+20+25+15+15+50+10+10+10+15 = 200 base
+  // MAX = 30+20+25+15+15+50+10+10+10+20+15 = 220 base (was 200 before combat intel)
   // Bonus 15pts: Doctrine Breadth Excellence — all 4 doc types present AND avg depth >= 70
   const doctrineBonusPts = (training.has_sop && training.has_ttp && training.has_roe && training.has_drill && training.avg_depth_score >= 70) ? 15 : 0;
   score += doctrineBonusPts;
@@ -778,7 +803,7 @@ function buildReadinessReport(params: {
     has_discord, has_steam,
     op_capability_tier, op_cap_score: Math.round(opCapScore),
     training, anti_gaming: ag, flags, narrative, narrative_lines, narrative_items,
-    score_breakdown: { manpower: manpowerPts, activity: activityPts, ops_history: opHistoryPts, op_recency: opRecencyPts, aar_discipline: aarPts, training_doctrine: trainingPts, game_breadth: gameBreadthPts, discord: discordPts, page_maintenance: pagePts, reputation: repPts, doctrine_bonus: doctrineBonusPts },
+    score_breakdown: { manpower: manpowerPts, activity: activityPts, ops_history: opHistoryPts, op_recency: opRecencyPts, aar_discipline: aarPts, training_doctrine: trainingPts, game_breadth: gameBreadthPts, discord: discordPts, page_maintenance: pagePts, reputation: repPts, doctrine_bonus: doctrineBonusPts, combat_intel: combatIntelPts },
   };
 }
 

@@ -69,7 +69,12 @@ import {
   Bell,
   ChevronRight,
   Download,
-  Zap
+  Zap,
+  Eye,
+  BrainCircuit,
+  TrendingDown,
+  Crosshair,
+  FlaskConical
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
@@ -2206,7 +2211,7 @@ function EventHubTab({ group, showMsg }: any) {
 
 
 function EventsTab({ group, showMsg }: any) {
-  const [sub, setSub] = useState<"ops" | "aars" | "warnos" | "lace" | "sitrep" | "medevac" | "conduct">("ops");
+  const [sub, setSub] = useState<"ops" | "aars" | "warnos" | "lace" | "sitrep" | "medevac" | "conduct" | "intel">("ops");
   const SUB_TABS = [
     { id: "ops" as const,       label: "Operations",  icon: Siren },
     { id: "aars" as const,      label: "AARs",        icon: ClipboardList },
@@ -2215,6 +2220,7 @@ function EventsTab({ group, showMsg }: any) {
     { id: "sitrep" as const,    label: "SITREPs",     icon: Target },
     { id: "medevac" as const,   label: "MEDEVAC",     icon: Radio },
     { id: "conduct" as const,   label: "Conduct",     icon: UserMinus2 },
+    { id: "intel" as const,     label: "Op Intel",    icon: BrainCircuit },
   ];
   return (
     <div className="space-y-4">
@@ -2235,6 +2241,7 @@ function EventsTab({ group, showMsg }: any) {
       {sub === "sitrep"    && <SitrepTab        group={group} showMsg={showMsg} />}
       {sub === "medevac"   && <MedevacTab         group={group} showMsg={showMsg} />}
       {sub === "conduct"   && <ConductReportTab  group={group} showMsg={showMsg} />}
+      {sub === "intel"     && <OpIntelTab         group={group} showMsg={showMsg} />}
     </div>
   );
 }
@@ -2751,8 +2758,15 @@ function AARsTab({ group, showMsg }: any) {
   const submit = async () => {
     if (!form.op_name.trim()) return; setSaving(true);
     try {
-      if (editId) { await apiFetch(`/api/milsim-groups/${group.id}/aars/${editId}`, { method: "PATCH", body: JSON.stringify(form) }); showMsg(true, "AAR updated."); }
-      else { await apiFetch(`/api/milsim-groups/${group.id}/aars`, { method: "POST", body: JSON.stringify(form) }); showMsg(true, "AAR filed."); }
+      if (editId) {
+        await apiFetch(`/api/milsim-groups/${group.id}/aars/${editId}`, { method: "PATCH", body: JSON.stringify(form) });
+        showMsg(true, "AAR updated.");
+      } else {
+        const newAAR = await apiFetch<any>(`/api/milsim-groups/${group.id}/aars`, { method: "POST", body: JSON.stringify(form) });
+        const aarSummary = `Outcome:${form.outcome} ObjsHit:${form.objectives_hit} ObjsMissed:${form.objectives_missed} Casualties:${form.casualties}${form.casualties_note ? " — " + form.casualties_note : ""}`;
+        apiFetch(`/opIntel?path=notify&group_id=${group.id}`, { method: "POST", body: JSON.stringify({ report_type: "AAR", report_id: newAAR?.id ?? newAAR?.aar?.id ?? "", filer_callsign: "S6 ACTUAL", op_name: form.op_name || "Unknown Op", summary: aarSummary }) }).catch(() => {});
+        showMsg(true, "AAR filed — eyewitness notifications sent.");
+      }
       setCreating(false); setEditId(null); setForm(emptyForm); load();
     } catch (e: any) { showMsg(false, e.message); } finally { setSaving(false); }
   };
@@ -2941,8 +2955,11 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
         equipment: form.equipment, equipment_note: form.equipment_note,
       };
       if (payload.op_id) { const op = ops.find((o:any) => o.id === payload.op_id); if (op) payload.op_name = op.title ?? op.name ?? ""; }
-      await apiFetch("/milsimLace?path=create", { method: "POST", body: JSON.stringify(payload) });
-      showMsg("LACE filed", "success"); setShowForm(false); setForm({ ...emptyForm, report_time: dtgNow }); load();
+      const newLace = await apiFetch<any>("/milsimLace?path=create", { method: "POST", body: JSON.stringify(payload) });
+      // Dispatch eyewitness notifications to all active roster members
+      const laceSummary = `L:${payload.liquid} A:${payload.ammo} C:${payload.casualty} E:${payload.equipment}${payload.casualty_note ? " — " + payload.casualty_note : ""}`;
+      apiFetch(`/opIntel?path=notify&group_id=${group.id}`, { method: "POST", body: JSON.stringify({ report_type: "LACE", report_id: newLace?.lace_report?.id ?? "", filer_callsign: payload.callsign, op_name: payload.op_name || "Unknown Op", summary: laceSummary }) }).catch(() => {});
+      showMsg("LACE filed — eyewitness notifications sent", "success"); setShowForm(false); setForm({ ...emptyForm, report_time: dtgNow }); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
   };
@@ -3204,8 +3221,10 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
         }),
       };
       if (payload.op_id) { const op = ops.find((o:any) => o.id === payload.op_id); if (op) payload.op_name = op.title ?? op.name ?? ""; }
-      await apiFetch("/milsimSitrep?path=create", { method: "POST", body: JSON.stringify(payload) });
-      showMsg("SITREP transmitted", "success"); setShowForm(false); setForm({...emptyForm, report_time: dtgNow}); load();
+      const newSitrep = await apiFetch<any>("/milsimSitrep?path=create", { method: "POST", body: JSON.stringify(payload) });
+      const sitrepSummary = `Contact:${payload.enemy_contact} Mission:${payload.mission_status} Cas:${payload.friendly_casualties}${payload.next_action ? " — " + payload.next_action.slice(0, 120) : ""}`;
+      apiFetch(`/opIntel?path=notify&group_id=${group.id}`, { method: "POST", body: JSON.stringify({ report_type: "SITREP", report_id: newSitrep?.sitrep?.id ?? "", filer_callsign: payload.callsign, op_name: payload.op_name || "Unknown Op", summary: sitrepSummary }) }).catch(() => {});
+      showMsg("SITREP transmitted — eyewitness notifications sent", "success"); setShowForm(false); setForm({...emptyForm, report_time: dtgNow}); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
   };
@@ -3446,6 +3465,16 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
                     </div>
                   </div>
                 )}
+                {/* Eyewitness confirmation row */}
+                <div className="flex items-center justify-between px-4 py-2 border-t border-amber-500/20 bg-amber-500/5">
+                  <span className="text-[10px] text-muted-foreground font-display uppercase tracking-widest">
+                    {(r.eyewitness_count ?? 0) > 0 ? `${r.eyewitness_count} eyewitness${(r.eyewitness_count ?? 0) > 1 ? "es" : ""} confirmed` : "Awaiting eyewitness confirmation"}
+                  </span>
+                  <button onClick={() => apiFetch("/opIntel?path=confirm", { method: "POST", body: JSON.stringify({ report_type: "SITREP", report_id: r.id }) }).then(() => { showMsg("Eyewitness confirmation recorded", "success"); load(); }).catch((e: any) => showMsg(e.message, "error"))}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-400 text-[10px] font-display font-bold uppercase tracking-widest hover:bg-amber-500/20 transition-colors">
+                    <Eye className="w-3 h-3" /> Confirm
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -3844,6 +3873,261 @@ function MedevacTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "
 }
 
 
+
+// ─── Op Intel Tab ────────────────────────────────────────────────────────────
+function OpIntelTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
+  const [intel, setIntel] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [analysing, setAnalysing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadLatest = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const d = await apiFetch<any>(`/opIntel?path=latest&group_id=${group.id}`);
+      setIntel(d);
+    } catch (e: any) { setError(e.message); }
+    setLoading(false);
+  };
+
+  const runAnalysis = async () => {
+    setAnalysing(true);
+    setError(null);
+    try {
+      const d = await apiFetch<any>(`/opIntel?path=analyse&group_id=${group.id}`);
+      setIntel(d);
+      showMsg("AI Op Intel analysis complete", "success");
+    } catch (e: any) { setError(e.message); showMsg(e.message, "error"); }
+    setAnalysing(false);
+  };
+
+  useEffect(() => { loadLatest(); }, [group.id]);
+
+  const GRADE_CFG: Record<string, { color: string; bg: string; border: string; label: string }> = {
+    ALPHA:   { color: "text-green-300",  bg: "bg-green-500/10",  border: "border-green-500/40",  label: "ALPHA — Elite Operational Capability" },
+    BRAVO:   { color: "text-blue-300",   bg: "bg-blue-500/10",   border: "border-blue-500/40",   label: "BRAVO — Proficient Combat Unit" },
+    CHARLIE: { color: "text-yellow-300", bg: "bg-yellow-500/10", border: "border-yellow-500/40", label: "CHARLIE — Developing Capability" },
+    DELTA:   { color: "text-red-300",    bg: "bg-red-500/10",    border: "border-red-500/40",    label: "DELTA — Limited / Insufficient Data" },
+  };
+
+  const OUTCOME_COLORS: Record<string, string> = {
+    VICTORY: "bg-green-500", "PARTIAL VICTORY": "bg-lime-500", DRAW: "bg-yellow-500",
+    DEFEAT: "bg-red-500", INCOMPLETE: "bg-secondary",
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  const stats     = intel?.stats ?? null;
+  const narrative = intel?.ai_narrative ?? null;
+  const grade     = narrative?.intel_grade ?? "DELTA";
+  const gradeCfg  = GRADE_CFG[grade] ?? GRADE_CFG.DELTA;
+
+  const hasData = stats && (stats.total_aars > 0 || stats.total_lace > 0 || stats.total_sitreps > 0);
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display font-bold text-lg uppercase tracking-widest">Op Intel</h2>
+            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded">AI-Powered</span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">GPT-4o-mini analysis across all AARs, LACE reports, and SITREPs. Calculates win rate, casualty trends, and mission success patterns.</p>
+        </div>
+        <button onClick={runAnalysis} disabled={analysing}
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors disabled:opacity-50">
+          {analysing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BrainCircuit className="w-3.5 h-3.5" />}
+          {analysing ? "Analysing..." : "Run AI Analysis"}
+        </button>
+      </div>
+
+      {error && <div className="p-3 rounded border border-red-500/40 bg-red-500/10 text-red-400 text-xs font-sans">{error}</div>}
+
+      {!hasData && !analysing && (
+        <div className="text-center py-16 border border-dashed border-border rounded-lg text-muted-foreground">
+          <BrainCircuit className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="font-display text-sm uppercase tracking-widest">No Op Data</p>
+          <p className="text-xs mt-2 font-sans max-w-xs mx-auto">File AARs, LACE reports, or SITREPs to generate Op Intel. The AI needs at least 1 AAR to produce a meaningful analysis.</p>
+        </div>
+      )}
+
+      {hasData && (
+        <>
+          {/* Data counts */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "AARs", value: stats.total_aars, icon: ClipboardList, color: "text-primary" },
+              { label: "LACE Reports", value: stats.total_lace, icon: Radio, color: "text-blue-400" },
+              { label: "SITREPs", value: stats.total_sitreps, icon: Target, color: "text-amber-400" },
+            ].map(s => (
+              <div key={s.label} className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
+                <s.icon className={`w-5 h-5 ${s.color} shrink-0`} />
+                <div>
+                  <p className={`font-display font-black text-2xl ${s.color}`}>{s.value}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-display">{s.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Intel grade banner */}
+          {narrative && (
+            <div className={`p-4 rounded-lg border ${gradeCfg.bg} ${gradeCfg.border} flex items-center gap-4`}>
+              <div className={`w-16 h-16 rounded-lg flex items-center justify-center font-display font-black text-2xl ${gradeCfg.color} border ${gradeCfg.border} ${gradeCfg.bg} shrink-0`}>{grade}</div>
+              <div>
+                <p className={`font-display font-black text-sm uppercase tracking-widest ${gradeCfg.color}`}>{gradeCfg.label}</p>
+                <p className="text-xs font-sans text-foreground/80 mt-1 leading-relaxed">{narrative.summary}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Key metrics row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Win Rate",          value: stats.win_rate !== null ? `${stats.win_rate}%` : "—",  color: stats.win_rate !== null ? (stats.win_rate >= 60 ? "text-green-400" : stats.win_rate >= 40 ? "text-yellow-400" : "text-red-400") : "text-muted-foreground", icon: Trophy },
+              { label: "Obj Success Rate",  value: stats.total_aars > 0 ? `${stats.objective_success_rate}%` : "—", color: stats.objective_success_rate >= 70 ? "text-green-400" : stats.objective_success_rate >= 40 ? "text-yellow-400" : "text-red-400", icon: Crosshair },
+              { label: "Mission On-Track",  value: stats.total_sitreps > 0 ? `${stats.on_track_rate}%` : "—", color: stats.on_track_rate >= 70 ? "text-green-400" : stats.on_track_rate >= 40 ? "text-yellow-400" : "text-red-400", icon: TrendingUp },
+              { label: "Casualty Pressure", value: `${stats.casualty_pressure_index}/100`, color: stats.casualty_pressure_index <= 20 ? "text-green-400" : stats.casualty_pressure_index <= 50 ? "text-yellow-400" : "text-red-400", icon: TrendingDown },
+            ].map(m => (
+              <div key={m.label} className="bg-card border border-border rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <m.icon className="w-3.5 h-3.5 text-muted-foreground" />
+                  <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">{m.label}</p>
+                </div>
+                <p className={`font-display font-black text-2xl ${m.color}`}>{m.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Combat effectiveness score bar */}
+          <div className="bg-card border border-border rounded-lg p-4 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Combat Effectiveness Score</span>
+              <span className={`font-display font-black text-sm ${stats.combat_effectiveness_score >= 70 ? "text-green-400" : stats.combat_effectiveness_score >= 40 ? "text-yellow-400" : "text-red-400"}`}>{stats.combat_effectiveness_score} / 100</span>
+            </div>
+            <div className="h-3 rounded-full bg-secondary overflow-hidden">
+              <div className={`h-full rounded-full transition-all ${stats.combat_effectiveness_score >= 70 ? "bg-green-500" : stats.combat_effectiveness_score >= 40 ? "bg-yellow-500" : "bg-red-500"}`}
+                style={{ width: `${stats.combat_effectiveness_score}%` }} />
+            </div>
+            <p className="text-[10px] text-muted-foreground font-sans">Win rate (40%) + Objective success (30%) + Mission on-track (20%) + Low casualties (10%)</p>
+          </div>
+
+          {/* Outcome breakdown */}
+          {stats.total_aars > 0 && (
+            <div className="bg-card border border-border rounded-lg p-4">
+              <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">AAR Outcome Breakdown</p>
+              <div className="space-y-2">
+                {Object.entries(stats.outcome_breakdown ?? {}).map(([outcome, count]: [string, any]) => (
+                  <div key={outcome} className="flex items-center gap-3">
+                    <span className="w-28 text-xs font-display font-bold uppercase tracking-wider text-foreground shrink-0">{outcome}</span>
+                    <div className="flex-1 h-5 rounded bg-secondary overflow-hidden">
+                      <div className={`h-full rounded ${OUTCOME_COLORS[outcome] ?? "bg-secondary/80"}`} style={{ width: `${Math.round((count / stats.total_aars) * 100)}%` }} />
+                    </div>
+                    <span className="text-xs font-mono text-muted-foreground w-8 text-right shrink-0">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Ammo stress & casualty split */}
+          {stats.total_lace > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-card border border-border rounded-lg p-4">
+                <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Ammo Status (LACE)</p>
+                {Object.entries(stats.lace_ammo_breakdown ?? {}).map(([s, c]: [string, any]) => {
+                  const bc = s === "RED" ? "bg-red-500" : s === "ORANGE" ? "bg-orange-500" : "bg-green-500";
+                  return (
+                    <div key={s} className="flex items-center gap-2 mb-1.5">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${bc}`} />
+                      <span className="text-xs font-display font-bold uppercase w-16 shrink-0">{s}</span>
+                      <div className="flex-1 h-4 rounded bg-secondary overflow-hidden"><div className={`h-full rounded ${bc}`} style={{ width: `${Math.round((c / stats.total_lace) * 100)}%` }} /></div>
+                      <span className="text-xs font-mono text-muted-foreground w-5 text-right shrink-0">{c}</span>
+                    </div>
+                  );
+                })}
+                <p className="text-[10px] text-muted-foreground mt-2 font-sans">Critical ammo rate (Orange + Red): <span className={`font-bold ${stats.critical_ammo_rate >= 60 ? "text-red-400" : stats.critical_ammo_rate >= 30 ? "text-orange-400" : "text-green-400"}`}>{stats.critical_ammo_rate}%</span></p>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4">
+                <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Casualty Distribution (LACE)</p>
+                {(["NONE","LOW","MODERATE","HEAVY"] as const).map(c => {
+                  const val = stats.lace_casualty_breakdown?.[c] ?? 0;
+                  const bc = c === "HEAVY" ? "bg-red-500" : c === "MODERATE" ? "bg-orange-500" : c === "LOW" ? "bg-yellow-500" : "bg-green-500";
+                  return (
+                    <div key={c} className="flex items-center gap-2 mb-1.5">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${bc}`} />
+                      <span className="text-xs font-display font-bold uppercase w-20 shrink-0">{c}</span>
+                      <div className="flex-1 h-4 rounded bg-secondary overflow-hidden"><div className={`h-full rounded ${bc}`} style={{ width: `${Math.round((val / stats.total_lace) * 100)}%` }} /></div>
+                      <span className="text-xs font-mono text-muted-foreground w-5 text-right shrink-0">{val}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* AI narrative breakdown */}
+          {narrative && (narrative.strengths?.length > 0 || narrative.weaknesses?.length > 0) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {narrative.strengths?.length > 0 && (
+                <div className="bg-card border border-green-500/30 rounded-lg p-4">
+                  <p className="text-[10px] font-display font-bold uppercase tracking-widest text-green-400 mb-3">Strengths</p>
+                  <ul className="space-y-2">
+                    {narrative.strengths.map((s: string, i: number) => (
+                      <li key={i} className="flex items-start gap-2 text-xs font-sans"><span className="text-green-400 shrink-0 mt-0.5">▸</span>{s}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {narrative.weaknesses?.length > 0 && (
+                <div className="bg-card border border-red-500/30 rounded-lg p-4">
+                  <p className="text-[10px] font-display font-bold uppercase tracking-widest text-red-400 mb-3">Weaknesses</p>
+                  <ul className="space-y-2">
+                    {narrative.weaknesses.map((w: string, i: number) => (
+                      <li key={i} className="flex items-start gap-2 text-xs font-sans"><span className="text-red-400 shrink-0 mt-0.5">▸</span>{w}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* AI recommendations */}
+          {narrative?.recommendations?.length > 0 && (
+            <div className="bg-card border border-primary/30 rounded-lg p-4">
+              <p className="text-[10px] font-display font-bold uppercase tracking-widest text-primary mb-3">AI Recommendations</p>
+              <ul className="space-y-2">
+                {narrative.recommendations.map((r: string, i: number) => (
+                  <li key={i} className="flex items-start gap-2 text-xs font-sans">
+                    <span className="font-display font-black text-primary shrink-0 mt-0.5">{i+1}.</span>{r}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Threat assessment */}
+          {narrative?.threat_assessment && (
+            <div className="flex items-start gap-3 p-3 rounded border border-orange-500/30 bg-orange-500/5">
+              <FlaskConical className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[10px] font-display font-bold uppercase tracking-widest text-orange-400 mb-1">Threat Assessment</p>
+                <p className="text-xs font-sans text-foreground/80">{narrative.threat_assessment}</p>
+              </div>
+            </div>
+          )}
+
+          {intel?.generated_at && (
+            <p className="text-[10px] text-muted-foreground text-right font-sans">Last analysed: {new Date(intel.generated_at).toLocaleString()}</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
@@ -4236,6 +4520,7 @@ function ReadinessTab({ group }: any) {
     { label: "Discord Linked",      max: 5,  earned: sb.discord ?? 0,          note: readiness.has_discord ? "Linked" : "Not linked" },
     { label: "Page Maintenance",    max: 5,  earned: sb.page_maintenance ?? 0, note: readiness.days_since_page_update != null ? `Updated ${readiness.days_since_page_update}d ago` : "Never updated" },
     { label: "Reputation / Reviews",max: 5,  earned: sb.reputation ?? 0,       note: `${readiness.review_count} review${readiness.review_count !== 1 ? "s" : ""}, avg ${readiness.avg_rep_score || "—"}` },
+    { label: "Combat Intel",         max: 20, earned: sb.combat_intel ?? 0,      note: sb.combat_intel > 0 ? `${sb.combat_intel}/20 — win rate & objective data` : "File 3+ AARs with outcomes to score" },
   ];
 
   return (
