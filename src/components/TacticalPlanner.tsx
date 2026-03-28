@@ -62,7 +62,7 @@ const GAME_MAPS: GameMap[] = [
   // ── Arma 3 Vanilla ──────────────────────────────────────────────────────────
   { id:"a3_altis",
     game:"Arma 3 — Vanilla",  name:"Altis",
-    mapImageUrl:null,
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/0fb03f56b_generated_image.png",
     fallbackColor:"#2d3a2e", previewColor:"#4a7c59",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/altis/150",
@@ -70,7 +70,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_stratis",
     game:"Arma 3 — Vanilla",  name:"Stratis",
-    mapImageUrl:null,
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/d965d7d2c_generated_image.png",
     fallbackColor:"#2d3a2e", previewColor:"#5a8c6a",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/stratis/150",
@@ -86,7 +86,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_tanoa",
     game:"Arma 3 — Vanilla",  name:"Tanoa",
-    mapImageUrl:null,
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/232b24943_generated_image.png",
     fallbackColor:"#1a3a2a", previewColor:"#3a7a5a",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/tanoa/150",
@@ -95,7 +95,7 @@ const GAME_MAPS: GameMap[] = [
   // ── Arma 3 Modded ───────────────────────────────────────────────────────────
   { id:"a3_chernarus",
     game:"Arma 3 — Modded",  name:"Chernarus (Summer)",
-    mapImageUrl:null,
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/462a9c157_generated_image.png",
     fallbackColor:"#263326", previewColor:"#4a7a55",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/chernarus/150",
@@ -103,7 +103,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_takistan",
     game:"Arma 3 — Modded",  name:"Takistan",
-    mapImageUrl:null,
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/aca91e151_generated_image.png",
     fallbackColor:"#3a3020", previewColor:"#7a7040",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/takistan/150",
@@ -119,7 +119,7 @@ const GAME_MAPS: GameMap[] = [
 
   { id:"a3_fallujah",
     game:"Arma 3 — Modded",  name:"Fallujah",
-    mapImageUrl:null,
+    mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/1222b5c3d_generated_image.png",
     fallbackColor:"#3a2a10", previewColor:"#8a7040",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/fallujah/150",
@@ -696,46 +696,71 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
     return null;
   }, [elements]);
 
-  // ── Coordinate helper ─────────────────────────────────────────────────────────
+  // ── Stable refs for everything handlers need ──────────────────────────────────
+  // Keeps mouse handlers stable (no recreation mid-drag = no lost events)
 
-  const getEvtPt = useCallback((e: React.MouseEvent): Pt => {
+  const toolRef           = useRef(tool);
+  const colorRef          = useRef(color);
+  const lwRef             = useRef(lw);
+  const dashedRef         = useRef(dashed);
+  const rulerStartRef     = useRef(rulerStart);
+  const metersPerPixelRef = useRef(metersPerPixel);
+  const pendingSymRef     = useRef(pendingSym);
+  const canvasSizeRef     = useRef(canvasSize);
+
+  useEffect(() => { toolRef.current           = tool;           }, [tool]);
+  useEffect(() => { colorRef.current          = color;          }, [color]);
+  useEffect(() => { lwRef.current             = lw;             }, [lw]);
+  useEffect(() => { dashedRef.current         = dashed;         }, [dashed]);
+  useEffect(() => { rulerStartRef.current     = rulerStart;     }, [rulerStart]);
+  useEffect(() => { metersPerPixelRef.current = metersPerPixel; }, [metersPerPixel]);
+  useEffect(() => { pendingSymRef.current     = pendingSym;     }, [pendingSym]);
+  useEffect(() => { canvasSizeRef.current     = canvasSize;     }, [canvasSize]);
+
+  // ── Coordinate helper — reads from ref, always fresh ─────────────────────────
+
+  const getEvtPt = useCallback((e: React.MouseEvent | MouseEvent): Pt => {
     const r = containerRef.current!.getBoundingClientRect();
-    const scaleX = canvasSize.w / r.width;
-    const scaleY = canvasSize.h / r.height;
-    return { x: (e.clientX - r.left) * scaleX, y: (e.clientY - r.top) * scaleY };
-  }, [canvasSize]);
+    const { w, h } = canvasSizeRef.current;
+    return {
+      x: (e.clientX - r.left) * (w / r.width),
+      y: (e.clientY - r.top)  * (h / r.height),
+    };
+  }, []);   // stable forever — reads refs only
 
-  // ── Pointer events ────────────────────────────────────────────────────────────
+  // ── Pointer events — defined ONCE, read current values from refs ──────────────
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
+    const t = toolRef.current;
     const cp = getEvtPt(e);
 
-    if (tool === "pan") {
+    if (t === "pan") {
       setIsPanning(true);
       panStart.current = { x: e.clientX, y: e.clientY };
       panOffsetStart.current = panOffset;
       return;
     }
 
-    if (tool === "select") {
+    if (t === "select") {
       const hit = hitTest(cp);
       if (hit) { setSelectedId(hit.id); dragId.current = hit.id; dragPrev.current = cp; }
       else { setSelectedId(null); dragId.current = null; }
       return;
     }
 
-    if (tool === "ruler") {
-      if (!rulerStart) {
+    if (t === "ruler") {
+      const rs = rulerStartRef.current;
+      if (!rs) {
         setRulerStart(cp);
       } else {
-        const px = dist(rulerStart, cp);
-        const metres = px * metersPerPixel;
+        const px = dist(rs, cp);
+        const metres = px * metersPerPixelRef.current;
         const lbl = formatDist(metres);
         setElements(prev => [...prev, {
           id: uid(), type:"ruler",
-          points:[rulerStart, cp],
-          x:(rulerStart.x+cp.x)/2, y:(rulerStart.y+cp.y)/2,
+          points:[rs, cp],
+          x:(rs.x+cp.x)/2, y:(rs.y+cp.y)/2,
           color:"#ffcc44", lw:1.5, label:lbl,
         }]);
         setRulerStart(null);
@@ -744,26 +769,31 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
       return;
     }
 
-    if (tool === "marker") {
-      setLabelPrompt({ cp, symKey: pendingSym });
+    if (t === "marker") {
+      setLabelPrompt({ cp, symKey: pendingSymRef.current });
       return;
     }
 
+    // Drawing tools
     isDrawing.current = true;
     drawStart.current = cp;
     drawPath.current  = [cp];
-  }, [tool, getEvtPt, hitTest, rulerStart, pendingSym, metersPerPixel, panOffset]);
+  }, [getEvtPt, hitTest, panOffset]);   // panOffset only needed for panOffsetStart snapshot
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
-    // Pan mode — move the background image
-    if (tool === "pan" && isPanning && panStart.current) {
+    const t = toolRef.current;
+
+    // Pan
+    if (t === "pan" && isPanning && panStart.current) {
       const dx = e.clientX - panStart.current.x;
       const dy = e.clientY - panStart.current.y;
       setPanOffset({ x: panOffsetStart.current.x + dx, y: panOffsetStart.current.y + dy });
       return;
     }
 
-    if (!isDrawing.current && !dragId.current && tool !== "ruler") return;
+    const rs = rulerStartRef.current;
+
+    if (!isDrawing.current && !dragId.current && t !== "ruler") return;
     const cp = getEvtPt(e);
 
     // Drag selected element
@@ -781,14 +811,14 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
     }
 
     // Live ruler preview
-    if (tool === "ruler" && rulerStart) {
-      const px = dist(rulerStart, cp);
-      const metres = px * metersPerPixel;
+    if (t === "ruler" && rs) {
+      const px = dist(rs, cp);
+      const metres = px * metersPerPixelRef.current;
       const lbl = formatDist(metres);
       setPreview({
         id:"__preview__", type:"ruler",
-        points:[rulerStart, cp],
-        x:(rulerStart.x+cp.x)/2, y:(rulerStart.y+cp.y)/2,
+        points:[rs, cp],
+        x:(rs.x+cp.x)/2, y:(rs.y+cp.y)/2,
         color:"#ffcc44cc", lw:1.2, label:lbl,
       });
       return;
@@ -796,48 +826,56 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
 
     if (!isDrawing.current) return;
 
-    if (tool === "draw") {
+    const c = colorRef.current;
+    const w = lwRef.current;
+    const d = dashedRef.current;
+
+    if (t === "draw") {
       drawPath.current.push(cp);
-      setPreview({ id:"__preview__", type:"draw", points:[...drawPath.current], color, lw, dashed });
-    } else if (tool === "line") {
-      setPreview({ id:"__preview__", type:"line", points:[drawStart.current!, cp], color, lw, dashed });
-    } else if (tool === "arrow") {
-      setPreview({ id:"__preview__", type:"arrow", points:[drawStart.current!, cp], color, lw, dashed });
-    } else if (tool === "rect") {
+      setPreview({ id:"__preview__", type:"draw", points:[...drawPath.current], color:c, lw:w, dashed:d });
+    } else if (t === "line") {
+      setPreview({ id:"__preview__", type:"line", points:[drawStart.current!, cp], color:c, lw:w, dashed:d });
+    } else if (t === "arrow") {
+      setPreview({ id:"__preview__", type:"arrow", points:[drawStart.current!, cp], color:c, lw:w, dashed:d });
+    } else if (t === "rect") {
       const s = drawStart.current!;
       setPreview({ id:"__preview__", type:"rect",
         x:Math.min(s.x,cp.x), y:Math.min(s.y,cp.y),
         w:Math.abs(cp.x-s.x), h:Math.abs(cp.y-s.y),
-        color, lw, dashed });
-    } else if (tool === "circle") {
+        color:c, lw:w, dashed:d });
+    } else if (t === "circle") {
       setPreview({ id:"__preview__", type:"circle",
         x:drawStart.current!.x, y:drawStart.current!.y,
-        r:dist(drawStart.current!, cp), color, lw, dashed });
+        r:dist(drawStart.current!, cp), color:c, lw:w, dashed:d });
     }
-  }, [tool, getEvtPt, color, lw, dashed, rulerStart, metersPerPixel, isPanning, panOffset]);
+  }, [getEvtPt, isPanning]);   // stable — reads all drawing state from refs
 
   const onMouseUp = useCallback((e: React.MouseEvent) => {
-    if (tool === "pan") { setIsPanning(false); panStart.current = null; return; }
+    const t = toolRef.current;
+    if (t === "pan") { setIsPanning(false); panStart.current = null; return; }
     if (!isDrawing.current) return;
     isDrawing.current = false;
     const cp = getEvtPt(e);
     setPreview(null);
-    if (tool === "draw" && drawPath.current.length > 1) {
-      setElements(p => [...p, { id:uid(), type:"draw", points:[...drawPath.current], color, lw, dashed }]);
-    } else if (tool === "line" && drawStart.current) {
-      setElements(p => [...p, { id:uid(), type:"line", points:[drawStart.current!, cp], color, lw, dashed }]);
-    } else if (tool === "arrow" && drawStart.current) {
-      setElements(p => [...p, { id:uid(), type:"arrow", points:[drawStart.current!, cp], color, lw, dashed }]);
-    } else if (tool === "rect" && drawStart.current) {
+    const c = colorRef.current;
+    const w = lwRef.current;
+    const d = dashedRef.current;
+    if (t === "draw" && drawPath.current.length > 1) {
+      setElements(p => [...p, { id:uid(), type:"draw", points:[...drawPath.current], color:c, lw:w, dashed:d }]);
+    } else if (t === "line" && drawStart.current) {
+      setElements(p => [...p, { id:uid(), type:"line", points:[drawStart.current!, cp], color:c, lw:w, dashed:d }]);
+    } else if (t === "arrow" && drawStart.current) {
+      setElements(p => [...p, { id:uid(), type:"arrow", points:[drawStart.current!, cp], color:c, lw:w, dashed:d }]);
+    } else if (t === "rect" && drawStart.current) {
       const s = drawStart.current;
       setElements(p => [...p, { id:uid(), type:"rect",
         x:Math.min(s.x,cp.x), y:Math.min(s.y,cp.y),
         w:Math.abs(cp.x-s.x), h:Math.abs(cp.y-s.y),
-        color, lw, dashed }]);
-    } else if (tool === "circle" && drawStart.current) {
+        color:c, lw:w, dashed:d }]);
+    } else if (t === "circle" && drawStart.current) {
       setElements(p => [...p, { id:uid(), type:"circle",
         x:drawStart.current!.x, y:drawStart.current!.y,
-        r:dist(drawStart.current!, cp), color, lw, dashed }]);
+        r:dist(drawStart.current!, cp), color:c, lw:w, dashed:d }]);
     }
     drawPath.current = []; drawStart.current = null;
   }, [tool, getEvtPt, color, lw, dashed]);
