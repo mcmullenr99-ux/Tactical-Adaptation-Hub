@@ -765,7 +765,7 @@ function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];on
 // ─── Canvas ───────────────────────────────────────────────────────────────────
 // ─── Per-chart canvas card with independent zoom ─────────────────────────────
 function CanvasChartCard({node, pathMap}:{node:OrbatNode; pathMap:Record<string,string>}){
-  const T = useTheme();
+  // T uses module-level theme constant
   const [cz, setCz] = useState(1);
   const hasW = node.weaponsChart && node.weaponsChart.length>0;
   const hasV = node.vehiclesChart && node.vehiclesChart.length>0;
