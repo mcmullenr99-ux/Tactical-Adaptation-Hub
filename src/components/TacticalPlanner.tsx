@@ -367,8 +367,8 @@ function drawFullCompass(
 function drawGrid(ctx: CanvasRenderingContext2D, cw: number, ch: number) {
   const step = 60;
   ctx.save();
-  ctx.strokeStyle = "rgba(255,255,255,0.07)";
-  ctx.lineWidth = 0.5;
+  ctx.strokeStyle = "rgba(255,255,255,0.28)";
+  ctx.lineWidth = 0.7;
   ctx.setLineDash([]);
   for (let x = 0; x < cw; x += step) {
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ch); ctx.stroke();
@@ -376,8 +376,8 @@ function drawGrid(ctx: CanvasRenderingContext2D, cw: number, ch: number) {
   for (let y = 0; y < ch; y += step) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cw, y); ctx.stroke();
   }
-  ctx.fillStyle = "rgba(255,255,255,0.18)";
-  ctx.font = "8px monospace";
+  ctx.fillStyle = "rgba(255,255,255,0.70)";
+  ctx.font = "bold 9px monospace";
   ctx.textAlign = "left"; ctx.textBaseline = "top";
   let ci = 0;
   for (let x = 0; x < cw; x += step) {
@@ -519,6 +519,10 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
   const [zoom,        setZoom]        = useState(1.0);   // image zoom level
   const [panOffset,   setPanOffset]   = useState<Pt>({ x: 0, y: 0 });
   const [isPanning,   setIsPanning]   = useState(false);
+  const [compassPos,  setCompassPos]  = useState<Pt>({ x: -1, y: -1 });  // -1 = auto (bottom-right)
+  const isDraggingCompass = useRef(false);
+  const compassDragStart  = useRef<Pt | null>(null);
+  const compassPosStart   = useRef<Pt>({ x: 0, y: 0 });
   const panStart      = useRef<Pt | null>(null);
   const panOffsetStart= useRef<Pt>({ x:0, y:0 });
   const [showMapPicker,  setShowMapPicker]  = useState(false);
@@ -616,10 +620,10 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
         ctx.lineTo(el.points[1].x, el.points[1].y); ctx.stroke();
         if (el.type === "arrow") drawArrowHead(ctx, el.points[0], el.points[1], 14);
       }
-      if (el.type === "rect" && el.x != null && el.y != null && el.w != null && el.h != null) {
+      if (el.type === "rect" && el.x != null && el.y != null && el.w != null && el.h != null && el.w > 0 && el.h > 0) {
         ctx.strokeRect(el.x, el.y, el.w, el.h);
       }
-      if (el.type === "circle" && el.x != null && el.y != null && el.r != null) {
+      if (el.type === "circle" && el.x != null && el.y != null && el.r != null && el.r > 0) {
         ctx.beginPath(); ctx.arc(el.x, el.y, el.r, 0, Math.PI*2); ctx.stroke();
       }
 
@@ -676,10 +680,14 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
       // (preview handled by onMouseMove via preview state)
     }
 
-    if (showCompass) drawFullCompass(ctx, w - 68, h - 68, 55, mapRotation);
+    if (showCompass) {
+      const cx = compassPos.x >= 0 ? compassPos.x : w - 72;
+      const cy = compassPos.y >= 0 ? compassPos.y : h - 72;
+      drawFullCompass(ctx, cx, cy, 58, mapRotation);
+    }
     if (showScaleBar) drawScaleBar(ctx, w, h, metersPerPixel);
 
-  }, [elements, preview, showGrid, showCompass, showScaleBar, canvasSize, selectedId, mapRotation, metersPerPixel, tool, rulerStart]);
+  }, [elements, preview, showGrid, showCompass, showScaleBar, canvasSize, selectedId, mapRotation, metersPerPixel, tool, rulerStart, compassPos]);
 
   // ── Hit test ─────────────────────────────────────────────────────────────────
 
@@ -699,6 +707,10 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
   // ── Stable refs for everything handlers need ──────────────────────────────────
   // Keeps mouse handlers stable (no recreation mid-drag = no lost events)
 
+  const compassPosRef     = useRef(compassPos);
+  const isPanningRef      = useRef(isPanning);
+  const showCompassRef    = useRef(showCompass);
+  const mapRotationRef    = useRef(mapRotation);
   const toolRef           = useRef(tool);
   const colorRef          = useRef(color);
   const lwRef             = useRef(lw);
@@ -708,6 +720,10 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
   const pendingSymRef     = useRef(pendingSym);
   const canvasSizeRef     = useRef(canvasSize);
 
+  useEffect(() => { compassPosRef.current     = compassPos;     }, [compassPos]);
+  useEffect(() => { isPanningRef.current      = isPanning;       }, [isPanning]);
+  useEffect(() => { showCompassRef.current    = showCompass;     }, [showCompass]);
+  useEffect(() => { mapRotationRef.current    = mapRotation;     }, [mapRotation]);
   useEffect(() => { toolRef.current           = tool;           }, [tool]);
   useEffect(() => { colorRef.current          = color;          }, [color]);
   useEffect(() => { lwRef.current             = lw;             }, [lw]);
@@ -734,6 +750,25 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
     if (e.button !== 0) return;
     const t = toolRef.current;
     const cp = getEvtPt(e);
+
+    // Compass drag — check before pan
+    if (t === "pan" && showCompassRef.current) {
+      const cPos = compassPosRef.current;
+      const { w, h } = canvasSizeRef.current;
+      const r = containerRef.current!.getBoundingClientRect();
+      const cx = cPos.x >= 0 ? cPos.x : w - 72;
+      const cy = cPos.y >= 0 ? cPos.y : h - 72;
+      // cp is in canvas coords, but compass is also in canvas coords
+      const dx = (e.clientX - r.left) * (w / r.width) - cx;
+      const dy = (e.clientY - r.top)  * (h / r.height) - cy;
+      if (Math.sqrt(dx*dx + dy*dy) < 62) {
+        isDraggingCompass.current = true;
+        compassDragStart.current  = { x: e.clientX, y: e.clientY };
+        compassPosStart.current   = { x: cx, y: cy };
+        e.stopPropagation();
+        return;
+      }
+    }
 
     if (t === "pan") {
       setIsPanning(true);
@@ -778,13 +813,28 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
     isDrawing.current = true;
     drawStart.current = cp;
     drawPath.current  = [cp];
-  }, [getEvtPt, hitTest, panOffset]);   // panOffset only needed for panOffsetStart snapshot
+  }, [getEvtPt, hitTest, panOffset]);   // showCompass read from ref
 
   const onMouseMove = useCallback((e: React.MouseEvent) => {
     const t = toolRef.current;
 
+    // Compass drag
+    if (isDraggingCompass.current && compassDragStart.current) {
+      const { w, h } = canvasSizeRef.current;
+      const r = containerRef.current!.getBoundingClientRect();
+      const scaleX = w / r.width;
+      const scaleY = h / r.height;
+      const dx = (e.clientX - compassDragStart.current.x) * scaleX;
+      const dy = (e.clientY - compassDragStart.current.y) * scaleY;
+      setCompassPos({
+        x: Math.max(62, Math.min(w - 62, compassPosStart.current.x + dx)),
+        y: Math.max(62, Math.min(h - 62, compassPosStart.current.y + dy)),
+      });
+      return;
+    }
+
     // Pan
-    if (t === "pan" && isPanning && panStart.current) {
+    if (t === "pan" && isPanningRef.current && panStart.current) {
       const dx = e.clientX - panStart.current.x;
       const dy = e.clientY - panStart.current.y;
       setPanOffset({ x: panOffsetStart.current.x + dx, y: panOffsetStart.current.y + dy });
@@ -848,10 +898,15 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
         x:drawStart.current!.x, y:drawStart.current!.y,
         r:dist(drawStart.current!, cp), color:c, lw:w, dashed:d });
     }
-  }, [getEvtPt, isPanning]);   // stable — reads all drawing state from refs
+  }, [getEvtPt]);   // fully stable — all state read from refs
 
   const onMouseUp = useCallback((e: React.MouseEvent) => {
     const t = toolRef.current;
+    if (isDraggingCompass.current) {
+      isDraggingCompass.current = false;
+      compassDragStart.current  = null;
+      return;
+    }
     if (t === "pan") { setIsPanning(false); panStart.current = null; return; }
     if (!isDrawing.current) return;
     isDrawing.current = false;
@@ -878,7 +933,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
         r:dist(drawStart.current!, cp), color:c, lw:w, dashed:d }]);
     }
     drawPath.current = []; drawStart.current = null;
-  }, [tool, getEvtPt, color, lw, dashed]);
+  }, [getEvtPt]);   // reads all from refs — stable
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -1150,14 +1205,16 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
       <div
         ref={containerRef}
         className="flex-1 relative overflow-hidden bg-[#0a0c0e]"
-        style={{ cursor: tool === "pan" ? (isPanning ? "grabbing" : "grab") : "crosshair" }}
+        style={{ cursor: isDraggingCompass.current ? "grabbing" : tool === "pan" ? (isPanningRef.current ? "grabbing" : "grab") : "crosshair" }}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={()=>{
           dragId.current=null; dragPrev.current=null;
           if (isPanning) { setIsPanning(false); panStart.current = null; }
+          if (isDraggingCompass.current) { isDraggingCompass.current = false; compassDragStart.current = null; }
         }}
+        onContextMenu={e => e.preventDefault()}
       >
 
         {/* LAYER 0: Map background image (panned + zoomed) */}
@@ -1176,7 +1233,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
                   transformOrigin: "center center",
                   width: "100%",
                   height: "100%",
-                  objectFit: "cover",
+                  objectFit: "contain",
                   userSelect: "none",
                   transition: isPanning ? "none" : "transform 0.05s ease-out",
                 }}
