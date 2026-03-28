@@ -7,7 +7,7 @@ import {
   Shield, Loader2, AlertTriangle, Siren, ClipboardList, MapPin, Calendar,
   Star, FileText, UserCheck, ChevronDown, ChevronUp, CheckCircle2, XCircle,
   Award, PlusCircle, Clock, ThumbsUp, ThumbsDown, ExternalLink, Send, TrendingUp,
-  GripVertical, Rows3, Save, RefreshCw, Info, Crown, BookOpen, Radio, Activity, Crosshair, Users
+  GripVertical, Rows3, Save, RefreshCw, Info, Crown, Radio, Activity, Crosshair, Users
 } from "lucide-react";
 import { Link } from "wouter";
 import { getRibbonModifiers } from '@/lib/ribbonModifiers';
@@ -35,7 +35,7 @@ const STATUS_OP: Record<string, string> = {
 /* ─── main component ──────────────────────────────────────────────────────── */
 export default function MemberHQ() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<"ops"|"briefings"|"warnos"|"sitreps"|"aars"|"peer-review"|"unit-review"|"loa"|"service-file"|"ribbon-bar">("ops");
+  const [tab, setTab] = useState<"ops"|"warnos"|"sitreps"|"aars"|"peer-review"|"unit-review"|"loa"|"service-file"|"ribbon-bar">("ops");
   const [upvoteCount, setUpvoteCount] = useState<number>(0);
   const [hasVoted, setHasVoted] = useState<boolean>(false);
   const [upvoting, setUpvoting] = useState(false);
@@ -111,7 +111,6 @@ export default function MemberHQ() {
 
   const TABS = [
     { id: "ops",          label: "Live Ops",      icon: Siren },
-    { id: "briefings",    label: "Briefings",     icon: BookOpen },
     { id: "warnos",       label: "WARNOs",        icon: Radio },
     { id: "sitreps",      label: "SITREPs",       icon: Activity },
     { id: "aars",         label: "AARs",          icon: ClipboardList },
@@ -215,7 +214,6 @@ export default function MemberHQ() {
 
       {/* Tab content */}
       {selectedGroup && tab === "ops"          && <MemberOpsTab         group={selectedGroup} showMsg={showMsg} rosterEntry={rosterEntry} user={user} />}
-      {selectedGroup && tab === "briefings"    && <MemberBriefingsTab   group={selectedGroup} showMsg={showMsg} />}
       {selectedGroup && tab === "warnos"       && <MemberWarnosTab      group={selectedGroup} showMsg={showMsg} />}
       {selectedGroup && tab === "sitreps"      && <MemberSitrepsTab     group={selectedGroup} showMsg={showMsg} rosterEntry={rosterEntry} />}
       {selectedGroup && tab === "aars"         && <MemberAARsTab        group={selectedGroup} showMsg={showMsg} rosterEntry={rosterEntry} />}
@@ -348,6 +346,16 @@ function MemberOpsTab({ group, showMsg, rosterEntry, user }: any) {
   );
 }
 
+/* ─── Shared field renderer ──────────────────────────────────────────────── */
+function BriefField({ label, value }: any) {
+  return (
+    <div>
+      <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
+      <p className="text-sm font-sans whitespace-pre-wrap text-foreground">{value}</p>
+    </div>
+  );
+}
+
 /* ─── WARNOs tab ──────────────────────────────────────────────────────────── */
 function MemberWarnosTab({ group, showMsg }: any) {
   const [warnos, setWarnos] = useState<any[]>([]);
@@ -473,70 +481,6 @@ function MemberSitrepsTab({ group, showMsg, rosterEntry }: any) {
           )}
         </div>
       ))}
-    </div>
-  );
-}
-
-/* ─── Briefings tab ───────────────────────────────────────────────────────── */
-function MemberBriefingsTab({ group, showMsg }: any) {
-  const [briefings, setBriefings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<string|null>(null);
-
-  useEffect(() => {
-    apiFetch<any>(`/milsimBriefings?path=list&group_id=${group.id}`)
-      .then((r: any) => setBriefings((r.briefings ?? []).filter((b: any) => b.status === "published").sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime())))
-      .catch(() => setBriefings([]))
-      .finally(() => setLoading(false));
-  }, [group.id]);
-
-
-  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-
-  if (briefings.length === 0) return (
-    <div className="text-center py-16 border border-dashed border-border rounded-lg">
-      <MapPin className="w-10 h-10 mx-auto mb-3 opacity-20" />
-      <p className="font-display text-sm uppercase tracking-widest text-muted-foreground">No published briefings</p>
-      <p className="text-xs text-muted-foreground font-sans mt-1">Your commander will publish op briefings here before operations</p>
-    </div>
-  );
-
-  return (
-    <div className="space-y-3 max-w-3xl">
-      <p className="text-xs text-muted-foreground font-sans">{briefings.length} published briefing{briefings.length !== 1 ? "s" : ""}</p>
-      {briefings.map((b: any) => (
-        <div key={b.id} className="bg-card border border-border rounded-lg overflow-hidden">
-          <button onClick={() => setExpanded(expanded === b.id ? null : b.id)}
-            className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${CL[b.classification ?? "unclassified"] ?? ""}`}>
-                {(b.classification ?? "unclassified").replace("-"," ")}
-              </span>
-              <span className="font-display font-bold text-sm">{b.title}</span>
-              {b.op_date && <span className="text-xs text-muted-foreground">{format(new Date(b.op_date), "dd MMM yyyy")}</span>}
-            </div>
-            {expanded === b.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-          </button>
-          {expanded === b.id && (
-            <div className="border-t border-border p-5 bg-secondary/10 space-y-4">
-              {b.ao         && <BriefField label="Area of Operations" value={b.ao} />}
-              {b.objectives && <BriefField label="Objectives"         value={b.objectives} />}
-              {b.comms_plan && <BriefField label="Comms Plan"         value={b.comms_plan} />}
-              {b.roe        && <BriefField label="Rules of Engagement"value={b.roe} />}
-              {b.additional_notes && <BriefField label="Additional Notes" value={b.additional_notes} />}
-              {b.content && !b.ao && !b.objectives && <BriefField label="Content" value={b.content} />}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-function BriefField({ label, value }: any) {
-  return (
-    <div>
-      <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
-      <p className="text-sm font-sans whitespace-pre-wrap text-foreground">{value}</p>
     </div>
   );
 }
