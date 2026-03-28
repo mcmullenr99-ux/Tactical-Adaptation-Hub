@@ -78,14 +78,12 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
   };
 
   const unreadMsgs: number = (notifCounts as any)?.unreadMessages ?? 0;
-  const pendingFriends: number = (notifCounts as any)?.pendingFriendRequests ?? 0;
 
   const navLinks = [
     { href: "/portal/dashboard", icon: <LayoutDashboard className="w-4 h-4 text-primary" />, label: "Dashboard" },
     { href: "/portal/inbox", icon: <Mail className="w-4 h-4 text-primary" />, label: "Comms", badge: unreadMsgs > 0 ? unreadMsgs : 0 },
     { href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "Unit HQ" },
     { href: "/portal/member-hq", icon: <Users className="w-4 h-4 text-primary" />, label: "Member HQ" },
-    { href: "/portal/friends", icon: <Users className="w-4 h-4 text-primary" />, label: "Connections", badge: pendingFriends > 0 ? pendingFriends : 0 },
     { href: "/portal/support", icon: <LifeBuoy className="w-4 h-4 text-primary" />, label: "Support" },
     { href: "/portal/2fa", icon: <KeyRound className="w-4 h-4 text-primary" />, label: "2FA Security" },
     { href: "/ops", icon: <Calendar className="w-4 h-4 text-primary" />, label: "Ops Calendar" },
