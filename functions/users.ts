@@ -46,10 +46,35 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const url = new URL(req.url);
     const pathOverride = url.searchParams.get('path');
-    const parts = pathOverride
-      ? pathOverride.split('/').filter(Boolean)
+    // Strip query string from pathOverride before splitting into parts
+    // (apiFetch encodes the full path including ?q= into the path= param)
+    const pathForParts = pathOverride ? pathOverride.split('?')[0] : null;
+    const parts = pathForParts
+      ? pathForParts.split('/').filter(Boolean)
       : url.pathname.replace(/^\/functions\/users/, '').split('/').filter(Boolean);
     const method = req.method;
+
+    // GET /users/search?q= — search users by username (for friend finder)
+    // Note: apiFetch encodes full path e.g. /search?q=buffet into pathOverride
+    // parts is built from path stripped of query string, so parts[0] === 'search' correctly
+    // q is extracted from the pathOverride string directly
+    if (method === 'GET' && parts[0] === 'search') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      // Extract q from pathOverride (e.g. "/search?q=buffet") or outer query string
+      let q = (url.searchParams.get('q') ?? '').trim().toLowerCase();
+      if (!q && pathOverride) {
+        const qMatch = pathOverride.match(/[?&]q=([^&]*)/);
+        if (qMatch) q = decodeURIComponent(qMatch[1]).trim().toLowerCase();
+      }
+      if (q.length < 2) return Response.json([]);
+      const all = await base44.asServiceRole.entities.AppUser.list();
+      const results = all
+        .filter((u: any) => u.status === 'active' && u.id !== full.id && u.username?.toLowerCase().includes(q))
+        .slice(0, 20)
+        .map((u: any) => ({ id: u.id, username: u.username, role: u.role, nationality: u.nationality ?? null, bio: u.bio ?? null }));
+      return Response.json(results);
+    }
 
     // GET /users — list users (public, limited fields)
     if (method === 'GET' && parts.length === 0) {
