@@ -467,24 +467,49 @@ export default function MilsimGroup() {
                     </p>
                   </div>
 
-                  {/* Status summary — public-facing, no internal detail */}
-                  <div className={`rounded-lg border p-4 flex items-center gap-4 ${
-                    readiness.status === 'green' ? 'border-green-500/30 bg-green-500/5' :
-                    readiness.status === 'amber' ? 'border-yellow-500/30 bg-yellow-500/5' :
-                                                   'border-red-500/30 bg-red-500/5'
-                  }`}>
-                    <span className={`w-3 h-3 rounded-full shrink-0 ${
-                      readiness.status === 'green' ? 'bg-green-400' :
-                      readiness.status === 'amber' ? 'bg-yellow-400' : 'bg-red-400'
-                    }`} />
-                    <div>
-                      <p className={`font-display font-bold uppercase tracking-widest text-sm ${
-                        readiness.status === 'green' ? 'text-green-400' :
-                        readiness.status === 'amber' ? 'text-yellow-400' : 'text-red-400'
-                      }`}>{readiness.status === 'green' ? 'Combat Ready' : readiness.status === 'amber' ? 'Marginal Readiness' : 'Not Ready'}</p>
-                      <p className="text-[11px] text-muted-foreground font-sans mt-0.5">{readiness.narrative ?? 'Readiness assessed based on manpower, activity, operations, and doctrine.'}</p>
+                  {/* System-generated narrative */}
+                  <div className="bg-card border border-border rounded-lg p-5 space-y-3">
+                    <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">System Assessment</p>
+                    <div className="space-y-2">
+                      {(readiness.narrative_items ?? (readiness.narrative_lines ?? []).map((text: string) => ({ label: '', text, severity: 'neutral' }))).map((item: any, i: number) => {
+                        const sc = item.severity === 'green'  ? { border: 'border-green-500/30 bg-green-500/5',   dot: 'bg-green-400',  label: 'text-green-400'  }
+                                 : item.severity === 'amber'  ? { border: 'border-yellow-500/30 bg-yellow-500/5', dot: 'bg-yellow-400', label: 'text-yellow-400' }
+                                 : item.severity === 'red'    ? { border: 'border-red-500/30 bg-red-500/5',       dot: 'bg-red-400',    label: 'text-red-400'    }
+                                 :                              { border: 'border-border bg-card',                dot: 'bg-muted-foreground', label: 'text-muted-foreground' };
+                        return (
+                          <div key={i} className={`flex items-start gap-3 p-3 rounded-lg border ${sc.border}`}>
+                            <span className={`shrink-0 w-2 h-2 rounded-full mt-1.5 ${sc.dot}`} />
+                            <div>
+                              {item.label && <p className={`text-xs font-display font-bold uppercase tracking-wider mb-0.5 ${sc.label}`}>{item.label}</p>}
+                              <p className="text-[11px] text-muted-foreground font-sans leading-relaxed">{item.text}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
+
+                  {/* Readiness flags */}
+                  {(readiness.flags ?? []).length > 0 && (
+                    <div className="bg-card border border-border rounded-lg p-5 space-y-3">
+                      <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Readiness Flags</p>
+                      <div className="space-y-2">
+                        {(readiness.flags ?? []).map((flag: any) => (
+                          <div key={flag.code} className={`flex items-start gap-3 p-3 rounded-lg border ${
+                            flag.severity === 'red'
+                              ? 'border-red-500/30 bg-red-500/5'
+                              : 'border-yellow-500/30 bg-yellow-500/5'
+                          }`}>
+                            <span className={`shrink-0 w-2 h-2 rounded-full mt-1.5 ${flag.severity === 'red' ? 'bg-red-400' : 'bg-yellow-400'}`} />
+                            <div>
+                              <p className={`text-xs font-display font-bold uppercase tracking-wider ${flag.severity === 'red' ? 'text-red-400' : 'text-yellow-400'}`}>{flag.label}</p>
+                              <p className="text-[11px] text-muted-foreground font-sans mt-0.5 leading-relaxed">{flag.detail}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Capability tier explanation */}
                   <div className="bg-card border border-border rounded-lg p-5 space-y-3">
