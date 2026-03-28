@@ -682,7 +682,7 @@ export default function MilsimGroup() {
               if (group.orbat) {
                 try {
                   const parsed = JSON.parse(group.orbat);
-                  hasValidOrbat = !!(parsed && (parsed.id || parsed.tree));
+                  hasValidOrbat = !!(parsed && ((Array.isArray(parsed) && parsed.length > 0) || parsed.id || parsed.tree));
                 } catch { /* invalid JSON */ }
               }
               if (!hasValidOrbat) {
