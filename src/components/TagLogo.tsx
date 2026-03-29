@@ -8,24 +8,22 @@ interface TagLogoProps {
 }
 
 /**
- * TAG logo — fully transparent PNG.
- * Dark mode → white lines. Light mode → black lines.
+ * TAG logo — black artwork on transparent PNG.
+ * Dark mode → invert to white. Light mode → black as-is.
  */
 export function TagLogo({ size = 200, className = "", variant = "helmet" }: TagLogoProps) {
-  // Use context directly with fallback — never crashes even outside provider
   const ctx = useContext(ThemeContext);
   const isDark = ctx ? ctx.theme !== "light" : true;
 
-  const src = variant === "skull"
-    ? (isDark ? "/images/tag-skull-dark.png" : "/images/tag-skull-light.png")
-    : (isDark ? "/images/tag-logo-dark.png"  : "/images/tag-logo-light.png");
+  const src = variant === "skull" ? "/images/tag-skull.png" : "/images/tag-logo.png";
 
   return (
     <img
       src={src}
-      alt="TAG — Tactical Adaptation Group"
+      alt="TAG"
       width={size}
       height={size}
+      style={{ filter: isDark ? "invert(1)" : "none" }}
       className={["select-none pointer-events-none object-contain", className].join(" ")}
       draggable={false}
     />
