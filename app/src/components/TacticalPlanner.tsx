@@ -49,70 +49,101 @@ interface GameMap {
   id: string;
   game: string;
   name: string;
-  iframeUrl: string | null;   // live interactive URL
+  imageUrl: string | null;    // hosted topo map image (self-hosted CDN)
+  proxyUrl: string | null;    // backend proxy URL for external images
   fallbackColor: string;
   previewColor: string;
   attribution: string;
-  openUrl: string;            // link to open in new tab
+  openUrl: string;            // link to open full interactive map in new tab
 }
 
+// CDN base for self-hosted maps
+const CDN = "https://base44.app/api/apps/69bf52c997cae5d4cff87ae4/files/mp/public/69bf52c997cae5d4cff87ae4";
+// Proxy for external maps (avoids CORS)
+const PROXY = "/functions/mapProxy?url=";
+
 const GAME_MAPS: GameMap[] = [
-  // ── Arma 3 Vanilla ────────────────────────────────────────────────────────
+  // ── Arma Reforger — self-hosted topo maps (actual in-game topographic maps) ────
+  { id:"ar_everon",   game:"Arma Reforger", name:"Everon",
+    imageUrl:`${CDN}/1a4c04998_everon.jpg`,
+    proxyUrl:null, fallbackColor:"#2d3a2e", previewColor:"#4a8c5a",
+    attribution:"recoil.org",
+    openUrl:"https://reforger.recoil.org/everon/" },
+
+  { id:"ar_kolguyev", game:"Arma Reforger", name:"Kolguyev",
+    imageUrl:`${CDN}/241b2afa6_kolguyev.jpg`,
+    proxyUrl:null, fallbackColor:"#2d3a2e", previewColor:"#6a8c4a",
+    attribution:"recoil.org",
+    openUrl:"https://reforger.recoil.org/kolguyev/" },
+
+  { id:"ar_arland",   game:"Arma Reforger", name:"Arland",
+    imageUrl:`${CDN}/34c192552_arland.jpg`,
+    proxyUrl:null, fallbackColor:"#1a3a2a", previewColor:"#3a7a5a",
+    attribution:"recoil.org",
+    openUrl:"https://reforger.recoil.org/arland/" },
+
+  // ── Arma 3 Vanilla — via PLANOPS Atlas (proxied) ──────────────────────────
   { id:"a3_altis",    game:"Arma 3 — Vanilla",  name:"Altis",
-    iframeUrl:null, fallbackColor:"#2d3a2e", previewColor:"#4a7c59",
+    imageUrl:null,
+    proxyUrl:`${PROXY}https://atlas.plan-ops.fr/maps/arma3/altis/150`,
+    fallbackColor:"#2d3a2e", previewColor:"#4a7c59",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/altis/150" },
 
   { id:"a3_stratis",  game:"Arma 3 — Vanilla",  name:"Stratis",
-    iframeUrl:null, fallbackColor:"#2d3a2e", previewColor:"#5a8c6a",
+    imageUrl:null,
+    proxyUrl:`${PROXY}https://atlas.plan-ops.fr/maps/arma3/stratis/150`,
+    fallbackColor:"#2d3a2e", previewColor:"#5a8c6a",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/stratis/150" },
 
   { id:"a3_malden",   game:"Arma 3 — Vanilla",  name:"Malden",
-    iframeUrl:null, fallbackColor:"#2d3a2e", previewColor:"#6a9c7a",
+    imageUrl:null,
+    proxyUrl:`${PROXY}https://atlas.plan-ops.fr/maps/arma3/malden/150`,
+    fallbackColor:"#2d3a2e", previewColor:"#6a9c7a",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/malden/150" },
 
   { id:"a3_tanoa",    game:"Arma 3 — Vanilla",  name:"Tanoa",
-    iframeUrl:null, fallbackColor:"#1a3a2a", previewColor:"#3a7a5a",
+    imageUrl:null,
+    proxyUrl:`${PROXY}https://atlas.plan-ops.fr/maps/arma3/tanoa/150`,
+    fallbackColor:"#1a3a2a", previewColor:"#3a7a5a",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/tanoa/150" },
 
-  // ── Arma 3 Top Modded ─────────────────────────────────────────────────────
-  { id:"a3_chernarus",     game:"Arma 3 — Modded", name:"Chernarus (Summer)",
-    iframeUrl:null, fallbackColor:"#263326", previewColor:"#4a7a55",
+  // ── Arma 3 Modded ─────────────────────────────────────────────────────────
+  { id:"a3_chernarus", game:"Arma 3 — Modded", name:"Chernarus (Summer)",
+    imageUrl:null,
+    proxyUrl:`${PROXY}https://atlas.plan-ops.fr/maps/arma3/chernarus/150`,
+    fallbackColor:"#263326", previewColor:"#4a7a55",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/chernarus/150" },
 
-  { id:"a3_takistan",      game:"Arma 3 — Modded", name:"Takistan",
-    iframeUrl:null, fallbackColor:"#3a3020", previewColor:"#7a7040",
+  { id:"a3_takistan",  game:"Arma 3 — Modded", name:"Takistan",
+    imageUrl:null,
+    proxyUrl:`${PROXY}https://atlas.plan-ops.fr/maps/arma3/takistan/150`,
+    fallbackColor:"#3a3020", previewColor:"#7a7040",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/takistan/150" },
 
-  { id:"a3_lingor",        game:"Arma 3 — Modded", name:"Lingor",
-    iframeUrl:null, fallbackColor:"#1a3020", previewColor:"#3a6a40",
-    attribution:"PLANOPS Atlas",
-    openUrl:"https://atlas.plan-ops.fr/maps/arma3/lingor/150" },
-
-  { id:"a3_fallujah",      game:"Arma 3 — Modded", name:"Fallujah",
-    iframeUrl:null, fallbackColor:"#3a2a10", previewColor:"#8a7040",
+  { id:"a3_fallujah",  game:"Arma 3 — Modded", name:"Fallujah",
+    imageUrl:null,
+    proxyUrl:`${PROXY}https://atlas.plan-ops.fr/maps/arma3/fallujah/150`,
+    fallbackColor:"#3a2a10", previewColor:"#8a7040",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/fallujah/150" },
 
-  { id:"a3_lythium",       game:"Arma 3 — Modded", name:"Lythium",
-    iframeUrl:null, fallbackColor:"#2a2010", previewColor:"#7a6030",
+  { id:"a3_lythium",   game:"Arma 3 — Modded", name:"Lythium",
+    imageUrl:null,
+    proxyUrl:`${PROXY}https://atlas.plan-ops.fr/maps/arma3/lythium/150`,
+    fallbackColor:"#2a2010", previewColor:"#7a6030",
     attribution:"PLANOPS Atlas",
     openUrl:"https://atlas.plan-ops.fr/maps/arma3/lythium/150" },
 
-  // ── Squad ── squadmaps.com ─────────────────────────────────────────────────
-  { id:"sq_all",           game:"Squad", name:"All Maps",
-    iframeUrl:null, fallbackColor:"#2a2a1e", previewColor:"#6a7a3a",
-    attribution:"squadmaps.com",
-    openUrl:"https://squadmaps.com/" },
-
   // ── Custom ────────────────────────────────────────────────────────────────
-  { id:"custom",           game:"Custom", name:"Custom URL",
-    iframeUrl:null, fallbackColor:"#1a1a1a", previewColor:"#444",
+  { id:"custom",       game:"Custom", name:"Custom URL",
+    imageUrl:null, proxyUrl:null,
+    fallbackColor:"#1a1a1a", previewColor:"#444",
     attribution:"", openUrl:"" },
 ];
 
@@ -406,8 +437,13 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
   const [showNotes,      setShowNotes]      = useState(false);
   const [preview,        setPreview]        = useState<PlanElement | null>(null);
 
+  // Map pan/zoom state — drives the image layer
+  const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
+  const [mapZoom,   setMapZoom]   = useState(1.0);
+  const mapPanStart = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
+  const mapImgRef   = useRef<HTMLImageElement | null>(null);
+
   // Drawing refs
-  // Note: pan is handled by the iframe beneath — no pan state needed here
   const isDrawing  = useRef(false);
   const drawPath   = useRef<Pt[]>([]);
   const drawStart  = useRef<Pt | null>(null);
@@ -416,7 +452,16 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
 
   const gameMap = useMemo(() => GAME_MAPS.find(m => m.id === mapId) ?? GAME_MAPS[0], [mapId]);
 
-  // Canvas passthrough — when pan or nothing drawing, let iframe handle mouse
+  // Reset pan/zoom when map changes
+  useEffect(() => {
+    setMapOffset({ x: 0, y: 0 });
+    setMapZoom(1.0);
+  }, [mapId]);
+
+  // Active image URL for current map
+  const activeMapImageUrl = gameMap.imageUrl ?? gameMap.proxyUrl ?? null;
+
+  // Canvas passthrough — when pan mode, let the image layer handle mouse for pan/zoom
   const canvasCapture = !["pan"].includes(tool);
 
   // Resize observer
@@ -816,7 +861,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
                         }`}>
                         <div className="w-3.5 h-3.5 rounded-sm flex-shrink-0" style={{background:m.previewColor}}/>
                         {m.name}
-                        {m.iframeUrl && <span className="ml-auto text-[9px] text-green-400 font-mono">LIVE</span>}
+                        {m.imageUrl && <span className="ml-auto text-[9px] text-green-400 font-mono">MAP</span>}
                       </button>
                     ))}
                   </div>
@@ -832,7 +877,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
                   onKeyDown={e => { if (e.key === "Enter" && customBgUrl) { setMapId("custom"); setShowMapPicker(false); } }}
                 />
                 <button
-                  onClick={() => { if (customBgUrl) { setMapId("custom"); setShowMapPicker(false); setIframeBlocked(false); } }}
+                  onClick={() => { if (customBgUrl) { setMapId("custom"); setShowMapPicker(false); } }}
                   disabled={!customBgUrl}
                   className="w-full px-2.5 py-1.5 rounded border border-primary/40 bg-primary/10 text-primary text-xs font-display font-bold uppercase tracking-wider hover:bg-primary/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
                   Load Map
@@ -979,7 +1024,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
       {/* ── Commander notes ───────────────────────────────────────────────── */}
       {showNotes && (
         <div className="border-b border-border bg-card/50 px-4 py-3">
-          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Commander\'s Notes</p>
+          <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Commander's Notes</p>
           <textarea
             className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground resize-none"
             rows={3} placeholder="Pre-deployment intentions, ROE, timings, coordination notes..."
@@ -989,12 +1034,29 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
       )}
 
       {/* ── Map + canvas stack ────────────────────────────────────────────── */}
-      <div ref={containerRef} className="flex-1 relative overflow-hidden bg-[#0a0c0e]">
+      <div ref={containerRef} className="flex-1 relative overflow-hidden bg-[#0a0c0e]"
+        onWheel={e => {
+          e.preventDefault();
+          const factor = e.deltaY < 0 ? 1.12 : 0.89;
+          setMapZoom(z => Math.max(0.25, Math.min(8, z * factor)));
+        }}
+        onMouseDown={e => {
+          if (tool !== "pan") return;
+          mapPanStart.current = { mx: e.clientX, my: e.clientY, ox: mapOffset.x, oy: mapOffset.y };
+        }}
+        onMouseMove={e => {
+          if (tool !== "pan" || !mapPanStart.current) return;
+          setMapOffset({
+            x: mapPanStart.current.ox + (e.clientX - mapPanStart.current.mx),
+            y: mapPanStart.current.oy + (e.clientY - mapPanStart.current.my),
+          });
+        }}
+        onMouseUp={() => { mapPanStart.current = null; }}
+        onMouseLeave={() => { mapPanStart.current = null; }}
+      >
 
-        {/* iframe maps removed — external sites block embedding */}
-
-        {/* LAYER 1 (custom): user-supplied URL — iframe so it works for both images and live map pages */}
-        {mapId === "custom" && customBgUrl && (
+        {/* LAYER 1: Topographic map image — pan & zoomable */}
+        {mapId === "custom" && customBgUrl ? (
           <iframe
             key={customBgUrl}
             src={customBgUrl}
@@ -1003,37 +1065,59 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
             style={{ pointerEvents: canvasCapture ? "none" : "auto" }}
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
           />
-        )}
-
-        {/* LAYER 1: Map reference panel — draw your plan here, use the link to open the real map alongside */}
-        {mapId !== "custom" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-5"
-            style={{background: `radial-gradient(ellipse at center, ${gameMap.fallbackColor}ee 0%, #0a0c0ecc 100%)`}}>
-
-            {/* Colour swatch + map name */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-16 h-16 rounded-xl border-2 border-white/10 shadow-2xl"
-                style={{background: gameMap.previewColor}}/>
-              <p className="text-white font-display font-bold text-xl uppercase tracking-widest">{gameMap.name}</p>
-              <p className="text-white/40 text-xs font-mono">{gameMap.game}</p>
+        ) : activeMapImageUrl ? (
+          <div className="absolute inset-0 flex items-center justify-center overflow-hidden"
+            style={{ cursor: tool === "pan" ? (mapPanStart.current ? "grabbing" : "grab") : "default" }}>
+            <img
+              ref={mapImgRef}
+              src={activeMapImageUrl}
+              alt={gameMap.name}
+              draggable={false}
+              style={{
+                transform: `translate(${mapOffset.x}px, ${mapOffset.y}px) scale(${mapZoom})`,
+                transformOrigin: "center center",
+                imageRendering: mapZoom > 2 ? "pixelated" : "auto",
+                maxWidth: "none",
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                pointerEvents: "none",
+                userSelect: "none",
+              }}
+            />
+            {/* Attribution badge */}
+            <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/60 rounded text-[9px] text-white/40 font-mono pointer-events-none">
+              {gameMap.attribution} · Pan: drag · Zoom: scroll
             </div>
-
-            {/* Open map button */}
+            {/* Zoom controls */}
+            <div className="absolute bottom-2 right-20 flex items-center gap-1 pointer-events-auto z-10">
+              <button onClick={() => setMapZoom(z => Math.min(8, z * 1.25))}
+                className="w-7 h-7 bg-black/70 border border-white/20 rounded text-white flex items-center justify-center hover:bg-black/90 transition-all">
+                <Plus className="w-3.5 h-3.5"/>
+              </button>
+              <button onClick={() => { setMapZoom(1); setMapOffset({ x:0, y:0 }); }}
+                className="px-2 h-7 bg-black/70 border border-white/20 rounded text-white text-[10px] font-mono hover:bg-black/90 transition-all">
+                {Math.round(mapZoom * 100)}%
+              </button>
+              <button onClick={() => setMapZoom(z => Math.max(0.25, z / 1.25))}
+                className="w-7 h-7 bg-black/70 border border-white/20 rounded text-white flex items-center justify-center hover:bg-black/90 transition-all">
+                <Minus className="w-3.5 h-3.5"/>
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Fallback: no image available for this map */
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4"
+            style={{background: `radial-gradient(ellipse at center, ${gameMap.fallbackColor}ee 0%, #0a0c0ecc 100%)`}}>
+            <div className="w-12 h-12 rounded-xl border-2 border-white/10" style={{background: gameMap.previewColor}}/>
+            <p className="text-white font-display font-bold text-lg uppercase tracking-widest">{gameMap.name}</p>
             {gameMap.openUrl && (
               <a href={gameMap.openUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2.5 px-5 py-2.5 bg-primary/20 border border-primary/50 rounded-lg text-primary font-display font-bold text-sm uppercase tracking-wider hover:bg-primary/30 transition-all shadow-lg">
-                <ExternalLink className="w-4 h-4"/>
-                Open {gameMap.name} on {gameMap.attribution}
+                className="flex items-center gap-2 px-4 py-2 bg-primary/20 border border-primary/50 rounded-lg text-primary text-xs font-display font-bold uppercase tracking-wider hover:bg-primary/30 transition-all">
+                <ExternalLink className="w-3.5 h-3.5"/>
+                Open on {gameMap.attribution}
               </a>
             )}
-
-            {/* Instruction */}
-            <div className="flex flex-col items-center gap-1 max-w-xs text-center">
-              <p className="text-white/30 text-xs leading-relaxed">
-                Open the map in a second browser tab, then use the drawing tools here to annotate your plan on top of this canvas.
-              </p>
-              <p className="text-white/20 text-[10px] font-mono mt-1">Select a drawing tool above to begin</p>
-            </div>
           </div>
         )}
 
