@@ -37,7 +37,7 @@ export default function ResetPassword() {
 
     setLoading(true);
     try {
-      await apiFetch("/api/auth/reset-password", {
+      await apiFetch("/authResetPassword", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, newPassword: password }),

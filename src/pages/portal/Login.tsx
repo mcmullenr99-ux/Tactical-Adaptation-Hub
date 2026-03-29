@@ -29,7 +29,7 @@ function ForgotPasswordPanel({ onBack }: { onBack: () => void }) {
     setSending(true);
     setError(null);
     try {
-      await apiFetch("/api/auth/forgot-password", {
+      await apiFetch("/authForgotPassword", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -147,7 +147,7 @@ export default function Login() {
     setResendState("sending");
     try {
       // Call resend — no auth token available here so we pass email in body
-      await apiFetch("/api/auth/resend-verification", {
+      await apiFetch("/authResendVerification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: unverifiedEmail }),

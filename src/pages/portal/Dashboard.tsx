@@ -57,19 +57,19 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { data: inbox } = useQuery<Message[]>({
     queryKey: ["inbox"],
-    queryFn: () => apiFetch("/api/messages/inbox"),
+    queryFn: () => apiFetch("/messages?path=inbox"),
   });
   const qc = useQueryClient();
   const dutyStatus = (user as any)?.on_duty_status ?? "available";
 
   const { data: upcomingOps } = useQuery<OpsEvent[]>({
     queryKey: ["ops-upcoming"],
-    queryFn: () => apiFetch("/api/ops?status=upcoming&limit=3"),
+    queryFn: () => apiFetch("/milsimOps?path=upcoming&limit=3"),
   });
 
   const { data: motd } = useQuery<Motd>({
     queryKey: ["motd-latest"],
-    queryFn: () => apiFetch("/api/motd/latest"),
+    queryFn: () => apiFetch("/motd?path=latest"),
   });
 
 
@@ -86,7 +86,7 @@ export default function Dashboard() {
   const handleResendVerification = async () => {
     setResendState("sending");
     try {
-      await apiFetch("/api/auth/resend-verification", {
+      await apiFetch("/authResendVerification", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });

@@ -27,7 +27,7 @@ function RecipientSearch({ onChange, initialUsername }: { onChange: (id: number)
 
   const { data: results = [] } = useQuery<UserResult[]>({
     queryKey: ["user-search", q],
-    queryFn: () => apiFetch(`/api/users/search?q=${encodeURIComponent(q)}`),
+    queryFn: () => apiFetch(`/users?path=search?q=${encodeURIComponent(q)}`),
     enabled: q.length >= 2 && !selectedName,
     staleTime: 5_000,
   });
@@ -98,7 +98,7 @@ export default function Compose() {
 
   const sendMutation = useMutation({
     mutationFn: (data: { recipientId: number; subject: string; body: string }) =>
-      apiFetch("/api/messages", { method: "POST", body: JSON.stringify(data) }),
+      apiFetch("/messages", { method: "POST", body: JSON.stringify(data) }),
   });
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ComposeFormValues>({

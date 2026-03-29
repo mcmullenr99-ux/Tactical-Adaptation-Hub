@@ -46,9 +46,9 @@ export default function SupportAdmin() {
     setLoading(true);
     try {
       const [t, f, s] = await Promise.all([
-        apiFetch<any[]>("/api/support/tickets"),
-        apiFetch<any[]>("/api/support/feedback"),
-        apiFetch<any>("/api/support/stats"),
+        apiFetch<any[]>("/support?path=tickets"),
+        apiFetch<any[]>("/support?path=feedback"),
+        apiFetch<any>("/support?path=stats"),
       ]);
       setTickets(Array.isArray(t) ? t : []);
       setFeedback(Array.isArray(f) ? f : []);
@@ -60,7 +60,7 @@ export default function SupportAdmin() {
 
   async function openTicket(ticket: any) {
     try {
-      const full = await apiFetch<any>(`/api/support/tickets/${ticket.id}`);
+      const full = await apiFetch<any>(`/support?path=tickets/${ticket.id}`);
       setActiveTicket(full);
       setResolutionNote(full.resolution_note ?? "");
     } catch { toast({ title: "Failed to load ticket", variant: "destructive" }); }
@@ -70,7 +70,7 @@ export default function SupportAdmin() {
     if (!replyBody.trim() || !activeTicket) return;
     setSendingReply(true);
     try {
-      const reply = await apiFetch<any>(`/api/support/tickets/${activeTicket.id}/reply`, {
+      const reply = await apiFetch<any>(`/support?path=tickets/${activeTicket.id}/reply`, {
         method: "POST", body: JSON.stringify({ body: replyBody }),
       });
       setActiveTicket((t: any) => ({ ...t, replies: [...(t.replies ?? []), reply], status: t.status === 'open' ? 'in_progress' : t.status }));
@@ -83,7 +83,7 @@ export default function SupportAdmin() {
   async function updateTicketStatus(status: string) {
     if (!activeTicket) return;
     try {
-      const updated = await apiFetch<any>(`/api/support/tickets/${activeTicket.id}`, {
+      const updated = await apiFetch<any>(`/support?path=tickets/${activeTicket.id}`, {
         method: "PATCH", body: JSON.stringify({ status, resolutionNote: resolutionNote || undefined }),
       });
       setActiveTicket((t: any) => ({ ...t, ...updated }));
@@ -94,14 +94,14 @@ export default function SupportAdmin() {
 
   async function markFeedbackReviewed(id: string, reviewed: boolean) {
     try {
-      await apiFetch(`/api/support/feedback/${id}`, { method: "PATCH", body: JSON.stringify({ reviewed }) });
+      await apiFetch(`/support?path=feedback/${id}`, { method: "PATCH", body: JSON.stringify({ reviewed }) });
       setFeedback(prev => prev.map(f => f.id === id ? { ...f, reviewed } : f));
     } catch (e: any) { toast({ title: "Error", variant: "destructive" }); }
   }
 
   async function deleteFeedback(id: string) {
     try {
-      await apiFetch(`/api/support/feedback/${id}`, { method: "DELETE" });
+      await apiFetch(`/support?path=feedback/${id}`, { method: "DELETE" });
       setFeedback(prev => prev.filter(f => f.id !== id));
     } catch (e: any) { toast({ title: "Error", variant: "destructive" }); }
   }

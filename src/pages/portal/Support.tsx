@@ -45,14 +45,14 @@ export default function Support() {
 
   async function loadTickets() {
     try {
-      const data = await apiFetch<any[]>("/api/support/tickets");
+      const data = await apiFetch<any[]>("/support?path=tickets");
       setTickets(data);
     } catch { /* ignore */ } finally { setLoading(false); }
   }
 
   async function openTicket(ticket: any) {
     try {
-      const full = await apiFetch<any>(`/api/support/tickets/${ticket.id}`);
+      const full = await apiFetch<any>(`/support?path=tickets/${ticket.id}`);
       setActiveTicket(full);
     } catch { toast({ title: "Error", description: "Failed to load ticket", variant: "destructive" }); }
   }
@@ -61,7 +61,7 @@ export default function Support() {
     if (!replyBody.trim() || !activeTicket) return;
     setSendingReply(true);
     try {
-      const reply = await apiFetch<any>(`/api/support/tickets/${activeTicket.id}/reply`, {
+      const reply = await apiFetch<any>(`/support?path=tickets/${activeTicket.id}/reply`, {
         method: "POST", body: JSON.stringify({ body: replyBody }),
       });
       setActiveTicket((t: any) => ({ ...t, replies: [...(t.replies ?? []), reply] }));
@@ -78,7 +78,7 @@ export default function Support() {
     }
     setSubmittingTicket(true);
     try {
-      const t = await apiFetch<any>("/api/support/tickets", { method: "POST", body: JSON.stringify(newTicket) });
+      const t = await apiFetch<any>("/support?path=tickets", { method: "POST", body: JSON.stringify(newTicket) });
       setTickets(prev => [t, ...prev]);
       setShowNewTicket(false);
       setNewTicket({ subject: "", description: "", category: "other", priority: "medium" });
@@ -95,7 +95,7 @@ export default function Support() {
     }
     setSubmittingFeedback(true);
     try {
-      await apiFetch("/api/support/feedback", { method: "POST", body: JSON.stringify({ ...feedback, page: window.location.pathname }) });
+      await apiFetch("/support?path=feedback", { method: "POST", body: JSON.stringify({ ...feedback, page: window.location.pathname }) });
       setShowFeedback(false);
       setFeedback({ category: "general", rating: 5, message: "" });
       toast({ title: "Feedback submitted!", description: "Thanks for helping us improve." });

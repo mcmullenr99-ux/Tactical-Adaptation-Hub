@@ -86,7 +86,7 @@ function RecipientSearch({ onChange, initialUsername }: { onChange: (id: number)
 
   const { data: results = [] } = useQuery<UserResult[]>({
     queryKey: ["user-search", q],
-    queryFn: () => apiFetch(`/api/users/search?q=${encodeURIComponent(q)}`),
+    queryFn: () => apiFetch(`/users?path=search?q=${encodeURIComponent(q)}`),
     enabled: q.length >= 2 && !selectedName,
     staleTime: 5_000,
   });
@@ -148,10 +148,10 @@ function AddFriendInline({ userId, username }: { userId: number; username: strin
   const qc = useQueryClient();
   const { data: status, isLoading } = useQuery<FriendStatus>({
     queryKey: ["friend-status", userId],
-    queryFn: () => apiFetch(`/api/friends/status/${userId}`),
+    queryFn: () => apiFetch(`/friends?path=status/${userId}`),
   });
   const send = useMutation({
-    mutationFn: () => apiFetch(`/api/friends/request/${userId}`, { method: "POST" }),
+    mutationFn: () => apiFetch(`/friends?path=request/${userId}`, { method: "POST" }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["friend-status", userId] }); toast({ title: "Request Sent", description: `Sent to ${username}.` }); },
   });
   if (isLoading) return <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />;
@@ -168,13 +168,13 @@ function MessagesPanel({ tab, setSection }: { tab: "inbox" | "sent"; setSection:
   const qc = useQueryClient();
   const { toast } = useToast();
 
-  const { data: inbox = [], refetch: refetchInbox } = useQuery<any[]>({ queryKey: ["inbox"], queryFn: () => apiFetch("/api/messages/inbox") });
-  const { data: sent = [], refetch: refetchSent } = useQuery<any[]>({ queryKey: ["sent"], queryFn: () => apiFetch("/api/messages/sent") });
+  const { data: inbox = [], refetch: refetchInbox } = useQuery<any[]>({ queryKey: ["inbox"], queryFn: () => apiFetch("/messages?path=inbox") });
+  const { data: sent = [], refetch: refetchSent } = useQuery<any[]>({ queryKey: ["sent"], queryFn: () => apiFetch("/messages?path=sent") });
 
-  const markRead = useMutation({ mutationFn: ({ id }: { id: string }) => apiFetch(`/api/messages/${id}/read`, { method: "PATCH" }), onSuccess: () => refetchInbox() });
-  const deleteMsg = useMutation({ mutationFn: ({ id }: { id: string }) => apiFetch(`/api/messages/${id}`, { method: "DELETE" }) });
+  const markRead = useMutation({ mutationFn: ({ id }: { id: string }) => apiFetch(`/messages?path=${id}/read`, { method: "PATCH" }), onSuccess: () => refetchInbox() });
+  const deleteMsg = useMutation({ mutationFn: ({ id }: { id: string }) => apiFetch(`/messages?path=${id}`, { method: "DELETE" }) });
   const markAllRead = useMutation({
-    mutationFn: () => apiFetch("/api/messages/read-all", { method: "PATCH" }),
+    mutationFn: () => apiFetch("/messages?path=read-all", { method: "PATCH" }),
     onSuccess: () => { refetchInbox(); qc.invalidateQueries({ queryKey: ["notification-counts"] }); toast({ title: "All marked read." }); },
   });
 
@@ -291,7 +291,7 @@ function ComposePanel({ setSection }: { setSection: (s: Section) => void }) {
 
   const sendMutation = useMutation({
     mutationFn: (data: { recipientId: number; subject: string; body: string }) =>
-      apiFetch("/api/messages", { method: "POST", body: JSON.stringify(data) }),
+      apiFetch("/messages", { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => { toast({ title: "Dispatch Sent" }); qc.invalidateQueries({ queryKey: ["sent"] }); setSection("inbox"); },
     onError: (err: any) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
   });
@@ -340,10 +340,10 @@ function ComposePanel({ setSection }: { setSection: (s: Section) => void }) {
 function ConnectionsPanel() {
   const qc = useQueryClient();
   const { toast } = useToast();
-  const { data: friends = [], refetch } = useQuery<FriendUser[]>({ queryKey: ["friends"], queryFn: () => apiFetch("/api/friends") });
+  const { data: friends = [], refetch } = useQuery<FriendUser[]>({ queryKey: ["friends"], queryFn: () => apiFetch("/friends") });
 
   const remove = useMutation({
-    mutationFn: (userId: number) => apiFetch(`/api/friends/${userId}`, { method: "DELETE" }),
+    mutationFn: (userId: number) => apiFetch(`/friends?path=${userId}`, { method: "DELETE" }),
     onSuccess: () => { refetch(); toast({ title: "Connection Removed" }); },
   });
 
@@ -395,15 +395,15 @@ function ConnectionsPanel() {
 function RequestsPanel() {
   const qc = useQueryClient();
   const { toast } = useToast();
-  const { data: requests = [], refetch } = useQuery<FriendUser[]>({ queryKey: ["friend-requests"], queryFn: () => apiFetch("/api/friends/requests") });
-  const { refetch: refetchFriends } = useQuery<FriendUser[]>({ queryKey: ["friends"], queryFn: () => apiFetch("/api/friends") });
+  const { data: requests = [], refetch } = useQuery<FriendUser[]>({ queryKey: ["friend-requests"], queryFn: () => apiFetch("/friends?path=requests") });
+  const { refetch: refetchFriends } = useQuery<FriendUser[]>({ queryKey: ["friends"], queryFn: () => apiFetch("/friends") });
 
   const accept = useMutation({
-    mutationFn: (id: number) => apiFetch(`/api/friends/${id}/accept`, { method: "PATCH" }),
+    mutationFn: (id: number) => apiFetch(`/friends?path=${id}/accept`, { method: "PATCH" }),
     onSuccess: () => { refetch(); refetchFriends(); toast({ title: "Connected!" }); },
   });
   const decline = useMutation({
-    mutationFn: (id: number) => apiFetch(`/api/friends/${id}/decline`, { method: "PATCH" }),
+    mutationFn: (id: number) => apiFetch(`/friends?path=${id}/decline`, { method: "PATCH" }),
     onSuccess: () => { refetch(); toast({ title: "Request Declined" }); },
   });
 
@@ -454,7 +454,7 @@ function FindPanel({ currentUserId }: { currentUserId: number }) {
 
   const { data: results = [], isLoading } = useQuery<SearchUser[]>({
     queryKey: ["user-search", dq],
-    queryFn: () => apiFetch(`/api/users/search?q=${encodeURIComponent(dq)}`),
+    queryFn: () => apiFetch(`/users?path=search?q=${encodeURIComponent(dq)}`),
     enabled: dq.length >= 2,
   });
 
@@ -491,11 +491,11 @@ function SearchResultRow({ user, currentUserId }: { user: SearchUser; currentUse
   const qc = useQueryClient();
   const { data: status, isLoading } = useQuery<FriendStatus>({
     queryKey: ["friend-status", user.id],
-    queryFn: () => apiFetch(`/api/friends/status/${user.id}`),
+    queryFn: () => apiFetch(`/friends?path=status/${user.id}`),
     enabled: user.id !== currentUserId,
   });
   const send = useMutation({
-    mutationFn: () => apiFetch(`/api/friends/request/${user.id}`, { method: "POST" }),
+    mutationFn: () => apiFetch(`/friends?path=request/${user.id}`, { method: "POST" }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["friend-status", user.id] }); toast({ title: "Request Sent", description: `Sent to ${user.username}.` }); },
     onError: (err: any) => toast({ title: "Failed", description: err?.error || "Could not send request.", variant: "destructive" }),
   });
@@ -541,8 +541,8 @@ export default function Comms() {
     else if (params.get("to") || params.get("replyTo")) setSection("compose");
   }, []);
 
-  const { data: inbox = [] } = useQuery<any[]>({ queryKey: ["inbox"], queryFn: () => apiFetch("/api/messages/inbox") });
-  const { data: requests = [] } = useQuery<any[]>({ queryKey: ["friend-requests"], queryFn: () => apiFetch("/api/friends/requests") });
+  const { data: inbox = [] } = useQuery<any[]>({ queryKey: ["inbox"], queryFn: () => apiFetch("/messages?path=inbox") });
+  const { data: requests = [] } = useQuery<any[]>({ queryKey: ["friend-requests"], queryFn: () => apiFetch("/friends?path=requests") });
 
   const unread = inbox.filter((m: any) => !m.isRead).length;
   const pendingReqs = requests.length;

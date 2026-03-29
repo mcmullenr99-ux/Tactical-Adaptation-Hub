@@ -379,11 +379,11 @@ export default function MilsimRegistry() {
 
   useEffect(() => {
     // Also fetch upvote counts
-    apiFetch<Record<string, number>>("/api/group-upvotes?path=/counts").then(setUpvoteCounts).catch(() => {});
+    apiFetch<Record<string, number>>("/groupUpvotes?path=counts").then(setUpvoteCounts).catch(() => {});
 
     Promise.all([
-      apiFetch<MilsimGroup[]>("/api/milsim-groups"),
-      apiFetch<{ group_id: number; op_success_rate: number; total_ops: number; roster_count: number }[]>("/api/milsim-groups/leaderboard-stats").catch(() => []),
+      apiFetch<MilsimGroup[]>("/milsimGroups"),
+      apiFetch<{ group_id: number; op_success_rate: number; total_ops: number; roster_count: number }[]>("/leaderboardStats").catch(() => []),
     ]).then(([data, stats]) => {
       const list = Array.isArray(data) ? data : [];
       const statsMap: Record<number, { op_success_rate: number; total_ops: number; roster_count: number }> = {};

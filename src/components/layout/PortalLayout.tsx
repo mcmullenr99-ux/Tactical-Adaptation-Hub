@@ -24,7 +24,7 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
 
   const { data: notifCounts } = useQuery({
     queryKey: ["notification-counts"],
-    queryFn: () => apiFetch("/api/notifications/counts"),
+    queryFn: () => apiFetch("/notifications?path=counts"),
     enabled: isAuthenticated,
     refetchInterval: 30_000,
   });

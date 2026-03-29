@@ -19,22 +19,22 @@ export default function ModPanel() {
 
   const { data: apps, refetch: refetchApps } = useQuery<any[]>({
     queryKey: ["staff-applications"],
-    queryFn: () => apiFetch("/api/staff-applications"),
+    queryFn: () => apiFetch("/staffApplications"),
   });
 
   const { data: users, refetch: refetchUsers } = useQuery<any[]>({
     queryKey: ["all-users"],
-    queryFn: () => apiFetch("/api/users"),
+    queryFn: () => apiFetch("/users"),
   });
 
   const reviewApp = useMutation({
     mutationFn: ({ id, status, note }: { id: number; status: string; note: string }) =>
-      apiFetch(`/api/staff-applications/${id}/review`, { method: "PATCH", body: JSON.stringify({ status, reviewNote: note }) }),
+      apiFetch(`/staffApplications?path=${id}/review`, { method: "PATCH", body: JSON.stringify({ status, reviewNote: note }) }),
   });
 
   const updateStatus = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
-      apiFetch(`/api/users/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+      apiFetch(`/users?path=${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
   });
 
   const pendingApps = apps?.filter((a: any) => a.status === 'pending') || [];

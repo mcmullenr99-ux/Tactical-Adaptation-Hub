@@ -46,7 +46,7 @@ export default function MilsimRegister() {
     setSubmitting(true);
     setError(null);
     try {
-      await apiFetch("/api/milsim-groups", {
+      await apiFetch("/milsimGroups", {
         method: "POST",
         body: JSON.stringify({
           name: data.name,

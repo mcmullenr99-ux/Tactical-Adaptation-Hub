@@ -61,9 +61,9 @@ export default function Profile() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    apiFetch<{ referral_code: string | null }>("/api/referral-code/mine")
+    apiFetch<{ referral_code: string | null }>("/users?path=referral-code/mine")
       .then(r => setReferralCode(r.referral_code)).catch(() => {});
-    apiFetch<any[]>("/api/referral-code/recruits")
+    apiFetch<any[]>("/users?path=referral-code/recruits")
       .then(setRecruits).catch(() => {});
   }, []);
 
@@ -76,7 +76,7 @@ export default function Profile() {
   const saveProfile = async () => {
     setSavingProfile(true);
     try {
-      await apiFetch("/api/auth/profile", {
+      await apiFetch("/authUpdateProfile?path=profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bio, discordTag, nationality: nationality || null, steamProfileUrl: steamProfileUrl || null, xboxGamertag: xboxGamertag || null, psnId: psnId || null }),
@@ -97,7 +97,7 @@ export default function Profile() {
     }
     setSavingPassword(true);
     try {
-      await apiFetch("/api/auth/password", {
+      await apiFetch("/authUpdateProfile?path=password", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword }),
@@ -115,7 +115,7 @@ export default function Profile() {
   const generateReferralCode = async () => {
     setGeneratingCode(true);
     try {
-      const r = await apiFetch<{ referral_code: string }>("/api/referral-code/generate", { method: "PATCH" });
+      const r = await apiFetch<{ referral_code: string }>("/users?path=referral-code/generate", { method: "PATCH" });
       setReferralCode(r.referral_code);
       toast({ title: "Code Generated", description: "Your referral code is ready to share." });
     } catch (e: any) {
@@ -137,7 +137,7 @@ export default function Profile() {
   const deleteAccount = async () => {
     setDeleting(true);
     try {
-      await apiFetch("/api/auth/account", {
+      await apiFetch("/authUpdateProfile?path=account", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: deletePassword }),

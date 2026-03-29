@@ -155,7 +155,7 @@ function MilsimManageInner() {
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
-    apiFetch<GroupDetail | null>("/api/milsim-groups/mine/own")
+    apiFetch<GroupDetail | null>("/milsimGroups?path=mine/own")
       .then(setGroup)
       .catch(() => setGroup(null));
   }, []);
@@ -413,7 +413,7 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const onSubmit = async (data: any) => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ ...data, banner_url: data.bannerUrl }) });
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, { method: "PATCH", body: JSON.stringify({ ...data, banner_url: data.bannerUrl }) });
       onSaved(updated);
       showMsg(true, "Group info saved.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -570,7 +570,7 @@ function SopsOnlyTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const saveSops = async () => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: sopsText, orbat: group.orbat }) });
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: sopsText, orbat: group.orbat }) });
       onSaved(updated);
       showMsg(true, "SOPs saved.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -602,7 +602,7 @@ function OrbatOnlyTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const saveOrbat = async () => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
       onSaved(updated);
       showMsg(true, "ORBAT saved.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -629,7 +629,7 @@ function OrbatStandaloneTab({ group, onSaved, setSaving, saving, showMsg }: any)
   const saveOrbat = async () => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
       onSaved(updated);
       showMsg(true, "ORBAT saved.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -831,7 +831,7 @@ function ChainOfCommandTab({ group, onUpdated, showMsg }: any) {
   const save = async () => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, {
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, {
         method: "PATCH",
         body: JSON.stringify({ chain_of_command: positions }),
       });
@@ -973,7 +973,7 @@ function RolesTab({ group, onUpdated, showMsg }: any) {
     if (!name.trim()) return;
     setAdding(true);
     try {
-      const role = await apiFetch<Role>(`/api/milsim-groups/${group.id}/roles`, { method: "POST", body: JSON.stringify({ name, description: desc || undefined, sortOrder: roles.length }) });
+      const role = await apiFetch<Role>(`/milsimGroups?path=${group.id}/roles`, { method: "POST", body: JSON.stringify({ name, description: desc || undefined, sortOrder: roles.length }) });
       const updated = [...roles, role]; setRoles(updated); onUpdated({ ...group, roles: updated });
       setName(""); setDesc(""); showMsg(true, "Role added.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -982,7 +982,7 @@ function RolesTab({ group, onUpdated, showMsg }: any) {
 
   const remove = async (id: number) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/roles/${id}`, { method: "DELETE" });
+      await apiFetch(`/milsimGroups?path=${group.id}/roles/${id}`, { method: "DELETE" });
       const updated = roles.filter((r) => r.id !== id); setRoles(updated); onUpdated({ ...group, roles: updated });
     } catch (e: any) { showMsg(false, e.message); }
   };
@@ -1005,7 +1005,7 @@ function RolesTab({ group, onUpdated, showMsg }: any) {
   const saveOrder = async () => {
     setSavingOrder(true);
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/roles/reorder`, {
+      await apiFetch(`/milsimGroups?path=${group.id}/roles/reorder`, {
         method: "PATCH",
         body: JSON.stringify({ order: roles.map((r, i) => ({ id: r.id, sort_order: i })) }),
       });
@@ -1078,7 +1078,7 @@ function RanksTab({ group, onUpdated, showMsg }: any) {
     if (!name.trim()) return;
     setAdding(true);
     try {
-      const rank = await apiFetch<Rank>(`/api/milsim-groups/${group.id}/ranks`, { method: "POST", body: JSON.stringify({ name, abbreviation: abbr || undefined, tier: parseInt(tier) || 0 }) });
+      const rank = await apiFetch<Rank>(`/milsimGroups?path=${group.id}/ranks`, { method: "POST", body: JSON.stringify({ name, abbreviation: abbr || undefined, tier: parseInt(tier) || 0 }) });
       const updated = [...ranks, rank];
       setRanks(updated); onUpdated({ ...group, ranks: updated });
       setName(""); setAbbr(""); setTier("0"); showMsg(true, "Rank added.");
@@ -1088,7 +1088,7 @@ function RanksTab({ group, onUpdated, showMsg }: any) {
 
   const remove = async (id: number) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/ranks/${id}`, { method: "DELETE" });
+      await apiFetch(`/milsimGroups?path=${group.id}/ranks/${id}`, { method: "DELETE" });
       const updated = ranks.filter((r) => r.id !== id); setRanks(updated); onUpdated({ ...group, ranks: updated });
     } catch (e: any) { showMsg(false, e.message); }
   };
@@ -1111,7 +1111,7 @@ function RanksTab({ group, onUpdated, showMsg }: any) {
   const saveOrder = async () => {
     setSavingOrder(true);
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/ranks/reorder`, {
+      await apiFetch(`/milsimGroups?path=${group.id}/ranks/reorder`, {
         method: "PATCH",
         body: JSON.stringify({ order: ranks.map((r, i) => ({ id: r.id, sort_order: i })) }),
       });
@@ -1209,7 +1209,7 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
     if (!editEntry) return;
     setSaving(true);
     try {
-      const updated = await apiFetch<RosterEntry>(`/api/milsim-groups/${group.id}/roster/${editEntry.id}`, {
+      const updated = await apiFetch<RosterEntry>(`/milsimGroups?path=${group.id}/roster/${editEntry.id}`, {
         method: "PATCH",
         body: JSON.stringify({
           callsign: editData.callsign,
@@ -1233,7 +1233,7 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
     if (!newCallsign.trim()) return;
     setAdding(true);
     try {
-      const entry = await apiFetch<RosterEntry>(`/api/milsim-groups/${group.id}/roster`, {
+      const entry = await apiFetch<RosterEntry>(`/milsimGroups?path=${group.id}/roster`, {
         method: "POST",
         body: JSON.stringify({ callsign: newCallsign, status: "Active" }),
       });
@@ -1246,7 +1246,7 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
 
   const remove = async (id: number) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/roster/${id}`, { method: "DELETE" });
+      await apiFetch(`/milsimGroups?path=${group.id}/roster/${id}`, { method: "DELETE" });
       const updated = roster.filter((r) => r.id !== id); setRoster(updated); onUpdated({ ...group, roster: updated });
       showMsg(true, "Operator removed.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -1443,7 +1443,7 @@ function CustomisationTab({ group, showMsg }: any) {
   const saveOrbat = async () => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
       showMsg(true, "ORBAT saved.");
     } catch (e: any) { showMsg(false, e.message); }
     finally { setSaving(false); }
@@ -1499,7 +1499,7 @@ async function uploadImageToStorage(file: File): Promise<string | null> {
     // Fallback: try via our backend function
     const fd2 = new FormData();
     fd2.append("file", file);
-    const res2 = await fetch("/api/storage/upload", { method: "POST", body: fd2, credentials: "include" });
+    const res2 = await fetch("/trainingDocs?path=upload", { method: "POST", body: fd2, credentials: "include" });
     if (!res2.ok) throw new Error("Upload failed");
     const d2 = await res2.json();
     return d2.url ?? d2.file_url ?? null;
@@ -2114,7 +2114,7 @@ function StreamTab({ group, onUpdated, showMsg }: any) {
   const save = async () => {
     setSaving(true);
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/stream`, {
+      await apiFetch(`/milsimGroups?path=${group.id}/stream`, {
         method: "PATCH",
         body: JSON.stringify({ streamUrl: streamUrl || null, isLive }),
       });
@@ -2242,7 +2242,7 @@ function SelectionCriteriaTab({ group, onUpdated, showMsg }: any) {
   async function handleSave() {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, {
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, {
         method: "PATCH",
         body: JSON.stringify({ selection_criteria: criteria }),
       });
@@ -2336,7 +2336,7 @@ function QuestionsTab({ group, onUpdated, showMsg }: any) {
     if (!question.trim()) return;
     setAdding(true);
     try {
-      const q = await apiFetch<AppQuestion>(`/api/milsim-groups/${group.id}/questions`, { method: "POST", body: JSON.stringify({ question, sortOrder: questions.length, required }) });
+      const q = await apiFetch<AppQuestion>(`/milsimGroups?path=${group.id}/questions`, { method: "POST", body: JSON.stringify({ question, sortOrder: questions.length, required }) });
       const updated = [...questions, q]; setQuestions(updated); onUpdated({ ...group, questions: updated });
       setQuestion(""); setRequired(true); showMsg(true, "Question added.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -2345,7 +2345,7 @@ function QuestionsTab({ group, onUpdated, showMsg }: any) {
 
   const remove = async (id: number) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/questions/${id}`, { method: "DELETE" });
+      await apiFetch(`/milsimGroups?path=${group.id}/questions/${id}`, { method: "DELETE" });
       const updated = questions.filter((q) => q.id !== id); setQuestions(updated); onUpdated({ ...group, questions: updated });
     } catch (e: any) { showMsg(false, e.message); }
   };
@@ -2389,7 +2389,7 @@ function CommendationsTab({ group }: any) {
   const [awards, setAwards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    apiFetch<any[]>(`/api/milsim-groups/${group.id}/awards`)
+    apiFetch<any[]>(`/milsimGroups?path=${group.id}/awards`)
       .then(d => setAwards(Array.isArray(d) ? d : [])).catch(() => setAwards([])).finally(() => setLoading(false));
   }, [group.id]);
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -2435,24 +2435,24 @@ function QualsTab({ group, showMsg }: any) {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState(""); const [desc, setDesc] = useState(""); const [adding, setAdding] = useState(false);
   const [grantModal, setGrantModal] = useState<any | null>(null); const [grantRosterId, setGrantRosterId] = useState("");
-  const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/qualifications`).then(setQuals).catch(() => {}).finally(() => setLoading(false)); };
+  const load = () => { apiFetch<any[]>(`/milsimGroups?path=${group.id}/qualifications`).then(setQuals).catch(() => {}).finally(() => setLoading(false)); };
   useEffect(() => { load(); }, [group.id]);
   const add = async () => {
     if (!name.trim()) return; setAdding(true);
-    try { await apiFetch(`/api/milsim-groups/${group.id}/qualifications`, { method: "POST", body: JSON.stringify({ name, description: desc || undefined }) }); setName(""); setDesc(""); showMsg(true, "Qualification added."); load(); }
+    try { await apiFetch(`/milsimGroups?path=${group.id}/qualifications`, { method: "POST", body: JSON.stringify({ name, description: desc || undefined }) }); setName(""); setDesc(""); showMsg(true, "Qualification added."); load(); }
     catch (e: any) { showMsg(false, e.message); } finally { setAdding(false); }
   };
   const remove = async (qid: number) => {
-    try { await apiFetch(`/api/milsim-groups/${group.id}/qualifications/${qid}`, { method: "DELETE" }); showMsg(true, "Removed."); load(); }
+    try { await apiFetch(`/milsimGroups?path=${group.id}/qualifications/${qid}`, { method: "DELETE" }); showMsg(true, "Removed."); load(); }
     catch (e: any) { showMsg(false, e.message); }
   };
   const grant = async (qid: number) => {
     if (!grantRosterId) return;
-    try { await apiFetch(`/api/milsim-groups/${group.id}/qualifications/${qid}/grant`, { method: "POST", body: JSON.stringify({ rosterEntryId: parseInt(grantRosterId) }) }); showMsg(true, "Granted."); setGrantModal(null); setGrantRosterId(""); load(); }
+    try { await apiFetch(`/milsimGroups?path=${group.id}/qualifications/${qid}/grant`, { method: "POST", body: JSON.stringify({ rosterEntryId: parseInt(grantRosterId) }) }); showMsg(true, "Granted."); setGrantModal(null); setGrantRosterId(""); load(); }
     catch (e: any) { showMsg(false, e.message); }
   };
   const revokeGrant = async (qid: number, grantId: number) => {
-    try { await apiFetch(`/api/milsim-groups/${group.id}/qualifications/${qid}/grant/${grantId}`, { method: "DELETE" }); showMsg(true, "Revoked."); load(); }
+    try { await apiFetch(`/milsimGroups?path=${group.id}/qualifications/${qid}/grant/${grantId}`, { method: "DELETE" }); showMsg(true, "Revoked."); load(); }
     catch (e: any) { showMsg(false, e.message); }
   };
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -2815,14 +2815,14 @@ function WarnosTab({ group, showMsg }: any) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = () => {
-    apiFetch<any[]>(`/api/milsim-groups/${group.id}/warnos`)
+    apiFetch<any[]>(`/milsimGroups?path=${group.id}/warnos`)
       .then(d => setWarnos(d ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
   };
   const [ops, setOps] = useState<any[]>([]);
   useEffect(() => {
-    apiFetch<any>(`/api/milsim-groups/${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
+    apiFetch<any>(`/milsimGroups?path=${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
   }, [group.id]);
 
   useEffect(() => { load(); }, [group.id]);
@@ -2835,10 +2835,10 @@ function WarnosTab({ group, showMsg }: any) {
     setSaving(true);
     try {
       if (editId) {
-        await apiFetch(`/api/milsim-groups/${group.id}/warnos/${editId}`, { method: "PATCH", body: JSON.stringify(form) });
+        await apiFetch(`/milsimGroups?path=${group.id}/warnos/${editId}`, { method: "PATCH", body: JSON.stringify(form) });
         showMsg(true, "WARNO updated.");
       } else {
-        await apiFetch(`/api/milsim-groups/${group.id}/warnos`, { method: "POST", body: JSON.stringify(form) });
+        await apiFetch(`/milsimGroups?path=${group.id}/warnos`, { method: "POST", body: JSON.stringify(form) });
         showMsg(true, "WARNO created.");
       }
       setCreating(false); setEditId(null); setForm(emptyForm); load();
@@ -2847,7 +2847,7 @@ function WarnosTab({ group, showMsg }: any) {
 
   const remove = async (id: string) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/warnos/${id}`, { method: "DELETE" });
+      await apiFetch(`/milsimGroups?path=${group.id}/warnos/${id}`, { method: "DELETE" });
       showMsg(true, "WARNO deleted."); load();
     } catch (e: any) { showMsg(false, e.message); }
   };
@@ -3078,21 +3078,21 @@ function AARsTab({ group, showMsg }: any) {
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).then(setAars).catch(() => {}).finally(() => setLoading(false)); };
+  const load = () => { apiFetch<any[]>(`/milsimGroups?path=${group.id}/aars`).then(setAars).catch(() => {}).finally(() => setLoading(false)); };
   useEffect(() => { load(); }, [group.id]);
   const [ops, setOps] = useState<any[]>([]);
   useEffect(() => {
-    apiFetch<any>(`/api/milsim-groups/${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
+    apiFetch<any>(`/milsimGroups?path=${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
   }, [group.id]);
 
   const submit = async () => {
     if (!form.op_name.trim()) return; setSaving(true);
     try {
       if (editId) {
-        await apiFetch(`/api/milsim-groups/${group.id}/aars/${editId}`, { method: "PATCH", body: JSON.stringify(form) });
+        await apiFetch(`/milsimGroups?path=${group.id}/aars/${editId}`, { method: "PATCH", body: JSON.stringify(form) });
         showMsg(true, "AAR updated.");
       } else {
-        const newAAR = await apiFetch<any>(`/api/milsim-groups/${group.id}/aars`, { method: "POST", body: JSON.stringify(form) });
+        const newAAR = await apiFetch<any>(`/milsimGroups?path=${group.id}/aars`, { method: "POST", body: JSON.stringify(form) });
         const aarSummary = `Outcome:${form.outcome} ObjsHit:${form.objectives_hit} ObjsMissed:${form.objectives_missed} Casualties:${form.casualties}${form.casualties_note ? " — " + form.casualties_note : ""}`;
         apiFetch(`/opIntel?path=notify&group_id=${group.id}`, { method: "POST", body: JSON.stringify({ report_type: "AAR", report_id: newAAR?.id ?? newAAR?.aar?.id ?? "", filer_callsign: "S6 ACTUAL", op_name: form.op_name || "Unknown Op", summary: aarSummary }) }).catch(() => {});
         showMsg(true, "AAR filed — eyewitness notifications sent.");
@@ -3101,7 +3101,7 @@ function AARsTab({ group, showMsg }: any) {
     } catch (e: any) { showMsg(false, e.message); } finally { setSaving(false); }
   };
   const remove = async (id: number) => {
-    try { await apiFetch(`/api/milsim-groups/${group.id}/aars/${id}`, { method: "DELETE" }); showMsg(true, "AAR deleted."); load(); }
+    try { await apiFetch(`/milsimGroups?path=${group.id}/aars/${id}`, { method: "DELETE" }); showMsg(true, "AAR deleted."); load(); }
     catch (e: any) { showMsg(false, e.message); }
   };
   const CL: Record<string, string> = { "unclassified": "text-green-400 bg-green-500/10 border-green-500/30", "confidential": "text-blue-400 bg-blue-500/10 border-blue-500/30", "classified": "text-yellow-400 bg-yellow-500/10 border-yellow-500/30", "top-secret": "text-red-400 bg-red-500/10 border-red-500/30" };
@@ -4681,23 +4681,23 @@ function BriefingsTab({ group, showMsg }: any) {
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/briefings`).then(setBriefings).catch(() => {}).finally(() => setLoading(false)); };
+  const load = () => { apiFetch<any[]>(`/milsimGroups?path=${group.id}/briefings`).then(setBriefings).catch(() => {}).finally(() => setLoading(false)); };
   useEffect(() => { load(); }, [group.id]);
   const [ops, setOps] = useState<any[]>([]);
   useEffect(() => {
-    apiFetch<any>(`/api/milsim-groups/${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
+    apiFetch<any>(`/milsimGroups?path=${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
   }, [group.id]);
 
   const submit = async () => {
     if (!form.title.trim()) return; setSaving(true);
     try {
-      if (editId) { await apiFetch(`/api/milsim-groups/${group.id}/briefings/${editId}`, { method: "PATCH", body: JSON.stringify(form) }); showMsg(true, "Briefing updated."); }
-      else { await apiFetch(`/api/milsim-groups/${group.id}/briefings`, { method: "POST", body: JSON.stringify(form) }); showMsg(true, "Briefing created."); }
+      if (editId) { await apiFetch(`/milsimGroups?path=${group.id}/briefings/${editId}`, { method: "PATCH", body: JSON.stringify(form) }); showMsg(true, "Briefing updated."); }
+      else { await apiFetch(`/milsimGroups?path=${group.id}/briefings`, { method: "POST", body: JSON.stringify(form) }); showMsg(true, "Briefing created."); }
       setCreating(false); setEditId(null); setForm(emptyForm); load();
     } catch (e: any) { showMsg(false, e.message); } finally { setSaving(false); }
   };
   const remove = async (id: number) => {
-    try { await apiFetch(`/api/milsim-groups/${group.id}/briefings/${id}`, { method: "DELETE" }); showMsg(true, "Deleted."); load(); }
+    try { await apiFetch(`/milsimGroups?path=${group.id}/briefings/${id}`, { method: "DELETE" }); showMsg(true, "Deleted."); load(); }
     catch (e: any) { showMsg(false, e.message); }
   };
   const SC: Record<string, string> = { draft: "text-muted-foreground bg-secondary border-border", published: "text-primary bg-primary/10 border-primary/30", archived: "text-muted-foreground bg-secondary/40 border-border" };
@@ -4807,7 +4807,7 @@ function ReadinessTab({ group }: any) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    apiFetch<any>(`/api/stats/readiness/${group.id}`)
+    apiFetch<any>(`/stats?path=readiness/${group.id}`)
       .then(data => { setReadiness(data); })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -5048,7 +5048,7 @@ function ReputationTab({ group }: any) {
 
   useEffect(() => {
     Promise.all([
-      apiFetch<any>(`/api/milsim-groups/${group.id}/full`),
+      apiFetch<any>(`/milsimGroups?path=${group.id}/full`),
       apiFetch<any>(`/getProStatus?group_id=${group.id}`).catch(() => ({ is_pro: false })),
     ]).then(([g, proStatus]) => {
       setRoster(g.roster ?? []);
@@ -5061,7 +5061,7 @@ function ReputationTab({ group }: any) {
     setSelected(member);
     if (repData[member.userId]) return;
     try {
-      const data = await apiFetch<any>(`/api/reputation/${member.userId}`);
+      const data = await apiFetch<any>(`/reputation?path=${member.userId}`);
       setRepData(prev => ({ ...prev, [member.userId]: data }));
     } catch {}
   };
@@ -5070,7 +5070,7 @@ function ReputationTab({ group }: any) {
     if (!selected) return;
     setSubmitting(true);
     try {
-      await apiFetch(`/api/reputation/${selected.userId}`, {
+      await apiFetch(`/reputation?path=${selected.userId}`, {
         method: "POST",
         body: JSON.stringify({
           ...form,
@@ -5080,7 +5080,7 @@ function ReputationTab({ group }: any) {
         }),
       });
       // Refresh rep
-      const updated = await apiFetch<any>(`/api/reputation/${selected.userId}`);
+      const updated = await apiFetch<any>(`/reputation?path=${selected.userId}`);
       setRepData(prev => ({ ...prev, [selected.userId]: updated }));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -5332,7 +5332,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
     setLoading(true);
     try {
       const [data, proStatus] = await Promise.all([
-        apiFetch<any[]>(`/api/training-docs/${group.id}`),
+        apiFetch<any[]>(`/trainingDocs?path=${group.id}`),
         apiFetch<any>(`/getProStatus?group_id=${group.id}`).catch(() => ({ is_pro: false })),
       ]);
       setDocs(data ?? []);
@@ -5342,7 +5342,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
 
   const loadAssessment = useCallback(async () => {
     try {
-      const r = await apiFetch<any>(`/api/stats/readiness/${group.id}`);
+      const r = await apiFetch<any>(`/stats?path=readiness/${group.id}`);
       if (r?.training) setAssessment(r.training);
     } catch {}
   }, [group.id]);
@@ -5374,7 +5374,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
       fd.append("last_reviewed_at", form.last_reviewed_at ? new Date(form.last_reviewed_at).toISOString() : new Date().toISOString());
       fd.append("uploaded_by", user?.id ?? "");
       fd.append("uploaded_by_username", (user as any)?.username ?? "");
-      const result = await apiFetch<any>("/api/training-docs/upload", { method: "POST", body: fd, isFormData: true });
+      const result = await apiFetch<any>("/trainingDocs?path=upload", { method: "POST", body: fd, isFormData: true });
       if (result?.id) {
         setDocs(prev => [result, ...prev]);
         setForm({ title: "", description: "", doc_type: "SOP", last_reviewed_at: new Date().toISOString().split("T")[0] });
@@ -5397,7 +5397,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
   const deleteDoc = async (id: string) => {
     if (!confirm("Remove this training document?")) return;
     try {
-      await apiFetch(`/api/training-docs/${group.id}/${id}`, { method: "DELETE" });
+      await apiFetch(`/trainingDocs?path=${group.id}/${id}`, { method: "DELETE" });
       setDocs(prev => prev.filter(d => d.id !== id));
       showMsg(true, "Document removed.");
       loadAssessment();
@@ -5406,7 +5406,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
 
   const markReviewed = async (doc: any) => {
     try {
-      const updated = await apiFetch<any>(`/api/training-docs/${group.id}/${doc.id}`, {
+      const updated = await apiFetch<any>(`/trainingDocs?path=${group.id}/${doc.id}`, {
         method: "PATCH", body: JSON.stringify({ last_reviewed_at: new Date().toISOString() }),
       });
       setDocs(prev => prev.map(d => d.id === doc.id ? { ...d, ...updated } : d));
@@ -7321,8 +7321,8 @@ function UnitLegacyTab({ group }: any) {
   useEffect(() => {
     const headers = { Authorization: `Bearer ${token}` };
     Promise.all([
-      apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`).catch(() => []),
-      apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).catch(() => []),
+      apiFetch<any[]>(`/milsimGroups?path=${group.id}/ops`).catch(() => []),
+      apiFetch<any[]>(`/milsimGroups?path=${group.id}/aars`).catch(() => []),
       fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`, { headers }).then(r => r.json()).catch(() => []),
       apiFetch<any>(`/getProStatus?group_id=${group.id}`).catch(() => ({ is_pro: false })),
     ]).then(([o, a, c, proStatus]) => {

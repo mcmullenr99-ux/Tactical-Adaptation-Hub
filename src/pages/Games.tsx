@@ -135,7 +135,7 @@ function GameSubpage({ game, onBack }: { game: GameData; onBack: () => void }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiFetch<any[]>("/api/milsim-groups")
+    apiFetch<any[]>("/milsimGroups")
       .then((all: any) => {
         const list = Array.isArray(all) ? all : (all?.groups ?? []);
         const norm = normGame(game.name);

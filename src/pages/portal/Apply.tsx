@@ -29,7 +29,7 @@ export default function Apply() {
 
   const submitMutation = useMutation({
     mutationFn: (data: ApplyFormValues) =>
-      apiFetch("/api/staff-applications", { method: "POST", body: JSON.stringify(data) }),
+      apiFetch("/staffApplications", { method: "POST", body: JSON.stringify(data) }),
   });
 
   const { register, handleSubmit, formState: { errors } } = useForm<ApplyFormValues>({

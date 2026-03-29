@@ -156,7 +156,7 @@ export default function MilsimGroup() {
 
   useEffect(() => {
     if (!slug) return;
-    apiFetch<GroupDetail>(`/api/milsim-groups/${slug}`)
+    apiFetch<GroupDetail>(`/milsimGroups?path=${slug}`)
       .then(g => { setGroup(g); })
       .catch(() => setGroup(null))
       .finally(() => setLoading(false));
@@ -165,7 +165,7 @@ export default function MilsimGroup() {
   useEffect(() => {
 
     if ((tab === "capabilities" || tab === "overview") && group && !readinessLoaded) {
-      apiFetch<ReadinessData>(`/api/stats/readiness/${group.id}`)
+      apiFetch<ReadinessData>(`/stats?path=readiness/${group.id}`)
         .then(data => { setReadiness(data); setReadinessLoaded(true); })
         .catch(() => { setReadinessLoaded(true); });
     }
@@ -1064,8 +1064,8 @@ function PublicLegacyTab({ group }: { group: any }) {
     const token = localStorage.getItem("tag_auth_token") ?? "";
     const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
     Promise.all([
-      apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`).catch(() => []),
-      apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).catch(() => []),
+      apiFetch<any[]>(`/milsimGroups?path=${group.id}/ops`).catch(() => []),
+      apiFetch<any[]>(`/milsimGroups?path=${group.id}/aars`).catch(() => []),
       fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`, { headers }).then(r => r.json()).catch(() => []),
     ]).then(([o, a, c]) => {
       setOps(Array.isArray(o) ? o : []);

@@ -23,7 +23,7 @@ export function useUpload(options: UseUploadOptions = {}): UploadResult {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("/api/storage/upload", {
+      const res = await fetch("/trainingDocs?path=upload", {
         method: "POST",
         body: formData,
         credentials: "include",

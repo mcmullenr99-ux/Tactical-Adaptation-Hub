@@ -17,12 +17,12 @@ interface ResetToken {
 export default function AdminPanel() {
   const { data: users, refetch } = useQuery<any[]>({
     queryKey: ["all-users-admin"],
-    queryFn: () => apiFetch("/api/users"),
+    queryFn: () => apiFetch("/users"),
   });
 
   const updateRole = useMutation({
     mutationFn: ({ id, role }: { id: number; role: string }) =>
-      apiFetch(`/api/users/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+      apiFetch(`/users?path=${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
   });
 
   const { toast } = useToast();
@@ -32,7 +32,7 @@ export default function AdminPanel() {
 
   const broadcastMutation = useMutation({
     mutationFn: () =>
-      apiFetch("/api/admin/broadcast", { method: "POST", body: JSON.stringify({ subject: bSubject, body: bBody }) }),
+      apiFetch("/admin?path=broadcast", { method: "POST", body: JSON.stringify({ subject: bSubject, body: bBody }) }),
     onSuccess: (data: any) => {
       toast({ title: "Broadcast Sent", description: `Message delivered to ${data.sent} member(s).` });
       setBSubject(""); setBBody("");
@@ -42,7 +42,7 @@ export default function AdminPanel() {
 
   const { data: resetTokens = [] } = useQuery<ResetToken[]>({
     queryKey: ["reset-tokens"],
-    queryFn: () => apiFetch<ResetToken[]>("/api/admin/reset-tokens"),
+    queryFn: () => apiFetch<ResetToken[]>("/admin?path=reset-tokens"),
     enabled: tab === "resets",
   });
 
@@ -224,7 +224,7 @@ function MotdTab({ toast }: { toast: any }) {
   };
 
   const load = () => {
-    apiFetch<any[]>("/api/motd").then(setMotds).catch(() => {}).finally(() => setLoading(false));
+    apiFetch<any[]>("/motd").then(setMotds).catch(() => {}).finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
@@ -233,7 +233,7 @@ function MotdTab({ toast }: { toast: any }) {
     if (!form.title.trim() || !form.content.trim()) return;
     setSaving(true);
     try {
-      await apiFetch("/api/motd", { method: "POST", body: JSON.stringify({ ...form, expires_at: form.expires_at || null }) });
+      await apiFetch("/motd", { method: "POST", body: JSON.stringify({ ...form, expires_at: form.expires_at || null }) });
       toast({ title: "MOTD Posted" });
       setForm({ title: "", content: "", type: "info", expires_at: "" });
       load();
@@ -243,7 +243,7 @@ function MotdTab({ toast }: { toast: any }) {
 
   const remove = async (id: number) => {
     try {
-      await apiFetch(`/api/motd/${id}`, { method: "DELETE" });
+      await apiFetch(`/motd?path=${id}`, { method: "DELETE" });
       toast({ title: "MOTD deleted" }); load();
     } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
   };
@@ -325,7 +325,7 @@ function GroupsTab({ toast }: { toast: any }) {
 
   const load = () => {
     setLoading(true);
-    apiFetch<any[]>("/api/admin/milsim-groups")
+    apiFetch<any[]>("/admin?path=milsim-groups")
       .then(setGroups)
       .catch(() => toast({ title: "Failed to load groups", variant: "destructive" }))
       .finally(() => setLoading(false));
@@ -336,7 +336,7 @@ function GroupsTab({ toast }: { toast: any }) {
   const setStatus = async (id: string, status: string) => {
     setWorking(id);
     try {
-      await apiFetch(`/api/admin/milsim-groups/${id}/status`, {
+      await apiFetch(`/admin?path=milsim-groups/${id}/status`, {
         method: "PATCH", body: JSON.stringify({ status }),
       });
       setGroups(prev => prev.map(g => g.id === id ? { ...g, status } : g));
@@ -350,7 +350,7 @@ function GroupsTab({ toast }: { toast: any }) {
     if (!window.confirm(`Permanently delete "${name}"? This cannot be undone.`)) return;
     setWorking(id);
     try {
-      await apiFetch(`/api/admin/milsim-groups/${id}`, { method: "DELETE" });
+      await apiFetch(`/admin?path=milsim-groups/${id}`, { method: "DELETE" });
       setGroups(prev => prev.filter(g => g.id !== id));
       toast({ title: "Group deleted" });
     } catch (e: any) {
@@ -362,7 +362,7 @@ function GroupsTab({ toast }: { toast: any }) {
     const newVal = !group.verify_override;
     setWorking(group.id);
     try {
-      await apiFetch(`/api/admin/milsim-groups/${group.id}`, {
+      await apiFetch(`/admin?path=milsim-groups/${group.id}`, {
         method: "PATCH",
         body: JSON.stringify({ verify_override: newVal, is_verified: newVal, verified_at: newVal ? new Date().toISOString() : null }),
       });
@@ -383,7 +383,7 @@ function GroupsTab({ toast }: { toast: any }) {
       const data = await res.json();
       toast({ title: `Auto-Verify Complete`, description: `${data.newly_verified ?? 0} newly verified, ${data.newly_unverified ?? 0} removed. ${data.processed ?? 0} checked.` });
       // Reload groups
-      apiFetch<any[]>("/api/admin/milsim-groups").then(d => setGroups(Array.isArray(d) ? d : []));
+      apiFetch<any[]>("/admin?path=milsim-groups").then(d => setGroups(Array.isArray(d) ? d : []));
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally { setWorking(null); }
@@ -493,7 +493,7 @@ function AarFlagsTab({ toast }: { toast: any }) {
 
   const load = () => {
     setLoading(true);
-    apiFetch<any[]>("/api/milsim-aars?admin=1")
+    apiFetch<any[]>("/milsimAars?admin=1")
       .then(data => setAars(Array.isArray(data) ? data : []))
       .catch(() => setAars([]))
       .finally(() => setLoading(false));
@@ -504,7 +504,7 @@ function AarFlagsTab({ toast }: { toast: any }) {
   const clearFlag = async (aar: any) => {
     setWorking(aar.id);
     try {
-      await apiFetch(`/api/milsim-aars/${aar.id}/unflag`, { method: "PATCH" });
+      await apiFetch(`/milsimAars?path=${aar.id}/unflag`, { method: "PATCH" });
       toast({ title: "Flag Cleared", description: `AAR "${aar.title}" cleared and will now count toward leaderboard.` });
       load();
     } catch (e: any) {
@@ -517,7 +517,7 @@ function AarFlagsTab({ toast }: { toast: any }) {
   const confirmFlag = async (aar: any) => {
     setWorking(aar.id);
     try {
-      await apiFetch(`/api/milsim-aars/${aar.id}/flag`, {
+      await apiFetch(`/milsimAars?path=${aar.id}/flag`, {
         method: "PATCH",
         body: JSON.stringify({ reason: "Manually confirmed by admin" }),
       });
@@ -704,7 +704,7 @@ function PendingVerifyTab({ toast }: { toast: any }) {
   const load = async () => {
     setLoading(true);
     try {
-      const all = await apiFetch<any[]>("/api/admin/users");
+      const all = await apiFetch<any[]>("/admin?path=users");
       const stuck = (all || []).filter((u: any) =>
         u.status === "pending_verification" || u.email_verified === false
       );
@@ -726,7 +726,7 @@ function PendingVerifyTab({ toast }: { toast: any }) {
   const resendVerification = async (user: any) => {
     setActionId(user.id + "_resend");
     try {
-      await apiFetch("/api/auth/resend-verification", {
+      await apiFetch("/authResendVerification", {
         method: "POST",
         body: JSON.stringify({ email: user.email }),
       });
@@ -741,7 +741,7 @@ function PendingVerifyTab({ toast }: { toast: any }) {
   const forceVerify = async (user: any) => {
     setActionId(user.id + "_verify");
     try {
-      await apiFetch(`/api/admin/users/${user.id}/force-verify`, { method: "POST" });
+      await apiFetch(`/admin?path=users/${user.id}/force-verify`, { method: "POST" });
       toast({ title: "Account verified", description: `${user.username} is now fully active.` });
       setUsers(prev => prev.filter(u => u.id !== user.id));
     } catch (e: any) {
@@ -755,7 +755,7 @@ function PendingVerifyTab({ toast }: { toast: any }) {
     if (!confirm(`Delete ${user.username}? This cannot be undone.`)) return;
     setActionId(user.id + "_delete");
     try {
-      await apiFetch(`/api/admin/users/${user.id}`, { method: "DELETE" });
+      await apiFetch(`/admin?path=users/${user.id}`, { method: "DELETE" });
       toast({ title: "User deleted", description: `${user.username} removed.` });
       setUsers(prev => prev.filter(u => u.id !== user.id));
     } catch (e: any) {

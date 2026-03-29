@@ -158,7 +158,7 @@ function CreatePostModal({
     setSubmitting(true);
     setError(null);
     try {
-      const post = await apiFetch<Post>("/api/posts", {
+      const post = await apiFetch<Post>("/posts", {
         method: "POST",
         body: JSON.stringify({
           title: title.trim(),
@@ -351,7 +351,7 @@ function PostCard({
     if (comments.length > 0) return;
     setCommentsLoading(true);
     try {
-      const data = await apiFetch<{ post: any; comments: any[] }>(`/api/posts/${post.id}`);
+      const data = await apiFetch<{ post: any; comments: any[] }>(`/posts?path=${post.id}`);
       const normalized = (data.comments ?? []).map((c: any) => ({
         id: c.id,
         post_id: c.post_id,
@@ -380,7 +380,7 @@ function PostCard({
     if (reacting) return;
     setReacting(true);
     try {
-      const data = await apiFetch<{ reacted: boolean }>(`/api/posts/${post.id}/react`, { method: "POST" });
+      const data = await apiFetch<{ reacted: boolean }>(`/posts?path=${post.id}/react`, { method: "POST" });
       setPost(p => ({
         ...p,
         viewer_reacted: data.reacted,
@@ -395,7 +395,7 @@ function PostCard({
     if (!newComment.trim() || posting) return;
     setPosting(true);
     try {
-      const comment = await apiFetch<Comment>(`/api/posts/${post.id}/comments`, {
+      const comment = await apiFetch<Comment>(`/posts?path=${post.id}/comments`, {
         method: "POST",
         body: JSON.stringify({ content: newComment.trim() }),
       });
@@ -411,7 +411,7 @@ function PostCard({
 
   const deleteComment = async (cid: number) => {
     try {
-      await apiFetch(`/api/posts/${post.id}/comments/${cid}`, { method: "DELETE" });
+      await apiFetch(`/posts?path=${post.id}/comments/${cid}`, { method: "DELETE" });
       setComments(c => c.filter(x => x.id !== cid));
       setPost(p => ({ ...p, comment_count: Math.max(0, p.comment_count - 1) }));
     } catch (e: any) {
@@ -422,7 +422,7 @@ function PostCard({
   const deletePost = async () => {
     if (!confirm("Delete this post?")) return;
     try {
-      await apiFetch(`/api/posts/${post.id}`, { method: "DELETE" });
+      await apiFetch(`/posts?path=${post.id}`, { method: "DELETE" });
       onDelete(post.id);
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
@@ -638,7 +638,7 @@ export default function Forum() {
     try {
       const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
       if (category !== "all") params.set("category", category);
-      const data = await apiFetch<{ posts: any[]; total: number }>(`/api/posts?${params}`);
+      const data = await apiFetch<{ posts: any[]; total: number }>(`/posts?${params}`);
       const normalized = (data.posts ?? []).map(normalizePost);
       setPosts(p => append ? [...p, ...normalized] : normalized);
       setTotal(data.total ?? 0);
@@ -656,7 +656,7 @@ export default function Forum() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      apiFetch<MilsimGroup[]>("/api/milsim-groups/mine/memberships")
+      apiFetch<MilsimGroup[]>("/milsimGroups?path=mine/memberships")
         .then(setUserGroups)
         .catch(() => setUserGroups([]));
     }
