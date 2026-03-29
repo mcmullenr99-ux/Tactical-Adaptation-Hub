@@ -13,7 +13,7 @@ export function TagLogo({ size = 200, className = "", variant = "helmet" }: TagL
       alt="TAG"
       width={size}
       height={size}
-      className={["select-none pointer-events-none object-contain bg-transparent", className].join(" ")}
+      className={["select-none pointer-events-none object-contain", className].join(" ")}
       draggable={false}
     />
   );
