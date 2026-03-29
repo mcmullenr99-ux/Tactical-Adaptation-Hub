@@ -334,6 +334,19 @@ Deno.serve(async (req: Request) => {
       return new Response(null, { status: 204 });
     }
 
+
+    if (method === 'PATCH' && parts.length === 3 && parts[1] === 'roles' && parts[2] === 'reorder') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: cors });
+      const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
+      if (!group || group.owner_id !== full.id) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: cors });
+      const body = await req.json().catch(() => ({}));
+      // body.order = [{id, sort_order}, ...]
+      const updates = Array.isArray(body.order) ? body.order : [];
+      await Promise.all(updates.map((u: any) => base44.asServiceRole.entities.MilsimRole.update(u.id, { sort_order: u.sort_order })));
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: cors });
+    }
+
     // ── RANKS ────────────────────────────────────────────────────────────────
 
     if (method === 'POST' && parts.length === 2 && parts[1] === 'ranks') {
@@ -355,6 +368,19 @@ Deno.serve(async (req: Request) => {
       if (!group || group.owner_id !== full.id) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: cors });
       await base44.asServiceRole.entities.MilsimRank.delete(parts[2]);
       return new Response(null, { status: 204 });
+    }
+
+
+    if (method === 'PATCH' && parts.length === 3 && parts[1] === 'ranks' && parts[2] === 'reorder') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: cors });
+      const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
+      if (!group || group.owner_id !== full.id) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: cors });
+      const body = await req.json().catch(() => ({}));
+      // body.order = [{id, sort_order}, ...]
+      const updates = Array.isArray(body.order) ? body.order : [];
+      await Promise.all(updates.map((u: any) => base44.asServiceRole.entities.MilsimRank.update(u.id, { sort_order: u.sort_order })));
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: cors });
     }
 
     // ── ROSTER ────────────────────────────────────────────────────────────────

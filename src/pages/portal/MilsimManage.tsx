@@ -961,9 +961,13 @@ function ChainOfCommandTab({ group, onUpdated, showMsg }: any) {
 
 
 function RolesTab({ group, onUpdated, showMsg }: any) {
-  const [roles, setRoles] = useState<Role[]>(group.roles);
+  const [roles, setRoles] = useState<Role[]>([...(group.roles || [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
   const [name, setName] = useState(""); const [desc, setDesc] = useState("");
   const [adding, setAdding] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const dragItem = useRef<number | null>(null);
+  const dragOver = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const add = async () => {
     if (!name.trim()) return;
@@ -983,17 +987,68 @@ function RolesTab({ group, onUpdated, showMsg }: any) {
     } catch (e: any) { showMsg(false, e.message); }
   };
 
+  const handleDragStart = (idx: number) => { dragItem.current = idx; };
+  const handleDragEnter = (idx: number) => { dragOver.current = idx; setDragOverIdx(idx); };
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOver.current === null || dragItem.current === dragOver.current) {
+      dragItem.current = null; dragOver.current = null; setDragOverIdx(null); return;
+    }
+    setRoles(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(dragItem.current!, 1);
+      next.splice(dragOver.current!, 0, moved);
+      return next.map((r, i) => ({ ...r, sort_order: i }));
+    });
+    dragItem.current = null; dragOver.current = null; setDragOverIdx(null);
+  };
+
+  const saveOrder = async () => {
+    setSavingOrder(true);
+    try {
+      await apiFetch(`/api/milsim-groups/${group.id}/roles/reorder`, {
+        method: "PATCH",
+        body: JSON.stringify({ order: roles.map((r, i) => ({ id: r.id, sort_order: i })) }),
+      });
+      showMsg(true, "Role order saved.");
+    } catch (e: any) { showMsg(false, e.message); }
+    finally { setSavingOrder(false); }
+  };
+
   return (
     <div className="max-w-2xl space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground font-sans">Drag rows to reorder. Click save when done.</p>
+        <button onClick={saveOrder} disabled={savingOrder}
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded font-display font-bold uppercase tracking-widest text-xs hover:bg-primary/90 transition-colors disabled:opacity-60">
+          {savingOrder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save Order
+        </button>
+      </div>
       <div className="space-y-2">
         {roles.length === 0 && <p className="text-muted-foreground font-sans text-sm">No roles added yet.</p>}
-        {roles.map((r) => (
-          <div key={r.id} className="flex items-center justify-between gap-3 bg-card border border-border rounded-lg px-4 py-3">
-            <div>
+        {roles.map((r, idx) => (
+          <div key={r.id}
+            draggable
+            onDragStart={() => handleDragStart(idx)}
+            onDragEnter={() => handleDragEnter(idx)}
+            onDragEnd={handleDragEnd}
+            onDragOver={e => e.preventDefault()}
+            className={[
+              "flex items-center gap-3 bg-card border rounded-lg px-4 py-3 transition-all select-none",
+              dragOverIdx === idx && dragItem.current !== idx ? "border-primary/70 bg-primary/5 scale-[1.01]" : "border-border"
+            ].join(" ")}>
+            <div className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0">
+              <svg width="12" height="20" viewBox="0 0 12 20" fill="currentColor">
+                <circle cx="3" cy="4" r="1.5"/><circle cx="9" cy="4" r="1.5"/>
+                <circle cx="3" cy="10" r="1.5"/><circle cx="9" cy="10" r="1.5"/>
+                <circle cx="3" cy="16" r="1.5"/><circle cx="9" cy="16" r="1.5"/>
+              </svg>
+            </div>
+            <span className="text-[10px] font-display font-bold text-muted-foreground/50 tracking-widest w-5 text-center shrink-0">{idx + 1}</span>
+            <div className="flex-1 min-w-0">
               <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{r.name}</p>
               {r.description && <p className="text-xs text-muted-foreground font-sans">{r.description}</p>}
             </div>
-            <button onClick={() => remove(r.id)} className="text-muted-foreground hover:text-destructive transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => remove(r.id)} className="text-muted-foreground hover:text-destructive transition-colors p-1 shrink-0"><Trash2 className="w-4 h-4" /></button>
           </div>
         ))}
       </div>
@@ -1011,16 +1066,20 @@ function RolesTab({ group, onUpdated, showMsg }: any) {
 }
 
 function RanksTab({ group, onUpdated, showMsg }: any) {
-  const [ranks, setRanks] = useState<Rank[]>(group.ranks);
+  const [ranks, setRanks] = useState<Rank[]>([...(group.ranks || [])].sort((a, b) => (a.sort_order ?? b.tier ?? 0) - (b.sort_order ?? a.tier ?? 0)));
   const [name, setName] = useState(""); const [abbr, setAbbr] = useState(""); const [tier, setTier] = useState("0");
   const [adding, setAdding] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const dragItem = useRef<number | null>(null);
+  const dragOver = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const add = async () => {
     if (!name.trim()) return;
     setAdding(true);
     try {
       const rank = await apiFetch<Rank>(`/api/milsim-groups/${group.id}/ranks`, { method: "POST", body: JSON.stringify({ name, abbreviation: abbr || undefined, tier: parseInt(tier) || 0 }) });
-      const updated = [...ranks, rank].sort((a, b) => b.tier - a.tier);
+      const updated = [...ranks, rank];
       setRanks(updated); onUpdated({ ...group, ranks: updated });
       setName(""); setAbbr(""); setTier("0"); showMsg(true, "Rank added.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -1034,20 +1093,71 @@ function RanksTab({ group, onUpdated, showMsg }: any) {
     } catch (e: any) { showMsg(false, e.message); }
   };
 
+  const handleDragStart = (idx: number) => { dragItem.current = idx; };
+  const handleDragEnter = (idx: number) => { dragOver.current = idx; setDragOverIdx(idx); };
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOver.current === null || dragItem.current === dragOver.current) {
+      dragItem.current = null; dragOver.current = null; setDragOverIdx(null); return;
+    }
+    setRanks(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(dragItem.current!, 1);
+      next.splice(dragOver.current!, 0, moved);
+      return next.map((r, i) => ({ ...r, sort_order: i }));
+    });
+    dragItem.current = null; dragOver.current = null; setDragOverIdx(null);
+  };
+
+  const saveOrder = async () => {
+    setSavingOrder(true);
+    try {
+      await apiFetch(`/api/milsim-groups/${group.id}/ranks/reorder`, {
+        method: "PATCH",
+        body: JSON.stringify({ order: ranks.map((r, i) => ({ id: r.id, sort_order: i })) }),
+      });
+      showMsg(true, "Rank order saved.");
+    } catch (e: any) { showMsg(false, e.message); }
+    finally { setSavingOrder(false); }
+  };
+
   return (
     <div className="max-w-2xl space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground font-sans">Drag rows to reorder. Click save when done.</p>
+        <button onClick={saveOrder} disabled={savingOrder}
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded font-display font-bold uppercase tracking-widest text-xs hover:bg-primary/90 transition-colors disabled:opacity-60">
+          {savingOrder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save Order
+        </button>
+      </div>
       <div className="space-y-2">
         {ranks.length === 0 && <p className="text-muted-foreground font-sans text-sm">No ranks added yet.</p>}
-        {ranks.map((r) => (
-          <div key={r.id} className="flex items-center justify-between gap-3 bg-card border border-border rounded-lg px-4 py-3">
-            <div className="flex items-center gap-3">
-              <span className="w-7 h-7 rounded bg-secondary border border-border flex items-center justify-center font-display font-black text-xs text-primary">{r.tier}</span>
+        {ranks.map((r, idx) => (
+          <div key={r.id}
+            draggable
+            onDragStart={() => handleDragStart(idx)}
+            onDragEnter={() => handleDragEnter(idx)}
+            onDragEnd={handleDragEnd}
+            onDragOver={e => e.preventDefault()}
+            className={[
+              "flex items-center gap-3 bg-card border rounded-lg px-4 py-3 transition-all select-none",
+              dragOverIdx === idx && dragItem.current !== idx ? "border-primary/70 bg-primary/5 scale-[1.01]" : "border-border"
+            ].join(" ")}>
+            <div className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0">
+              <svg width="12" height="20" viewBox="0 0 12 20" fill="currentColor">
+                <circle cx="3" cy="4" r="1.5"/><circle cx="9" cy="4" r="1.5"/>
+                <circle cx="3" cy="10" r="1.5"/><circle cx="9" cy="10" r="1.5"/>
+                <circle cx="3" cy="16" r="1.5"/><circle cx="9" cy="16" r="1.5"/>
+              </svg>
+            </div>
+            <span className="text-[10px] font-display font-bold text-muted-foreground/50 tracking-widest w-5 text-center shrink-0">{idx + 1}</span>
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <span className="w-7 h-7 rounded bg-secondary border border-border flex items-center justify-center font-display font-black text-xs text-primary shrink-0">{r.tier}</span>
               <div>
                 <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{r.name}</p>
                 {r.abbreviation && <p className="text-xs text-muted-foreground font-mono">{r.abbreviation}</p>}
               </div>
             </div>
-            <button onClick={() => remove(r.id)} className="text-muted-foreground hover:text-destructive transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => remove(r.id)} className="text-muted-foreground hover:text-destructive transition-colors p-1 shrink-0"><Trash2 className="w-4 h-4" /></button>
           </div>
         ))}
       </div>
