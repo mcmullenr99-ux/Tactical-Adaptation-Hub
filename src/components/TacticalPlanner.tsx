@@ -12,6 +12,8 @@
  *   Scale bar shows a real-world distance bar that updates with zoom.
  */
 
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import React, {
   useRef, useState, useEffect, useCallback, useMemo,
 } from "react";
@@ -600,9 +602,11 @@ function drawScaleBar(
   ctx.restore();
 }
 
-// ─── Tile Map Layer ────────────────────────────────────────────────────────────
-// Renders real topographic map tiles from atlas.plan-ops.fr
-// Uses absolutely-positioned <img> elements — browser handles async loading natively.
+// ─── Tile Map Layer (Leaflet) ─────────────────────────────────────────────────
+// Uses Leaflet.js for battle-tested tile rendering, pan/zoom sync.
+// The Leaflet map is read-only (no controls) — all interaction is handled by
+// the TacticalPlanner canvas overlay above it.
+
 
 interface TileLayerProps {
   tileConfig: TileConfig;
@@ -613,68 +617,83 @@ interface TileLayerProps {
 }
 
 function TileMapLayer({ tileConfig, panOffset, zoom, containerW, containerH }: TileLayerProps) {
-  const W = containerW || 900;
-  const H = containerH || 560;
+  const divRef   = useRef<HTMLDivElement>(null);
+  const mapRef   = useRef<L.Map | null>(null);
+
   const { mapId, layerId, maxZoom } = tileConfig;
 
-  // Pick a tile zoom level that gives ~256px tiles on screen
-  // tileZoom=0 → 1 tile covers whole map, tileZoom=maxZoom → most detail
-  const screenMapPx = Math.max(W, H) * zoom;
-  const idealTileZoom = Math.round(Math.log2(screenMapPx / 256));
-  const tileZoom = Math.max(0, Math.min(maxZoom, idealTileZoom));
+  // Initialise Leaflet map once
+  useEffect(() => {
+    if (!divRef.current) return;
 
-  const numTiles   = Math.pow(2, tileZoom);           // tiles per axis
-  const fullMapPx  = Math.max(W, H) * zoom;           // full map in screen pixels
-  const tilePxSize = fullMapPx / numTiles;             // each tile's screen size
+    const map = L.map(divRef.current, {
+      crs: L.CRS.Simple,          // flat/simple coordinate system — no geo projection
+      zoomControl: false,
+      attributionControl: false,
+      dragging: false,            // TacticalPlanner canvas handles pan
+      scrollWheelZoom: false,     // TacticalPlanner canvas handles zoom
+      doubleClickZoom: false,
+      boxZoom: false,
+      keyboard: false,
+      tap: false,
+      zoomSnap: 0.1,
+      zoomDelta: 0.1,
+    });
 
-  // Map top-left in screen space (centred + pan offset)
-  const mapOriginX = W / 2 - fullMapPx / 2 + panOffset.x;
-  const mapOriginY = H / 2 - fullMapPx / 2 + panOffset.y;
+    // Tile layer from plan-ops.fr
+    L.tileLayer(
+      `https://atlas.plan-ops.fr/data/1/maps/${mapId}/${layerId}/{z}/{x}/{y}.png`,
+      { minZoom: 0, maxZoom, tileSize: 256, noWrap: true }
+    ).addTo(map);
 
-  // Visible tile range
-  const startX = Math.max(0, Math.floor(-mapOriginX / tilePxSize));
-  const startY = Math.max(0, Math.floor(-mapOriginY / tilePxSize));
-  const endX   = Math.min(numTiles - 1, Math.ceil((W - mapOriginX) / tilePxSize));
-  const endY   = Math.min(numTiles - 1, Math.ceil((H - mapOriginY) / tilePxSize));
+    // Initial view — centre of the map at a mid zoom
+    const midZoom = Math.floor(maxZoom / 2);
+    const mid = Math.pow(2, midZoom) / 2;
+    map.setView([mid, mid] as L.LatLngExpression, midZoom);
 
-  const tiles: React.ReactElement[] = [];
-  for (let tx = startX; tx <= endX; tx++) {
-    for (let ty = startY; ty <= endY; ty++) {
-      const px = mapOriginX + tx * tilePxSize;
-      const py = mapOriginY + ty * tilePxSize;
-      const url = `https://atlas.plan-ops.fr/data/1/maps/${mapId}/${layerId}/${tileZoom}/${tx}/${ty}.png`;
-      tiles.push(
-        <img
-          key={`${tileZoom}/${tx}/${ty}`}
-          src={url}
-          alt=""
-          draggable={false}
-          style={{
-            position:  "absolute",
-            left:      px,
-            top:       py,
-            width:     tilePxSize + 1,
-            height:    tilePxSize + 1,
-            imageRendering: "pixelated",
-            pointerEvents: "none",
-            userSelect: "none",
-          }}
-        />
-      );
-    }
-  }
+    mapRef.current = map;
+    return () => { map.remove(); mapRef.current = null; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapId, layerId, maxZoom]);
+
+  // Sync pan + zoom from TacticalPlanner state into Leaflet
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Convert UI zoom (1.0 = fit) to Leaflet zoom level
+    const leafletZoom = Math.log2(zoom) + Math.floor(tileConfig.maxZoom / 2);
+    const clampedZoom = Math.max(0, Math.min(tileConfig.maxZoom, leafletZoom));
+
+    // Convert panOffset pixels → fractional tile offset at current zoom
+    const numTiles = Math.pow(2, Math.round(clampedZoom));
+    const W = containerW || 900;
+    const H = containerH || 560;
+    const fullMapPx = Math.max(W, H) * zoom;
+    const tilePx = fullMapPx / numTiles;
+
+    // panOffset moves the map — translate to Leaflet centre shift
+    const centerTileX = numTiles / 2 - panOffset.x / tilePx;
+    const centerTileY = numTiles / 2 - panOffset.y / tilePx;
+
+    map.setView([centerTileY, centerTileX] as L.LatLngExpression, clampedZoom, { animate: false });
+  }, [panOffset, zoom, containerW, containerH, tileConfig.maxZoom]);
+
+  // Invalidate size when container dimensions change
+  useEffect(() => {
+    mapRef.current?.invalidateSize();
+  }, [containerW, containerH]);
 
   return (
     <div
+      ref={divRef}
       style={{
         position: "absolute",
         inset: 0,
-        overflow: "hidden",
+        zIndex: 0,
         pointerEvents: "none",
       }}
-    >
-      {tiles}
-    </div>
+    />
   );
 }
 
