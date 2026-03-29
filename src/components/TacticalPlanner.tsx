@@ -46,11 +46,20 @@ interface PlanElement {
 
 // ─── Map catalogue ─────────────────────────────────────────────────────────────
 
+interface TileConfig {
+  mapId: number;        // plan-ops gameMapId
+  layerId: number;      // plan-ops gameMapLayerId
+  maxZoom: number;      // max tile zoom level
+  tileSize: number;     // tile pixel size
+  factorX: number;      // plan-ops factorX (metres per pixel at zoom 0)
+}
+
 interface GameMap {
   id: string;
   game: string;
   name: string;
   mapImageUrl: string | null;
+  tileConfig?: TileConfig;    // if present, real topographic tiles are available
   fallbackColor: string;
   previewColor: string;
   attribution: string;
@@ -65,6 +74,7 @@ const GAME_MAPS: GameMap[] = [
   // Altis: 30,720m terrain, 1000m grid squares
   { id:"a3_altis",    game:"Arma 3 — Vanilla", name:"Altis",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/c6c06437c_generated_image.png",
+    tileConfig:{ mapId:3, layerId:3, maxZoom:6, tileSize:212, factorX:0.006839 },
     fallbackColor:"#2d3a2e", previewColor:"#4a7c59",
     attribution:"BI Official", openUrl:"https://atlas.plan-ops.fr/maps/arma3/altis/150",
     realSizeM:30720, gridCellM:1000 },
@@ -72,6 +82,7 @@ const GAME_MAPS: GameMap[] = [
   // Stratis: 8,192m terrain, 1000m grid squares
   { id:"a3_stratis",  game:"Arma 3 — Vanilla", name:"Stratis",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/ea6747836_generated_image.png",
+    tileConfig:{ mapId:104, layerId:104, maxZoom:4, tileSize:226, factorX:0.027475 },
     fallbackColor:"#2d3a2e", previewColor:"#5a8c6a",
     attribution:"BI Official", openUrl:"https://atlas.plan-ops.fr/maps/arma3/stratis/150",
     realSizeM:8192, gridCellM:1000 },
@@ -79,6 +90,7 @@ const GAME_MAPS: GameMap[] = [
   // Malden: 12,800m terrain, 1000m grid squares
   { id:"a3_malden",   game:"Arma 3 — Vanilla", name:"Malden",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/2cd515d90_generated_image.png",
+    tileConfig:{ mapId:68, layerId:68, maxZoom:5, tileSize:186, factorX:0.01448 },
     fallbackColor:"#2d3a2e", previewColor:"#6a9c7a",
     attribution:"BI Official", openUrl:"https://atlas.plan-ops.fr/maps/arma3/malden/150",
     realSizeM:12800, gridCellM:1000 },
@@ -86,6 +98,7 @@ const GAME_MAPS: GameMap[] = [
   // Tanoa: 15,360m terrain, 1000m grid squares
   { id:"a3_tanoa",    game:"Arma 3 — Vanilla", name:"Tanoa",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/de89f0a9c_generated_image.png",
+    tileConfig:{ mapId:109, layerId:109, maxZoom:5, tileSize:213, factorX:0.01385 },
     fallbackColor:"#1a3a2a", previewColor:"#3a7a5a",
     attribution:"BI Official", openUrl:"https://atlas.plan-ops.fr/maps/arma3/tanoa/150",
     realSizeM:15360, gridCellM:1000 },
@@ -94,6 +107,7 @@ const GAME_MAPS: GameMap[] = [
   // Chernarus: 15,360m terrain, 1000m grid squares (ArmA 2 / A3 CUP)
   { id:"a3_chernarus", game:"Arma 3 — Modded", name:"Chernarus (Summer)",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/c0c3edd32_generated_image.png",
+    tileConfig:{ mapId:18, layerId:18, maxZoom:5, tileSize:242, factorX:0.01575 },
     fallbackColor:"#263326", previewColor:"#4a7a55",
     attribution:"BI / CUP", openUrl:"https://atlas.plan-ops.fr/maps/arma3/chernarus/150",
     realSizeM:15360, gridCellM:1000 },
@@ -101,6 +115,7 @@ const GAME_MAPS: GameMap[] = [
   // Takistan: 12,800m terrain, 1000m grid squares
   { id:"a3_takistan",  game:"Arma 3 — Modded", name:"Takistan",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/eee40b659_generated_image.png",
+    tileConfig:{ mapId:108, layerId:108, maxZoom:5, tileSize:202, factorX:0.01575 },
     fallbackColor:"#3a3020", previewColor:"#7a7040",
     attribution:"BI / CUP", openUrl:"https://atlas.plan-ops.fr/maps/arma3/takistan/150",
     realSizeM:12800, gridCellM:1000 },
@@ -108,6 +123,7 @@ const GAME_MAPS: GameMap[] = [
   // Lingor: 10,240m terrain, 1000m grid squares
   { id:"a3_lingor",    game:"Arma 3 — Modded", name:"Lingor",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/665ed628f_generated_image.png",
+    tileConfig:{ mapId:66, layerId:66, maxZoom:4, tileSize:256, factorX:0.025 },
     fallbackColor:"#1a3020", previewColor:"#3a6a40",
     attribution:"IceBreakr", openUrl:"https://atlas.plan-ops.fr/maps/arma3/lingor/150",
     realSizeM:10240, gridCellM:1000 },
@@ -115,6 +131,7 @@ const GAME_MAPS: GameMap[] = [
   // Fallujah (A3): 10,240m terrain, 1000m grid squares
   { id:"a3_fallujah",  game:"Arma 3 — Modded", name:"Fallujah",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/af03413de_generated_image.png",
+    tileConfig:{ mapId:39, layerId:39, maxZoom:5, tileSize:323, factorX:0.0315 },
     fallbackColor:"#3a2a10", previewColor:"#8a7040",
     attribution:"Team Ahoy", openUrl:"https://atlas.plan-ops.fr/maps/arma3/fallujah/150",
     realSizeM:10240, gridCellM:1000 },
@@ -122,6 +139,7 @@ const GAME_MAPS: GameMap[] = [
   // Lythium: 20,480m terrain, 1000m grid squares
   { id:"a3_lythium",   game:"Arma 3 — Modded", name:"Lythium",
     mapImageUrl:"https://media.base44.com/images/public/69bf52c997cae5d4cff87ae4/e61239f17_generated_image.png",
+    tileConfig:{ mapId:67, layerId:67, maxZoom:5, tileSize:287, factorX:0.013985 },
     fallbackColor:"#2a2010", previewColor:"#7a6030",
     attribution:"Jakerod", openUrl:"https://atlas.plan-ops.fr/maps/arma3/lythium/150",
     realSizeM:20480, gridCellM:1000 },
@@ -580,6 +598,113 @@ function drawScaleBar(
   ctx.fillText(mLabel, left + mBarPx, mTop + MH + 3);
 
   ctx.restore();
+}
+
+// ─── Tile Map Layer ────────────────────────────────────────────────────────────
+// Renders real topographic map tiles from atlas.plan-ops.fr
+// Uses a canvas-based slippy tile renderer that responds to pan/zoom state
+
+interface TileLayerProps {
+  tileConfig: TileConfig;
+  panOffset: Pt;
+  zoom: number;        // UI zoom multiplier (1.0 = fit to container)
+  containerW: number;
+  containerH: number;
+}
+
+function TileMapLayer({ tileConfig, panOffset, zoom, containerW, containerH }: TileLayerProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const tileCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  const rafRef    = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      const W = containerW;
+      const H = containerH;
+      canvas.width  = W;
+      canvas.height = H;
+
+      ctx.clearRect(0, 0, W, H);
+
+      const { mapId, layerId, maxZoom, tileSize } = tileConfig;
+
+      // Choose tile zoom level based on UI zoom
+      // At zoom=1 show a medium detail level, scale up/down with UI zoom
+      const tileZoom = Math.max(0, Math.min(maxZoom, Math.round(Math.log2(zoom) + (maxZoom * 0.6))));
+
+      // Number of tiles at this zoom level
+      const numTiles = Math.pow(2, tileZoom);
+
+      // Total pixel size of the full map at current UI zoom
+      const fullMapPx = Math.min(W, H) * zoom;
+
+      // Pixel size of each tile
+      const tilePxSize = fullMapPx / numTiles;
+
+      // Map origin (top-left) in screen space
+      const mapOriginX = W / 2 - fullMapPx / 2 + panOffset.x;
+      const mapOriginY = H / 2 - fullMapPx / 2 + panOffset.y;
+
+      // Which tiles are visible?
+      const startTileX = Math.max(0, Math.floor(-mapOriginX / tilePxSize));
+      const startTileY = Math.max(0, Math.floor(-mapOriginY / tilePxSize));
+      const endTileX   = Math.min(numTiles - 1, Math.ceil((W - mapOriginX) / tilePxSize));
+      const endTileY   = Math.min(numTiles - 1, Math.ceil((H - mapOriginY) / tilePxSize));
+
+      for (let tx = startTileX; tx <= endTileX; tx++) {
+        for (let ty = startTileY; ty <= endTileY; ty++) {
+          const key = `${tileZoom}/${tx}/${ty}`;
+          const url = `https://atlas.plan-ops.fr/data/1/maps/${mapId}/${layerId}/${tileZoom}/${tx}/${ty}.png`;
+
+          const drawTile = (img: HTMLImageElement) => {
+            const px = mapOriginX + tx * tilePxSize;
+            const py = mapOriginY + ty * tilePxSize;
+            ctx.drawImage(img, px, py, tilePxSize + 0.5, tilePxSize + 0.5);
+          };
+
+          if (tileCache.current.has(key)) {
+            const img = tileCache.current.get(key)!;
+            if (img.complete && img.naturalWidth > 0) {
+              drawTile(img);
+            }
+          } else {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = url;
+            tileCache.current.set(key, img);
+            img.onload = () => {
+              // Re-trigger render once tile loads
+              const c = canvasRef.current;
+              if (!c) return;
+              const cx = c.getContext("2d");
+              if (!cx) return;
+              cx.drawImage(img,
+                mapOriginX + tx * tilePxSize,
+                mapOriginY + ty * tilePxSize,
+                tilePxSize + 0.5, tilePxSize + 0.5
+              );
+            };
+          }
+        }
+      }
+    });
+
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [tileConfig, panOffset, zoom, containerW, containerH]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0"
+      style={{ width: "100%", height: "100%", pointerEvents: "none" }}
+    />
+  );
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
@@ -1374,18 +1499,38 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
         onContextMenu={e => e.preventDefault()}
       >
 
-        {/* LAYER 0: Map background image (panned + zoomed) */}
+        {/* LAYER 0: Map background — tiles if available, else static image, else fallback */}
         {mapId !== "custom" && (
           <div
-            className="absolute inset-0 flex items-center justify-center overflow-hidden"
-            style={{ pointerEvents: "none" }}
+            className="absolute inset-0 overflow-hidden"
+            style={{ pointerEvents: "none", background: "#0a0c0e" }}
           >
-            {gameMap.mapImageUrl ? (
+            {/* Fallback colour/gradient always underneath */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `radial-gradient(ellipse at 30% 40%, ${gameMap.previewColor}66 0%, ${gameMap.fallbackColor}99 45%, #0a0c0e 100%)`,
+              }}
+            />
+
+            {/* Real topographic tiles — primary rendering path */}
+            {gameMap.tileConfig ? (
+              <TileMapLayer
+                tileConfig={gameMap.tileConfig}
+                panOffset={panOffset}
+                zoom={zoom}
+                containerW={canvasSize.w}
+                containerH={canvasSize.h}
+              />
+            ) : gameMap.mapImageUrl ? (
+              /* Fallback static image for maps without tile config */
               <img
                 src={gameMap.mapImageUrl}
                 alt={gameMap.name}
                 draggable={false}
                 style={{
+                  position: "absolute",
+                  inset: 0,
                   transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom}) rotate(${mapRotation}rad)`,
                   transformOrigin: "center center",
                   width: "100%",
@@ -1395,18 +1540,7 @@ export default function TacticalPlanner({ group, showMsg, initialJson, onSave }:
                   transition: isPanning ? "none" : "transform 0.05s ease-out",
                 }}
               />
-            ) : (
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: `
-                    repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(255,255,255,0.04) 59px, rgba(255,255,255,0.04) 60px),
-                    repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(255,255,255,0.04) 59px, rgba(255,255,255,0.04) 60px),
-                    radial-gradient(ellipse at 30% 40%, ${gameMap.previewColor}99 0%, ${gameMap.fallbackColor}cc 45%, #0a0c0e 100%)
-                  `,
-                }}
-              />
-            )}
+            ) : null}
           </div>
         )}
 
