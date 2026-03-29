@@ -516,23 +516,29 @@ function buildReadinessReport(params: {
   // Pulled from opIntel function stats. Only counts if unit has filed 3+ AARs with outcomes set.
   // This rewards units that actually record and track their performance data honestly.
   let combatIntelPts = 0;
+  let win_rate: number | null = null;
+  let obj_rate: number | null = null;
+  let effectiveness_score: number | null = null;
+  let combat_aar_count = 0;
   try {
     const aarList = aars.filter((a: any) => a.outcome && a.outcome !== "INCOMPLETE" && a.group_id === group.id);
+    combat_aar_count = aarList.length;
     if (aarList.length >= 3) {
       const OUTCOME_WIN_W: Record<string, number> = { VICTORY: 1, "PARTIAL VICTORY": 0.6, DRAW: 0.5, DEFEAT: 0, INCOMPLETE: 0 };
       const winPts = aarList.reduce((s: number, a: any) => s + (OUTCOME_WIN_W[a.outcome] ?? 0), 0);
-      const winRate = Math.round((winPts / aarList.length) * 100);
+      win_rate = Math.round((winPts / aarList.length) * 100);
       // Objectives performance
       const aarWithObjs = aarList.filter((a: any) => (a.objectives_hit ?? 0) + (a.objectives_missed ?? 0) > 0);
       const objHit = aarWithObjs.reduce((s: number, a: any) => s + (Number(a.objectives_hit) ?? 0), 0);
       const objTotal = aarWithObjs.reduce((s: number, a: any) => s + (Number(a.objectives_hit) ?? 0) + (Number(a.objectives_missed) ?? 0), 0);
-      const objRate = objTotal > 0 ? Math.round((objHit / objTotal) * 100) : 50; // default 50 if no obj data
-      const effectiveness = Math.round(winRate * 0.6 + objRate * 0.4);
-      if      (effectiveness >= 75) combatIntelPts = 20;
-      else if (effectiveness >= 60) combatIntelPts = 14;
-      else if (effectiveness >= 40) combatIntelPts = 8;
-      else if (effectiveness >= 20) combatIntelPts = 4;
-      else                          combatIntelPts = 2; // At least filed AARs with data
+      obj_rate = objTotal > 0 ? Math.round((objHit / objTotal) * 100) : null;
+      const objRateForScore = obj_rate ?? 50;
+      effectiveness_score = Math.round(win_rate * 0.6 + objRateForScore * 0.4);
+      if      (effectiveness_score >= 75) combatIntelPts = 20;
+      else if (effectiveness_score >= 60) combatIntelPts = 14;
+      else if (effectiveness_score >= 40) combatIntelPts = 8;
+      else if (effectiveness_score >= 20) combatIntelPts = 4;
+      else                                combatIntelPts = 2;
     }
   } catch { combatIntelPts = 0; }
   score += combatIntelPts;
@@ -705,6 +711,65 @@ function buildReadinessReport(params: {
       detail: `Only ${clean_review_count} independent reputation review${clean_review_count !== 1 ? 's' : ''} on file. Minimum 3 required for full points.` });
   }
 
+  // ── Additional completeness flags ──────────────────────────────────────────
+
+  // Zero verified members — can't assess anything
+  if (verifiedTotal === 0 && total > 0) {
+    flags.push({ severity: 'red', code: 'ZERO_VERIFIED_MEMBERS', label: 'Roster Integrity Alert',
+      detail: `More than 30% of your roster members have accounts less than ${ACCOUNT_MIN_AGE_DAYS} days old. New accounts are excluded from manpower scoring to prevent padding. As these accounts age past the threshold they will be counted automatically.` });
+  }
+
+  // No games listed at all
+  const gameList2 = Array.isArray(group.games) ? group.games as string[] : group.games ? [group.games as string] : [];
+  if (gameList2.length === 0) {
+    flags.push({ severity: 'amber', code: 'NO_GAMES_LISTED', label: 'No Games Listed',
+      detail: 'No games have been listed for this unit. Game Breadth and strength thresholds cannot be assessed. Add your primary titles in Group Settings.' });
+  }
+
+  // Page never updated
+  if (days_since_page_update === null) {
+    flags.push({ severity: 'amber', code: 'PAGE_NEVER_UPDATED', label: 'Group Page Never Updated',
+      detail: 'This group page has never been manually updated since registration. Keeping your page current is part of your readiness score — update it in Group Settings.' });
+  }
+
+  // Activity is zero (no tracking data at all)
+  if (verifiedTotal > 0 && active_this_month === 0 && active_this_week === 0) {
+    flags.push({ severity: 'red', code: 'ZERO_RECORDED_ACTIVITY', label: 'Zero Member Activity Recorded',
+      detail: 'No verified roster members have logged any activity in the last 30 days. Activity tracking is based on operation participation — ensure members are linked to their TAGnet accounts and RSVPing to ops.' });
+  }
+
+  // Combat Intel not yet unlocked — prompt to unlock it
+  if (combat_aar_count < 3) {
+    const needed = 3 - combat_aar_count;
+    flags.push({ severity: 'info', code: 'COMBAT_INTEL_LOCKED', label: 'Combat Intel Score Not Yet Unlocked',
+      detail: `File ${needed} more AAR${needed !== 1 ? 's' : ''} with operation outcomes set to unlock Combat Intel scoring (worth up to 20 points). Currently ${combat_aar_count}/3 qualifying AARs on record.` });
+  }
+
+  // Poor win rate (only if unlocked)
+  if (win_rate !== null && win_rate < 35) {
+    flags.push({ severity: 'amber', code: 'LOW_WIN_RATE', label: 'Low Operational Win Rate',
+      detail: `Operational win rate of ${win_rate}% across ${combat_aar_count} qualifying AARs — below the 35% threshold. Review lessons learned and adjust tactics to improve mission effectiveness.` });
+  }
+
+  // Doctrine bonus not achieved
+  if (training.knowledge_grade !== 'none' && !(training.has_sop && training.has_ttp && training.has_roe && training.has_drill && training.avg_depth_score >= 70)) {
+    const missing = [];
+    if (!training.has_sop) missing.push('SOP');
+    if (!training.has_ttp) missing.push('TTP');
+    if (!training.has_roe) missing.push('ROE');
+    if (!training.has_drill) missing.push('Drill');
+    if (missing.length > 0) {
+      flags.push({ severity: 'info', code: 'DOCTRINE_BONUS_INCOMPLETE', label: 'Doctrine Excellence Bonus Not Achieved',
+        detail: `Missing ${missing.join(', ')} documentation. Upload all four doctrine types (SOP, TTP, ROE, Drill) with average depth ≥70 to unlock the +15 Doctrine Bonus points.` });
+    }
+  }
+
+  // Game breadth could earn more points
+  if (qualifiedGameCount === 0 && gameList2.length > 0) {
+    flags.push({ severity: 'amber', code: 'NO_QUALIFIED_GAMES', label: 'No Games Meet Minimum Strength',
+      detail: `${gameList2.length} game${gameList2.length !== 1 ? 's' : ''} listed but unit does not meet minimum headcount for any of them. Game Breadth scores 0 until minimum personnel thresholds are met.` });
+  }
+
   type NarrativeItem = { label: string; text: string; severity: 'green' | 'amber' | 'red' | 'neutral' };
   const narrative_items: NarrativeItem[] = [];
 
@@ -805,6 +870,7 @@ function buildReadinessReport(params: {
     avg_rep_score, avg_experience, review_count: clean_review_count,
     has_discord, has_steam,
     op_capability_tier, op_cap_score: Math.round(opCapScore),
+    win_rate, obj_rate, effectiveness_score, combat_aar_count,
     training, anti_gaming: ag, flags, narrative, narrative_lines, narrative_items,
     score_breakdown: { manpower: manpowerPts, activity: activityPts, ops_history: opHistoryPts, op_recency: opRecencyPts, aar_discipline: aarPts, training_doctrine: trainingPts, game_breadth: gameBreadthPts, discord: discordPts, page_maintenance: pagePts, reputation: repPts, doctrine_bonus: doctrineBonusPts, combat_intel: combatIntelPts },
   };

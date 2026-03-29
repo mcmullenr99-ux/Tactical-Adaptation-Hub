@@ -4878,12 +4878,14 @@ function ReadinessTab({ group }: any) {
           </div>
           <p className={`text-right text-xs font-display font-bold ${sc}`}>{readiness.readiness_pct}% composite readiness</p>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-border text-center">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 pt-2 border-t border-border text-center">
           {[
             { label: "Total", value: readiness.total, col: "" },
             { label: "Active 7d", value: readiness.active_this_week, col: "text-green-400" },
             { label: "Active 30d", value: readiness.active_this_month, col: "text-blue-400" },
             { label: "Ops Logged", value: readiness.total_ops ?? 0, col: "text-primary" },
+            { label: "Win Rate", value: readiness.win_rate !== null && readiness.win_rate !== undefined ? `${readiness.win_rate}%` : "—",
+              col: readiness.win_rate !== null && readiness.win_rate !== undefined ? (readiness.win_rate >= 60 ? "text-green-400" : readiness.win_rate >= 35 ? "text-yellow-400" : "text-red-400") : "text-muted-foreground" },
           ].map(s => (
             <div key={s.label}>
               <p className={`text-xl font-display font-bold ${s.col || "text-foreground"}`}>{s.value}</p>
@@ -4899,11 +4901,21 @@ function ReadinessTab({ group }: any) {
           <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Readiness Flags</p>
           {readiness.flags.map((flag: any) => (
             <div key={flag.code} className={`rounded-lg border px-4 py-3 flex gap-3 ${
-              flag.severity === "red" ? "border-red-500/40 bg-red-500/5" : "border-yellow-500/30 bg-yellow-500/5"
+              flag.severity === "red"  ? "border-red-500/40 bg-red-500/5" :
+              flag.severity === "amber" ? "border-yellow-500/30 bg-yellow-500/5" :
+              "border-blue-500/30 bg-blue-500/5"
             }`}>
-              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${flag.severity === "red" ? "bg-red-500" : "bg-yellow-400"}`} />
+              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                flag.severity === "red" ? "bg-red-500" :
+                flag.severity === "amber" ? "bg-yellow-400" :
+                "bg-blue-400"
+              }`} />
               <div>
-                <p className={`font-display font-bold uppercase tracking-widest text-xs ${flag.severity === "red" ? "text-red-400" : "text-yellow-400"}`}>
+                <p className={`font-display font-bold uppercase tracking-widest text-xs ${
+                  flag.severity === "red" ? "text-red-400" :
+                  flag.severity === "amber" ? "text-yellow-400" :
+                  "text-blue-400"
+                }`}>
                   {flag.label}
                 </p>
                 <p className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">{flag.detail}</p>

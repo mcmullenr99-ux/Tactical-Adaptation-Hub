@@ -7,7 +7,7 @@ import { BRANCH_ICONS, type Branch } from "@/lib/milsimConstants";
 import {
   Shield, Globe, ExternalLink, Loader2, Users, Award, Crosshair,
   FileText, ChevronLeft, Star, BookOpen, Map, Radio, Medal,
-  Zap, Target, TrendingUp, Activity, Archive, Zap, ClipboardList, Siren,
+  Zap, Target, TrendingUp, Activity, Archive, ClipboardList, Siren, Trophy,
 } from "lucide-react";
 const OrbatBuilder = lazy(() => import("@/components/OrbatBuilder"));
 const CAMPAIGNS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/campaigns";
@@ -443,7 +443,7 @@ export default function MilsimGroup() {
                           <s.icon className="w-4 h-4 text-primary" />
                           <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">{s.label}</p>
                         </div>
-                        <p className="font-display font-black text-2xl text-foreground">{s.value}</p>
+                        <p className={`font-display font-black text-2xl ${(s as any).col || "text-foreground"}`}>{s.value}</p>
                         <p className="text-[10px] text-muted-foreground font-sans mt-0.5">{s.sub}</p>
                       </div>
                     ))}
