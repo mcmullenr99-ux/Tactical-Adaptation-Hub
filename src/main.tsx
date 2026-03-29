@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import React from "react";
 import App from "./App";
 import "./index.css";
+import "leaflet/dist/leaflet.css";
 
 class RootErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
   constructor(props: any) {

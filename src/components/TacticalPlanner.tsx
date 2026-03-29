@@ -13,7 +13,7 @@
  */
 
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+
 import React, {
   useRef, useState, useEffect, useCallback, useMemo,
 } from "react";
