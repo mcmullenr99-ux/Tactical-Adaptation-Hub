@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -81,18 +81,21 @@ export default function UserPublicProfile() {
     queryKey: ["friend-status", profile?.id],
     queryFn: () => apiFetch(`/friends?path=status/${profile.id}`),
     enabled: !!profile?.id && !!currentUser && !isOwnProfile,
+    retry: false,
+    throwOnError: false,
   });
 
-  // Sync friendStatusData -> friendStatus (onSuccess removed in RQ v5)
-  const prevFriendDataRef = typeof window !== 'undefined' ? (window as any).__prevFriendData : undefined;
-  if (friendStatusData && friendStatusData !== prevFriendDataRef) {
-    if (typeof window !== 'undefined') (window as any).__prevFriendData = friendStatusData;
-    if (friendStatusData?.status === 'accepted' && friendStatus !== 'friends') setFriendStatus('friends');
-    else if (friendStatusData?.status === 'pending' && friendStatus !== 'pending') {
+  // Sync friendStatusData -> friendStatus using useEffect (onSuccess removed in RQ v5)
+  useEffect(() => {
+    if (!friendStatusData) return;
+    if (friendStatusData?.status === 'accepted') setFriendStatus('friends');
+    else if (friendStatusData?.status === 'pending') {
       setFriendStatus('pending');
       if (friendStatusData.friendshipId) setFriendshipId(friendStatusData.friendshipId);
+    } else {
+      setFriendStatus('none');
     }
-  }
+  }, [friendStatusData]);
 
   // Commander's own groups (for Invite to Unit)
   const { data: myGroups = [] } = useQuery<any[]>({
@@ -319,7 +322,7 @@ export default function UserPublicProfile() {
             ) : friendStatus === 'loading' ? (
               <button disabled className="flex items-center gap-2 px-5 py-2.5 bg-muted border border-border text-muted-foreground rounded-md font-display text-xs uppercase tracking-widest cursor-default">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Sending...
+                Sending Request...
               </button>
             ) : (
               <button onClick={handleAddFriend} className="flex items-center gap-2 px-5 py-2.5 bg-card border border-border text-foreground rounded-md hover:bg-muted hover:border-primary/40 transition-all font-display text-xs uppercase tracking-widest">
