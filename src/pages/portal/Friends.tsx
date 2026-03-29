@@ -175,11 +175,13 @@ export default function Friends() {
   const { data: friends = [], isLoading: friendsLoading, refetch: refetchFriends } = useQuery<FriendUser[]>({
     queryKey: ["friends"],
     queryFn: () => apiFetch("/friends"),
+    enabled: !!user?.id,
   });
 
   const { data: requests = [], isLoading: requestsLoading, refetch: refetchRequests } = useQuery<FriendUser[]>({
     queryKey: ["friend-requests"],
     queryFn: () => apiFetch("/friends?path=requests"),
+    enabled: !!user?.id,
   });
 
   const { data: searchResults = [], isLoading: searchLoading } = useQuery<SearchUser[]>({

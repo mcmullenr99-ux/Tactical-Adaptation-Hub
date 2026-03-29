@@ -97,12 +97,14 @@ export default function UserPublicProfile() {
     }
   }, [friendStatusData]);
 
-  // Commander's own groups (for Invite to Unit)
+  // Commander's own groups (for Invite to Unit) — use mine/memberships and filter by ownership
   const { data: myGroups = [] } = useQuery<any[]>({
     queryKey: ["my-commander-groups", currentUser?.id],
-    queryFn: () => apiFetch(`/milsimGroups?path=my`),
+    queryFn: () => apiFetch<any[]>(`/milsimGroups?path=mine/memberships`),
     enabled: !!currentUser && !isOwnProfile,
-    select: (data: any[]) => data.filter((g: any) => g.owner_id === currentUser?.id || g.role === 'owner'),
+    retry: false,
+    throwOnError: false,
+    select: (data: any[]) => (data ?? []).filter((g: any) => g.owner_id === currentUser?.id),
   });
 
   const [showInviteMenu, setShowInviteMenu] = useState(false);

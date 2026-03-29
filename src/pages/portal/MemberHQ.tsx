@@ -48,6 +48,7 @@ export default function MemberHQ() {
   const showMsg = (ok: boolean, text: string) => { setMsg({ok,text}); setTimeout(()=>setMsg(null),3500); };
 
   useEffect(() => {
+    if (!user?.id) return;
     apiFetch<any[]>("/milsimGroups?path=mine/memberships")
       .then(async (groups) => {
         setMemberships(groups ?? []);
@@ -57,7 +58,7 @@ export default function MemberHQ() {
       })
       .catch(() => setMemberships([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user?.id]);
 
   // Load roster entry for selected group
   useEffect(() => {

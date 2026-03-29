@@ -58,6 +58,7 @@ export default function Dashboard() {
   const { data: inbox } = useQuery<Message[]>({
     queryKey: ["inbox"],
     queryFn: () => apiFetch("/messages?path=inbox"),
+    enabled: !!user?.id,
   });
   const qc = useQueryClient();
   const dutyStatus = (user as any)?.on_duty_status ?? "available";
@@ -65,6 +66,7 @@ export default function Dashboard() {
   const { data: upcomingOps } = useQuery<OpsEvent[]>({
     queryKey: ["ops-upcoming"],
     queryFn: () => apiFetch("/milsimOps?path=upcoming&limit=3"),
+    enabled: !!user?.id,
   });
 
   const { data: motd } = useQuery<Motd>({
