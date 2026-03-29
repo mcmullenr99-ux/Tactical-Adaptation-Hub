@@ -1,4 +1,4 @@
-import { useTheme } from "@/contexts/ThemeContext";
+import { useState, useEffect } from "react";
 
 interface TagLogoProps {
   size?: number;
@@ -9,12 +9,22 @@ interface TagLogoProps {
 /**
  * TAG logo — fully transparent PNG.
  * Dark mode → white lines. Light mode → black lines.
+ * Reads theme from <html> class to avoid any context dependency issues.
  */
 export function TagLogo({ size = 200, className = "", variant = "helmet" }: TagLogoProps) {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
+  const [isDark, setIsDark] = useState(
+    () => document.documentElement.classList.contains("dark")
+  );
 
-  const base = import.meta.env.BASE_URL;
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  const base = "/";
 
   const src = variant === "skull"
     ? (isDark ? `${base}images/tag-skull-dark.png` : `${base}images/tag-skull-light.png`)
