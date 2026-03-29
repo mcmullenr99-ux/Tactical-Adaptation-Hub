@@ -150,6 +150,7 @@ export default function MilsimGroup() {
   const [readiness, setReadiness] = useState<ReadinessData | null>(null);
   const [readinessLoaded, setReadinessLoaded] = useState(false);
   const [applyAnswers, setApplyAnswers] = useState<Record<string, string>>({});
+  const [applyErrorMsg, setApplyErrorMsg] = useState<string>("");
   const [applySubmitting, setApplySubmitting] = useState(false);
   const [applyResult, setApplyResult] = useState<"success" | "already" | "error" | null>(null);
 
@@ -819,7 +820,7 @@ export default function MilsimGroup() {
                         onSubmit={async (e) => {
                           e.preventDefault();
                           const token = localStorage.getItem("tag_auth_token");
-                          if (!token) { window.location.href = "/login"; return; }
+                          if (!token) { setApplyResult("error"); return; }
                           const required = questions.filter(q => q.required);
                           const missing = required.some(q => !(applyAnswers[q.id] ?? "").trim());
                           if (missing) { setApplyResult("error"); return; }
@@ -834,14 +835,19 @@ export default function MilsimGroup() {
                             });
                             if (res.status === 409) { setApplyResult("already"); }
                             else if (res.ok) { setApplyResult("success"); }
-                            else { setApplyResult("error"); }
-                          } catch { setApplyResult("error"); }
+                            else {
+                              let errMsg = "Submission failed. Please try again.";
+                              try { const j = await res.json(); errMsg = j.error ?? errMsg; } catch {}
+                              setApplyErrorMsg(errMsg);
+                              setApplyResult("error");
+                            }
+                          } catch { setApplyErrorMsg("Network error. Check your connection."); setApplyResult("error"); }
                           finally { setApplySubmitting(false); }
                         }}
                       >
                         {applyResult === "error" && (
                           <p className="text-xs text-red-400 font-display font-bold uppercase tracking-wide">
-                            Please fill in all required fields before submitting.
+                            {applyErrorMsg || "Please fill in all required fields before submitting."}
                           </p>
                         )}
                         <ol className="space-y-5">

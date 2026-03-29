@@ -60,7 +60,9 @@ Deno.serve(async (req) => {
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
       const existing = await base44.asServiceRole.entities.MilsimApplication.filter({ group_id: parts[0], applicant_id: full.id });
-      if (existing.length > 0) return Response.json({ error: 'Already applied' }, { status: 409 });
+      // Only block if there's an active pending or approved application — rejected ones can reapply
+      const activeApp = existing.find((a: any) => a.status === 'pending' || a.status === 'approved');
+      if (activeApp) return Response.json({ error: 'Already applied' }, { status: 409 });
 
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       if (!group) return Response.json({ error: 'Group not found' }, { status: 404 });
