@@ -7,10 +7,6 @@ interface TagLogoProps {
   variant?: "helmet" | "skull";
 }
 
-/**
- * TAG logo — black artwork on transparent PNG.
- * Dark mode → invert to white. Light mode → black as-is.
- */
 export function TagLogo({ size = 200, className = "", variant = "helmet" }: TagLogoProps) {
   const ctx = useContext(ThemeContext);
   const isDark = ctx ? ctx.theme !== "light" : true;
@@ -23,7 +19,10 @@ export function TagLogo({ size = 200, className = "", variant = "helmet" }: TagL
       alt="TAG"
       width={size}
       height={size}
-      style={{ filter: isDark ? "invert(1)" : "none" }}
+      style={{
+        filter: isDark ? "invert(1)" : "none",
+        mixBlendMode: "screen",
+      }}
       className={["select-none pointer-events-none object-contain", className].join(" ")}
       draggable={false}
     />
