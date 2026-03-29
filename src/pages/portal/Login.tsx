@@ -89,7 +89,7 @@ function ForgotPasswordPanel({ onBack }: { onBack: () => void }) {
               Email Address
             </label>
             <input
-              type="email"
+              type="email" autoComplete="off"
               value={email}
               onChange={e => setEmail(e.target.value)}
               className="w-full bg-background border-2 border-border rounded px-4 py-3 text-foreground font-sans focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
@@ -232,7 +232,7 @@ export default function Login() {
                       </label>
                       <input
                         {...register("email")}
-                        type="email"
+                        type="email" autoComplete="off"
                         className="w-full bg-background border-2 border-border rounded px-4 py-3 text-foreground font-sans focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
                         placeholder="operator@tag.com"
                       />
@@ -254,7 +254,7 @@ export default function Login() {
                       </div>
                       <input
                         {...register("password")}
-                        type="password"
+                        type="password" autoComplete="new-password"
                         className="w-full bg-background border-2 border-border rounded px-4 py-3 text-foreground font-sans focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
                         placeholder="••••••••"
                       />
