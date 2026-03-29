@@ -194,9 +194,9 @@ function MilsimManageInner() {
       ],
     },
     {
-      label: "Events",
+      label: "Operational Management",
       items: [
-        { id: "eventhub", label: "Events", icon: Siren },
+        { id: "eventhub", label: "Operational Management", icon: Siren },
       ],
     },
     {
