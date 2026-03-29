@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useAuth } from "@/components/auth/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
-import { User, Loader2, Shield, Star, Globe, Hash, MessageSquare, Calendar, ChevronRight, ExternalLink, BadgeCheck } from "lucide-react";
+import { User, Loader2, Shield, Star, Globe, Hash, MessageSquare, Calendar, ChevronRight, ExternalLink, BadgeCheck, UserPlus, UserCheck, Clock, Send } from "lucide-react";
 import { format } from "date-fns";
 import { countryFlag, countryName } from "@/lib/countries";
 
@@ -65,6 +67,70 @@ export default function UserPublicProfile() {
     queryFn: () => apiFetch(`/users?path=profile/${username}/ribbons`),
     enabled: !!username,
   });
+
+  const { user: currentUser, isAuthenticated, token } = useAuth();
+  const { toast } = useToast();
+
+  const isOwnProfile = isAuthenticated && currentUser?.username === username;
+
+  // Friend status
+  const [friendStatus, setFriendStatus] = useState<'none' | 'pending' | 'friends' | 'loading'>('none');
+  const [friendshipId, setFriendshipId] = useState<string | null>(null);
+
+  const { data: friendStatusData } = useQuery<any>({
+    queryKey: ["friend-status", profile?.id],
+    queryFn: () => apiFetch(`/friends?path=status/${profile.id}`),
+    enabled: !!profile?.id && isAuthenticated && !isOwnProfile,
+    onSuccess: (data: any) => {
+      if (data?.status === 'accepted') setFriendStatus('friends');
+      else if (data?.status === 'pending') { setFriendStatus('pending'); setFriendshipId(data.friendshipId); }
+      else setFriendStatus('none');
+    },
+  });
+
+  // Commander's own groups (for Invite to Unit)
+  const { data: myGroups = [] } = useQuery<any[]>({
+    queryKey: ["my-commander-groups", currentUser?.id],
+    queryFn: () => apiFetch(`/milsimGroups?path=my`),
+    enabled: isAuthenticated && !isOwnProfile,
+    select: (data: any[]) => data.filter((g: any) => g.owner_id === currentUser?.id || g.role === 'owner'),
+  });
+
+  const [showInviteMenu, setShowInviteMenu] = useState(false);
+  const [inviteSent, setInviteSent] = useState<string | null>(null); // groupId that was invited
+
+  async function handleAddFriend() {
+    if (!profile?.id) return;
+    setFriendStatus('loading');
+    try {
+      const res = await apiFetch(`/friends?path=request/${profile.id}`, { method: 'POST' });
+      setFriendStatus('pending');
+      setFriendshipId(res.id);
+      toast({ title: 'Friend request sent', description: `Request sent to ${profile.username}.` });
+    } catch (e: any) {
+      setFriendStatus('none');
+      toast({ title: 'Error', description: e.message ?? 'Could not send request', variant: 'destructive' });
+    }
+  }
+
+  async function handleInviteToGroup(groupId: string, groupName: string) {
+    // Send a message to the user's inbox with the invite
+    try {
+      await apiFetch('/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipient_username: profile.username,
+          subject: `Invitation to join ${groupName}`,
+          body: `${currentUser?.username} has invited you to join ${groupName} on TAGnet. Visit your group section to apply or contact the commander for details.`,
+        }),
+      });
+      setInviteSent(groupId);
+      setShowInviteMenu(false);
+      toast({ title: 'Invite sent', description: `${profile.username} has been sent an invite to ${groupName}.` });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message ?? 'Could not send invite', variant: 'destructive' });
+    }
+  }
 
   useSEO({ title: profile ? `${profile.username} — TAG` : "Operator Profile — TAG" });
 
@@ -219,14 +285,83 @@ export default function UserPublicProfile() {
           </div>
         )}
 
-        {/* ── Send Message CTA ── */}
-        <div className="flex justify-center">
-          <Link href={`/portal/comms?section=compose&to=${profile.username}`}>
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-md hover:bg-primary/20 transition-all font-display text-xs uppercase tracking-widest">
-              <MessageSquare className="w-4 h-4" />
-              Send Message
-            </button>
-          </Link>
+        {/* ── Action Buttons ── */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+
+          {/* Send Message — always visible when logged in and not own profile */}
+          {isAuthenticated && !isOwnProfile && (
+            <Link href={`/portal/comms?section=compose&to=${profile.username}`}>
+              <button className="flex items-center gap-2 px-5 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-md hover:bg-primary/20 transition-all font-display text-xs uppercase tracking-widest">
+                <MessageSquare className="w-4 h-4" />
+                Send Message
+              </button>
+            </Link>
+          )}
+
+          {/* Add Friend / Pending / Friends */}
+          {isAuthenticated && !isOwnProfile && (
+            friendStatus === 'friends' ? (
+              <button disabled className="flex items-center gap-2 px-5 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-md font-display text-xs uppercase tracking-widest cursor-default">
+                <UserCheck className="w-4 h-4" />
+                Friends
+              </button>
+            ) : friendStatus === 'pending' ? (
+              <button disabled className="flex items-center gap-2 px-5 py-2.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded-md font-display text-xs uppercase tracking-widest cursor-default">
+                <Clock className="w-4 h-4" />
+                Request Pending
+              </button>
+            ) : friendStatus === 'loading' ? (
+              <button disabled className="flex items-center gap-2 px-5 py-2.5 bg-muted border border-border text-muted-foreground rounded-md font-display text-xs uppercase tracking-widest cursor-default">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Sending...
+              </button>
+            ) : (
+              <button onClick={handleAddFriend} className="flex items-center gap-2 px-5 py-2.5 bg-card border border-border text-foreground rounded-md hover:bg-muted hover:border-primary/40 transition-all font-display text-xs uppercase tracking-widest">
+                <UserPlus className="w-4 h-4" />
+                Add Friend
+              </button>
+            )
+          )}
+
+          {/* Invite to Unit — only if viewer commands a group */}
+          {isAuthenticated && !isOwnProfile && myGroups.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setShowInviteMenu(v => !v)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-card border border-border text-foreground rounded-md hover:bg-muted hover:border-primary/40 transition-all font-display text-xs uppercase tracking-widest"
+              >
+                <Send className="w-4 h-4" />
+                Invite to Unit
+              </button>
+              {showInviteMenu && (
+                <div className="absolute bottom-full mb-2 left-0 z-50 bg-card border border-border rounded-lg shadow-xl min-w-[200px] overflow-hidden">
+                  <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground px-3 pt-2 pb-1">Select Unit</p>
+                  {myGroups.map((g: any) => (
+                    <button
+                      key={g.id}
+                      onClick={() => handleInviteToGroup(g.id, g.name)}
+                      className={`w-full text-left px-3 py-2.5 flex items-center gap-2 hover:bg-muted transition-colors text-xs font-sans ${inviteSent === g.id ? 'text-green-400' : 'text-foreground'}`}
+                    >
+                      {inviteSent === g.id ? <UserCheck className="w-3.5 h-3.5 text-green-400 flex-shrink-0" /> : <Shield className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />}
+                      <span className="truncate">{g.name}</span>
+                      {inviteSent === g.id && <span className="ml-auto text-[10px] text-green-400">Sent</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Not logged in — prompt to login */}
+          {!isAuthenticated && (
+            <Link href="/portal/login">
+              <button className="flex items-center gap-2 px-5 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-md hover:bg-primary/20 transition-all font-display text-xs uppercase tracking-widest">
+                <MessageSquare className="w-4 h-4" />
+                Login to Interact
+              </button>
+            </Link>
+          )}
+
         </div>
 
       </div>
