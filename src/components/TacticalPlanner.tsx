@@ -617,71 +617,92 @@ interface TileLayerProps {
 }
 
 function TileMapLayer({ tileConfig, panOffset, zoom, containerW, containerH }: TileLayerProps) {
-  const divRef   = useRef<HTMLDivElement>(null);
-  const mapRef   = useRef<L.Map | null>(null);
+  const divRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
 
   const { mapId, layerId, maxZoom } = tileConfig;
 
-  // Initialise Leaflet map once
+  // ── Init Leaflet once per map ────────────────────────────────────────────────
   useEffect(() => {
     if (!divRef.current) return;
 
+    // plan-ops.fr uses a standard TMS tile scheme with CRS.Simple.
+    // At zoom level z, the map is (tileSize * 2^z) pixels square.
+    // We use tileSize=256 for Leaflet; plan-ops.fr tiles scale to fit.
+    // The coordinate space: [0,0] = top-left, [1,1] = bottom-right (normalised).
+    const TILE_SIZE = 256;
+
+    const crs = L.Util.extend({}, L.CRS.Simple, {
+      // No transformation needed — tiles already use pixel coords
+      transformation: new L.Transformation(1, 0, 1, 0),
+    });
+
     const map = L.map(divRef.current, {
-      crs: L.CRS.Simple,          // flat/simple coordinate system — no geo projection
+      crs: L.CRS.Simple,
       zoomControl: false,
       attributionControl: false,
-      dragging: false,            // TacticalPlanner canvas handles pan
-      scrollWheelZoom: false,     // TacticalPlanner canvas handles zoom
+      dragging: false,
+      scrollWheelZoom: false,
       doubleClickZoom: false,
       boxZoom: false,
       keyboard: false,
       tap: false,
-      zoomSnap: 0.1,
-      zoomDelta: 0.1,
+      zoomSnap: 0,
+      zoomDelta: 0.5,
+      minZoom: 0,
+      maxZoom,
     });
 
-    // Tile layer from plan-ops.fr
+    // plan-ops.fr tile URL — standard z/x/y slippy map scheme
     L.tileLayer(
       `https://atlas.plan-ops.fr/data/1/maps/${mapId}/${layerId}/{z}/{x}/{y}.png`,
-      { minZoom: 0, maxZoom, tileSize: 256, noWrap: true }
+      {
+        tileSize: TILE_SIZE,
+        minZoom: 0,
+        maxZoom,
+        noWrap: true,
+        // plan-ops tiles use TMS y-axis (bottom-origin) — flip y
+        tms: true,
+      }
     ).addTo(map);
 
-    // Initial view — centre of the map at a mid zoom
+    // Set initial view to centre of the map at mid zoom
     const midZoom = Math.floor(maxZoom / 2);
-    const mid = Math.pow(2, midZoom) / 2;
-    map.setView([mid, mid] as L.LatLngExpression, midZoom);
+    // In CRS.Simple the coordinate at the centre of the tile grid at zoom z is:
+    // (2^z * tileSize / 2) in both axes
+    const halfPx = Math.pow(2, midZoom) * TILE_SIZE / 2;
+    map.setView(map.unproject([halfPx, halfPx], midZoom), midZoom);
 
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapId, layerId, maxZoom]);
 
-  // Sync pan + zoom from TacticalPlanner state into Leaflet
+  // ── Sync pan + zoom from TacticalPlanner into Leaflet ───────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    // Convert UI zoom (1.0 = fit) to Leaflet zoom level
-    const leafletZoom = Math.log2(zoom) + Math.floor(tileConfig.maxZoom / 2);
-    const clampedZoom = Math.max(0, Math.min(tileConfig.maxZoom, leafletZoom));
+    // Map UI zoom (1.0 = "fit to screen") onto a Leaflet zoom level.
+    // At zoom=1 we want to see the whole map → use zoom level 0.
+    // Each doubling of zoom → +1 Leaflet zoom level.
+    const leafletZoom = Math.max(0, Math.min(maxZoom, Math.log2(Math.max(zoom, 0.01))));
 
-    // Convert panOffset pixels → fractional tile offset at current zoom
-    const numTiles = Math.pow(2, Math.round(clampedZoom));
+    const TILE_SIZE = 256;
+    const mapPxAtZoom = Math.pow(2, leafletZoom) * TILE_SIZE;
     const W = containerW || 900;
     const H = containerH || 560;
-    const fullMapPx = Math.max(W, H) * zoom;
-    const tilePx = fullMapPx / numTiles;
 
-    // panOffset moves the map — translate to Leaflet centre shift
-    const centerTileX = numTiles / 2 - panOffset.x / tilePx;
-    const centerTileY = numTiles / 2 - panOffset.y / tilePx;
+    // Centre of the view, then shift by panOffset
+    const cx = mapPxAtZoom / 2 - panOffset.x;
+    const cy = mapPxAtZoom / 2 - panOffset.y;
 
-    map.setView([centerTileY, centerTileX] as L.LatLngExpression, clampedZoom, { animate: false });
-  }, [panOffset, zoom, containerW, containerH, tileConfig.maxZoom]);
+    map.setView(map.unproject([cx, cy], leafletZoom), leafletZoom, { animate: false });
+  }, [panOffset, zoom, containerW, containerH, maxZoom]);
 
-  // Invalidate size when container dimensions change
+  // ── Resize ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    mapRef.current?.invalidateSize();
+    mapRef.current?.invalidateSize({ animate: false });
   }, [containerW, containerH]);
 
   return (
