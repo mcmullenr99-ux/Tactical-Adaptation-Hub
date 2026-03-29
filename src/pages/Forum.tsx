@@ -14,6 +14,7 @@ import { UavHudScene } from "./UavHudScene";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@/stubs/object-storage-web";
+import { useCoCTitles } from "@/hooks/useCoCTitles";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -335,6 +336,7 @@ function PostCard({
   const [post, setPost] = useState(initialPost);
   const [expanded, setExpanded] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
+  const { getCoCTitle } = useCoCTitles();
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [posting, setPosting] = useState(false);
@@ -475,8 +477,8 @@ function PostCard({
         </div>
 
         {/* Author */}
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
+        <div className="flex items-center flex-wrap gap-2 mb-3">
+          <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center shrink-0">
             <span className="text-[10px] font-display font-bold text-primary">{post.username[0].toUpperCase()}</span>
           </div>
           <Link href={`/u/${post.username}`}>
@@ -484,6 +486,9 @@ function PostCard({
               {post.username}
             </span>
           </Link>
+          {(() => { const coc = getCoCTitle(post.username); return coc ? (
+            <span className="text-[10px] font-display font-bold text-primary/80 uppercase tracking-wider px-1.5 py-0.5 border border-primary/25 rounded bg-primary/8">{coc.displayTag}</span>
+          ) : null; })()}
           {post.user_nationality && (
             <span className="text-sm leading-none" title={post.user_nationality}>{countryFlag(post.user_nationality)}</span>
           )}
@@ -554,6 +559,9 @@ function PostCard({
                           <Link href={`/u/${c.username}`}>
                             <span className="text-xs font-display font-bold text-foreground hover:text-primary transition-colors cursor-pointer">{c.username}</span>
                           </Link>
+                          {(() => { const coc = getCoCTitle(c.username); return coc ? (
+                            <span className="text-[9px] font-display font-bold text-primary/80 uppercase tracking-wider px-1 py-0.5 border border-primary/20 rounded bg-primary/8">{coc.displayTag}</span>
+                          ) : null; })()}
                           {c.user_nationality && (
                             <span className="text-xs leading-none" title={c.user_nationality}>{countryFlag(c.user_nationality)}</span>
                           )}

@@ -1079,6 +1079,19 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
   const [newCallsign, setNewCallsign] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Build CoC lookup: roster_id → position title
+  const cocByRosterId: Record<string, string> = React.useMemo(() => {
+    const coc: any[] = Array.isArray(group.chain_of_command) ? group.chain_of_command : [];
+    const map: Record<string, string> = {};
+    coc.forEach((pos: any) => {
+      if (pos.roster_id) {
+        const short = pos.title.replace(/\(.*?\)/g, "").trim();
+        map[pos.roster_id] = short;
+      }
+    });
+    return map;
+  }, [group.chain_of_command]);
+
   const STATUSES = ["Active", "Reserve", "AWOL", "MIA", "KIA", "Discharged"];
 
   const openEdit = (e: RosterEntry) => {
@@ -1169,6 +1182,7 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
                   </span>
                   {rank && <span className="text-[9px] text-primary font-display font-bold uppercase tracking-widest">{rank.name}</span>}
                   {role && <span className="text-[9px] text-muted-foreground font-display uppercase tracking-widest bg-secondary border border-border px-1.5 py-0.5 rounded">{role.name}</span>}
+                  {cocByRosterId[e.id] && <span className="text-[9px] font-display font-bold uppercase tracking-widest text-amber-400 border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 rounded">{cocByRosterId[e.id]}</span>}
                 </div>
                 {(e.specialisations ?? []).length > 0 && (
                   <div className="flex gap-1 mt-1 flex-wrap">
