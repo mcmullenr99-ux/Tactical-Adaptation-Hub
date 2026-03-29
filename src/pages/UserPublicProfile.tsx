@@ -71,7 +71,7 @@ export default function UserPublicProfile() {
   const { user: currentUser, isAuthenticated, token } = useAuth();
   const { toast } = useToast();
 
-  const isOwnProfile = isAuthenticated && currentUser?.username === username;
+  const isOwnProfile = !!currentUser && currentUser?.username === username;
 
   // Friend status
   const [friendStatus, setFriendStatus] = useState<'none' | 'pending' | 'friends' | 'loading'>('none');
@@ -80,19 +80,25 @@ export default function UserPublicProfile() {
   const { data: friendStatusData } = useQuery<any>({
     queryKey: ["friend-status", profile?.id],
     queryFn: () => apiFetch(`/friends?path=status/${profile.id}`),
-    enabled: !!profile?.id && isAuthenticated && !isOwnProfile,
-    onSuccess: (data: any) => {
-      if (data?.status === 'accepted') setFriendStatus('friends');
-      else if (data?.status === 'pending') { setFriendStatus('pending'); setFriendshipId(data.friendshipId); }
-      else setFriendStatus('none');
-    },
+    enabled: !!profile?.id && !!currentUser && !isOwnProfile,
   });
+
+  // Sync friendStatusData -> friendStatus (onSuccess removed in RQ v5)
+  const prevFriendDataRef = typeof window !== 'undefined' ? (window as any).__prevFriendData : undefined;
+  if (friendStatusData && friendStatusData !== prevFriendDataRef) {
+    if (typeof window !== 'undefined') (window as any).__prevFriendData = friendStatusData;
+    if (friendStatusData?.status === 'accepted' && friendStatus !== 'friends') setFriendStatus('friends');
+    else if (friendStatusData?.status === 'pending' && friendStatus !== 'pending') {
+      setFriendStatus('pending');
+      if (friendStatusData.friendshipId) setFriendshipId(friendStatusData.friendshipId);
+    }
+  }
 
   // Commander's own groups (for Invite to Unit)
   const { data: myGroups = [] } = useQuery<any[]>({
     queryKey: ["my-commander-groups", currentUser?.id],
     queryFn: () => apiFetch(`/milsimGroups?path=my`),
-    enabled: isAuthenticated && !isOwnProfile,
+    enabled: !!currentUser && !isOwnProfile,
     select: (data: any[]) => data.filter((g: any) => g.owner_id === currentUser?.id || g.role === 'owner'),
   });
 
@@ -289,7 +295,7 @@ export default function UserPublicProfile() {
         <div className="flex flex-wrap items-center justify-center gap-3">
 
           {/* Send Message — always visible when logged in and not own profile */}
-          {isAuthenticated && !isOwnProfile && (
+          {!isOwnProfile && currentUser && (
             <Link href={`/portal/comms?section=compose&to=${profile.username}`}>
               <button className="flex items-center gap-2 px-5 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-md hover:bg-primary/20 transition-all font-display text-xs uppercase tracking-widest">
                 <MessageSquare className="w-4 h-4" />
@@ -299,7 +305,7 @@ export default function UserPublicProfile() {
           )}
 
           {/* Add Friend / Pending / Friends */}
-          {isAuthenticated && !isOwnProfile && (
+          {!isOwnProfile && currentUser && (
             friendStatus === 'friends' ? (
               <button disabled className="flex items-center gap-2 px-5 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-md font-display text-xs uppercase tracking-widest cursor-default">
                 <UserCheck className="w-4 h-4" />
@@ -324,7 +330,7 @@ export default function UserPublicProfile() {
           )}
 
           {/* Invite to Unit — only if viewer commands a group */}
-          {isAuthenticated && !isOwnProfile && myGroups.length > 0 && (
+          {!isOwnProfile && currentUser && myGroups.length > 0 && (
             <div className="relative">
               <button
                 onClick={() => setShowInviteMenu(v => !v)}
@@ -353,7 +359,7 @@ export default function UserPublicProfile() {
           )}
 
           {/* Not logged in — prompt to login */}
-          {!isAuthenticated && (
+          {!currentUser && (
             <Link href="/portal/login">
               <button className="flex items-center gap-2 px-5 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-md hover:bg-primary/20 transition-all font-display text-xs uppercase tracking-widest">
                 <MessageSquare className="w-4 h-4" />
