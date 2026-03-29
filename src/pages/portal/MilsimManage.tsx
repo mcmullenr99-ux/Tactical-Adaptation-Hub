@@ -2543,35 +2543,39 @@ function EventHubTab({ group, showMsg }: any) {
 function EventsTab({ group, showMsg }: any) {
   const [sub, setSub] = useState<"ops" | "aars" | "warnos" | "lace" | "sitrep" | "medevac" | "conduct" | "intel">("ops");
   const SUB_TABS = [
-    { id: "ops" as const,       label: "Operations",  icon: Siren },
-    { id: "aars" as const,      label: "AARs",        icon: ClipboardList },
-    { id: "warnos" as const,    label: "WARNOs",      icon: AlertTriangle },
-    { id: "lace" as const,      label: "LACE",        icon: Radio },
-    { id: "sitrep" as const,    label: "SITREPs",     icon: Target },
-    { id: "medevac" as const,   label: "MEDEVAC",     icon: Radio },
-    { id: "conduct" as const,   label: "Conduct",     icon: UserMinus2 },
-    { id: "intel" as const,     label: "Op Intel",    icon: BrainCircuit },
+    { id: "ops" as const,     label: "Operations", icon: Siren },
+    { id: "aars" as const,    label: "AARs",       icon: ClipboardList },
+    { id: "warnos" as const,  label: "WARNOs",     icon: AlertTriangle },
+    { id: "lace" as const,    label: "LACE",       icon: Radio },
+    { id: "sitrep" as const,  label: "SITREPs",    icon: Target },
+    { id: "medevac" as const, label: "MEDEVAC",    icon: Radio },
+    { id: "conduct" as const, label: "Conduct",    icon: UserMinus2 },
+    { id: "intel" as const,   label: "Op Intel",   icon: BrainCircuit },
   ];
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-1.5 border-b border-border pb-3">
+    <div className="flex gap-0 min-h-[600px]">
+      <div className="w-44 shrink-0 border-r border-border flex flex-col gap-0.5 pr-2 pt-1">
         {SUB_TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setSub(id)}
-            className={`flex items-center justify-center gap-1.5 px-2 py-1.5 rounded text-xs font-display font-bold uppercase tracking-wider transition-all border ${
-              sub === id ? "bg-primary/15 border-primary/50 text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            className={`flex items-center gap-2.5 px-3 py-2.5 rounded text-xs font-display font-bold uppercase tracking-wider transition-all text-left w-full ${
+              sub === id
+                ? "bg-primary/15 border border-primary/50 text-primary"
+                : "border border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60"
             }`}>
-            <Icon className="w-3.5 h-3.5" />{label}
+            <Icon className="w-3.5 h-3.5 shrink-0" />{label}
           </button>
         ))}
       </div>
-      {sub === "ops"       && <OpsTab       group={group} showMsg={showMsg} />}
-      {sub === "aars"      && <AARsTab      group={group} showMsg={showMsg} />}
-      {sub === "warnos"    && <WarnosTab    group={group} showMsg={showMsg} />}
-      {sub === "lace"      && <LaceTab         group={group} showMsg={showMsg} />}
-      {sub === "sitrep"    && <SitrepTab        group={group} showMsg={showMsg} />}
-      {sub === "medevac"   && <MedevacTab         group={group} showMsg={showMsg} />}
-      {sub === "conduct"   && <ConductReportTab  group={group} showMsg={showMsg} />}
-      {sub === "intel"     && <OpIntelTab         group={group} showMsg={showMsg} />}
+      <div className="flex-1 min-w-0 pl-5">
+        {sub === "ops"     && <OpsTab           group={group} showMsg={showMsg} />}
+        {sub === "aars"    && <AARsTab          group={group} showMsg={showMsg} />}
+        {sub === "warnos"  && <WarnosTab        group={group} showMsg={showMsg} />}
+        {sub === "lace"    && <LaceTab          group={group} showMsg={showMsg} />}
+        {sub === "sitrep"  && <SitrepTab        group={group} showMsg={showMsg} />}
+        {sub === "medevac" && <MedevacTab       group={group} showMsg={showMsg} />}
+        {sub === "conduct" && <ConductReportTab group={group} showMsg={showMsg} />}
+        {sub === "intel"   && <OpIntelTab       group={group} showMsg={showMsg} />}
+      </div>
     </div>
   );
 }
