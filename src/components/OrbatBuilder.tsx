@@ -4,7 +4,7 @@
  * Site monochrome theme — no blue/green UI chrome
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Plus, Trash2, Save, ZoomIn, ZoomOut, Download, Copy, X, Edit3, Table2, Users, ChevronDown, ChevronUp, Flag } from "lucide-react";
 
 export type Affiliation = "friendly" | "hostile" | "neutral" | "unknown";
@@ -287,10 +287,11 @@ function edges(nodes:LN[]){
 }
 
 // ─── Unit Card ────────────────────────────────────────────────────────────────
-function UnitCard({ln,onEdit,onAdd,onDel,onDup,onToggle,ro}:{
+function UnitCard({ln,onEdit,onAdd,onDel,onDup,onToggle,ro,onRootDragStart,isRoot}:{
   ln:LN;onEdit:(n:OrbatNode)=>void;onAdd:(id:string)=>void;
   onDel:(id:string)=>void;onDup:(n:OrbatNode)=>void;
   onToggle:(id:string)=>void;ro:boolean;
+  onRootDragStart?:(e:React.MouseEvent,id:string)=>void;isRoot?:boolean;
 }) {
   const {node,x,y}=ln;
   const [show,setShow]=useState(false);
@@ -306,7 +307,8 @@ function UnitCard({ln,onEdit,onAdd,onDel,onDup,onToggle,ro}:{
   const leave=()=>{timer.current=setTimeout(()=>setShow(false),700);};
 
   return(
-    <div style={{position:"absolute",left:x-NW/2,top:y,width:NW}} onMouseEnter={enter} onMouseLeave={leave}>
+    <div style={{position:"absolute",left:x-NW/2,top:y,width:NW,cursor:isRoot?"grab":"default"}} onMouseEnter={enter} onMouseLeave={leave}
+      onMouseDown={isRoot&&onRootDragStart?(e)=>{onRootDragStart(e,node.id);}:undefined}>
       {/* Echelon */}
       <div style={{textAlign:"center",height:16,lineHeight:"16px",marginBottom:2}}>
         <span style={{fontSize:11,fontWeight:700,color:T.text,letterSpacing:1,fontFamily:"serif"}}>{em}</span>
@@ -766,19 +768,35 @@ function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];on
 // ─── Per-chart canvas card — no outer box, inline scale controls above chart ──
 function CanvasChartCard({node, pathMap}:{node:OrbatNode; pathMap:Record<string,string>}){
   const [cz, setCz] = useState(1);
+  const [pan, setPan] = useState({x:0,y:0});
+  const panStart = useRef<{mx:number;my:number;px:number;py:number}|null>(null);
   const hasW = node.weaponsChart && node.weaponsChart.length>0;
   const hasV = node.vehiclesChart && node.vehiclesChart.length>0;
   const baseName = pathMap[node.id] || node.label;
   const btnStyle = {background:"none",border:`1px solid ${T.border}`,color:T.textMuted,cursor:"pointer",borderRadius:3,padding:"1px 6px",fontSize:11,lineHeight:"16px"};
 
+  const startDrag=useCallback((e:React.MouseEvent)=>{
+    e.preventDefault();
+    panStart.current={mx:e.clientX,my:e.clientY,px:pan.x,py:pan.y};
+    const onMove=(ev:MouseEvent)=>{
+      if(!panStart.current)return;
+      setPan({x:panStart.current.px+(ev.clientX-panStart.current.mx),y:panStart.current.py+(ev.clientY-panStart.current.my)});
+    };
+    const onUp=()=>{panStart.current=null;window.removeEventListener("mousemove",onMove);window.removeEventListener("mouseup",onUp);};
+    window.addEventListener("mousemove",onMove);
+    window.addEventListener("mouseup",onUp);
+  },[pan]);
+
   return(
-    <div style={{marginBottom:28}}>
-      {/* Inline scale controls — sits flush above the chart, no wrapping box */}
-      <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:8}}>
-        <button onClick={()=>setCz(z=>Math.max(0.4,+(z-0.1).toFixed(1)))} style={btnStyle}>−</button>
+    <div style={{marginBottom:28,position:"relative",display:"inline-block",transform:`translate(${pan.x}px,${pan.y}px)`}}>
+      {/* Inline scale controls + drag handle — sits flush above the chart */}
+      <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:8,cursor:"grab",userSelect:"none"}} onMouseDown={startDrag} title="Drag to reposition chart">
+        <span style={{fontSize:9,color:T.textMuted,marginRight:4,opacity:0.5,letterSpacing:1}}>⠿⠿</span>
+        <button onClick={(e)=>{e.stopPropagation();setCz(z=>Math.max(0.4,+(z-0.1).toFixed(1)));}} onMouseDown={e=>e.stopPropagation()} style={btnStyle}>−</button>
         <span style={{fontSize:10,color:T.textMuted,fontFamily:"monospace",width:34,textAlign:"center"}}>{Math.round(cz*100)}%</span>
-        <button onClick={()=>setCz(z=>Math.min(2,+(z+0.1).toFixed(1)))} style={btnStyle}>+</button>
-        <button onClick={()=>setCz(1)} style={{...btnStyle,fontSize:9,marginLeft:2}}>↺</button>
+        <button onClick={(e)=>{e.stopPropagation();setCz(z=>Math.min(2,+(z+0.1).toFixed(1)));}} onMouseDown={e=>e.stopPropagation()} style={btnStyle}>+</button>
+        <button onClick={(e)=>{e.stopPropagation();setCz(1);}} onMouseDown={e=>e.stopPropagation()} style={{...btnStyle,fontSize:9,marginLeft:2}}>↺</button>
+        <button onClick={(e)=>{e.stopPropagation();setPan({x:0,y:0});}} onMouseDown={e=>e.stopPropagation()} style={{...btnStyle,fontSize:9,marginLeft:2}} title="Reset position">⌂</button>
       </div>
       <div style={{transform:`scale(${cz})`,transformOrigin:"top left",display:"inline-block"}}>
         {hasW&&(
@@ -822,17 +840,41 @@ function OrbatCanvas({roots,onEdit,onAdd,onDel,onDup,onToggle,ro}:{
   roots:OrbatNode[];onEdit:(n:OrbatNode)=>void;onAdd:(id:string)=>void;
   onDel:(id:string)=>void;onDup:(n:OrbatNode)=>void;onToggle:(id:string)=>void;ro:boolean;
 }){
+  const [pan,setPan]=useState({x:0,y:0});
+  const panStart=useRef<{mx:number;my:number;px:number;py:number}|null>(null);
+
   let all:LN[]=[],ox=0;
   for(const r of roots){all.push(...layout(r,ox,0));ox+=lc(r)*(NW+HG)+TS;}
   const es=edges(all);
   let mx=0,my=0;for(const n of all){if(n.x+NW/2>mx)mx=n.x+NW/2;if(n.y+NH>my)my=n.y+NH;}
   const W=Math.max(ox,300),H=Math.max(my+80,200);
+
+  // Root node IDs (top-level units = the drag handles)
+  const rootIds=new Set(roots.map(r=>r.id));
+
+  const onDragStart=useCallback((e:React.MouseEvent,nodeId:string)=>{
+    if(!rootIds.has(nodeId))return;
+    e.preventDefault();
+    panStart.current={mx:e.clientX,my:e.clientY,px:pan.x,py:pan.y};
+    const onMove=(ev:MouseEvent)=>{
+      if(!panStart.current)return;
+      setPan({x:panStart.current.px+(ev.clientX-panStart.current.mx),y:panStart.current.py+(ev.clientY-panStart.current.my)});
+    };
+    const onUp=()=>{panStart.current=null;window.removeEventListener("mousemove",onMove);window.removeEventListener("mouseup",onUp);};
+    window.addEventListener("mousemove",onMove);
+    window.addEventListener("mouseup",onUp);
+  },[pan,rootIds]);
+
   return(
-    <div style={{position:"relative",width:W,height:H}}>
-      <svg style={{position:"absolute",inset:0,overflow:"visible",pointerEvents:"none"}} width={W} height={H}>
-        {es.map((e,i)=><line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke={T.border} strokeWidth={1.5}/>)}
-      </svg>
-      {all.map(ln=><UnitCard key={ln.node.id} ln={ln} onEdit={onEdit} onAdd={onAdd} onDel={onDel} onDup={onDup} onToggle={onToggle} ro={ro}/>)}
+    <div style={{position:"relative",width:W+Math.abs(pan.x),height:H+Math.abs(pan.y),minWidth:W,minHeight:H}}>
+      <div style={{position:"absolute",transform:`translate(${pan.x}px,${pan.y}px)`,top:0,left:0}}>
+        <div style={{position:"relative",width:W,height:H}}>
+          <svg style={{position:"absolute",inset:0,overflow:"visible",pointerEvents:"none"}} width={W} height={H}>
+            {es.map((e,i)=><line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke={T.border} strokeWidth={1.5}/>)}
+          </svg>
+          {all.map(ln=><UnitCard key={ln.node.id} ln={ln} onEdit={onEdit} onAdd={onAdd} onDel={onDel} onDup={onDup} onToggle={onToggle} ro={ro} onRootDragStart={onDragStart} isRoot={rootIds.has(ln.node.id)}/>)}
+        </div>
+      </div>
     </div>
   );
 }
