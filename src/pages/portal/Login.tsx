@@ -225,7 +225,7 @@ export default function Login() {
                     </div>
                   )}
 
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
                     <div>
                       <label className="block text-sm font-display font-bold uppercase tracking-wider text-muted-foreground mb-2">
                         Email Address
