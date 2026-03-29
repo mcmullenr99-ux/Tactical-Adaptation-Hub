@@ -1,3 +1,4 @@
+// v2 - auto-roster CO on group create
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 
@@ -239,6 +240,29 @@ Deno.serve(async (req: Request) => {
         branch: branch ?? null, unit_type: unitType ?? null,
         games: games ?? null, tags: tags ?? null,
       });
+
+      // Auto-add the commander to the roster as CO
+      const today = new Date().toISOString().split('T')[0];
+      const rosterEntry = await base44.asServiceRole.entities.MilsimRoster.create({
+        group_id: group.id,
+        user_id: full.id,
+        callsign: full.callsign ?? full.username,
+        status: 'Active',
+        join_date: today,
+        ops_count: 0,
+      });
+
+      // Set them as CO in chain of command
+      await base44.asServiceRole.entities.MilsimGroup.update(group.id, {
+        chain_of_command: [{
+          id: crypto.randomUUID(),
+          title: 'Commanding Officer',
+          roster_id: rosterEntry.id,
+          callsign: full.callsign ?? full.username,
+          sort_order: 0,
+        }],
+      });
+
       return new Response(JSON.stringify(await groupFullDetail(base44, group)), { status: 201, headers: cors });
     }
 
