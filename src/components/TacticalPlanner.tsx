@@ -602,108 +602,79 @@ function drawScaleBar(
 
 // ─── Tile Map Layer ────────────────────────────────────────────────────────────
 // Renders real topographic map tiles from atlas.plan-ops.fr
-// Uses a canvas-based slippy tile renderer that responds to pan/zoom state
+// Uses absolutely-positioned <img> elements — browser handles async loading natively.
 
 interface TileLayerProps {
   tileConfig: TileConfig;
   panOffset: Pt;
-  zoom: number;        // UI zoom multiplier (1.0 = fit to container)
+  zoom: number;
   containerW: number;
   containerH: number;
 }
 
 function TileMapLayer({ tileConfig, panOffset, zoom, containerW, containerH }: TileLayerProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const tileCache = useRef<Map<string, HTMLImageElement>>(new Map());
-  const rafRef    = useRef<number>(0);
+  const W = containerW || 900;
+  const H = containerH || 560;
+  const { mapId, layerId, maxZoom } = tileConfig;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+  // Pick a tile zoom level that gives ~256px tiles on screen
+  // tileZoom=0 → 1 tile covers whole map, tileZoom=maxZoom → most detail
+  const screenMapPx = Math.max(W, H) * zoom;
+  const idealTileZoom = Math.round(Math.log2(screenMapPx / 256));
+  const tileZoom = Math.max(0, Math.min(maxZoom, idealTileZoom));
 
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(() => {
-      const W = containerW;
-      const H = containerH;
-      canvas.width  = W;
-      canvas.height = H;
+  const numTiles   = Math.pow(2, tileZoom);           // tiles per axis
+  const fullMapPx  = Math.max(W, H) * zoom;           // full map in screen pixels
+  const tilePxSize = fullMapPx / numTiles;             // each tile's screen size
 
-      ctx.clearRect(0, 0, W, H);
+  // Map top-left in screen space (centred + pan offset)
+  const mapOriginX = W / 2 - fullMapPx / 2 + panOffset.x;
+  const mapOriginY = H / 2 - fullMapPx / 2 + panOffset.y;
 
-      const { mapId, layerId, maxZoom, tileSize } = tileConfig;
+  // Visible tile range
+  const startX = Math.max(0, Math.floor(-mapOriginX / tilePxSize));
+  const startY = Math.max(0, Math.floor(-mapOriginY / tilePxSize));
+  const endX   = Math.min(numTiles - 1, Math.ceil((W - mapOriginX) / tilePxSize));
+  const endY   = Math.min(numTiles - 1, Math.ceil((H - mapOriginY) / tilePxSize));
 
-      // Choose tile zoom level based on UI zoom
-      // At zoom=1 show a medium detail level, scale up/down with UI zoom
-      const tileZoom = Math.max(0, Math.min(maxZoom, Math.round(Math.log2(zoom) + (maxZoom * 0.6))));
-
-      // Number of tiles at this zoom level
-      const numTiles = Math.pow(2, tileZoom);
-
-      // Total pixel size of the full map at current UI zoom
-      const fullMapPx = Math.min(W, H) * zoom;
-
-      // Pixel size of each tile
-      const tilePxSize = fullMapPx / numTiles;
-
-      // Map origin (top-left) in screen space
-      const mapOriginX = W / 2 - fullMapPx / 2 + panOffset.x;
-      const mapOriginY = H / 2 - fullMapPx / 2 + panOffset.y;
-
-      // Which tiles are visible?
-      const startTileX = Math.max(0, Math.floor(-mapOriginX / tilePxSize));
-      const startTileY = Math.max(0, Math.floor(-mapOriginY / tilePxSize));
-      const endTileX   = Math.min(numTiles - 1, Math.ceil((W - mapOriginX) / tilePxSize));
-      const endTileY   = Math.min(numTiles - 1, Math.ceil((H - mapOriginY) / tilePxSize));
-
-      for (let tx = startTileX; tx <= endTileX; tx++) {
-        for (let ty = startTileY; ty <= endTileY; ty++) {
-          const key = `${tileZoom}/${tx}/${ty}`;
-          const url = `https://atlas.plan-ops.fr/data/1/maps/${mapId}/${layerId}/${tileZoom}/${tx}/${ty}.png`;
-
-          const drawTile = (img: HTMLImageElement) => {
-            const px = mapOriginX + tx * tilePxSize;
-            const py = mapOriginY + ty * tilePxSize;
-            ctx.drawImage(img, px, py, tilePxSize + 0.5, tilePxSize + 0.5);
-          };
-
-          if (tileCache.current.has(key)) {
-            const img = tileCache.current.get(key)!;
-            if (img.complete && img.naturalWidth > 0) {
-              drawTile(img);
-            }
-          } else {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.src = url;
-            tileCache.current.set(key, img);
-            img.onload = () => {
-              // Re-trigger render once tile loads
-              const c = canvasRef.current;
-              if (!c) return;
-              const cx = c.getContext("2d");
-              if (!cx) return;
-              cx.drawImage(img,
-                mapOriginX + tx * tilePxSize,
-                mapOriginY + ty * tilePxSize,
-                tilePxSize + 0.5, tilePxSize + 0.5
-              );
-            };
-          }
-        }
-      }
-    });
-
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [tileConfig, panOffset, zoom, containerW, containerH]);
+  const tiles: React.ReactElement[] = [];
+  for (let tx = startX; tx <= endX; tx++) {
+    for (let ty = startY; ty <= endY; ty++) {
+      const px = mapOriginX + tx * tilePxSize;
+      const py = mapOriginY + ty * tilePxSize;
+      const url = `https://atlas.plan-ops.fr/data/1/maps/${mapId}/${layerId}/${tileZoom}/${tx}/${ty}.png`;
+      tiles.push(
+        <img
+          key={`${tileZoom}/${tx}/${ty}`}
+          src={url}
+          alt=""
+          draggable={false}
+          style={{
+            position:  "absolute",
+            left:      px,
+            top:       py,
+            width:     tilePxSize + 1,
+            height:    tilePxSize + 1,
+            imageRendering: "pixelated",
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+        />
+      );
+    }
+  }
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0"
-      style={{ width: "100%", height: "100%", pointerEvents: "none" }}
-    />
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        pointerEvents: "none",
+      }}
+    >
+      {tiles}
+    </div>
   );
 }
 
