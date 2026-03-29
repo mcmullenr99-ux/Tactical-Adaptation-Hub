@@ -1,0 +1,76 @@
+{
+  "type": "object",
+  "properties": {
+    "token_id": {
+      "type": "string"
+    },
+    "provider_name": {
+      "type": "string"
+    },
+    "secret_name": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "local",
+        "preview",
+        "staging",
+        "production",
+        "unknown"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "valid",
+        "invalid",
+        "expired",
+        "revoked",
+        "scope_error",
+        "wrong_env",
+        "malformed",
+        "missing",
+        "misconfigured",
+        "rate_limited",
+        "provider_error"
+      ]
+    },
+    "last_validated_at": {
+      "type": "string"
+    },
+    "last_validation_result": {
+      "type": "string"
+    },
+    "last_error_code": {
+      "type": "string"
+    },
+    "last_error_message": {
+      "type": "string"
+    },
+    "token_fingerprint_masked": {
+      "type": "string"
+    },
+    "scopes_expected": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "scopes_confirmed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "related_integration_name": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "TokenRegistry"
+}

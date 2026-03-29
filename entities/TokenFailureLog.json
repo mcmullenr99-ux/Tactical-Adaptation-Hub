@@ -1,0 +1,57 @@
+{
+  "type": "object",
+  "properties": {
+    "failure_id": {
+      "type": "string"
+    },
+    "token_id": {
+      "type": "string"
+    },
+    "provider_name": {
+      "type": "string"
+    },
+    "secret_name": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    },
+    "observed_error": {
+      "type": "string"
+    },
+    "validation_result": {
+      "type": "string"
+    },
+    "root_cause_classification": {
+      "type": "string",
+      "enum": [
+        "missing_secret",
+        "wrong_secret_name",
+        "empty_secret",
+        "malformed_token",
+        "wrong_header_format",
+        "wrong_base_url",
+        "wrong_environment",
+        "insufficient_scope",
+        "revoked_token",
+        "expired_token",
+        "provider_auth_failure",
+        "provider_outage",
+        "rate_limited",
+        "account_mismatch",
+        "unknown"
+      ]
+    },
+    "was_token_actually_invalid": {
+      "type": "boolean"
+    },
+    "repeated_misdiagnosis": {
+      "type": "boolean"
+    },
+    "next_prevention_rule": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "TokenFailureLog"
+}
