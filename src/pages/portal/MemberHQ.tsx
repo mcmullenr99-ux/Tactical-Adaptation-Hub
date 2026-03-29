@@ -48,7 +48,7 @@ export default function MemberHQ() {
   const showMsg = (ok: boolean, text: string) => { setMsg({ok,text}); setTimeout(()=>setMsg(null),3500); };
 
   useEffect(() => {
-    apiFetch<any[]>("/api/milsim-groups/mine/memberships")
+    apiFetch<any[]>("/milsimGroups?path=mine/memberships")
       .then(async (groups) => {
         setMemberships(groups ?? []);
         if (groups && groups.length > 0) {
@@ -62,7 +62,7 @@ export default function MemberHQ() {
   // Load roster entry for selected group
   useEffect(() => {
     if (!selectedGroup || !user) return;
-    apiFetch<any>(`/api/milsim-groups/${selectedGroup.id}/full`)
+    apiFetch<any>(`/milsimGroups?path=${selectedGroup.id}/full`)
       .then((g: any) => {
         const entry = (g.roster ?? []).find((r: any) => r.userId === (user as any).id || r.user_id === (user as any).id);
         setRosterEntry(entry ?? null);
@@ -72,7 +72,7 @@ export default function MemberHQ() {
 
   useEffect(() => {
     if (!selectedGroup) return;
-    apiFetch<{ count: number; voted: boolean }>(`/api/group-upvotes?path=/upvotes/${selectedGroup.id}`, { method: "GET" })
+    apiFetch<{ count: number; voted: boolean }>(`/groupUpvotes?path=upvotes/${selectedGroup.id}`, { method: "GET" })
       .then(d => { setUpvoteCount(d.count ?? 0); setHasVoted(d.voted ?? false); })
       .catch(() => {});
   }, [selectedGroup]);
@@ -81,7 +81,7 @@ export default function MemberHQ() {
     if (!selectedGroup || upvoting) return;
     setUpvoting(true);
     try {
-      const res = await apiFetch<{ count: number; voted: boolean }>(`/api/group-upvotes?path=/upvotes/${selectedGroup.id}`, { method: "POST" });
+      const res = await apiFetch<{ count: number; voted: boolean }>(`/groupUpvotes?path=upvotes/${selectedGroup.id}`, { method: "POST" });
       setUpvoteCount(res.count ?? 0);
       setHasVoted(res.voted ?? false);
     } catch {}
@@ -577,7 +577,7 @@ function MemberPeerReviewTab({ group, showMsg, user }: any) {
   const [form, setForm] = useState({ activity: 7, attitude: 7, experience: 5, discipline: 7, overall_vote: "commend", notes: "" });
 
   useEffect(() => {
-    apiFetch<any>(`/api/milsim-groups/${group.id}/full`)
+    apiFetch<any>(`/milsimGroups?path=${group.id}/full`)
       .then((g: any) => {
         // Filter out self
         const others = (g.roster ?? []).filter((r: any) => r.userId !== (user as any)?.id && r.user_id !== (user as any)?.id);
@@ -591,7 +591,7 @@ function MemberPeerReviewTab({ group, showMsg, user }: any) {
     if (!selected) return;
     setSubmitting(true);
     try {
-      await apiFetch(`/api/reputation/${selected.userId}`, {
+      await apiFetch(`/reputation?path=${selected.userId}`, {
         method: "POST",
         body: JSON.stringify({ ...form, group_id: group.id, group_name: group.name }),
       });
@@ -1152,7 +1152,7 @@ function MemberServiceFileTab({ user }: any) {
 
   useEffect(() => {
     if (!user?.id) { setLoading(false); return; }
-    apiFetch<any>(`/api/reputation/${user.id}`)
+    apiFetch<any>(`/reputation?path=${user.id}`)
       .then(setRep)
       .catch(() => setRep(null))
       .finally(() => setLoading(false));
