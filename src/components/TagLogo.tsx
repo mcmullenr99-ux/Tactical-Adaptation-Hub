@@ -19,11 +19,8 @@ export function TagLogo({ size = 200, className = "", variant = "helmet" }: TagL
       alt="TAG"
       width={size}
       height={size}
-      style={{
-        filter: isDark ? "invert(1)" : "none",
-        mixBlendMode: "screen",
-      }}
-      className={["select-none pointer-events-none object-contain", className].join(" ")}
+      style={{ filter: isDark ? "invert(1)" : "none" }}
+      className={["select-none pointer-events-none object-contain bg-transparent", className].join(" ")}
       draggable={false}
     />
   );
