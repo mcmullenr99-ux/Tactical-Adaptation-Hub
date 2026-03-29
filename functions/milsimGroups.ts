@@ -269,6 +269,7 @@ Deno.serve(async (req: Request) => {
       if (body.unitType !== undefined) updates.unit_type = body.unitType;
       if (body.games !== undefined) updates.games = body.games;
       if (body.tags !== undefined) updates.tags = body.tags;
+      if (body.chain_of_command !== undefined) updates.chain_of_command = body.chain_of_command;
       updates.last_page_update = new Date().toISOString();
       await base44.asServiceRole.entities.MilsimGroup.update(parts[0], updates);
       const updated = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);

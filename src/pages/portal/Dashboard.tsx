@@ -238,7 +238,6 @@ export default function Dashboard() {
               { href: "/portal/profile", icon: <User className="w-5 h-5" />, label: "Edit Profile" },
               { href: "/portal/service-card", icon: <CreditCard className="w-5 h-5" />, label: "Service Card" },
               { href: "/portal/comms", icon: <Mail className="w-5 h-5" />, label: "Comms & Connections" },
-              { href: "/portal/comms?section=connections", icon: <Users className="w-5 h-5" />, label: "Connections" },
             ].map(action => (
               <Link key={action.href} href={action.href}>
                 <div className="flex flex-col items-center gap-2 p-4 bg-secondary/40 border border-border rounded hover:border-primary/40 hover:bg-primary/5 transition-colors cursor-pointer text-center">

@@ -102,6 +102,30 @@
     },
     "verify_override": {
       "type": "boolean"
+    },
+    "chain_of_command": {
+      "type": "array",
+      "description": "Array of CoC positions: [{id, title, roster_id, callsign, sort_order}]",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "roster_id": {
+            "type": "string"
+          },
+          "callsign": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "number"
+          }
+        }
+      }
     }
   },
   "required": [],

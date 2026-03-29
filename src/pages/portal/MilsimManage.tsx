@@ -696,16 +696,17 @@ function OrbatProGate({ group, orbatJson, setOrbatJson, saveOrbat, saving }: any
 
 // ─── Troop Management Tab (Roles + Ranks + Roster + Pipeline + LOA + Reputation) ──
 function TroopManagementTab({ group, onUpdated, showMsg }: any) {
-  type TTSub = "roster" | "roles" | "ranks" | "pipeline" | "loa" | "reputation";
+  type TTSub = "roster" | "roles" | "ranks" | "coc" | "loa" | "reputation" | "comms";
   const [sub, setSub] = useState<TTSub>("roster");
 
   const SUBS: { id: TTSub; label: string; icon: React.ReactNode; pro?: boolean }[] = [
-    { id: "roster",     label: "Roster",      icon: <Users className="w-3.5 h-3.5" /> },
-    { id: "roles",      label: "Roles",       icon: <Crosshair className="w-3.5 h-3.5" /> },
-    { id: "ranks",      label: "Ranks",       icon: <Award className="w-3.5 h-3.5" /> },
-    { id: "pipeline",   label: "Pipeline",    icon: <UserCheck className="w-3.5 h-3.5" /> },
-    { id: "loa",        label: "LOA Manager", icon: <PlaneTakeoff className="w-3.5 h-3.5" /> },
-    { id: "reputation", label: "Service Files", icon: <Star className="w-3.5 h-3.5" /> },
+    { id: "roster",     label: "Roster",           icon: <Users className="w-3.5 h-3.5" /> },
+    { id: "roles",      label: "Roles",            icon: <Crosshair className="w-3.5 h-3.5" /> },
+    { id: "ranks",      label: "Ranks",            icon: <Award className="w-3.5 h-3.5" /> },
+    { id: "coc",        label: "Chain of Command", icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+    { id: "loa",        label: "LOA Manager",      icon: <PlaneTakeoff className="w-3.5 h-3.5" /> },
+    { id: "reputation", label: "Service Files",    icon: <Star className="w-3.5 h-3.5" /> },
+    { id: "comms",      label: "Comms",            icon: <Radio className="w-3.5 h-3.5" /> },
   ];
 
   return (
@@ -729,16 +730,239 @@ function TroopManagementTab({ group, onUpdated, showMsg }: any) {
         ))}
       </div>
 
-      {sub === "roster"     && <RosterTab     group={group} onUpdated={onUpdated} showMsg={showMsg} />}
-      {sub === "roles"      && <RolesTab      group={group} onUpdated={onUpdated} showMsg={showMsg} />}
-      {sub === "ranks"      && <RanksTab      group={group} onUpdated={onUpdated} showMsg={showMsg} />}
-      {sub === "pipeline"   && <RecruitPipelineTab group={group} showMsg={showMsg} />}
-      {sub === "loa"        && <LOATab        group={group} showMsg={showMsg} />}
-      {sub === "reputation" && <ReputationTab group={group} />}
+      {sub === "roster"     && <RosterTab          group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "roles"      && <RolesTab           group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "ranks"      && <RanksTab           group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "coc"        && <ChainOfCommandTab  group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "loa"        && <LOATab             group={group} showMsg={showMsg} />}
+      {sub === "reputation" && <ReputationTab      group={group} />}
+      {sub === "comms"      && <TroopCommsTab      group={group} />}
     </div>
   );
 }
 
+
+// ─── Chain of Command Tab ─────────────────────────────────────────────────────
+
+const DEFAULT_COC_POSITIONS = [
+  { id: "co",       title: "Commanding Officer (CO)",           sort_order: 1 },
+  { id: "xo",       title: "Executive Officer (XO)",           sort_order: 2 },
+  { id: "adjutant", title: "Adjutant",                         sort_order: 3 },
+  { id: "rsm",      title: "Regimental Sergeant Major (RSM)",  sort_order: 4 },
+  { id: "cqms",     title: "CQMS / QM",                       sort_order: 5 },
+  { id: "s2",       title: "Intelligence Officer (S2 / IO)",   sort_order: 6 },
+  { id: "s3",       title: "Operations Officer (S3 / OC Ops)", sort_order: 7 },
+  { id: "s4",       title: "Logistics Officer (S4)",           sort_order: 8 },
+  { id: "sig",      title: "Signals Officer (Sigs)",           sort_order: 9 },
+  { id: "med",      title: "Medical Officer (MO)",             sort_order: 10 },
+];
+
+interface CoCPosition {
+  id: string;
+  title: string;
+  roster_id: string;
+  callsign: string;
+  sort_order: number;
+}
+
+function ChainOfCommandTab({ group, onUpdated, showMsg }: any) {
+  const [positions, setPositions] = useState<CoCPosition[]>(() => {
+    const saved: CoCPosition[] = Array.isArray(group.chain_of_command) ? group.chain_of_command : [];
+    // Merge defaults with saved — saved overrides defaults, preserve extras
+    const map: Record<string, CoCPosition> = {};
+    DEFAULT_COC_POSITIONS.forEach(d => { map[d.id] = { ...d, roster_id: "", callsign: "" }; });
+    saved.forEach((s: CoCPosition) => { map[s.id] = s; });
+    // Add any extra saved positions not in defaults
+    saved.forEach((s: CoCPosition) => { if (!map[s.id]) map[s.id] = s; });
+    return Object.values(map).sort((a, b) => a.sort_order - b.sort_order);
+  });
+  const [saving, setSaving] = useState(false);
+  const [addingNew, setAddingNew] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+
+  const roster: any[] = group.roster ?? [];
+
+  const updatePosition = (id: string, field: keyof CoCPosition, value: string) => {
+    setPositions(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      if (field === "roster_id") {
+        const member = roster.find((r: any) => r.id === value);
+        return { ...p, roster_id: value, callsign: member?.callsign ?? "" };
+      }
+      return { ...p, [field]: value };
+    }));
+  };
+
+  const removePosition = (id: string) => {
+    setPositions(prev => prev.filter(p => p.id !== id));
+  };
+
+  const addPosition = () => {
+    if (!newTitle.trim()) return;
+    const newId = `custom_${Date.now()}`;
+    setPositions(prev => [...prev, { id: newId, title: newTitle.trim(), roster_id: "", callsign: "", sort_order: prev.length + 1 }]);
+    setNewTitle("");
+    setAddingNew(false);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, {
+        method: "PATCH",
+        body: JSON.stringify({ chain_of_command: positions }),
+      });
+      onUpdated(updated);
+      showMsg("Chain of Command saved.", "success");
+    } catch (e: any) {
+      showMsg(e.message ?? "Failed to save.", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display font-bold uppercase tracking-widest text-sm text-foreground">Chain of Command</h3>
+          <p className="text-xs text-muted-foreground font-sans mt-1">Assign roster members to command positions. Titles are fully editable — use whatever terminology your unit uses.</p>
+        </div>
+        <button onClick={save} disabled={saving}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded font-display font-bold uppercase tracking-widest text-xs hover:bg-primary/90 transition-colors disabled:opacity-60">
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+          Save
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {positions.map((pos, idx) => (
+          <div key={pos.id} className="bg-card border border-border rounded p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            {/* Position title — editable */}
+            <div className="flex-1 min-w-0">
+              <input
+                value={pos.title}
+                onChange={e => updatePosition(pos.id, "title", e.target.value)}
+                className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-display font-bold uppercase tracking-wider text-foreground focus:outline-none focus:border-primary transition-colors"
+                placeholder="Position title…"
+              />
+            </div>
+            {/* Roster member select */}
+            <div className="w-full sm:w-56 shrink-0">
+              <select
+                value={pos.roster_id}
+                onChange={e => updatePosition(pos.id, "roster_id", e.target.value)}
+                className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground focus:outline-none focus:border-primary transition-colors"
+              >
+                <option value="">— Unassigned —</option>
+                {roster.filter((r: any) => r.status === "Active" || r.status === "active").map((r: any) => (
+                  <option key={r.id} value={r.id}>{r.callsign}</option>
+                ))}
+              </select>
+            </div>
+            {/* Callsign display */}
+            {pos.callsign && (
+              <span className="text-xs font-display font-bold text-primary tracking-wider shrink-0">{pos.callsign}</span>
+            )}
+            {/* Remove */}
+            <button onClick={() => removePosition(pos.id)}
+              className="p-1.5 text-muted-foreground hover:text-destructive transition-colors shrink-0 ml-auto sm:ml-0">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Add new position */}
+      {addingNew ? (
+        <div className="flex items-center gap-2">
+          <input value={newTitle} onChange={e => setNewTitle(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addPosition()}
+            autoFocus
+            className="flex-1 bg-background border border-border rounded px-3 py-2 text-sm font-display font-bold uppercase tracking-wider text-foreground focus:outline-none focus:border-primary transition-colors"
+            placeholder="New position title…" />
+          <button onClick={addPosition} className="px-3 py-2 bg-primary text-primary-foreground rounded text-xs font-display font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors">Add</button>
+          <button onClick={() => setAddingNew(false)} className="px-3 py-2 border border-border rounded text-xs font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+        </div>
+      ) : (
+        <button onClick={() => setAddingNew(true)}
+          className="flex items-center gap-2 text-xs font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
+          <Plus className="w-3.5 h-3.5" /> Add Custom Position
+        </button>
+      )}
+
+      {/* CoC display preview */}
+      {positions.some(p => p.callsign) && (
+        <div className="border border-border rounded p-5 bg-secondary/20">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Preview — How members appear across the platform</p>
+          <div className="space-y-2">
+            {positions.filter(p => p.callsign).map(pos => (
+              <div key={pos.id} className="flex items-center gap-3">
+                <span className="font-display font-bold text-sm text-foreground">{pos.callsign}</span>
+                <span className="text-xs font-display font-bold text-primary uppercase tracking-wider px-2 py-0.5 border border-primary/30 rounded bg-primary/10">
+                  {pos.title.split("(")[0].trim()} of {group.name}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Troop Comms Tab (embedded Comms & Connections) ───────────────────────────
+function TroopCommsTab({ group }: any) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 pb-4 border-b border-border">
+        <Radio className="w-5 h-5 text-primary" />
+        <div>
+          <h3 className="font-display font-bold uppercase tracking-widest text-sm text-foreground">Comms & Connections</h3>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Access your messages and operator connections</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <a href="/portal/comms" className="bg-card border border-border rounded p-5 flex items-center gap-4 hover:border-primary/40 transition-colors group">
+          <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center shrink-0">
+            <Radio className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground group-hover:text-primary transition-colors">Secure Comms</p>
+            <p className="text-xs text-muted-foreground font-sans">Inbox, sent, compose messages</p>
+          </div>
+        </a>
+        <a href="/portal/comms?section=connections" className="bg-card border border-border rounded p-5 flex items-center gap-4 hover:border-primary/40 transition-colors group">
+          <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground group-hover:text-primary transition-colors">Connections</p>
+            <p className="text-xs text-muted-foreground font-sans">Your operator network</p>
+          </div>
+        </a>
+        <a href="/portal/comms?section=requests" className="bg-card border border-border rounded p-5 flex items-center gap-4 hover:border-primary/40 transition-colors group">
+          <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center shrink-0">
+            <Bell className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground group-hover:text-primary transition-colors">Pending Requests</p>
+            <p className="text-xs text-muted-foreground font-sans">Accept or decline connection requests</p>
+          </div>
+        </a>
+        <a href="/portal/comms?section=find" className="bg-card border border-border rounded p-5 flex items-center gap-4 hover:border-primary/40 transition-colors group">
+          <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center shrink-0">
+            <Search className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground group-hover:text-primary transition-colors">Find Operators</p>
+            <p className="text-xs text-muted-foreground font-sans">Search and connect with members</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  );
+}
 
 function RolesTab({ group, onUpdated, showMsg }: any) {
   const [roles, setRoles] = useState<Role[]>(group.roles);
