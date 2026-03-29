@@ -221,7 +221,7 @@ export default function UserPublicProfile() {
 
         {/* ── Send Message CTA ── */}
         <div className="flex justify-center">
-          <Link href={`/portal/compose?to=${profile.username}`}>
+          <Link href={`/portal/comms?section=compose&to=${profile.username}`}>
             <button className="flex items-center gap-2 px-5 py-2.5 bg-primary/10 border border-primary/30 text-primary rounded-md hover:bg-primary/20 transition-all font-display text-xs uppercase tracking-widest">
               <MessageSquare className="w-4 h-4" />
               Send Message

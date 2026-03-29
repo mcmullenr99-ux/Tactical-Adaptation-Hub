@@ -5,7 +5,7 @@ import { useLocation, Link } from "wouter";
 import {
   PenTool, LayoutDashboard, ShieldCheck, Settings,
   LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert, Calendar, KeyRound,
-  LifeBuoy,
+  LifeBuoy, Radio, Mail,
 } from "lucide-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useOutsiderMode } from "@/hooks/useOutsiderMode";
@@ -80,6 +80,7 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
 
   const navLinks = [
     { href: "/portal/dashboard", icon: <LayoutDashboard className="w-4 h-4 text-primary" />, label: "Dashboard" },
+    { href: "/portal/comms", icon: <Radio className="w-4 h-4 text-primary" />, label: "Comms" },
     { href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "Unit HQ" },
     { href: "/portal/member-hq", icon: <Users className="w-4 h-4 text-primary" />, label: "Member HQ" },
     { href: "/portal/support", icon: <LifeBuoy className="w-4 h-4 text-primary" />, label: "Support" },

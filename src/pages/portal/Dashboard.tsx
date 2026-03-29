@@ -167,7 +167,7 @@ export default function Dashboard() {
         {/* Quick Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Unread Comms", value: unread, icon: <Mail className="w-5 h-5" />, color: unread > 0 ? "text-primary" : "text-muted-foreground", href: "/portal/inbox" },
+            { label: "Unread Comms", value: unread, icon: <Mail className="w-5 h-5" />, color: unread > 0 ? "text-primary" : "text-muted-foreground", href: "/portal/comms" },
             { label: "Role", value: user?.role ?? "—", icon: <ShieldCheck className="w-5 h-5" />, color: "text-accent", href: "/portal/profile" },
             { label: "Upcoming Ops", value: upcomingOps?.length ?? 0, icon: <CalendarDays className="w-5 h-5" />, color: "text-blue-400", href: "/ops" },
             { label: "Member Since", value: user?.created_at ? format(new Date(user.created_at), "MMM yyyy") : "—", icon: <Clock className="w-5 h-5" />, color: "text-muted-foreground", href: "/portal/profile" },
@@ -234,11 +234,11 @@ export default function Dashboard() {
           <h2 className="font-display font-bold uppercase tracking-widest text-sm text-muted-foreground mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { href: "/portal/compose", icon: <PenTool className="w-5 h-5" />, label: "New Dispatch" },
+              { href: "/portal/comms?section=compose", icon: <PenTool className="w-5 h-5" />, label: "New Dispatch" },
               { href: "/portal/profile", icon: <User className="w-5 h-5" />, label: "Edit Profile" },
               { href: "/portal/service-card", icon: <CreditCard className="w-5 h-5" />, label: "Service Card" },
-              { href: "/portal/inbox", icon: <Mail className="w-5 h-5" />, label: "Secure Comms" },
-              { href: "/portal/friends", icon: <Users className="w-5 h-5" />, label: "Connections" },
+              { href: "/portal/comms", icon: <Mail className="w-5 h-5" />, label: "Comms & Connections" },
+              { href: "/portal/comms?section=connections", icon: <Users className="w-5 h-5" />, label: "Connections" },
             ].map(action => (
               <Link key={action.href} href={action.href}>
                 <div className="flex flex-col items-center gap-2 p-4 bg-secondary/40 border border-border rounded hover:border-primary/40 hover:bg-primary/5 transition-colors cursor-pointer text-center">

@@ -39,6 +39,7 @@ import Register from "@/pages/portal/Register";
 import Dashboard from "@/pages/portal/Dashboard";
 import Inbox from "@/pages/portal/Inbox";
 import Compose from "@/pages/portal/Compose";
+import Comms from "@/pages/portal/Comms";
 import Apply from "@/pages/portal/Apply";
 import ModPanel from "@/pages/portal/ModPanel";
 import AdminPanel from "@/pages/portal/AdminPanel";
@@ -99,6 +100,7 @@ function Router() {
       <Route path="/portal/dashboard" component={Dashboard} />
       <Route path="/portal/inbox" component={Inbox} />
       <Route path="/portal/compose" component={Compose} />
+      <Route path="/portal/comms" component={Comms} />
       <Route path="/portal/apply" component={Apply} />
       <Route path="/portal/profile" component={Profile} />
       <Route path="/portal/mod" component={ModPanel} />
