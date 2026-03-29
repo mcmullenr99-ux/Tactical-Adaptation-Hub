@@ -29,7 +29,7 @@ function ForgotPasswordPanel({ onBack }: { onBack: () => void }) {
     setSending(true);
     setError(null);
     try {
-      await apiFetch("/api/auth/forgot-password", {
+      await apiFetch("/authForgotPassword", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -89,7 +89,7 @@ function ForgotPasswordPanel({ onBack }: { onBack: () => void }) {
               Email Address
             </label>
             <input
-              type="email"
+              type="email" autoComplete="off"
               value={email}
               onChange={e => setEmail(e.target.value)}
               className="w-full bg-background border-2 border-border rounded px-4 py-3 text-foreground font-sans focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
@@ -147,7 +147,7 @@ export default function Login() {
     setResendState("sending");
     try {
       // Call resend — no auth token available here so we pass email in body
-      await apiFetch("/api/auth/resend-verification", {
+      await apiFetch("/authResendVerification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: unverifiedEmail }),
@@ -225,14 +225,14 @@ export default function Login() {
                     </div>
                   )}
 
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
                     <div>
                       <label className="block text-sm font-display font-bold uppercase tracking-wider text-muted-foreground mb-2">
                         Email Address
                       </label>
                       <input
                         {...register("email")}
-                        type="email"
+                        type="email" autoComplete="off"
                         className="w-full bg-background border-2 border-border rounded px-4 py-3 text-foreground font-sans focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
                         placeholder="operator@tag.com"
                       />
@@ -254,7 +254,7 @@ export default function Login() {
                       </div>
                       <input
                         {...register("password")}
-                        type="password"
+                        type="password" autoComplete="new-password"
                         className="w-full bg-background border-2 border-border rounded px-4 py-3 text-foreground font-sans focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
                         placeholder="••••••••"
                       />

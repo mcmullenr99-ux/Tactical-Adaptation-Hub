@@ -129,7 +129,7 @@ function AccountsTab({ isAdmin }: { isAdmin: boolean }) {
 
   const { data: users = [], isLoading, refetch } = useQuery<AdminUser[]>({
     queryKey: ["admin", "users"],
-    queryFn: () => apiFetch("/api/admin/users"),
+    queryFn: () => apiFetch("/admin?path=users"),
   });
 
   const filtered = useMemo(() => {
@@ -139,26 +139,26 @@ function AccountsTab({ isAdmin }: { isAdmin: boolean }) {
 
   const banMutation = useMutation({
     mutationFn: ({ id, reason }: { id: number; reason: string }) =>
-      apiFetch(`/api/admin/users/${id}/ban`, { method: "PATCH", body: JSON.stringify({ reason }) }),
+      apiFetch(`/admin?path=users/${id}/ban`, { method: "PATCH", body: JSON.stringify({ reason }) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin", "users"] }); toast({ title: "Ban Issued" }); setBanTarget(null); },
     onError: (err: any) => toast({ title: "Failed", description: err?.error || "Could not ban user.", variant: "destructive" }),
   });
 
   const unbanMutation = useMutation({
-    mutationFn: (id: number) => apiFetch(`/api/admin/users/${id}/unban`, { method: "PATCH" }),
+    mutationFn: (id: number) => apiFetch(`/admin?path=users/${id}/unban`, { method: "PATCH" }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin", "users"] }); toast({ title: "Ban Lifted" }); },
     onError: (err: any) => toast({ title: "Failed", description: err?.error || "Could not unban.", variant: "destructive" }),
   });
 
   const roleMutation = useMutation({
     mutationFn: ({ id, role }: { id: number; role: string }) =>
-      apiFetch(`/api/admin/users/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+      apiFetch(`/admin?path=users/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin", "users"] }); toast({ title: "Role Updated" }); },
     onError: () => toast({ title: "Failed", description: "Could not update role.", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiFetch(`/api/admin/users/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) => apiFetch(`/admin?path=users/${id}`, { method: "DELETE" }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin", "users"] }); toast({ title: "Account Deleted" }); setDeleteTarget(null); },
     onError: (err: any) => toast({ title: "Failed", description: err?.error || "Could not delete.", variant: "destructive" }),
   });
@@ -274,7 +274,7 @@ function GroupsTab({ isAdmin }: { isAdmin: boolean }) {
 
   const { data: groups = [], isLoading, refetch } = useQuery<AdminGroup[]>({
     queryKey: ["admin", "milsim-groups"],
-    queryFn: () => apiFetch("/api/admin/milsim-groups"),
+    queryFn: () => apiFetch("/admin?path=milsim-groups"),
   });
 
   const filtered = useMemo(() => {
@@ -284,13 +284,13 @@ function GroupsTab({ isAdmin }: { isAdmin: boolean }) {
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
-      apiFetch(`/api/admin/milsim-groups/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+      apiFetch(`/admin?path=milsim-groups/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin", "milsim-groups"] }); toast({ title: "Status Updated" }); },
     onError: () => toast({ title: "Failed", description: "Could not update group status.", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiFetch(`/api/admin/milsim-groups/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) => apiFetch(`/admin?path=milsim-groups/${id}`, { method: "DELETE" }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin", "milsim-groups"] }); toast({ title: "Group Deleted" }); setDeleteTarget(null); },
     onError: () => toast({ title: "Failed", description: "Could not delete group.", variant: "destructive" }),
   });
@@ -376,13 +376,13 @@ function LockdownToggle() {
 
   const { data } = useQuery<{ active: boolean }>({
     queryKey: ["admin", "lockdown"],
-    queryFn: () => apiFetch("/api/admin/lockdown"),
+    queryFn: () => apiFetch("/admin?path=lockdown"),
     refetchInterval: 30_000,
   });
 
   const toggle = useMutation({
     mutationFn: (active: boolean) =>
-      apiFetch("/api/admin/lockdown", { method: "PATCH", body: JSON.stringify({ active }) }),
+      apiFetch("/admin?path=lockdown", { method: "PATCH", body: JSON.stringify({ active }) }),
     onSuccess: (res: any) => {
       qc.invalidateQueries({ queryKey: ["admin", "lockdown"] });
       toast({

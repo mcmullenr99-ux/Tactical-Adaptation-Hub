@@ -17,10 +17,10 @@ function AddFriendButton({ userId, username }: { userId: number; username: strin
   const qc = useQueryClient();
   const { data: status, isLoading } = useQuery<FriendStatus>({
     queryKey: ["friend-status", userId],
-    queryFn: () => apiFetch(`/api/friends/status/${userId}`),
+    queryFn: () => apiFetch(`/friends?path=status/${userId}`),
   });
   const send = useMutation({
-    mutationFn: () => apiFetch(`/api/friends/request/${userId}`, { method: "POST" }),
+    mutationFn: () => apiFetch(`/friends?path=request/${userId}`, { method: "POST" }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["friend-status", userId] }); toast({ title: "Request Sent", description: `Friend request sent to ${username}.` }); },
     onError: () => toast({ title: "Failed", description: "Could not send request.", variant: "destructive" }),
   });
@@ -41,23 +41,23 @@ export default function Inbox() {
   
   const { data: inbox, refetch: refetchInbox } = useQuery<any[]>({
     queryKey: ["inbox"],
-    queryFn: () => apiFetch("/api/messages/inbox"),
+    queryFn: () => apiFetch("/messages?path=inbox"),
   });
   const { data: sent, refetch: refetchSent } = useQuery<any[]>({
     queryKey: ["sent"],
-    queryFn: () => apiFetch("/api/messages/sent"),
+    queryFn: () => apiFetch("/messages?path=sent"),
   });
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const markRead = useMutation({
-    mutationFn: ({ id }: { id: number }) => apiFetch(`/api/messages/${id}/read`, { method: "PATCH" }),
+    mutationFn: ({ id }: { id: number }) => apiFetch(`/messages?path=${id}/read`, { method: "PATCH" }),
     onSuccess: () => refetchInbox(),
   });
 
   const deleteMsg = useMutation({
-    mutationFn: ({ id }: { id: number }) => apiFetch(`/api/messages/${id}`, { method: "DELETE" }),
+    mutationFn: ({ id }: { id: number }) => apiFetch(`/messages?path=${id}`, { method: "DELETE" }),
   });
 
   const allMessages = tab === 'inbox' ? inbox : sent;
@@ -65,7 +65,7 @@ export default function Inbox() {
   const messages = allMessages?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const markAllRead = useMutation({
-    mutationFn: () => apiFetch("/api/messages/read-all", { method: "PATCH" }),
+    mutationFn: () => apiFetch("/messages?path=read-all", { method: "PATCH" }),
     onSuccess: () => { refetchInbox(); queryClient.invalidateQueries({ queryKey: ["notification-counts"] }); toast({ title: "All messages marked as read." }); },
     onError: () => toast({ title: "Error", description: "Could not mark all as read.", variant: "destructive" }),
   });

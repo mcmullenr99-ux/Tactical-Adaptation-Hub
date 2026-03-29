@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     if (new Date(rec.expires_at) < new Date()) return Response.json({ error: 'Token expired' }, { status: 400 });
 
     const password_hash = await bcrypt.hash(newPassword, 10);
-    await base44.asServiceRole.entities.User.update(rec.user_id, { password_hash });
+    await base44.asServiceRole.entities.AppUser.update(rec.user_id, { password_hash });
     await base44.asServiceRole.entities.PasswordResetToken.update(rec.id, { used: true });
 
     return Response.json({ message: 'Password reset successfully' });

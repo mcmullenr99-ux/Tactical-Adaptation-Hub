@@ -1,9 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import { useSEO } from "@/hooks/useSEO";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   Shield, Globe, Star, Users, Plus, ExternalLink, Loader2, Trophy,
   CheckCircle2, Zap, TrendingUp, Map, Gamepad2, BarChart3, Crown
@@ -84,6 +85,285 @@ function isVerified(group: MilsimGroup): boolean {
 
 type LeaderboardCategory = "region" | "game" | "troop_count" | "op_success";
 
+
+// ─── World Map ─────────────────────────────────────────────────────────────────
+// Coords = [x%, y%] on equirectangular projection: x=(lon+180)/360*100, y=(90-lat)/180*100
+const COUNTRY_COORDS: Record<string, [number, number]> = {
+  // Europe
+  '🇬🇧 United Kingdom': [48.2, 33.5],
+  '🇩🇪 Germany': [49.9, 31.1],
+  '🇫🇷 France': [46.5, 37.5],
+  '🇮🇹 Italy': [50.6, 39.7],
+  '🇵🇱 Poland': [54.4, 32.4],
+  '🇳🇱 Netherlands': [49.8, 31.2],
+  '🇳🇴 Norway': [52.8, 10.6],
+  '🇸🇪 Sweden': [52.9, 27.8],
+  '🇩🇰 Denmark': [50.8, 29.3],
+  '🇧🇪 Belgium': [48.9, 32.7],
+  '🇪🇸 Spain': [43.8, 38.5],
+  '🇵🇹 Portugal': [40.7, 38.5],
+  '🇮🇪 Ireland': [46.4, 30.9],
+  '🇫🇮 Finland': [53.9, 21.5],
+  '🇦🇹 Austria': [51.0, 35.3],
+  '🇨🇭 Switzerland': [49.5, 35.8],
+  '🇷🇴 Romania': [54.5, 34.8],
+  '🇭🇺 Hungary': [52.8, 35.2],
+  '🇬🇷 Greece': [55.0, 42.9],
+  '🇺🇦 Ukraine': [54.8, 32.1],
+  '🇨🇿 Czech Republic': [51.5, 33.0],
+  '🇸🇰 Slovakia': [53.0, 33.5],
+  '🇧🇬 Bulgaria': [55.5, 37.5],
+  '🇭🇷 Croatia': [51.5, 37.0],
+  '🇷🇸 Serbia': [53.0, 36.5],
+  '🇱🇹 Lithuania': [54.5, 27.5],
+  '🇱🇻 Latvia': [54.2, 25.5],
+  '🇪🇪 Estonia': [54.5, 23.5],
+  '🇸🇮 Slovenia': [51.2, 36.0],
+  '🇱🇺 Luxembourg': [49.2, 33.0],
+  // Americas
+  '🇺🇸 United States': [18.0, 32.0],
+  '🇨🇦 Canada': [18.0, 14.0],
+  '🇲🇽 Mexico': [13.1, 41.9],
+  '🇧🇷 Brazil': [32.6, 66.0],
+  '🇦🇷 Argentina': [28.0, 80.0],
+  '🇨🇱 Chile': [26.5, 76.0],
+  '🇨🇴 Colombia': [25.0, 54.5],
+  '🇵🇪 Peru': [24.0, 61.0],
+  '🇻🇪 Venezuela': [28.5, 51.0],
+  '🇺🇾 Uruguay': [31.5, 74.0],
+  '🇪🇨 Ecuador': [23.5, 57.0],
+  '🇧🇴 Bolivia': [28.5, 65.0],
+  // Asia / Pacific
+  '🇷🇺 Russia': [68.0, 18.0],
+  '🇨🇳 China': [75.0, 38.0],
+  '🇯🇵 Japan': [88.0, 34.0],
+  '🇰🇷 South Korea': [84.9, 36.8],
+  '🇮🇳 India': [70.0, 52.0],
+  '🇵🇰 Pakistan': [66.5, 44.0],
+  '🇹🇭 Thailand': [77.0, 53.0],
+  '🇲🇾 Malaysia': [78.5, 59.0],
+  '🇸🇬 Singapore': [80.0, 62.4],
+  '🇵🇭 Philippines': [83.5, 52.0],
+  '🇮🇩 Indonesia': [80.0, 62.0],
+  '🇦🇺 Australia': [76.0, 76.0],
+  '🇳🇿 New Zealand': [92.0, 87.0],
+  // Middle East
+  '🇹🇷 Turkey': [56.4, 39.3],
+  '🇸🇦 Saudi Arabia': [61.0, 51.0],
+  '🇮🇱 Israel': [58.1, 44.3],
+  '🇦🇪 UAE': [63.5, 51.5],
+  '🇶🇦 Qatar': [62.5, 50.5],
+  '🇰🇼 Kuwait': [61.5, 47.5],
+  '🇮🇶 Iraq': [60.5, 44.5],
+  '🇮🇷 Iran': [64.0, 43.0],
+  '🇯🇴 Jordan': [59.5, 46.0],
+  '🇱🇧 Lebanon': [58.5, 43.0],
+  // Africa
+  '🇪🇬 Egypt': [57.0, 46.5],
+  '🇲🇦 Morocco': [44.5, 44.5],
+  '🇳🇬 Nigeria': [48.9, 59.7],
+  '🇰🇪 Kenya': [59.0, 63.0],
+  '🇿🇦 South Africa': [54.0, 79.0],
+  '🇪🇹 Ethiopia': [59.5, 60.0],
+  '🇬🇭 Ghana': [46.0, 58.0],
+  '🇨🇲 Cameroon': [49.5, 58.0],
+  '🇹🇿 Tanzania': [57.0, 65.0],
+  '🇺🇬 Uganda': [56.5, 62.0],
+};
+
+function WorldMap({ groups }: { groups: MilsimGroup[] }) {
+  const [tooltip, setTooltip] = useState<{ pctX: number; pctY: number; names: string[]; featured: boolean } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  const countryGroups = useMemo(() => {
+    const map: Record<string, MilsimGroup[]> = {};
+    groups.forEach(g => {
+      if (g.status !== "approved" && g.status !== "featured") return;
+      if (!g.country) return;
+      if (!map[g.country]) map[g.country] = [];
+      map[g.country].push(g);
+    });
+    return map;
+  }, [groups]);
+
+  const dots = useMemo(() => {
+    return Object.entries(countryGroups)
+      .map(([country, grps]) => {
+        const coords = COUNTRY_COORDS[country];
+        if (!coords) return null;
+        return { country, grps, pctX: coords[0], pctY: coords[1] };
+      })
+      .filter(Boolean) as { country: string; grps: MilsimGroup[]; pctX: number; pctY: number }[];
+  }, [countryGroups]);
+
+  const totalOnMap = dots.reduce((s, d) => s + d.grps.length, 0);
+
+  return (
+    <div
+      className="relative w-full border-b border-border overflow-hidden"
+      style={{ background: isDark ? "#0d0d0d" : "#ffffff" }}
+    >
+      {/* subtle scanline */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          opacity: 0.03,
+          backgroundImage:
+            "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,1) 2px,rgba(255,255,255,1) 3px)",
+        }}
+      />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-4 relative z-10">
+        {/* header */}
+        <div className="flex items-center gap-3 mb-3">
+          <span className="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0 block" />
+          <span className="text-[10px] font-display font-bold uppercase tracking-widest text-primary">
+            Live Deployment Map
+          </span>
+          <span className="text-[9px] font-sans text-muted-foreground ml-auto">
+            {totalOnMap} unit{totalOnMap !== 1 ? "s" : ""} across {dots.length}{" "}
+            countr{dots.length !== 1 ? "ies" : "y"}
+          </span>
+        </div>
+
+        {/* map + dots */}
+        <div
+          className="relative w-full select-none"
+          ref={containerRef}
+          style={{ aspectRatio: "1024 / 683" }}
+        >
+          {/* PNG map asset — white outlines on transparent bg.
+              Dark mode: show white lines as-is on dark ocean bg.
+              Light mode: invert so lines become dark on light bg. */}
+          <img
+            src="/world-map.svg"
+            alt="World map"
+            draggable={false}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              filter: isDark
+                ? "invert(1) brightness(0.25) contrast(1.1) saturate(0)"
+                : "brightness(0.55) contrast(1.05) saturate(0)",
+              opacity: 1,
+            }}
+          />
+
+          {/* dots */}
+          {dots.map(dot => {
+            const count = dot.grps.length;
+            const hasFeatured = dot.grps.some(g => g.status === "featured");
+            const size = count > 8 ? 12 : count > 4 ? 9 : count > 1 ? 7 : 5;
+            const color = hasFeatured ? "#f59e0b" : "#ef4444";
+            const glow = hasFeatured
+              ? "0 0 8px 3px rgba(245,158,11,0.7)"
+              : "0 0 8px 3px rgba(239,68,68,0.6)";
+            return (
+              <div
+                key={dot.country}
+                className="absolute"
+                style={{
+                  left: `${dot.pctX}%`,
+                  top: `${dot.pctY}%`,
+                  transform: "translate(-50%,-50%)",
+                  zIndex: 10,
+                  cursor: "pointer",
+                }}
+                onMouseEnter={() =>
+                  setTooltip({
+                    pctX: dot.pctX,
+                    pctY: dot.pctY,
+                    names: dot.grps.map(g => g.name),
+                    featured: hasFeatured,
+                  })
+                }
+                onMouseLeave={() => setTooltip(null)}
+              >
+                {/* ping ring */}
+                <span
+                  className="absolute rounded-full animate-ping"
+                  style={{
+                    width: size + 4,
+                    height: size + 4,
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%,-50%)",
+                    background: hasFeatured
+                      ? "rgba(245,158,11,0.3)"
+                      : "rgba(239,68,68,0.3)",
+                  }}
+                />
+                {/* core */}
+                <span
+                  className="relative flex items-center justify-center rounded-full font-mono font-bold text-white"
+                  style={{
+                    width: size,
+                    height: size,
+                    fontSize: size > 10 ? 7 : 0,
+                    background: color,
+                    boxShadow: glow,
+                    lineHeight: 1,
+                  }}
+                >
+                  {count > 1 ? count : ""}
+                </span>
+              </div>
+            );
+          })}
+
+          {/* tooltip */}
+          {tooltip && (
+            <div
+              className="absolute z-20 pointer-events-none"
+              style={{
+                left: `${Math.min(tooltip.pctX + 1.5, 72)}%`,
+                top:
+                  tooltip.pctY > 72
+                    ? `${tooltip.pctY - 14}%`
+                    : `${tooltip.pctY + 3}%`,
+              }}
+            >
+              <div className="bg-card/95 backdrop-blur-sm border border-primary/40 rounded shadow-xl px-3 py-2 min-w-[130px] max-w-[210px]">
+                {tooltip.names.map((n, i) => (
+                  <p
+                    key={i}
+                    className="text-[10px] font-display font-bold uppercase tracking-wide text-foreground leading-snug"
+                  >
+                    {n}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* legend */}
+        <div className="flex items-center gap-5 mt-2 mb-1">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 block" />
+            <span className="text-[9px] font-sans text-muted-foreground">Registered</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 block" />
+            <span className="text-[9px] font-sans text-muted-foreground">Featured</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span
+              className="inline-flex items-center justify-center rounded-full text-white font-bold"
+              style={{ width: 14, height: 14, fontSize: 7, background: "#ef4444" }}
+            >
+              5
+            </span>
+            <span className="text-[9px] font-sans text-muted-foreground">Cluster</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export default function MilsimRegistry() {
   useSEO({ title: "MilSim Registry", description: "Browse TAG's registered MilSim groups — find your unit and enlist in organised tactical play." });
   const [groups, setGroups] = useState<MilsimGroup[]>([]);
@@ -99,11 +379,11 @@ export default function MilsimRegistry() {
 
   useEffect(() => {
     // Also fetch upvote counts
-    apiFetch<Record<string, number>>("/api/group-upvotes?path=/counts").then(setUpvoteCounts).catch(() => {});
+    apiFetch<Record<string, number>>("/groupUpvotes?path=counts").then(setUpvoteCounts).catch(() => {});
 
     Promise.all([
-      apiFetch<MilsimGroup[]>("/api/milsim-groups"),
-      apiFetch<{ group_id: number; op_success_rate: number; total_ops: number; roster_count: number }[]>("/api/milsim-groups/leaderboard-stats").catch(() => []),
+      apiFetch<MilsimGroup[]>("/milsimGroups"),
+      apiFetch<{ group_id: number; op_success_rate: number; total_ops: number; roster_count: number }[]>("/leaderboardStats").catch(() => []),
     ]).then(([data, stats]) => {
       const list = Array.isArray(data) ? data : [];
       const statsMap: Record<number, { op_success_rate: number; total_ops: number; roster_count: number }> = {};
@@ -190,6 +470,8 @@ export default function MilsimRegistry() {
           </motion.div>
         </div>
       </div>
+
+      <WorldMap groups={groups} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {loading ? (
@@ -558,7 +840,7 @@ function LbTable({ rows, startRank }: { rows: LbRow[]; startRank: number }) {
             {/* Logo */}
             <div className="w-8 h-8 shrink-0 flex items-center justify-center">
               {row.group.logoUrl
-                ? <img src={row.group.logoUrl} alt={row.group.name} className="w-8 h-8 object-contain rounded" />
+                ? <img src={row.group.logoUrl} alt={row.group.name} className="w-8 h-8 object-contain rounded" onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                 : <Shield className="w-6 h-6 text-muted-foreground/30" />
               }
             </div>
@@ -622,7 +904,7 @@ function GroupCard({ group, index, featured = false, upvoteCount = 0 }: { group:
           </div>
         )}
         {group.logoUrl ? (
-          <img src={group.logoUrl} alt={`${group.name} logo`} className="w-20 h-20 object-contain" />
+          <img src={group.logoUrl} alt={`${group.name} logo`} className="w-20 h-20 object-contain" onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
         ) : (
           <Shield className="w-12 h-12 text-muted-foreground/30" />
         )}
@@ -695,3 +977,4 @@ function GroupCard({ group, index, featured = false, upvoteCount = 0 }: { group:
     </motion.div>
   );
 }
+

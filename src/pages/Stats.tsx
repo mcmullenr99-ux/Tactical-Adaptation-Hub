@@ -19,7 +19,7 @@ export default function Stats() {
 
   const { data: stats, isLoading } = useQuery<PublicStats>({
     queryKey: ["public-stats"],
-    queryFn: () => apiFetch("/api/stats/public"),
+    queryFn: () => apiFetch("/stats?path=public"),
     staleTime: 5 * 60_000,
   });
 

@@ -6,6 +6,7 @@ import { PortalLayout } from "@/components/layout/PortalLayout";
 import { apiFetch } from "@/lib/apiFetch";
 import { BRANCHES, UNIT_TYPES_BY_BRANCH, GAMES_LIST as MC_GAMES, type Branch } from "@/lib/milsimConstants";
 import { RIBBON_TEMPLATES, RIBBON_COUNTRIES, RIBBON_BRANCHES_BY_COUNTRY, type RibbonTemplate } from "@/lib/ribbonLibrary";
+import { getRibbonModifiers } from "@/lib/ribbonModifiers";
 import { RibbonBuilder, RibbonPreview, ribbonToSvgDataUri, type RibbonConfig, type StripePattern } from "@/components/RibbonBuilder";
 import {
   Activity,
@@ -35,8 +36,10 @@ import {
   GraduationCap,
   Link2,
   Loader2,
+  Map,
   MapPin,
-  Medal, Search,
+  Medal,
+  Search,
   Megaphone,
   Pencil,
   PlaneTakeoff,
@@ -46,6 +49,7 @@ import {
   Zap,
   Save,
   Shield,
+  ShieldCheck,
   Siren,
   Star,
   Target,
@@ -67,12 +71,54 @@ import {
   Bell,
   ChevronRight,
   Download,
-  Zap
+  BrainCircuit,
+  TrendingDown,
+  FlaskConical
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import OrbatBuilder from "@/components/OrbatBuilder";
+import TacticalPlanner from "@/components/TacticalPlanner";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthContext";
+
+class PageErrorBoundary extends React.Component<{children: React.ReactNode}, {error: Error | null, info: string}> {
+  constructor(props: any) { super(props); this.state = { error: null, info: "" }; }
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("[PageErrorBoundary] CRASH:", error.message, info.componentStack);
+    this.setState({ info: info.componentStack ?? "" });
+  }
+  render() {
+    if (this.state.error) return (
+      <div style={{padding: 24, background: "#1a0000", border: "2px solid red", color: "red", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all", zIndex: 9999, position: "relative"}}>
+        <h2 style={{marginBottom: 8}}>PAGE CRASH — MilsimManage</h2>
+        <p style={{marginBottom: 8}}>{this.state.error.message}</p>
+        <pre style={{fontSize: 11}}>{this.state.error.stack?.slice(0,800)}</pre>
+        <pre style={{fontSize: 10, color: "#ff8888"}}>{this.state.info}</pre>
+        <button onClick={() => this.setState({error: null, info: ""})} style={{marginTop: 12, color: "white", background: "#600", padding: "4px 12px"}}>Retry</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
+class TabErrorBoundary extends React.Component<{children: React.ReactNode; tabName?: string}, {error: Error | null}> {
+  constructor(props: any) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: React.ErrorInfo) { console.error("[TabErrorBoundary]", error, info); }
+  render() {
+    if (this.state.error) return (
+      <div className="p-6 border border-red-500/40 rounded-lg bg-red-500/10 space-y-2">
+        <p className="font-display font-bold uppercase tracking-wider text-sm text-red-400">Component Error — {this.props.tabName ?? "Tab"}</p>
+        <pre className="text-xs text-red-300 whitespace-pre-wrap break-all">{this.state.error.message}</pre>
+        <pre className="text-xs text-red-300/60 whitespace-pre-wrap break-all">{this.state.error.stack?.slice(0,500)}</pre>
+        <button onClick={() => this.setState({ error: null })} className="text-xs text-red-400 underline">Retry</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
 
 interface Role { id: number; name: string; description: string | null; sortOrder: number }
 interface Rank { id: number; name: string; abbreviation: string | null; tier: number }
@@ -90,40 +136,32 @@ interface GroupDetail {
 
 type Tab = "roles" | "ranks" | "roster" | "recognition" | "stream" | "questions" | "operations" | "readiness" | "analytics" | "campaigns" | "reputation" | "loa" | "calendar" | "pipeline" | "legacy" | "developer" | "troops" | "events" | "eventhub" | "onboarding" | "criteria" | "doctrine";
 
-export default function MilsimManage() {
+export default function MilsimManage() { return <PageErrorBoundary><MilsimManageInner /></PageErrorBoundary>; }
+
+function MilsimManageInner() {
   const [, setLocation] = useLocation();
+  const [tab, setTabState] = useState<Tab>(() => {
+    try {
+      const saved = localStorage.getItem("milsimManageTab") as Tab | null;
+      return saved ?? "doctrine";
+    } catch { return "doctrine"; }
+  });
+  const setTab = (t: Tab) => {
+    setTabState(t);
+    try { localStorage.setItem("milsimManageTab", t); } catch {}
+  };
   const [group, setGroup] = useState<GroupDetail | null | undefined>(undefined);
-  const [tab, setTab] = useState<Tab>("doctrine");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
-    apiFetch<GroupDetail | null>("/api/milsim-groups/mine/own")
+    apiFetch<GroupDetail | null>("/milsimGroups?path=mine/own")
       .then(setGroup)
       .catch(() => setGroup(null));
   }, []);
 
-  if (group === undefined) return (
-    <PortalLayout>
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-      </div>
-    </PortalLayout>
-  );
-
-  if (group === null) return (
-    <PortalLayout>
-      <div className="text-center py-24 border border-dashed border-border rounded-lg">
-        <Shield className="w-14 h-14 text-muted-foreground mx-auto mb-4 opacity-30" />
-        <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-3">No Group Registered</h2>
-        <p className="text-muted-foreground font-sans mb-6">You haven't registered a MilSim group yet.</p>
-        <button onClick={() => setLocation("/milsim/register")}
-          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-widest text-sm px-6 py-3 rounded clip-angled-sm transition-all">
-          <Plus className="w-4 h-4" /> Register Your Unit
-        </button>
-      </div>
-    </PortalLayout>
-  );
+  // NOTE: No early returns here — early returns unmount the component and reset useState (including tab).
+  // Instead we use inline conditionals in the render so tab state persists across group load.
 
   const showMsg = (okOrText: boolean | string, textOrType?: string) => {
     // Accept both (ok: boolean, text: string) and (text: string, type: "success"|"error")
@@ -156,15 +194,16 @@ export default function MilsimManage() {
       ],
     },
     {
-      label: "Events",
+      label: "Operational Management",
       items: [
-        { id: "eventhub", label: "Events", icon: Siren },
+        { id: "eventhub", label: "Operational Management", icon: Siren },
       ],
     },
     {
-      label: "Recognition",
+      label: "Customisation",
+      pro: true,
       items: [
-        { id: "recognition", label: "Recognition", icon: Medal },
+        { id: "recognition", label: "Customisation", icon: Medal, pro: true },
         { id: "legacy", label: "Unit Legacy", icon: Archive, pro: true },
         { id: "developer", label: "API & Webhooks", icon: GitBranch, pro: true },
       ],
@@ -184,6 +223,28 @@ export default function MilsimManage() {
       ],
     },
   ];
+
+  if (group === undefined) return (
+    <PortalLayout>
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      </div>
+    </PortalLayout>
+  );
+
+  if (group === null) return (
+    <PortalLayout>
+      <div className="text-center py-24 border border-dashed border-border rounded-lg">
+        <Shield className="w-14 h-14 text-muted-foreground mx-auto mb-4 opacity-30" />
+        <h2 className="font-display font-black text-xl uppercase tracking-wider text-foreground mb-3">No Group Registered</h2>
+        <p className="text-muted-foreground font-sans mb-6">You haven't registered a MilSim group yet.</p>
+        <button onClick={() => setLocation("/milsim/register")}
+          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-widest text-sm px-6 py-3 rounded clip-angled-sm transition-all">
+          <Plus className="w-4 h-4" /> Register Your Unit
+        </button>
+      </div>
+    </PortalLayout>
+  );
 
   return (
     <PortalLayout>
@@ -225,7 +286,14 @@ export default function MilsimManage() {
           <nav className="w-52 shrink-0 space-y-5">
             {NAV_GROUPS.map((group_nav) => (
               <div key={group_nav.label}>
-                <p className="text-[9px] font-display font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-3 mb-1.5">{group_nav.label}</p>
+                <div className="flex items-center gap-1.5 px-3 mb-1.5">
+                  <p className="text-[9px] font-display font-black uppercase tracking-[0.2em] text-muted-foreground/50">{group_nav.label}</p>
+                  {(group_nav as any).pro && (
+                    <span className="flex items-center gap-0.5 text-[8px] font-display font-black uppercase tracking-widest px-1 py-0.5 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30">
+                      <Crown className="w-2 h-2" /> Pro
+                    </span>
+                  )}
+                </div>
                 <div className="space-y-0.5">
                   {group_nav.items.map((item) => (
                     <button
@@ -254,7 +322,7 @@ export default function MilsimManage() {
               {tab === "roles" && <RolesTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "ranks" && <RanksTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "roster" && <RosterTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
-              {tab === "recognition" && <RecognitionTab group={group} showMsg={showMsg} />}
+              {tab === "recognition" && <TabErrorBoundary tabName="Customisation"><CustomisationTab group={group} showMsg={showMsg} /></TabErrorBoundary>}
               {tab === "eventhub" && <EventHubTab group={group} showMsg={showMsg} />}
               {tab === "onboarding" && <OnboardingTab group={group} onUpdated={setGroup} showMsg={showMsg} />}
               {tab === "events" && <EventsTab group={group} showMsg={showMsg} />}
@@ -345,7 +413,7 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const onSubmit = async (data: any) => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ ...data, banner_url: data.bannerUrl }) });
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, { method: "PATCH", body: JSON.stringify({ ...data, banner_url: data.bannerUrl }) });
       onSaved(updated);
       showMsg(true, "Group info saved.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -456,7 +524,7 @@ function InfoTab({ group, onSaved, setSaving, saving, showMsg }: any) {
 const _PRO_STATUS_URL_MANAGE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/getProStatus";
 
 /* ─── Doctrine Tab (Info + SOPs + Org Chart + Training Docs) ──────────────── */
-type DoctrineSubTab = "info" | "sops" | "orbat" | "orgchart" | "training";
+type DoctrineSubTab = "info" | "sops" | "orgchart" | "training";
 
 function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const [sub, setSub] = useState<DoctrineSubTab>("info");
@@ -464,7 +532,6 @@ function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const SUB_TABS: { id: DoctrineSubTab; label: string; icon: typeof Shield }[] = [
     { id: "info",      label: "Unit Info",      icon: Shield },
     { id: "sops",      label: "SOPs",           icon: BookOpen },
-    { id: "orbat",     label: "ORBAT",          icon: GitBranch },
     { id: "orgchart",  label: "Org Chart",      icon: GitBranch },
     { id: "training",  label: "Training Docs",  icon: Brain },
   ];
@@ -490,7 +557,6 @@ function DoctrineTab({ group, onSaved, setSaving, saving, showMsg }: any) {
       <motion.div key={sub} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.12 }}>
         {sub === "info"     && <InfoTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
         {sub === "sops"     && <SopsOnlyTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
-        {sub === "orbat"    && <OrbatOnlyTab group={group} onSaved={onSaved} setSaving={setSaving} saving={saving} showMsg={showMsg} />}
         {sub === "orgchart" && <OrgChartTab group={group} />}
         {sub === "training" && <TrainingDocsTab group={group} showMsg={showMsg} />}
       </motion.div>
@@ -504,7 +570,7 @@ function SopsOnlyTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const saveSops = async () => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: sopsText, orbat: group.orbat }) });
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: sopsText, orbat: group.orbat }) });
       onSaved(updated);
       showMsg(true, "SOPs saved.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -536,7 +602,34 @@ function OrbatOnlyTab({ group, onSaved, setSaving, saving, showMsg }: any) {
   const saveOrbat = async () => {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
+      onSaved(updated);
+      showMsg(true, "ORBAT saved.");
+    } catch (e: any) { showMsg(false, e.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 mb-2">
+        <GitBranch className="w-5 h-5 text-primary" />
+        <h2 className="font-display font-black text-lg uppercase tracking-wider text-foreground">ORBAT Builder</h2>
+        <span className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/30">
+          <Crown className="w-2.5 h-2.5" /> Pro
+        </span>
+      </div>
+      <OrbatProGate group={group} orbatJson={orbatJson} setOrbatJson={setOrbatJson} saveOrbat={saveOrbat} saving={saving} />
+    </div>
+  );
+}
+
+function OrbatStandaloneTab({ group, onSaved, setSaving, saving, showMsg }: any) {
+  const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
+
+  const saveOrbat = async () => {
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
       onSaved(updated);
       showMsg(true, "ORBAT saved.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -602,16 +695,16 @@ function OrbatProGate({ group, orbatJson, setOrbatJson, saveOrbat, saving }: any
 
 // ─── Troop Management Tab (Roles + Ranks + Roster + Pipeline + LOA + Reputation) ──
 function TroopManagementTab({ group, onUpdated, showMsg }: any) {
-  type TTSub = "roster" | "roles" | "ranks" | "pipeline" | "loa" | "reputation";
+  type TTSub = "roster" | "roles" | "ranks" | "coc" | "loa" | "reputation";
   const [sub, setSub] = useState<TTSub>("roster");
 
   const SUBS: { id: TTSub; label: string; icon: React.ReactNode; pro?: boolean }[] = [
-    { id: "roster",     label: "Roster",      icon: <Users className="w-3.5 h-3.5" /> },
-    { id: "roles",      label: "Roles",       icon: <Crosshair className="w-3.5 h-3.5" /> },
-    { id: "ranks",      label: "Ranks",       icon: <Award className="w-3.5 h-3.5" /> },
-    { id: "pipeline",   label: "Pipeline",    icon: <UserCheck className="w-3.5 h-3.5" /> },
-    { id: "loa",        label: "LOA Manager", icon: <PlaneTakeoff className="w-3.5 h-3.5" /> },
-    { id: "reputation", label: "Service Files", icon: <Star className="w-3.5 h-3.5" /> },
+    { id: "roster",     label: "Roster",           icon: <Users className="w-3.5 h-3.5" /> },
+    { id: "roles",      label: "Roles",            icon: <Crosshair className="w-3.5 h-3.5" /> },
+    { id: "ranks",      label: "Ranks",            icon: <Award className="w-3.5 h-3.5" /> },
+    { id: "coc",        label: "Chain of Command", icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+    { id: "loa",        label: "LOA Manager",      icon: <PlaneTakeoff className="w-3.5 h-3.5" /> },
+    { id: "reputation", label: "Service Files",    icon: <Star className="w-3.5 h-3.5" /> },
   ];
 
   return (
@@ -635,27 +728,252 @@ function TroopManagementTab({ group, onUpdated, showMsg }: any) {
         ))}
       </div>
 
-      {sub === "roster"     && <RosterTab     group={group} onUpdated={onUpdated} showMsg={showMsg} />}
-      {sub === "roles"      && <RolesTab      group={group} onUpdated={onUpdated} showMsg={showMsg} />}
-      {sub === "ranks"      && <RanksTab      group={group} onUpdated={onUpdated} showMsg={showMsg} />}
-      {sub === "pipeline"   && <RecruitPipelineTab group={group} showMsg={showMsg} />}
-      {sub === "loa"        && <LOATab        group={group} showMsg={showMsg} />}
-      {sub === "reputation" && <ReputationTab group={group} />}
+      {sub === "roster"     && <RosterTab          group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "roles"      && <RolesTab           group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "ranks"      && <RanksTab           group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "coc"        && <ChainOfCommandTab  group={group} onUpdated={onUpdated} showMsg={showMsg} />}
+      {sub === "loa"        && <LOATab             group={group} showMsg={showMsg} />}
+      {sub === "reputation" && <ReputationTab      group={group} />}
+    </div>
+  );
+}
+
+
+// ─── Chain of Command Tab ─────────────────────────────────────────────────────
+
+const DEFAULT_COC_POSITIONS = [
+  { id: "co",       title: "Commanding Officer (CO)",           sort_order: 1 },
+  { id: "xo",       title: "Executive Officer (XO)",           sort_order: 2 },
+  { id: "adjutant", title: "Adjutant",                         sort_order: 3 },
+  { id: "rsm",      title: "Regimental Sergeant Major (RSM)",  sort_order: 4 },
+  { id: "cqms",     title: "CQMS / QM",                       sort_order: 5 },
+  { id: "s2",       title: "Intelligence Officer (S2 / IO)",   sort_order: 6 },
+  { id: "s3",       title: "Operations Officer (S3 / OC Ops)", sort_order: 7 },
+  { id: "s4",       title: "Logistics Officer (S4)",           sort_order: 8 },
+  { id: "sig",      title: "Signals Officer (Sigs)",           sort_order: 9 },
+  { id: "med",      title: "Medical Officer (MO)",             sort_order: 10 },
+];
+
+interface CoCPosition {
+  id: string;
+  title: string;
+  roster_id: string;
+  callsign: string;
+  sort_order: number;
+}
+
+function ChainOfCommandTab({ group, onUpdated, showMsg }: any) {
+  const [positions, setPositions] = useState<CoCPosition[]>(() => {
+    const saved: CoCPosition[] = Array.isArray(group.chain_of_command) ? group.chain_of_command : [];
+    const map: Record<string, CoCPosition> = {};
+    DEFAULT_COC_POSITIONS.forEach(d => { map[d.id] = { ...d, roster_id: "", callsign: "" }; });
+    saved.forEach((s: CoCPosition) => { map[s.id] = s; });
+    saved.forEach((s: CoCPosition) => { if (!map[s.id]) map[s.id] = s; });
+    return Object.values(map).sort((a, b) => a.sort_order - b.sort_order);
+  });
+  const [saving, setSaving] = useState(false);
+  const [addingNew, setAddingNew] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const dragItem = useRef<number | null>(null);
+  const dragOver = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
+  const roster: any[] = group.roster ?? [];
+
+  const updatePosition = (id: string, field: keyof CoCPosition, value: string) => {
+    setPositions(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      if (field === "roster_id") {
+        const member = roster.find((r: any) => r.id === value);
+        return { ...p, roster_id: value, callsign: member?.callsign ?? "" };
+      }
+      return { ...p, [field]: value };
+    }));
+  };
+
+  const removePosition = (id: string) => {
+    setPositions(prev => prev.filter(p => p.id !== id));
+  };
+
+  const addPosition = () => {
+    if (!newTitle.trim()) return;
+    const newId = `custom_${Date.now()}`;
+    setPositions(prev => [...prev, { id: newId, title: newTitle.trim(), roster_id: "", callsign: "", sort_order: prev.length + 1 }]);
+    setNewTitle("");
+    setAddingNew(false);
+  };
+
+  const handleDragStart = (idx: number) => {
+    dragItem.current = idx;
+  };
+  const handleDragEnter = (idx: number) => {
+    dragOver.current = idx;
+    setDragOverIdx(idx);
+  };
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOver.current === null || dragItem.current === dragOver.current) {
+      dragItem.current = null;
+      dragOver.current = null;
+      setDragOverIdx(null);
+      return;
+    }
+    setPositions(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(dragItem.current!, 1);
+      next.splice(dragOver.current!, 0, moved);
+      return next.map((p, i) => ({ ...p, sort_order: i + 1 }));
+    });
+    dragItem.current = null;
+    dragOver.current = null;
+    setDragOverIdx(null);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, {
+        method: "PATCH",
+        body: JSON.stringify({ chain_of_command: positions }),
+      });
+      onUpdated(updated);
+      showMsg("Chain of Command saved.", "success");
+    } catch (e: any) {
+      showMsg(e.message ?? "Failed to save.", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display font-bold uppercase tracking-widest text-sm text-foreground">Chain of Command</h3>
+          <p className="text-xs text-muted-foreground font-sans mt-1">Drag rows to reorder. Assign roster members to command positions. Titles are fully editable.</p>
+        </div>
+        <button onClick={save} disabled={saving}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded font-display font-bold uppercase tracking-widest text-xs hover:bg-primary/90 transition-colors disabled:opacity-60">
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+          Save
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {positions.map((pos, idx) => (
+          <div
+            key={pos.id}
+            draggable
+            onDragStart={() => handleDragStart(idx)}
+            onDragEnter={() => handleDragEnter(idx)}
+            onDragEnd={handleDragEnd}
+            onDragOver={e => e.preventDefault()}
+            className={[
+              "bg-card border rounded p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 transition-all select-none",
+              dragOverIdx === idx && dragItem.current !== idx
+                ? "border-primary/70 bg-primary/5 scale-[1.01]"
+                : "border-border"
+            ].join(" ")}
+          >
+            {/* Drag handle */}
+            <div className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 pt-0.5" title="Drag to reorder">
+              <svg width="12" height="20" viewBox="0 0 12 20" fill="currentColor">
+                <circle cx="3" cy="4" r="1.5"/><circle cx="9" cy="4" r="1.5"/>
+                <circle cx="3" cy="10" r="1.5"/><circle cx="9" cy="10" r="1.5"/>
+                <circle cx="3" cy="16" r="1.5"/><circle cx="9" cy="16" r="1.5"/>
+              </svg>
+            </div>
+            {/* Position number */}
+            <span className="text-[10px] font-display font-bold text-muted-foreground/50 tracking-widest shrink-0 w-5 text-center">{idx + 1}</span>
+            {/* Position title — editable */}
+            <div className="flex-1 min-w-0">
+              <input
+                value={pos.title}
+                onChange={e => updatePosition(pos.id, "title", e.target.value)}
+                onMouseDown={e => e.stopPropagation()}
+                className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-display font-bold uppercase tracking-wider text-foreground focus:outline-none focus:border-primary transition-colors"
+                placeholder="Position title…"
+              />
+            </div>
+            {/* Roster member select */}
+            <div className="w-full sm:w-56 shrink-0">
+              <select
+                value={pos.roster_id}
+                onChange={e => updatePosition(pos.id, "roster_id", e.target.value)}
+                onMouseDown={e => e.stopPropagation()}
+                className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground focus:outline-none focus:border-primary transition-colors"
+              >
+                <option value="">— Unassigned —</option>
+                {roster.filter((r: any) => r.status === "Active" || r.status === "active").map((r: any) => (
+                  <option key={r.id} value={r.id}>{r.callsign}</option>
+                ))}
+              </select>
+            </div>
+            {/* Callsign display */}
+            {pos.callsign && (
+              <span className="text-xs font-display font-bold text-primary tracking-wider shrink-0">{pos.callsign}</span>
+            )}
+            {/* Remove */}
+            <button onClick={() => removePosition(pos.id)}
+              className="p-1.5 text-muted-foreground hover:text-destructive transition-colors shrink-0 ml-auto sm:ml-0">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Add new position */}
+      {addingNew ? (
+        <div className="flex items-center gap-2">
+          <input value={newTitle} onChange={e => setNewTitle(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addPosition()}
+            autoFocus
+            className="flex-1 bg-background border border-border rounded px-3 py-2 text-sm font-display font-bold uppercase tracking-wider text-foreground focus:outline-none focus:border-primary transition-colors"
+            placeholder="New position title…" />
+          <button onClick={addPosition} className="px-3 py-2 bg-primary text-primary-foreground rounded text-xs font-display font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors">Add</button>
+          <button onClick={() => setAddingNew(false)} className="px-3 py-2 border border-border rounded text-xs font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+        </div>
+      ) : (
+        <button onClick={() => setAddingNew(true)}
+          className="flex items-center gap-2 text-xs font-display font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
+          <Plus className="w-3.5 h-3.5" /> Add Custom Position
+        </button>
+      )}
+
+      {/* CoC display preview */}
+      {positions.some(p => p.callsign) && (
+        <div className="border border-border rounded p-5 bg-secondary/20">
+          <p className="text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-4">Preview — How members appear across the platform</p>
+          <div className="space-y-2">
+            {positions.filter(p => p.callsign).map(pos => (
+              <div key={pos.id} className="flex items-center gap-3">
+                <span className="font-display font-bold text-sm text-foreground">{pos.callsign}</span>
+                <span className="text-xs font-display font-bold text-primary uppercase tracking-wider px-2 py-0.5 border border-primary/30 rounded bg-primary/10">
+                  {pos.title.split("(")[0].trim()} of {group.name}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 
 function RolesTab({ group, onUpdated, showMsg }: any) {
-  const [roles, setRoles] = useState<Role[]>(group.roles);
+  const [roles, setRoles] = useState<Role[]>([...(group.roles || [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
   const [name, setName] = useState(""); const [desc, setDesc] = useState("");
   const [adding, setAdding] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const dragItem = useRef<number | null>(null);
+  const dragOver = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const add = async () => {
     if (!name.trim()) return;
     setAdding(true);
     try {
-      const role = await apiFetch<Role>(`/api/milsim-groups/${group.id}/roles`, { method: "POST", body: JSON.stringify({ name, description: desc || undefined, sortOrder: roles.length }) });
+      const role = await apiFetch<Role>(`/milsimGroups?path=${group.id}/roles`, { method: "POST", body: JSON.stringify({ name, description: desc || undefined, sortOrder: roles.length }) });
       const updated = [...roles, role]; setRoles(updated); onUpdated({ ...group, roles: updated });
       setName(""); setDesc(""); showMsg(true, "Role added.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -664,22 +982,73 @@ function RolesTab({ group, onUpdated, showMsg }: any) {
 
   const remove = async (id: number) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/roles/${id}`, { method: "DELETE" });
+      await apiFetch(`/milsimGroups?path=${group.id}/roles/${id}`, { method: "DELETE" });
       const updated = roles.filter((r) => r.id !== id); setRoles(updated); onUpdated({ ...group, roles: updated });
     } catch (e: any) { showMsg(false, e.message); }
   };
 
+  const handleDragStart = (idx: number) => { dragItem.current = idx; };
+  const handleDragEnter = (idx: number) => { dragOver.current = idx; setDragOverIdx(idx); };
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOver.current === null || dragItem.current === dragOver.current) {
+      dragItem.current = null; dragOver.current = null; setDragOverIdx(null); return;
+    }
+    setRoles(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(dragItem.current!, 1);
+      next.splice(dragOver.current!, 0, moved);
+      return next.map((r, i) => ({ ...r, sort_order: i }));
+    });
+    dragItem.current = null; dragOver.current = null; setDragOverIdx(null);
+  };
+
+  const saveOrder = async () => {
+    setSavingOrder(true);
+    try {
+      await apiFetch(`/milsimGroups?path=${group.id}/roles/reorder`, {
+        method: "PATCH",
+        body: JSON.stringify({ order: roles.map((r, i) => ({ id: r.id, sort_order: i })) }),
+      });
+      showMsg(true, "Role order saved.");
+    } catch (e: any) { showMsg(false, e.message); }
+    finally { setSavingOrder(false); }
+  };
+
   return (
     <div className="max-w-2xl space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground font-sans">Drag rows to reorder. Click save when done.</p>
+        <button onClick={saveOrder} disabled={savingOrder}
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded font-display font-bold uppercase tracking-widest text-xs hover:bg-primary/90 transition-colors disabled:opacity-60">
+          {savingOrder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save Order
+        </button>
+      </div>
       <div className="space-y-2">
         {roles.length === 0 && <p className="text-muted-foreground font-sans text-sm">No roles added yet.</p>}
-        {roles.map((r) => (
-          <div key={r.id} className="flex items-center justify-between gap-3 bg-card border border-border rounded-lg px-4 py-3">
-            <div>
+        {roles.map((r, idx) => (
+          <div key={r.id}
+            draggable
+            onDragStart={() => handleDragStart(idx)}
+            onDragEnter={() => handleDragEnter(idx)}
+            onDragEnd={handleDragEnd}
+            onDragOver={e => e.preventDefault()}
+            className={[
+              "flex items-center gap-3 bg-card border rounded-lg px-4 py-3 transition-all select-none",
+              dragOverIdx === idx && dragItem.current !== idx ? "border-primary/70 bg-primary/5 scale-[1.01]" : "border-border"
+            ].join(" ")}>
+            <div className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0">
+              <svg width="12" height="20" viewBox="0 0 12 20" fill="currentColor">
+                <circle cx="3" cy="4" r="1.5"/><circle cx="9" cy="4" r="1.5"/>
+                <circle cx="3" cy="10" r="1.5"/><circle cx="9" cy="10" r="1.5"/>
+                <circle cx="3" cy="16" r="1.5"/><circle cx="9" cy="16" r="1.5"/>
+              </svg>
+            </div>
+            <span className="text-[10px] font-display font-bold text-muted-foreground/50 tracking-widest w-5 text-center shrink-0">{idx + 1}</span>
+            <div className="flex-1 min-w-0">
               <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{r.name}</p>
               {r.description && <p className="text-xs text-muted-foreground font-sans">{r.description}</p>}
             </div>
-            <button onClick={() => remove(r.id)} className="text-muted-foreground hover:text-destructive transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => remove(r.id)} className="text-muted-foreground hover:text-destructive transition-colors p-1 shrink-0"><Trash2 className="w-4 h-4" /></button>
           </div>
         ))}
       </div>
@@ -697,16 +1066,20 @@ function RolesTab({ group, onUpdated, showMsg }: any) {
 }
 
 function RanksTab({ group, onUpdated, showMsg }: any) {
-  const [ranks, setRanks] = useState<Rank[]>(group.ranks);
+  const [ranks, setRanks] = useState<Rank[]>([...(group.ranks || [])].sort((a, b) => (a.sort_order ?? b.tier ?? 0) - (b.sort_order ?? a.tier ?? 0)));
   const [name, setName] = useState(""); const [abbr, setAbbr] = useState(""); const [tier, setTier] = useState("0");
   const [adding, setAdding] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const dragItem = useRef<number | null>(null);
+  const dragOver = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const add = async () => {
     if (!name.trim()) return;
     setAdding(true);
     try {
-      const rank = await apiFetch<Rank>(`/api/milsim-groups/${group.id}/ranks`, { method: "POST", body: JSON.stringify({ name, abbreviation: abbr || undefined, tier: parseInt(tier) || 0 }) });
-      const updated = [...ranks, rank].sort((a, b) => b.tier - a.tier);
+      const rank = await apiFetch<Rank>(`/milsimGroups?path=${group.id}/ranks`, { method: "POST", body: JSON.stringify({ name, abbreviation: abbr || undefined, tier: parseInt(tier) || 0 }) });
+      const updated = [...ranks, rank];
       setRanks(updated); onUpdated({ ...group, ranks: updated });
       setName(""); setAbbr(""); setTier("0"); showMsg(true, "Rank added.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -715,25 +1088,76 @@ function RanksTab({ group, onUpdated, showMsg }: any) {
 
   const remove = async (id: number) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/ranks/${id}`, { method: "DELETE" });
+      await apiFetch(`/milsimGroups?path=${group.id}/ranks/${id}`, { method: "DELETE" });
       const updated = ranks.filter((r) => r.id !== id); setRanks(updated); onUpdated({ ...group, ranks: updated });
     } catch (e: any) { showMsg(false, e.message); }
   };
 
+  const handleDragStart = (idx: number) => { dragItem.current = idx; };
+  const handleDragEnter = (idx: number) => { dragOver.current = idx; setDragOverIdx(idx); };
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOver.current === null || dragItem.current === dragOver.current) {
+      dragItem.current = null; dragOver.current = null; setDragOverIdx(null); return;
+    }
+    setRanks(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(dragItem.current!, 1);
+      next.splice(dragOver.current!, 0, moved);
+      return next.map((r, i) => ({ ...r, sort_order: i }));
+    });
+    dragItem.current = null; dragOver.current = null; setDragOverIdx(null);
+  };
+
+  const saveOrder = async () => {
+    setSavingOrder(true);
+    try {
+      await apiFetch(`/milsimGroups?path=${group.id}/ranks/reorder`, {
+        method: "PATCH",
+        body: JSON.stringify({ order: ranks.map((r, i) => ({ id: r.id, sort_order: i })) }),
+      });
+      showMsg(true, "Rank order saved.");
+    } catch (e: any) { showMsg(false, e.message); }
+    finally { setSavingOrder(false); }
+  };
+
   return (
     <div className="max-w-2xl space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground font-sans">Drag rows to reorder. Click save when done.</p>
+        <button onClick={saveOrder} disabled={savingOrder}
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded font-display font-bold uppercase tracking-widest text-xs hover:bg-primary/90 transition-colors disabled:opacity-60">
+          {savingOrder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save Order
+        </button>
+      </div>
       <div className="space-y-2">
         {ranks.length === 0 && <p className="text-muted-foreground font-sans text-sm">No ranks added yet.</p>}
-        {ranks.map((r) => (
-          <div key={r.id} className="flex items-center justify-between gap-3 bg-card border border-border rounded-lg px-4 py-3">
-            <div className="flex items-center gap-3">
-              <span className="w-7 h-7 rounded bg-secondary border border-border flex items-center justify-center font-display font-black text-xs text-primary">{r.tier}</span>
+        {ranks.map((r, idx) => (
+          <div key={r.id}
+            draggable
+            onDragStart={() => handleDragStart(idx)}
+            onDragEnter={() => handleDragEnter(idx)}
+            onDragEnd={handleDragEnd}
+            onDragOver={e => e.preventDefault()}
+            className={[
+              "flex items-center gap-3 bg-card border rounded-lg px-4 py-3 transition-all select-none",
+              dragOverIdx === idx && dragItem.current !== idx ? "border-primary/70 bg-primary/5 scale-[1.01]" : "border-border"
+            ].join(" ")}>
+            <div className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0">
+              <svg width="12" height="20" viewBox="0 0 12 20" fill="currentColor">
+                <circle cx="3" cy="4" r="1.5"/><circle cx="9" cy="4" r="1.5"/>
+                <circle cx="3" cy="10" r="1.5"/><circle cx="9" cy="10" r="1.5"/>
+                <circle cx="3" cy="16" r="1.5"/><circle cx="9" cy="16" r="1.5"/>
+              </svg>
+            </div>
+            <span className="text-[10px] font-display font-bold text-muted-foreground/50 tracking-widest w-5 text-center shrink-0">{idx + 1}</span>
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <span className="w-7 h-7 rounded bg-secondary border border-border flex items-center justify-center font-display font-black text-xs text-primary shrink-0">{r.tier}</span>
               <div>
                 <p className="font-display font-bold uppercase tracking-wider text-sm text-foreground">{r.name}</p>
                 {r.abbreviation && <p className="text-xs text-muted-foreground font-mono">{r.abbreviation}</p>}
               </div>
             </div>
-            <button onClick={() => remove(r.id)} className="text-muted-foreground hover:text-destructive transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
+            <button onClick={() => remove(r.id)} className="text-muted-foreground hover:text-destructive transition-colors p-1 shrink-0"><Trash2 className="w-4 h-4" /></button>
           </div>
         ))}
       </div>
@@ -761,6 +1185,19 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
   const [newCallsign, setNewCallsign] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Build CoC lookup: roster_id → position title
+  const cocByRosterId: Record<string, string> = React.useMemo(() => {
+    const coc: any[] = Array.isArray(group.chain_of_command) ? group.chain_of_command : [];
+    const map: Record<string, string> = {};
+    coc.forEach((pos: any) => {
+      if (pos.roster_id) {
+        const short = pos.title.replace(/\(.*?\)/g, "").trim();
+        map[pos.roster_id] = short;
+      }
+    });
+    return map;
+  }, [group.chain_of_command]);
+
   const STATUSES = ["Active", "Reserve", "AWOL", "MIA", "KIA", "Discharged"];
 
   const openEdit = (e: RosterEntry) => {
@@ -772,7 +1209,7 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
     if (!editEntry) return;
     setSaving(true);
     try {
-      const updated = await apiFetch<RosterEntry>(`/api/milsim-groups/${group.id}/roster/${editEntry.id}`, {
+      const updated = await apiFetch<RosterEntry>(`/milsimGroups?path=${group.id}/roster/${editEntry.id}`, {
         method: "PATCH",
         body: JSON.stringify({
           callsign: editData.callsign,
@@ -796,7 +1233,7 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
     if (!newCallsign.trim()) return;
     setAdding(true);
     try {
-      const entry = await apiFetch<RosterEntry>(`/api/milsim-groups/${group.id}/roster`, {
+      const entry = await apiFetch<RosterEntry>(`/milsimGroups?path=${group.id}/roster`, {
         method: "POST",
         body: JSON.stringify({ callsign: newCallsign, status: "Active" }),
       });
@@ -809,7 +1246,7 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
 
   const remove = async (id: number) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/roster/${id}`, { method: "DELETE" });
+      await apiFetch(`/milsimGroups?path=${group.id}/roster/${id}`, { method: "DELETE" });
       const updated = roster.filter((r) => r.id !== id); setRoster(updated); onUpdated({ ...group, roster: updated });
       showMsg(true, "Operator removed.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -851,6 +1288,7 @@ function RosterTab({ group, onUpdated, showMsg }: any) {
                   </span>
                   {rank && <span className="text-[9px] text-primary font-display font-bold uppercase tracking-widest">{rank.name}</span>}
                   {role && <span className="text-[9px] text-muted-foreground font-display uppercase tracking-widest bg-secondary border border-border px-1.5 py-0.5 rounded">{role.name}</span>}
+                  {cocByRosterId[e.id] && <span className="text-[9px] font-display font-bold uppercase tracking-widest text-amber-400 border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 rounded">{cocByRosterId[e.id]}</span>}
                 </div>
                 {(e.specialisations ?? []).length > 0 && (
                   <div className="flex gap-1 mt-1 flex-wrap">
@@ -995,35 +1433,35 @@ const TYPE_DEFS = [
   { id: "qualification-patch", label: "Qual. Patch", Icon: GraduationCap, desc: "Skill or unit patch" },
 ] as const;
 
-function AwardImage({ path, fallbackIcon: FIcon }: { path: string | null | undefined; fallbackIcon: ElementType }) {
-  const cleanPath = path ? path.replace(/^\/objects\//, "") : null;
-  return (
-    <div className="w-14 h-14 rounded-lg bg-secondary border border-border shrink-0 overflow-hidden flex items-center justify-center">
-      {cleanPath ? (
-        <img src={`/api/storage/objects/${cleanPath}`} alt="" className="w-full h-full object-contain" />
-      ) : (
-        <FIcon className="w-7 h-7 text-primary opacity-40" />
-      )}
-    </div>
-  );
-}
 
+// ─── Customisation Tab (Awards + Qualifications + ORBAT) ─────────────────────
+function CustomisationTab({ group, showMsg }: any) {
+  const [sub, setSub] = useState<"awards" | "quals" | "orbat" | "tacplanner">("awards");
+  const [orbatJson, setOrbatJson] = useState(group.orbat ?? "");
+  const [saving, setSaving] = useState(false);
 
+  const saveOrbat = async () => {
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, { method: "PATCH", body: JSON.stringify({ sops: group.sops, orbat: orbatJson }) });
+      showMsg(true, "ORBAT saved.");
+    } catch (e: any) { showMsg(false, e.message); }
+    finally { setSaving(false); }
+  };
 
-// ─── Recognition Tab (Awards + Commendations + Qualifications merged) ────────
-function RecognitionTab({ group, showMsg }: any) {
-  const [sub, setSub] = useState<"awards" | "quals">("awards");
   const SUB_TABS = [
     { id: "awards" as const, label: "Awards",         icon: Medal },
-    { id: "quals" as const,  label: "Qualifications", icon: GraduationCap },
+    { id: "quals"  as const, label: "Qualifications", icon: GraduationCap },
+    { id: "orbat"  as const, label: "ORBAT Builder",  icon: GitBranch },
+    { id: "tacplanner" as const, label: "Battle Planner",  icon: Map },
   ];
   return (
     <div className="space-y-4">
       {/* Sub-tab pills */}
-      <div className="flex items-center gap-2 border-b border-border pb-3">
+      <div className="grid grid-cols-4 gap-1.5 border-b border-border pb-3">
         {SUB_TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setSub(id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-display font-bold uppercase tracking-wider transition-all border ${
+            className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded text-xs font-display font-bold uppercase tracking-wider transition-all border ${
               sub === id ? "bg-primary/15 border-primary/50 text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60"
             }`}>
             <Icon className="w-3.5 h-3.5" />{label}
@@ -1032,6 +1470,14 @@ function RecognitionTab({ group, showMsg }: any) {
       </div>
       {sub === "awards" && <AwardsTab group={group} showMsg={showMsg} />}
       {sub === "quals"  && <QualsTab  group={group} showMsg={showMsg} />}
+      {sub === "orbat"  && (
+        <OrbatProGate group={group} orbatJson={orbatJson} setOrbatJson={setOrbatJson} saveOrbat={saveOrbat} saving={saving} />
+      )}
+      {sub === "tacplanner" && (
+        <div style={{ height: "calc(100vh - 280px)", minHeight: 600 }}>
+          <TacticalPlanner group={group} showMsg={showMsg} />
+        </div>
+      )}
     </div>
   );
 }
@@ -1053,7 +1499,7 @@ async function uploadImageToStorage(file: File): Promise<string | null> {
     // Fallback: try via our backend function
     const fd2 = new FormData();
     fd2.append("file", file);
-    const res2 = await fetch("/api/storage/upload", { method: "POST", body: fd2, credentials: "include" });
+    const res2 = await fetch("/trainingDocs?path=upload", { method: "POST", body: fd2, credentials: "include" });
     if (!res2.ok) throw new Error("Upload failed");
     const d2 = await res2.json();
     return d2.url ?? d2.file_url ?? null;
@@ -1133,6 +1579,7 @@ function AwardsTab({ group, showMsg }: any) {
   const [pickerSearch, setPickerSearch] = useState<string>("");
   const [pickerPage, setPickerPage] = useState<number>(0);
   const [selectedTemplate, setSelectedTemplate] = useState<RibbonTemplate | null>(null);
+  const [pickerMods, setPickerMods] = useState<Record<string, string>>({}); // modifier selections for picker preview
   const [desc, setDesc] = useState("");
   const [creating, setCreating] = useState(false);
 
@@ -1208,14 +1655,25 @@ function AwardsTab({ group, showMsg }: any) {
     setSelectedTemplate(null);
     setPickerCountry(""); setPickerBranch("US Army"); setPickerSearch(""); setDesc(""); setPickerPage(0);
     setAwardName(""); setRibbonConfig({ colors: ["#1a3a6b","#c8102e","#ffffff"], pattern: "thirds" });
-    setCreateMode("build");
+    setCreateMode("build"); setPickerMods({});
   };
 
   const createDef = async () => {
     if (!selectedTemplate) { showMsg(false, "Select a ribbon first."); return; }
     setCreating(true);
     try {
-      const payload = { name: selectedTemplate!.name, description: desc || undefined, award_type: "ribbon", image_url: selectedTemplate!.url, source_country: selectedTemplate!.country, source_branch: selectedTemplate!.branch, sort_order: defs.length };
+      // Resolve modifier URL if user selected a grade variant
+      const modifiers = getRibbonModifiers(selectedTemplate!.url);
+      let resolvedUrl = selectedTemplate!.url;
+      let resolvedName = selectedTemplate!.name;
+      for (const mod of modifiers) {
+        if (mod.type === "select" && mod.options && pickerMods[mod.name]) {
+          const opt = mod.options.find(o => o.value === pickerMods[mod.name]);
+          if (opt?.url) resolvedUrl = opt.url;
+          resolvedName = `${selectedTemplate!.name} - ${pickerMods[mod.name]}`;
+        }
+      }
+      const payload = { name: resolvedName, description: desc || undefined, award_type: "ribbon", image_url: resolvedUrl, source_country: selectedTemplate!.country, source_branch: selectedTemplate!.branch, sort_order: defs.length };
       await apiFetch(`/milsimAwards?path=${group.id}/award-defs`, { method: "POST", body: JSON.stringify(payload) });
       resetForm();
       showMsg(true, "Award added to library.");
@@ -1319,7 +1777,7 @@ function AwardsTab({ group, showMsg }: any) {
                     <div className="flex items-center gap-4 p-4">
                       <div className="shrink-0 w-14 flex items-center justify-center">
                         {imgUrl
-                          ? <img src={imgUrl} alt={d.name} className="h-7 w-auto object-fill rounded-sm" />
+                          ? <img src={imgUrl} alt={d.name} className="h-7 w-20 object-cover rounded-sm" />
                           : <Medal className="w-6 h-6 text-muted-foreground opacity-40" />}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1418,7 +1876,7 @@ function AwardsTab({ group, showMsg }: any) {
               <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="font-display font-black text-xs uppercase tracking-widest text-primary">Add Award from Ribbon Library</p>
-                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">1,172 curated military ribbons — US, UK, Australia, Canada, NATO & 23 nations</p>
+                  <p className="text-[10px] font-sans text-muted-foreground mt-0.5">564 curated military ribbons — US, UK, Australia, Canada, NATO & 23 nations</p>
                 </div>
                 <button onClick={resetForm} className="text-muted-foreground hover:text-foreground transition-colors ml-4 shrink-0">
                   <XCircle className="w-4 h-4" />
@@ -1458,20 +1916,69 @@ function AwardsTab({ group, showMsg }: any) {
                 </div>
 
                 {/* Selected ribbon preview */}
-                {selectedTemplate && (
-                  <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/30 rounded-lg">
-                    <img src={selectedTemplate.url} alt={selectedTemplate.name}
-                      className="h-8 w-auto object-fill rounded-sm border border-white/10"
-                      onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-display font-bold text-sm uppercase tracking-wider text-primary truncate">{selectedTemplate.name}</p>
-                      <p className="text-[10px] text-muted-foreground font-sans">{selectedTemplate.country} — {selectedTemplate.branch}</p>
+                {selectedTemplate && (() => {
+                  const modifiers = getRibbonModifiers(selectedTemplate.url);
+                  const { activeImg, activeOverlay } = (() => {
+                    let img = selectedTemplate.url;
+                    let overlay: string | undefined;
+                    for (const mod of modifiers) {
+                      if (mod.type === "select" && mod.options) {
+                        const val = pickerMods[mod.name] ?? mod.options[0].value;
+                        const opt = mod.options.find(o => o.value === val);
+                        if (opt?.url) img = opt.url;
+                        if (opt?.overlayUrl) overlay = opt.overlayUrl;
+                      }
+                    }
+                    return { activeImg: img, activeOverlay: overlay };
+                  })();
+                  return (
+                    <div className="p-3 bg-primary/10 border border-primary/30 rounded-lg space-y-3">
+                      <div className="flex items-center gap-3">
+                        {activeOverlay ? (
+                          <div style={{ position: "relative", width: 96, height: 32, flexShrink: 0, borderRadius: 2, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
+                            <img src={activeImg} alt={selectedTemplate.name} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "fill" }} onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }} />
+                            <img src={activeOverlay} alt="device" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} />
+                          </div>
+                        ) : (
+                          <img src={activeImg} alt={selectedTemplate.name}
+                            className="h-8 w-24 object-cover rounded-sm border border-white/10"
+                            onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }} />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display font-bold text-sm uppercase tracking-wider text-primary truncate">
+                            {selectedTemplate.name}{pickerMods["class"] || pickerMods["branch"] ? ` — ${pickerMods["class"] || pickerMods["branch"]}` : ""}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-sans">{selectedTemplate.country} — {selectedTemplate.branch}</p>
+                        </div>
+                        <button onClick={() => { setSelectedTemplate(null); setPickerMods({}); }} className="text-muted-foreground hover:text-foreground shrink-0">
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {modifiers.length > 0 && (
+                        <div className="border-t border-primary/20 pt-2 space-y-2">
+                          <p className="text-[9px] font-display font-bold uppercase tracking-widest text-primary">Select Grade / Variant</p>
+                          {modifiers.map((mod) => (
+                            <div key={mod.name}>
+                              {mod.type === "select" && mod.options && (
+                                <div className="flex items-center gap-2">
+                                  <label className="text-[9px] text-muted-foreground font-sans uppercase tracking-wider w-20 shrink-0">{mod.label}</label>
+                                  <select
+                                    value={pickerMods[mod.name] ?? mod.options[0].value}
+                                    onChange={e => setPickerMods(prev => ({ ...prev, [mod.name]: e.target.value }))}
+                                    className="flex-1 text-[11px] bg-background border border-border rounded px-2 py-1 font-sans focus:outline-none focus:ring-1 focus:ring-primary/40">
+                                    {mod.options.map(opt => (
+                                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <button onClick={() => setSelectedTemplate(null)} className="text-muted-foreground hover:text-foreground shrink-0">
-                      <XCircle className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Ribbon grid */}
                 {!selectedTemplate && (
@@ -1480,6 +1987,10 @@ function AwardsTab({ group, showMsg }: any) {
                       <p className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">
                         {filteredTemplates.length} ribbons {pickerSearch || pickerCountry ? "matching filters" : "available"}
                         {totalPages > 1 && <span className="ml-1 text-primary">— page {pickerPage + 1}/{totalPages}</span>}
+                      </p>
+                      <p className="text-[9px] font-sans text-muted-foreground/60 ml-auto">
+                        <span className="inline-block w-2 h-2 rounded-full bg-primary/70 mr-1 align-middle" />
+                        = has grade variants
                       </p>
                       {totalPages > 1 && (
                         <div className="flex items-center gap-1">
@@ -1505,18 +2016,24 @@ function AwardsTab({ group, showMsg }: any) {
                       )}
                     </div>
                     <div className="max-h-72 overflow-y-auto p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                      {pagedTemplates.map((r, i) => (
-                        <button key={pickerPage * RIBBONS_PER_PAGE + i} onClick={() => setSelectedTemplate(r)}
-                          title={`${r.name} (${r.country})`}
-                          className="flex flex-col items-center gap-1 p-1.5 rounded border border-transparent hover:border-primary/50 hover:bg-primary/5 transition-all group">
-                          <img src={r.url} alt={r.name}
-                            className="h-5 w-auto object-fill rounded-sm"
-                            onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.15"; }} />
-                          <p className="text-[8px] font-sans text-muted-foreground text-center leading-tight line-clamp-2 group-hover:text-foreground w-full">
-                            {r.name.split(" (")[0]}
-                          </p>
-                        </button>
-                      ))}
+                      {pagedTemplates.map((r, i) => {
+                        const tileMods = getRibbonModifiers(r.url);
+                        return (
+                          <button key={pickerPage * RIBBONS_PER_PAGE + i} onClick={() => { setSelectedTemplate(r); setPickerMods({}); }}
+                            title={`${r.name} (${r.country})${tileMods.length > 0 ? ' — has grade variants' : ''}`}
+                            className="relative flex flex-col items-center gap-1 p-1.5 rounded border border-transparent hover:border-primary/50 hover:bg-primary/5 transition-all group">
+                            {tileMods.length > 0 && (
+                              <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-primary/70" title="Has grade variants" />
+                            )}
+                            <img src={r.url} alt={r.name}
+                              className="h-5 w-16 object-cover rounded-sm"
+                              onError={(e: any) => { (e.target as HTMLImageElement).style.opacity = "0.15"; }} />
+                            <p className="text-[8px] font-sans text-muted-foreground text-center leading-tight line-clamp-2 group-hover:text-foreground w-full">
+                              {r.name.split(" (")[0]}
+                            </p>
+                          </button>
+                        );
+                      })}
                       {filteredTemplates.length === 0 && (
                         <div className="col-span-6 text-center py-8 text-xs text-muted-foreground font-sans">
                           No ribbons match — try clearing filters
@@ -1564,7 +2081,7 @@ function AwardsTab({ group, showMsg }: any) {
               <div key={a.id} className="flex items-center gap-4 p-4 bg-card border border-border rounded-lg">
                 <div className="shrink-0 w-14 flex justify-center">
                   {a.award_image_url
-                    ? <img src={a.award_image_url} alt={a.award_name} className="h-7 w-auto object-fill rounded-sm" />
+                    ? <img src={a.award_image_url} alt={a.award_name} className="h-7 w-20 object-cover rounded-sm" />
                     : <Medal className="w-6 h-6 text-muted-foreground opacity-40" />}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1597,7 +2114,7 @@ function StreamTab({ group, onUpdated, showMsg }: any) {
   const save = async () => {
     setSaving(true);
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/stream`, {
+      await apiFetch(`/milsimGroups?path=${group.id}/stream`, {
         method: "PATCH",
         body: JSON.stringify({ streamUrl: streamUrl || null, isLive }),
       });
@@ -1725,7 +2242,7 @@ function SelectionCriteriaTab({ group, onUpdated, showMsg }: any) {
   async function handleSave() {
     setSaving(true);
     try {
-      const updated = await apiFetch(`/api/milsim-groups/${group.id}/info`, {
+      const updated = await apiFetch(`/milsimGroups?path=${group.id}/info`, {
         method: "PATCH",
         body: JSON.stringify({ selection_criteria: criteria }),
       });
@@ -1819,7 +2336,7 @@ function QuestionsTab({ group, onUpdated, showMsg }: any) {
     if (!question.trim()) return;
     setAdding(true);
     try {
-      const q = await apiFetch<AppQuestion>(`/api/milsim-groups/${group.id}/questions`, { method: "POST", body: JSON.stringify({ question, sortOrder: questions.length, required }) });
+      const q = await apiFetch<AppQuestion>(`/milsimGroups?path=${group.id}/questions`, { method: "POST", body: JSON.stringify({ question, sortOrder: questions.length, required }) });
       const updated = [...questions, q]; setQuestions(updated); onUpdated({ ...group, questions: updated });
       setQuestion(""); setRequired(true); showMsg(true, "Question added.");
     } catch (e: any) { showMsg(false, e.message); }
@@ -1828,7 +2345,7 @@ function QuestionsTab({ group, onUpdated, showMsg }: any) {
 
   const remove = async (id: number) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/questions/${id}`, { method: "DELETE" });
+      await apiFetch(`/milsimGroups?path=${group.id}/questions/${id}`, { method: "DELETE" });
       const updated = questions.filter((q) => q.id !== id); setQuestions(updated); onUpdated({ ...group, questions: updated });
     } catch (e: any) { showMsg(false, e.message); }
   };
@@ -1872,7 +2389,7 @@ function CommendationsTab({ group }: any) {
   const [awards, setAwards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    apiFetch<any[]>(`/api/milsim-groups/${group.id}/awards`)
+    apiFetch<any[]>(`/milsimGroups?path=${group.id}/awards`)
       .then(d => setAwards(Array.isArray(d) ? d : [])).catch(() => setAwards([])).finally(() => setLoading(false));
   }, [group.id]);
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -1918,24 +2435,24 @@ function QualsTab({ group, showMsg }: any) {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState(""); const [desc, setDesc] = useState(""); const [adding, setAdding] = useState(false);
   const [grantModal, setGrantModal] = useState<any | null>(null); const [grantRosterId, setGrantRosterId] = useState("");
-  const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/qualifications`).then(setQuals).catch(() => {}).finally(() => setLoading(false)); };
+  const load = () => { apiFetch<any[]>(`/milsimGroups?path=${group.id}/qualifications`).then(setQuals).catch(() => {}).finally(() => setLoading(false)); };
   useEffect(() => { load(); }, [group.id]);
   const add = async () => {
     if (!name.trim()) return; setAdding(true);
-    try { await apiFetch(`/api/milsim-groups/${group.id}/qualifications`, { method: "POST", body: JSON.stringify({ name, description: desc || undefined }) }); setName(""); setDesc(""); showMsg(true, "Qualification added."); load(); }
+    try { await apiFetch(`/milsimGroups?path=${group.id}/qualifications`, { method: "POST", body: JSON.stringify({ name, description: desc || undefined }) }); setName(""); setDesc(""); showMsg(true, "Qualification added."); load(); }
     catch (e: any) { showMsg(false, e.message); } finally { setAdding(false); }
   };
   const remove = async (qid: number) => {
-    try { await apiFetch(`/api/milsim-groups/${group.id}/qualifications/${qid}`, { method: "DELETE" }); showMsg(true, "Removed."); load(); }
+    try { await apiFetch(`/milsimGroups?path=${group.id}/qualifications/${qid}`, { method: "DELETE" }); showMsg(true, "Removed."); load(); }
     catch (e: any) { showMsg(false, e.message); }
   };
   const grant = async (qid: number) => {
     if (!grantRosterId) return;
-    try { await apiFetch(`/api/milsim-groups/${group.id}/qualifications/${qid}/grant`, { method: "POST", body: JSON.stringify({ rosterEntryId: parseInt(grantRosterId) }) }); showMsg(true, "Granted."); setGrantModal(null); setGrantRosterId(""); load(); }
+    try { await apiFetch(`/milsimGroups?path=${group.id}/qualifications/${qid}/grant`, { method: "POST", body: JSON.stringify({ rosterEntryId: parseInt(grantRosterId) }) }); showMsg(true, "Granted."); setGrantModal(null); setGrantRosterId(""); load(); }
     catch (e: any) { showMsg(false, e.message); }
   };
   const revokeGrant = async (qid: number, grantId: number) => {
-    try { await apiFetch(`/api/milsim-groups/${group.id}/qualifications/${qid}/grant/${grantId}`, { method: "DELETE" }); showMsg(true, "Revoked."); load(); }
+    try { await apiFetch(`/milsimGroups?path=${group.id}/qualifications/${qid}/grant/${grantId}`, { method: "DELETE" }); showMsg(true, "Revoked."); load(); }
     catch (e: any) { showMsg(false, e.message); }
   };
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -2024,37 +2541,41 @@ function EventHubTab({ group, showMsg }: any) {
 
 
 function EventsTab({ group, showMsg }: any) {
-  const [sub, setSub] = useState<"ops" | "aars" | "briefings" | "warnos" | "lace" | "sitrep" | "medevac" | "conduct">("ops");
+  const [sub, setSub] = useState<"ops" | "aars" | "warnos" | "lace" | "sitrep" | "medevac" | "conduct" | "intel">("ops");
   const SUB_TABS = [
-    { id: "ops" as const,       label: "Operations",  icon: Siren },
-    { id: "aars" as const,      label: "AARs",        icon: ClipboardList },
-    { id: "briefings" as const, label: "Briefings",   icon: MapPin },
-    { id: "warnos" as const,    label: "WARNOs",      icon: AlertTriangle },
-    { id: "lace" as const,      label: "LACE",        icon: Radio },
-    { id: "sitrep" as const,    label: "SITREPs",     icon: Target },
-    { id: "medevac" as const,   label: "MEDEVAC",     icon: Radio },
-    { id: "conduct" as const,   label: "Conduct",     icon: UserMinus2 },
+    { id: "ops" as const,     label: "Operations", icon: Siren },
+    { id: "aars" as const,    label: "AARs",       icon: ClipboardList },
+    { id: "warnos" as const,  label: "WARNOs",     icon: AlertTriangle },
+    { id: "lace" as const,    label: "LACE",       icon: Radio },
+    { id: "sitrep" as const,  label: "SITREPs",    icon: Target },
+    { id: "medevac" as const, label: "MEDEVAC",    icon: Radio },
+    { id: "conduct" as const, label: "Conduct",    icon: UserMinus2 },
+    { id: "intel" as const,   label: "Op Intel",   icon: BrainCircuit },
   ];
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 border-b border-border pb-3">
+    <div className="flex gap-0 min-h-[600px]">
+      <div className="w-44 shrink-0 border-r border-border flex flex-col gap-0.5 pr-2 pt-1">
         {SUB_TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setSub(id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-display font-bold uppercase tracking-wider transition-all border ${
-              sub === id ? "bg-primary/15 border-primary/50 text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            className={`flex items-center gap-2.5 px-3 py-2.5 rounded text-xs font-display font-bold uppercase tracking-wider transition-all text-left w-full ${
+              sub === id
+                ? "bg-primary/15 border border-primary/50 text-primary"
+                : "border border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60"
             }`}>
-            <Icon className="w-3.5 h-3.5" />{label}
+            <Icon className="w-3.5 h-3.5 shrink-0" />{label}
           </button>
         ))}
       </div>
-      {sub === "ops"       && <OpsTab       group={group} showMsg={showMsg} />}
-      {sub === "aars"      && <AARsTab      group={group} showMsg={showMsg} />}
-      {sub === "briefings" && <BriefingsTab group={group} showMsg={showMsg} />}
-      {sub === "warnos"    && <WarnosTab    group={group} showMsg={showMsg} />}
-      {sub === "lace"      && <LaceTab         group={group} showMsg={showMsg} />}
-      {sub === "sitrep"    && <SitrepTab        group={group} showMsg={showMsg} />}
-      {sub === "medevac"   && <MedevacTab         group={group} showMsg={showMsg} />}
-      {sub === "conduct"   && <ConductReportTab  group={group} showMsg={showMsg} />}
+      <div className="flex-1 min-w-0 pl-5">
+        {sub === "ops"     && <OpsTab           group={group} showMsg={showMsg} />}
+        {sub === "aars"    && <AARsTab          group={group} showMsg={showMsg} />}
+        {sub === "warnos"  && <WarnosTab        group={group} showMsg={showMsg} />}
+        {sub === "lace"    && <LaceTab          group={group} showMsg={showMsg} />}
+        {sub === "sitrep"  && <SitrepTab        group={group} showMsg={showMsg} />}
+        {sub === "medevac" && <MedevacTab       group={group} showMsg={showMsg} />}
+        {sub === "conduct" && <ConductReportTab group={group} showMsg={showMsg} />}
+        {sub === "intel"   && <OpIntelTab       group={group} showMsg={showMsg} />}
+      </div>
     </div>
   );
 }
@@ -2069,7 +2590,7 @@ function OpsTab({ group, showMsg }: any) {
   const [expandedOp, setExpandedOp] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [linkTarget, setLinkTarget] = useState<{ opId: string; type: "aar" | "briefing" } | null>(null);
+  const [linkTarget, setLinkTarget] = useState<{ opId: string; type: "aar" } | null>(null);
   const emptyForm = { name: "", description: "", game: "", event_type: "Op" as const, scheduled_at: "", end_date: "", status: "Planned" as const };
   const [form, setForm] = useState<any>(emptyForm);
   const [editOpId, setEditOpId] = useState<string | null>(null);
@@ -2130,7 +2651,7 @@ function OpsTab({ group, showMsg }: any) {
     } catch (e: any) { showMsg(e.message, "error"); }
   };
 
-  const unlinkDoc = async (docId: string, type: "aar" | "briefing") => {
+  const unlinkDoc = async (docId: string, type: "aar") => {
     try {
       if (type === "aar") await apiFetch("/milsimAars?path=link-op", { method: "POST", body: JSON.stringify({ aar_id: docId, op_id: null }) });
       else await apiFetch("/milsimBriefings?path=link-op", { method: "POST", body: JSON.stringify({ briefing_id: docId, op_id: null }) });
@@ -2160,12 +2681,12 @@ function OpsTab({ group, showMsg }: any) {
       {linkTarget && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md space-y-4">
-            <h3 className="font-display font-bold text-sm uppercase tracking-widest">Attach {linkTarget.type === "aar" ? "AAR" : "Briefing"}</h3>
+            <h3 className="font-display font-bold text-sm uppercase tracking-widest">Attach AAR</h3>
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {(linkTarget.type === "aar" ? unlinkedAars : unlinkedBriefings).length === 0 ? (
-                <p className="text-xs text-muted-foreground font-sans">No unlinked {linkTarget.type === "aar" ? "AARs" : "briefings"} available.</p>
+              {unlinkedAars.length === 0 ? (
+                <p className="text-xs text-muted-foreground font-sans">No unlinked AARs available.</p>
               ) : (
-                (linkTarget.type === "aar" ? unlinkedAars : unlinkedBriefings).map((doc: any) => (
+                unlinkedAars.map((doc: any) => (
                   <button key={doc.id} onClick={() => linkDoc(doc.id)} className="w-full text-left px-4 py-3 border border-border rounded-lg hover:bg-secondary/40 transition-colors">
                     <p className="font-display font-bold text-sm">{doc.title ?? doc.op_name}</p>
                     <p className="text-xs text-muted-foreground font-sans mt-0.5">{doc.author_username ?? doc.created_by ?? ""}</p>
@@ -2181,7 +2702,7 @@ function OpsTab({ group, showMsg }: any) {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="font-display font-bold text-lg uppercase tracking-widest">Live Ops</h2>
-          <p className="text-xs text-muted-foreground font-sans mt-0.5">Plan, run, and debrief operations. Attach briefings pre-op and AARs post-op.</p>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Plan, run, and debrief operations. Issue WARNOs pre-op and attach AARs post-op.</p>
         </div>
         <button onClick={() => { setShowCreateForm(v => !v); setEditOpId(null); setForm(emptyForm); }}
           className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors">
@@ -2214,7 +2735,6 @@ function OpsTab({ group, showMsg }: any) {
         <div className="space-y-3">
           {[...ops].sort((a,b) => new Date(b.scheduled_at ?? b.created_date).getTime() - new Date(a.scheduled_at ?? a.created_date).getTime()).map((op: any) => {
             const linkedAars = opAars(op.id);
-            const linkedBriefs = opBriefings(op.id);
             const isExpanded = expandedOp === op.id;
             const isActive = op.status === "Active";
             return (
@@ -2228,7 +2748,6 @@ function OpsTab({ group, showMsg }: any) {
                     {op.game && <span className="text-xs text-muted-foreground font-sans hidden md:block">{op.game}</span>}
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0 text-xs text-muted-foreground font-sans">
-                    {linkedBriefs.length > 0 && <span className="flex items-center gap-1 text-blue-400"><MapPin className="w-3 h-3" />{linkedBriefs.length}</span>}
                     {linkedAars.length > 0 && <span className="flex items-center gap-1 text-green-400"><ClipboardList className="w-3 h-3" />{linkedAars.length}</span>}
                     {op.scheduled_at && <span>{new Date(op.scheduled_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span>}
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -2245,22 +2764,7 @@ function OpsTab({ group, showMsg }: any) {
                         className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 border border-border text-muted-foreground rounded hover:text-primary transition-colors"><Pencil className="w-3 h-3" /> Edit</button>
                       <button onClick={() => deleteOp(op.id)} className="flex items-center gap-1 text-[10px] font-display font-bold uppercase tracking-widest px-2 py-1 border border-red-500/30 text-red-400 rounded hover:bg-red-500/10 transition-colors"><Trash2 className="w-3 h-3" /> Delete</button>
                     </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-display font-bold uppercase tracking-widest text-blue-400 flex items-center gap-1.5"><MapPin className="w-3 h-3" /> Briefings</p>
-                        <button onClick={() => setLinkTarget({ opId: op.id, type: "briefing" })} className="flex items-center gap-1 text-[10px] font-display font-bold uppercase text-muted-foreground border border-border rounded px-2 py-0.5 hover:text-primary transition-colors"><Plus className="w-3 h-3" /> Attach</button>
-                      </div>
-                      {linkedBriefs.length === 0 ? <p className="text-xs text-muted-foreground font-sans italic">No briefings attached.</p> : (
-                        <div className="space-y-1.5">
-                          {linkedBriefs.map((b: any) => (
-                            <div key={b.id} className="flex items-center justify-between px-3 py-2 bg-blue-500/5 border border-blue-500/20 rounded">
-                              <div><span className="text-xs font-display font-bold">{b.title}</span><span className={`ml-2 text-[10px] font-display uppercase tracking-wide px-1.5 py-0.5 rounded border ${CL[b.classification] ?? ""}`}>{b.classification ?? "unclassified"}</span></div>
-                              <button onClick={() => unlinkDoc(b.id, "briefing")} className="p-1 text-muted-foreground hover:text-destructive transition-colors"><X className="w-3 h-3" /></button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-xs font-display font-bold uppercase tracking-widest text-green-400 flex items-center gap-1.5"><ClipboardList className="w-3 h-3" /> After Action Reports</p>
@@ -2315,14 +2819,14 @@ function WarnosTab({ group, showMsg }: any) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = () => {
-    apiFetch<any[]>(`/api/milsim-groups/${group.id}/warnos`)
+    apiFetch<any[]>(`/milsimGroups?path=${group.id}/warnos`)
       .then(d => setWarnos(d ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
   };
   const [ops, setOps] = useState<any[]>([]);
   useEffect(() => {
-    apiFetch<any>(`/api/milsim-groups/${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
+    apiFetch<any>(`/milsimGroups?path=${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
   }, [group.id]);
 
   useEffect(() => { load(); }, [group.id]);
@@ -2335,10 +2839,10 @@ function WarnosTab({ group, showMsg }: any) {
     setSaving(true);
     try {
       if (editId) {
-        await apiFetch(`/api/milsim-groups/${group.id}/warnos/${editId}`, { method: "PATCH", body: JSON.stringify(form) });
+        await apiFetch(`/milsimGroups?path=${group.id}/warnos/${editId}`, { method: "PATCH", body: JSON.stringify(form) });
         showMsg(true, "WARNO updated.");
       } else {
-        await apiFetch(`/api/milsim-groups/${group.id}/warnos`, { method: "POST", body: JSON.stringify(form) });
+        await apiFetch(`/milsimGroups?path=${group.id}/warnos`, { method: "POST", body: JSON.stringify(form) });
         showMsg(true, "WARNO created.");
       }
       setCreating(false); setEditId(null); setForm(emptyForm); load();
@@ -2347,7 +2851,7 @@ function WarnosTab({ group, showMsg }: any) {
 
   const remove = async (id: string) => {
     try {
-      await apiFetch(`/api/milsim-groups/${group.id}/warnos/${id}`, { method: "DELETE" });
+      await apiFetch(`/milsimGroups?path=${group.id}/warnos/${id}`, { method: "DELETE" });
       showMsg(true, "WARNO deleted."); load();
     } catch (e: any) { showMsg(false, e.message); }
   };
@@ -2574,27 +3078,34 @@ function AARsTab({ group, showMsg }: any) {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const emptyForm = { op_name: "", op_date: "", op_id: "", summary: "", objectives_hit: "", objectives_missed: "", casualties: "", commendations: "", recommendations: "", classification: "unclassified" };
+  const emptyForm = { op_name: "", op_date: "", op_id: "", summary: "", outcome: "INCOMPLETE", objectives_hit: 0, objectives_missed: 0, casualties: "NONE", casualties_note: "", commendations: "", recommendations: "", classification: "unclassified" };
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).then(setAars).catch(() => {}).finally(() => setLoading(false)); };
+  const load = () => { apiFetch<any[]>(`/milsimGroups?path=${group.id}/aars`).then(setAars).catch(() => {}).finally(() => setLoading(false)); };
   useEffect(() => { load(); }, [group.id]);
   const [ops, setOps] = useState<any[]>([]);
   useEffect(() => {
-    apiFetch<any>(`/api/milsim-groups/${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
+    apiFetch<any>(`/milsimGroups?path=${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
   }, [group.id]);
 
   const submit = async () => {
     if (!form.op_name.trim()) return; setSaving(true);
     try {
-      if (editId) { await apiFetch(`/api/milsim-groups/${group.id}/aars/${editId}`, { method: "PATCH", body: JSON.stringify(form) }); showMsg(true, "AAR updated."); }
-      else { await apiFetch(`/api/milsim-groups/${group.id}/aars`, { method: "POST", body: JSON.stringify(form) }); showMsg(true, "AAR filed."); }
+      if (editId) {
+        await apiFetch(`/milsimGroups?path=${group.id}/aars/${editId}`, { method: "PATCH", body: JSON.stringify(form) });
+        showMsg(true, "AAR updated.");
+      } else {
+        const newAAR = await apiFetch<any>(`/milsimGroups?path=${group.id}/aars`, { method: "POST", body: JSON.stringify(form) });
+        const aarSummary = `Outcome:${form.outcome} ObjsHit:${form.objectives_hit} ObjsMissed:${form.objectives_missed} Casualties:${form.casualties}${form.casualties_note ? " — " + form.casualties_note : ""}`;
+        apiFetch(`/opIntel?path=notify&group_id=${group.id}`, { method: "POST", body: JSON.stringify({ report_type: "AAR", report_id: newAAR?.id ?? newAAR?.aar?.id ?? "", filer_callsign: "S6 ACTUAL", op_name: form.op_name || "Unknown Op", summary: aarSummary }) }).catch(() => {});
+        showMsg(true, "AAR filed — eyewitness notifications sent.");
+      }
       setCreating(false); setEditId(null); setForm(emptyForm); load();
     } catch (e: any) { showMsg(false, e.message); } finally { setSaving(false); }
   };
   const remove = async (id: number) => {
-    try { await apiFetch(`/api/milsim-groups/${group.id}/aars/${id}`, { method: "DELETE" }); showMsg(true, "AAR deleted."); load(); }
+    try { await apiFetch(`/milsimGroups?path=${group.id}/aars/${id}`, { method: "DELETE" }); showMsg(true, "AAR deleted."); load(); }
     catch (e: any) { showMsg(false, e.message); }
   };
   const CL: Record<string, string> = { "unclassified": "text-green-400 bg-green-500/10 border-green-500/30", "confidential": "text-blue-400 bg-blue-500/10 border-blue-500/30", "classified": "text-yellow-400 bg-yellow-500/10 border-yellow-500/30", "top-secret": "text-red-400 bg-red-500/10 border-red-500/30" };
@@ -2613,9 +3124,57 @@ function AARsTab({ group, showMsg }: any) {
           <div><label className="mf-label">Linked Op</label><select value={form.op_id ?? ""} onChange={setF("op_id")} className="mf-input"><option value="">— No op —</option>{ops.map((o:any) => <option key={o.id} value={o.id}>{o.title ?? o.name}</option>)}</select></div>
           <div><label className="mf-label">Classification</label><select value={form.classification} onChange={setF("classification")} className="mf-input">{["unclassified","confidential","classified","top-secret"].map(c => <option key={c} value={c}>{c.replace("-"," ").toUpperCase()}</option>)}</select></div>
           <div><label className="mf-label">Summary</label><textarea rows={3} value={form.summary} onChange={setF("summary")} className="mf-input resize-none" placeholder="Overall mission summary..." /></div>
-          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Objectives Hit</label><textarea rows={3} value={form.objectives_hit} onChange={setF("objectives_hit")} className="mf-input resize-none" /></div><div><label className="mf-label">Objectives Missed</label><textarea rows={3} value={form.objectives_missed} onChange={setF("objectives_missed")} className="mf-input resize-none" /></div></div>
-          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Casualties</label><textarea rows={2} value={form.casualties} onChange={setF("casualties")} className="mf-input resize-none" /></div><div><label className="mf-label">Commendations</label><textarea rows={2} value={form.commendations} onChange={setF("commendations")} className="mf-input resize-none" /></div></div>
-          <div><label className="mf-label">Recommendations</label><textarea rows={3} value={form.recommendations} onChange={setF("recommendations")} className="mf-input resize-none" /></div>
+          {/* Outcome selector */}
+          <div>
+            <label className="mf-label">Op Outcome</label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {(["VICTORY","PARTIAL VICTORY","DRAW","DEFEAT","INCOMPLETE"] as const).map(o => {
+                const oc: Record<string, string> = { VICTORY: "text-green-400 border-green-500/50 bg-green-500/10", "PARTIAL VICTORY": "text-lime-400 border-lime-500/50 bg-lime-500/10", DRAW: "text-yellow-400 border-yellow-500/50 bg-yellow-500/10", DEFEAT: "text-red-400 border-red-500/50 bg-red-500/10", INCOMPLETE: "text-muted-foreground border-border bg-secondary/40" };
+                return (
+                  <button key={o} type="button" onClick={() => setForm((f: any) => ({...f, outcome: o}))}
+                    className={`px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.outcome === o ? oc[o] : "border-border text-muted-foreground hover:bg-secondary/60"}`}>
+                    {o}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Objectives — numbered inputs */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mf-label">Objectives Hit <span className="text-muted-foreground font-normal">(count)</span></label>
+              <input type="number" min={0} max={99} value={form.objectives_hit} onChange={e => setForm((f: any) => ({...f, objectives_hit: parseInt(e.target.value) || 0}))} className="mf-input w-full" placeholder="0" />
+            </div>
+            <div>
+              <label className="mf-label">Objectives Missed <span className="text-muted-foreground font-normal">(count)</span></label>
+              <input type="number" min={0} max={99} value={form.objectives_missed} onChange={e => setForm((f: any) => ({...f, objectives_missed: parseInt(e.target.value) || 0}))} className="mf-input w-full" placeholder="0" />
+            </div>
+          </div>
+
+          {/* Casualties — standardised enum */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mf-label">Casualty Level</label>
+              <div className="flex gap-2 mt-1">
+                {(["NONE","LOW","MODERATE","HEAVY"] as const).map(c => {
+                  const cc: Record<string, string> = { NONE: "text-green-400 border-green-500/50 bg-green-500/10", LOW: "text-yellow-400 border-yellow-500/50 bg-yellow-500/10", MODERATE: "text-orange-400 border-orange-500/50 bg-orange-500/10", HEAVY: "text-red-400 border-red-500/50 bg-red-500/10" };
+                  return (
+                    <button key={c} type="button" onClick={() => setForm((f: any) => ({...f, casualties: c}))}
+                      className={`flex-1 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.casualties === c ? cc[c] : "border-border text-muted-foreground hover:bg-secondary/60"}`}>
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <label className="mf-label">Casualty Notes <span className="text-muted-foreground font-normal">(optional)</span></label>
+              <input value={form.casualties_note ?? ""} onChange={setF("casualties_note")} className="mf-input w-full" placeholder="e.g. 1 WIA extracted, 2 KIA confirmed" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3"><div><label className="mf-label">Commendations</label><textarea rows={2} value={form.commendations} onChange={setF("commendations")} className="mf-input resize-none" /></div><div><label className="mf-label">Recommendations</label><textarea rows={2} value={form.recommendations} onChange={setF("recommendations")} className="mf-input resize-none" /></div></div>
           <div className="flex gap-2">
             <button onClick={submit} disabled={saving || !form.op_name.trim()} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-xs px-5 py-2.5 rounded transition-all disabled:opacity-50">{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {editId ? "Update" : "File AAR"}</button>
             <button onClick={() => { setCreating(false); setEditId(null); setForm(emptyForm); }} className="px-4 py-2 border border-border text-muted-foreground rounded text-xs font-display uppercase hover:text-foreground">Cancel</button>
@@ -2631,7 +3190,7 @@ function AARsTab({ group, showMsg }: any) {
               <button onClick={() => setExpandedId(expandedId === a.id ? null : a.id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
                 <div className="flex items-center gap-3 flex-wrap"><span className={`text-[10px] font-display font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${CL[a.classification] ?? ""}`}>{(a.classification ?? "unclassified").replace("-"," ")}</span><span className="font-display font-bold text-sm text-foreground">{a.op_name}</span>{a.op_date && <span className="text-xs text-muted-foreground">{format(new Date(a.op_date + "T00:00:00"), "MMM dd, yyyy")}</span>}</div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ op_name: a.op_name, op_date: a.op_date?.split("T")[0] ?? "", summary: a.summary ?? a.content ?? "", objectives_hit: a.objectives_hit ?? "", objectives_missed: a.objectives_missed ?? "", casualties: a.casualties ?? "", commendations: a.commendations ?? "", recommendations: a.recommendations ?? "", classification: a.classification }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={e => { e.stopPropagation(); setEditId(a.id); setForm({ op_name: a.op_name, op_date: a.op_date?.split("T")[0] ?? "", summary: a.summary ?? a.content ?? "", outcome: a.outcome ?? "INCOMPLETE", objectives_hit: a.objectives_hit ?? 0, objectives_missed: a.objectives_missed ?? 0, casualties: a.casualties ?? "NONE", casualties_note: a.casualties_note ?? "", commendations: a.commendations ?? "", recommendations: a.recommendations ?? "", classification: a.classification ?? "unclassified" }); }} className="p-1.5 text-muted-foreground hover:text-primary transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={e => { e.stopPropagation(); remove(a.id); }} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                   {expandedId === a.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 </div>
@@ -2639,12 +3198,26 @@ function AARsTab({ group, showMsg }: any) {
               {expandedId === a.id && (
                 <div className="border-t border-border p-5 space-y-4 bg-secondary/10">
                   {(a.summary ?? a.content) && <AARField label="Summary" value={a.summary ?? a.content} />}
-                  {a.objectives_hit && <AARField label="Objectives Hit" value={a.objectives_hit} />}
-                  {a.objectives_missed && <AARField label="Objectives Missed" value={a.objectives_missed} />}
-                  {a.casualties && <AARField label="Casualties" value={a.casualties} />}
+                  {(a.objectives_hit !== undefined || a.objectives_missed !== undefined) && (
+                    <div className="flex gap-4">
+                      <div className="text-xs"><span className="font-display font-bold uppercase tracking-wider text-green-400">Objs Hit: </span><span className="font-mono text-foreground">{a.objectives_hit ?? 0}</span></div>
+                      <div className="text-xs"><span className="font-display font-bold uppercase tracking-wider text-red-400">Objs Missed: </span><span className="font-mono text-foreground">{a.objectives_missed ?? 0}</span></div>
+                      {((a.objectives_hit ?? 0) + (a.objectives_missed ?? 0)) > 0 && <div className="text-xs"><span className="font-display font-bold uppercase tracking-wider text-muted-foreground">Success: </span><span className="font-mono text-foreground">{Math.round(((a.objectives_hit ?? 0) / ((a.objectives_hit ?? 0) + (a.objectives_missed ?? 0))) * 100)}%</span></div>}
+                    </div>
+                  )}
+                  {a.casualties && <div className="flex items-center gap-2"><span className="text-xs font-display font-bold uppercase tracking-wider text-muted-foreground">Casualties:</span><span className={`text-xs font-display font-bold uppercase px-2 py-0.5 rounded border ${a.casualties === "HEAVY" ? "text-red-400 bg-red-500/10 border-red-500/30" : a.casualties === "MODERATE" ? "text-orange-400 bg-orange-500/10 border-orange-500/30" : a.casualties === "LOW" ? "text-yellow-400 bg-yellow-500/10 border-yellow-500/30" : "text-green-400 bg-green-500/10 border-green-500/30"}`}>{a.casualties}</span>{a.casualties_note && <span className="text-xs text-muted-foreground font-sans">{a.casualties_note}</span>}</div>}
                   {a.commendations && <AARField label="Commendations" value={a.commendations} />}
                   {a.recommendations && <AARField label="Recommendations" value={a.recommendations} />}
-                  <p className="text-xs text-muted-foreground">Filed by {a.created_by} · {formatDistanceToNow(new Date(a.created_date ?? a.created_at ?? Date.now()), { addSuffix: true })}</p>
+                  <div className="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground">Filed by {a.created_by} · {formatDistanceToNow(new Date(a.created_date ?? a.created_at ?? Date.now()), { addSuffix: true })}</p>
+                    <div className="flex items-center gap-2">
+                      {(a.eyewitness_count ?? 0) > 0 && <span className="text-[10px] font-display font-bold uppercase tracking-widest text-primary px-2 py-0.5 bg-primary/10 border border-primary/30 rounded">{a.eyewitness_count} EYEWITNESS{(a.eyewitness_count ?? 0) > 1 ? "ES" : ""}</span>}
+                      <button onClick={() => apiFetch("/opIntel?path=confirm", { method: "POST", body: JSON.stringify({ report_type: "AAR", report_id: a.id, note: "" }) }).then(() => { showMsg("Eyewitness confirmation recorded", "success"); load(); }).catch((e: any) => showMsg(e.message, "error"))}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-primary/40 bg-primary/10 text-primary text-[10px] font-display font-bold uppercase tracking-widest hover:bg-primary/20 transition-colors">
+                        <Eye className="w-3 h-3" /> Confirm Eyewitness
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -2716,8 +3289,11 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
         equipment: form.equipment, equipment_note: form.equipment_note,
       };
       if (payload.op_id) { const op = ops.find((o:any) => o.id === payload.op_id); if (op) payload.op_name = op.title ?? op.name ?? ""; }
-      await apiFetch("/milsimLace?path=create", { method: "POST", body: JSON.stringify(payload) });
-      showMsg("LACE filed", "success"); setShowForm(false); setForm({ ...emptyForm, report_time: dtgNow }); load();
+      const newLace = await apiFetch<any>("/milsimLace?path=create", { method: "POST", body: JSON.stringify(payload) });
+      // Dispatch eyewitness notifications to all active roster members
+      const laceSummary = `L:${payload.liquid} A:${payload.ammo} C:${payload.casualty} E:${payload.equipment}${payload.casualty_note ? " — " + payload.casualty_note : ""}`;
+      apiFetch(`/opIntel?path=notify&group_id=${group.id}`, { method: "POST", body: JSON.stringify({ report_type: "LACE", report_id: newLace?.lace_report?.id ?? "", filer_callsign: payload.callsign, op_name: payload.op_name || "Unknown Op", summary: laceSummary }) }).catch(() => {});
+      showMsg("LACE filed — eyewitness notifications sent", "success"); setShowForm(false); setForm({ ...emptyForm, report_time: dtgNow }); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
   };
@@ -2731,7 +3307,7 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
   const FIELDS: { key: "liquid"|"ammo"|"casualty"|"equipment"; letter: string; label: string; sublabel: string; noteKey: "liquid_note"|"ammo_note"|"casualty_note"|"equipment_note"; notePlaceholder: string }[] = [
     { key: "liquid",    letter: "L", label: "LIQUID",    sublabel: "Water / hydration supply",          noteKey: "liquid_note",    notePlaceholder: "e.g. 2x water bottles remaining per man" },
     { key: "ammo",      letter: "A", label: "AMMO",      sublabel: "Ammunition across all weapons",     noteKey: "ammo_note",      notePlaceholder: "e.g. Orange 5.56, Red AT4" },
-    { key: "casualty",  letter: "C", label: "CASUALTY",  sublabel: "# up / # WIA / # KIA",             noteKey: "casualty_note",  notePlaceholder: "e.g. 4 up, 1 WIA (walking)" },
+    { key: "casualty",  letter: "C", label: "CASUALTY",  sublabel: "Friendly casualty level",           noteKey: "casualty_note",  notePlaceholder: "e.g. 2 WIA walking, 1 KIA extracted" },
     { key: "equipment", letter: "E", label: "EQUIPMENT", sublabel: "Mission-critical gear status",       noteKey: "equipment_note", notePlaceholder: "e.g. Orange bandages, Red NVG" },
   ];
 
@@ -2811,8 +3387,9 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
                   </div>
                   <div className="p-3 space-y-2.5">
                     <div className="flex gap-2">
-                      {(["GREEN","ORANGE","RED"] as const).map(status => {
-                        const cfg = STATUS[status];
+                      {(f.key === "casualty" ? ["NONE","LOW","MODERATE","HEAVY"] as const : ["GREEN","ORANGE","RED"] as const).map((status: string) => {
+                        const CAS_CFG: Record<string, { color: string; bg: string; border: string }> = { NONE: { color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/40" }, LOW: { color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/40" }, MODERATE: { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/40" }, HEAVY: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/40" } };
+                        const cfg = f.key === "casualty" ? CAS_CFG[status] : STATUS[status as "GREEN"|"ORANGE"|"RED"];
                         const active = form[f.key] === status;
                         return (
                           <button key={status} onClick={() => setForm((prev:any) => ({...prev, [f.key]: status}))}
@@ -2881,6 +3458,16 @@ function LaceTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "suc
                       </div>
                     );
                   })}
+                </div>
+                {/* Eyewitness confirmation row */}
+                <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-secondary/10">
+                  <span className="text-[10px] text-muted-foreground font-display uppercase tracking-widest">
+                    {(r.eyewitness_count ?? 0) > 0 ? `${r.eyewitness_count} eyewitness${(r.eyewitness_count ?? 0) > 1 ? "es" : ""} confirmed` : "Awaiting eyewitness confirmation"}
+                  </span>
+                  <button onClick={() => apiFetch("/opIntel?path=confirm", { method: "POST", body: JSON.stringify({ report_type: "LACE", report_id: r.id }) }).then(() => { showMsg("Eyewitness confirmation recorded", "success"); load(); }).catch((e: any) => showMsg(e.message, "error"))}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded border border-primary/40 bg-primary/10 text-primary text-[10px] font-display font-bold uppercase tracking-widest hover:bg-primary/20 transition-colors">
+                    <Eye className="w-3 h-3" /> Confirm
+                  </button>
                 </div>
               </div>
             );
@@ -2968,8 +3555,10 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
         }),
       };
       if (payload.op_id) { const op = ops.find((o:any) => o.id === payload.op_id); if (op) payload.op_name = op.title ?? op.name ?? ""; }
-      await apiFetch("/milsimSitrep?path=create", { method: "POST", body: JSON.stringify(payload) });
-      showMsg("SITREP transmitted", "success"); setShowForm(false); setForm({...emptyForm, report_time: dtgNow}); load();
+      const newSitrep = await apiFetch<any>("/milsimSitrep?path=create", { method: "POST", body: JSON.stringify(payload) });
+      const sitrepSummary = `Contact:${payload.enemy_contact} Mission:${payload.mission_status} Cas:${payload.friendly_casualties}${payload.next_action ? " — " + payload.next_action.slice(0, 120) : ""}`;
+      apiFetch(`/opIntel?path=notify&group_id=${group.id}`, { method: "POST", body: JSON.stringify({ report_type: "SITREP", report_id: newSitrep?.sitrep?.id ?? "", filer_callsign: payload.callsign, op_name: payload.op_name || "Unknown Op", summary: sitrepSummary }) }).catch(() => {});
+      showMsg("SITREP transmitted — eyewitness notifications sent", "success"); setShowForm(false); setForm({...emptyForm, report_time: dtgNow}); load();
     } catch (e: any) { showMsg(e.message, "error"); }
     setSaving(false);
   };
@@ -2986,7 +3575,7 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
     "COMPROMISED": { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/40" },
     "ABORT":       { color: "text-red-400",    bg: "bg-red-500/10",    border: "border-red-500/40" },
   };
-  const CAS_COLOR: Record<string, string> = { NONE:"text-green-400", MINOR:"text-yellow-400", SIGNIFICANT:"text-orange-400", CRITICAL:"text-red-400" };
+  const CAS_COLOR: Record<string, string> = { NONE:"text-green-400", LOW:"text-yellow-400", MODERATE:"text-orange-400", HEAVY:"text-red-400" };
 
   // The 5 ABCDE rows
   const ROWS: { letter: string; label: string; sublabel: string; field: string; placeholder: string; rows?: number }[] = [
@@ -3106,7 +3695,7 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
                 <div className="border border-border rounded-lg p-3 space-y-2">
                   <p className="font-display font-bold text-xs uppercase tracking-widest">Own Casualties</p>
                   <div className="flex flex-wrap gap-1">
-                    {(["NONE","MINOR","SIGNIFICANT","CRITICAL"] as const).map(v => (
+                    {(["NONE","LOW","MODERATE","HEAVY"] as const).map(v => (
                       <button key={v} onClick={() => setForm((f:any) => ({...f, friendly_casualties: v}))}
                         className={`px-2 py-1 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${form.friendly_casualties === v ? `bg-secondary/80 border-primary/50 ${CAS_COLOR[v]}` : "border-border text-muted-foreground hover:bg-secondary/60"}`}>{v}</button>
                     ))}
@@ -3210,6 +3799,16 @@ function SitrepTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "s
                     </div>
                   </div>
                 )}
+                {/* Eyewitness confirmation row */}
+                <div className="flex items-center justify-between px-4 py-2 border-t border-amber-500/20 bg-amber-500/5">
+                  <span className="text-[10px] text-muted-foreground font-display uppercase tracking-widest">
+                    {(r.eyewitness_count ?? 0) > 0 ? `${r.eyewitness_count} eyewitness${(r.eyewitness_count ?? 0) > 1 ? "es" : ""} confirmed` : "Awaiting eyewitness confirmation"}
+                  </span>
+                  <button onClick={() => apiFetch("/opIntel?path=confirm", { method: "POST", body: JSON.stringify({ report_type: "SITREP", report_id: r.id }) }).then(() => { showMsg("Eyewitness confirmation recorded", "success"); load(); }).catch((e: any) => showMsg(e.message, "error"))}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-400 text-[10px] font-display font-bold uppercase tracking-widest hover:bg-amber-500/20 transition-colors">
+                    <Eye className="w-3 h-3" /> Confirm
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -3608,6 +4207,261 @@ function MedevacTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "
 }
 
 
+
+// ─── Op Intel Tab ────────────────────────────────────────────────────────────
+function OpIntelTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
+  const [intel, setIntel] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [analysing, setAnalysing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadLatest = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const d = await apiFetch<any>(`/opIntel?path=latest&group_id=${group.id}`);
+      setIntel(d);
+    } catch (e: any) { setError(e.message); }
+    setLoading(false);
+  };
+
+  const runAnalysis = async () => {
+    setAnalysing(true);
+    setError(null);
+    try {
+      const d = await apiFetch<any>(`/opIntel?path=analyse&group_id=${group.id}`);
+      setIntel(d);
+      showMsg("AI Op Intel analysis complete", "success");
+    } catch (e: any) { setError(e.message); showMsg(e.message, "error"); }
+    setAnalysing(false);
+  };
+
+  useEffect(() => { loadLatest(); }, [group.id]);
+
+  const GRADE_CFG: Record<string, { color: string; bg: string; border: string; label: string }> = {
+    ALPHA:   { color: "text-green-300",  bg: "bg-green-500/10",  border: "border-green-500/40",  label: "ALPHA — Elite Operational Capability" },
+    BRAVO:   { color: "text-blue-300",   bg: "bg-blue-500/10",   border: "border-blue-500/40",   label: "BRAVO — Proficient Combat Unit" },
+    CHARLIE: { color: "text-yellow-300", bg: "bg-yellow-500/10", border: "border-yellow-500/40", label: "CHARLIE — Developing Capability" },
+    DELTA:   { color: "text-red-300",    bg: "bg-red-500/10",    border: "border-red-500/40",    label: "DELTA — Limited / Insufficient Data" },
+  };
+
+  const OUTCOME_COLORS: Record<string, string> = {
+    VICTORY: "bg-green-500", "PARTIAL VICTORY": "bg-lime-500", DRAW: "bg-yellow-500",
+    DEFEAT: "bg-red-500", INCOMPLETE: "bg-secondary",
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  const stats     = intel?.stats ?? null;
+  const narrative = intel?.ai_narrative ?? null;
+  const grade     = narrative?.intel_grade ?? "DELTA";
+  const gradeCfg  = GRADE_CFG[grade] ?? GRADE_CFG.DELTA;
+
+  const hasData = stats && (stats.total_aars > 0 || stats.total_lace > 0 || stats.total_sitreps > 0);
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display font-bold text-lg uppercase tracking-widest">Op Intel</h2>
+            <span className="text-xs font-display font-bold uppercase tracking-widest px-2 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded">AI-Powered</span>
+          </div>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">GPT-4o-mini analysis across all AARs, LACE reports, and SITREPs. Calculates win rate, casualty trends, and mission success patterns.</p>
+        </div>
+        <button onClick={runAnalysis} disabled={analysing}
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/40 text-primary rounded font-display text-xs uppercase tracking-widest hover:bg-primary/30 transition-colors disabled:opacity-50">
+          {analysing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BrainCircuit className="w-3.5 h-3.5" />}
+          {analysing ? "Analysing..." : "Run AI Analysis"}
+        </button>
+      </div>
+
+      {error && <div className="p-3 rounded border border-red-500/40 bg-red-500/10 text-red-400 text-xs font-sans">{error}</div>}
+
+      {!hasData && !analysing && (
+        <div className="text-center py-16 border border-dashed border-border rounded-lg text-muted-foreground">
+          <BrainCircuit className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="font-display text-sm uppercase tracking-widest">No Op Data</p>
+          <p className="text-xs mt-2 font-sans max-w-xs mx-auto">File AARs, LACE reports, or SITREPs to generate Op Intel. The AI needs at least 1 AAR to produce a meaningful analysis.</p>
+        </div>
+      )}
+
+      {hasData && (
+        <>
+          {/* Data counts */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "AARs", value: stats.total_aars, icon: ClipboardList, color: "text-primary" },
+              { label: "LACE Reports", value: stats.total_lace, icon: Radio, color: "text-blue-400" },
+              { label: "SITREPs", value: stats.total_sitreps, icon: Target, color: "text-amber-400" },
+            ].map(s => (
+              <div key={s.label} className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
+                <s.icon className={`w-5 h-5 ${s.color} shrink-0`} />
+                <div>
+                  <p className={`font-display font-black text-2xl ${s.color}`}>{s.value}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-display">{s.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Intel grade banner */}
+          {narrative && (
+            <div className={`p-4 rounded-lg border ${gradeCfg.bg} ${gradeCfg.border} flex items-center gap-4`}>
+              <div className={`w-16 h-16 rounded-lg flex items-center justify-center font-display font-black text-2xl ${gradeCfg.color} border ${gradeCfg.border} ${gradeCfg.bg} shrink-0`}>{grade}</div>
+              <div>
+                <p className={`font-display font-black text-sm uppercase tracking-widest ${gradeCfg.color}`}>{gradeCfg.label}</p>
+                <p className="text-xs font-sans text-foreground/80 mt-1 leading-relaxed">{narrative.summary}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Key metrics row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Win Rate",          value: stats.win_rate !== null ? `${stats.win_rate}%` : "—",  color: stats.win_rate !== null ? (stats.win_rate >= 60 ? "text-green-400" : stats.win_rate >= 40 ? "text-yellow-400" : "text-red-400") : "text-muted-foreground", icon: Trophy },
+              { label: "Obj Success Rate",  value: stats.total_aars > 0 ? `${stats.objective_success_rate}%` : "—", color: stats.objective_success_rate >= 70 ? "text-green-400" : stats.objective_success_rate >= 40 ? "text-yellow-400" : "text-red-400", icon: Crosshair },
+              { label: "Mission On-Track",  value: stats.total_sitreps > 0 ? `${stats.on_track_rate}%` : "—", color: stats.on_track_rate >= 70 ? "text-green-400" : stats.on_track_rate >= 40 ? "text-yellow-400" : "text-red-400", icon: TrendingUp },
+              { label: "Casualty Pressure", value: `${stats.casualty_pressure_index}/100`, color: stats.casualty_pressure_index <= 20 ? "text-green-400" : stats.casualty_pressure_index <= 50 ? "text-yellow-400" : "text-red-400", icon: TrendingDown },
+            ].map(m => (
+              <div key={m.label} className="bg-card border border-border rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <m.icon className="w-3.5 h-3.5 text-muted-foreground" />
+                  <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">{m.label}</p>
+                </div>
+                <p className={`font-display font-black text-2xl ${m.color}`}>{m.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Combat effectiveness score bar */}
+          <div className="bg-card border border-border rounded-lg p-4 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Combat Effectiveness Score</span>
+              <span className={`font-display font-black text-sm ${stats.combat_effectiveness_score >= 70 ? "text-green-400" : stats.combat_effectiveness_score >= 40 ? "text-yellow-400" : "text-red-400"}`}>{stats.combat_effectiveness_score} / 100</span>
+            </div>
+            <div className="h-3 rounded-full bg-secondary overflow-hidden">
+              <div className={`h-full rounded-full transition-all ${stats.combat_effectiveness_score >= 70 ? "bg-green-500" : stats.combat_effectiveness_score >= 40 ? "bg-yellow-500" : "bg-red-500"}`}
+                style={{ width: `${stats.combat_effectiveness_score}%` }} />
+            </div>
+            <p className="text-[10px] text-muted-foreground font-sans">Win rate (40%) + Objective success (30%) + Mission on-track (20%) + Low casualties (10%)</p>
+          </div>
+
+          {/* Outcome breakdown */}
+          {stats.total_aars > 0 && (
+            <div className="bg-card border border-border rounded-lg p-4">
+              <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">AAR Outcome Breakdown</p>
+              <div className="space-y-2">
+                {Object.entries(stats.outcome_breakdown ?? {}).map(([outcome, count]: [string, any]) => (
+                  <div key={outcome} className="flex items-center gap-3">
+                    <span className="w-28 text-xs font-display font-bold uppercase tracking-wider text-foreground shrink-0">{outcome}</span>
+                    <div className="flex-1 h-5 rounded bg-secondary overflow-hidden">
+                      <div className={`h-full rounded ${OUTCOME_COLORS[outcome] ?? "bg-secondary/80"}`} style={{ width: `${Math.round((count / stats.total_aars) * 100)}%` }} />
+                    </div>
+                    <span className="text-xs font-mono text-muted-foreground w-8 text-right shrink-0">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Ammo stress & casualty split */}
+          {stats.total_lace > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-card border border-border rounded-lg p-4">
+                <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Ammo Status (LACE)</p>
+                {Object.entries(stats.lace_ammo_breakdown ?? {}).map(([s, c]: [string, any]) => {
+                  const bc = s === "RED" ? "bg-red-500" : s === "ORANGE" ? "bg-orange-500" : "bg-green-500";
+                  return (
+                    <div key={s} className="flex items-center gap-2 mb-1.5">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${bc}`} />
+                      <span className="text-xs font-display font-bold uppercase w-16 shrink-0">{s}</span>
+                      <div className="flex-1 h-4 rounded bg-secondary overflow-hidden"><div className={`h-full rounded ${bc}`} style={{ width: `${Math.round((c / stats.total_lace) * 100)}%` }} /></div>
+                      <span className="text-xs font-mono text-muted-foreground w-5 text-right shrink-0">{c}</span>
+                    </div>
+                  );
+                })}
+                <p className="text-[10px] text-muted-foreground mt-2 font-sans">Critical ammo rate (Orange + Red): <span className={`font-bold ${stats.critical_ammo_rate >= 60 ? "text-red-400" : stats.critical_ammo_rate >= 30 ? "text-orange-400" : "text-green-400"}`}>{stats.critical_ammo_rate}%</span></p>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4">
+                <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-3">Casualty Distribution (LACE)</p>
+                {(["NONE","LOW","MODERATE","HEAVY"] as const).map(c => {
+                  const val = stats.lace_casualty_breakdown?.[c] ?? 0;
+                  const bc = c === "HEAVY" ? "bg-red-500" : c === "MODERATE" ? "bg-orange-500" : c === "LOW" ? "bg-yellow-500" : "bg-green-500";
+                  return (
+                    <div key={c} className="flex items-center gap-2 mb-1.5">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${bc}`} />
+                      <span className="text-xs font-display font-bold uppercase w-20 shrink-0">{c}</span>
+                      <div className="flex-1 h-4 rounded bg-secondary overflow-hidden"><div className={`h-full rounded ${bc}`} style={{ width: `${Math.round((val / stats.total_lace) * 100)}%` }} /></div>
+                      <span className="text-xs font-mono text-muted-foreground w-5 text-right shrink-0">{val}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* AI narrative breakdown */}
+          {narrative && (narrative.strengths?.length > 0 || narrative.weaknesses?.length > 0) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {narrative.strengths?.length > 0 && (
+                <div className="bg-card border border-green-500/30 rounded-lg p-4">
+                  <p className="text-[10px] font-display font-bold uppercase tracking-widest text-green-400 mb-3">Strengths</p>
+                  <ul className="space-y-2">
+                    {narrative.strengths.map((s: string, i: number) => (
+                      <li key={i} className="flex items-start gap-2 text-xs font-sans"><span className="text-green-400 shrink-0 mt-0.5">▸</span>{s}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {narrative.weaknesses?.length > 0 && (
+                <div className="bg-card border border-red-500/30 rounded-lg p-4">
+                  <p className="text-[10px] font-display font-bold uppercase tracking-widest text-red-400 mb-3">Weaknesses</p>
+                  <ul className="space-y-2">
+                    {narrative.weaknesses.map((w: string, i: number) => (
+                      <li key={i} className="flex items-start gap-2 text-xs font-sans"><span className="text-red-400 shrink-0 mt-0.5">▸</span>{w}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* AI recommendations */}
+          {narrative?.recommendations?.length > 0 && (
+            <div className="bg-card border border-primary/30 rounded-lg p-4">
+              <p className="text-[10px] font-display font-bold uppercase tracking-widest text-primary mb-3">AI Recommendations</p>
+              <ul className="space-y-2">
+                {narrative.recommendations.map((r: string, i: number) => (
+                  <li key={i} className="flex items-start gap-2 text-xs font-sans">
+                    <span className="font-display font-black text-primary shrink-0 mt-0.5">{i+1}.</span>{r}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Threat assessment */}
+          {narrative?.threat_assessment && (
+            <div className="flex items-start gap-3 p-3 rounded border border-orange-500/30 bg-orange-500/5">
+              <FlaskConical className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[10px] font-display font-bold uppercase tracking-widest text-orange-400 mb-1">Threat Assessment</p>
+                <p className="text-xs font-sans text-foreground/80">{narrative.threat_assessment}</p>
+              </div>
+            </div>
+          )}
+
+          {intel?.generated_at && (
+            <p className="text-[10px] text-muted-foreground text-right font-sans">Last analysed: {new Date(intel.generated_at).toLocaleString()}</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function ConductReportTab({ group, showMsg }: { group: any; showMsg: (m: string, t?: "success" | "error") => void }) {
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
@@ -3831,23 +4685,23 @@ function BriefingsTab({ group, showMsg }: any) {
   const [form, setForm] = useState<any>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const load = () => { apiFetch<any[]>(`/api/milsim-groups/${group.id}/briefings`).then(setBriefings).catch(() => {}).finally(() => setLoading(false)); };
+  const load = () => { apiFetch<any[]>(`/milsimGroups?path=${group.id}/briefings`).then(setBriefings).catch(() => {}).finally(() => setLoading(false)); };
   useEffect(() => { load(); }, [group.id]);
   const [ops, setOps] = useState<any[]>([]);
   useEffect(() => {
-    apiFetch<any>(`/api/milsim-groups/${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
+    apiFetch<any>(`/milsimGroups?path=${group.id}/ops`).then((d: any) => setOps((Array.isArray(d) ? d : (d?.events ?? [])).filter((o:any) => ["Active","Confirmed","Planned","Completed"].includes(o.status)))).catch(() => {});
   }, [group.id]);
 
   const submit = async () => {
     if (!form.title.trim()) return; setSaving(true);
     try {
-      if (editId) { await apiFetch(`/api/milsim-groups/${group.id}/briefings/${editId}`, { method: "PATCH", body: JSON.stringify(form) }); showMsg(true, "Briefing updated."); }
-      else { await apiFetch(`/api/milsim-groups/${group.id}/briefings`, { method: "POST", body: JSON.stringify(form) }); showMsg(true, "Briefing created."); }
+      if (editId) { await apiFetch(`/milsimGroups?path=${group.id}/briefings/${editId}`, { method: "PATCH", body: JSON.stringify(form) }); showMsg(true, "Briefing updated."); }
+      else { await apiFetch(`/milsimGroups?path=${group.id}/briefings`, { method: "POST", body: JSON.stringify(form) }); showMsg(true, "Briefing created."); }
       setCreating(false); setEditId(null); setForm(emptyForm); load();
     } catch (e: any) { showMsg(false, e.message); } finally { setSaving(false); }
   };
   const remove = async (id: number) => {
-    try { await apiFetch(`/api/milsim-groups/${group.id}/briefings/${id}`, { method: "DELETE" }); showMsg(true, "Deleted."); load(); }
+    try { await apiFetch(`/milsimGroups?path=${group.id}/briefings/${id}`, { method: "DELETE" }); showMsg(true, "Deleted."); load(); }
     catch (e: any) { showMsg(false, e.message); }
   };
   const SC: Record<string, string> = { draft: "text-muted-foreground bg-secondary border-border", published: "text-primary bg-primary/10 border-primary/30", archived: "text-muted-foreground bg-secondary/40 border-border" };
@@ -3957,7 +4811,7 @@ function ReadinessTab({ group }: any) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    apiFetch<any>(`/api/stats/readiness/${group.id}`)
+    apiFetch<any>(`/stats?path=readiness/${group.id}`)
       .then(data => { setReadiness(data); })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -3991,15 +4845,18 @@ function ReadinessTab({ group }: any) {
   // Score breakdown for transparency
   const sb = readiness.score_breakdown ?? {};
   const scoreBreakdown = [
-    { label: "Manpower",            max: 20, earned: sb.manpower ?? 0,         note: `${readiness.verified_total ?? readiness.total} verified members` },
-    { label: "Member Activity",     max: 15, earned: sb.activity ?? 0,         note: `${readiness.active_this_month}/${readiness.total} active (30d)` },
-    { label: "Operations History",  max: 20, earned: sb.ops_history ?? 0,      note: `${readiness.valid_ops ?? readiness.total_ops ?? 0} verified ops` },
-    { label: "Op Recency",          max: 10, earned: sb.op_recency ?? 0,       note: readiness.days_since_last_op != null ? `Last op ${readiness.days_since_last_op}d ago` : "No ops" },
-    { label: "AAR Discipline",      max: 10, earned: sb.aar_discipline ?? 0,   note: `${readiness.completed_ops ?? 0} AARs for ${readiness.valid_ops ?? readiness.total_ops ?? 0} ops` },
-    { label: "Training Doctrine",   max: 15, earned: sb.training_doctrine ?? 0,note: `Knowledge factor ${readiness.training?.knowledge_factor ?? 0}/100` },
-    { label: "Discord Linked",      max: 5,  earned: sb.discord ?? 0,          note: readiness.has_discord ? "Linked" : "Not linked" },
-    { label: "Page Maintenance",    max: 5,  earned: sb.page_maintenance ?? 0, note: readiness.days_since_page_update != null ? `Updated ${readiness.days_since_page_update}d ago` : "Never updated" },
-    { label: "Reputation / Reviews",max: 5,  earned: sb.reputation ?? 0,       note: `${readiness.review_count} review${readiness.review_count !== 1 ? "s" : ""}, avg ${readiness.avg_rep_score || "—"}` },
+    { label: "Manpower",            max: 30, earned: sb.manpower ?? 0,         note: `${readiness.verified_total ?? readiness.total} verified members` },
+    { label: "Member Activity",     max: 20, earned: sb.activity ?? 0,         note: `${readiness.active_this_month}/${readiness.total} active (30d)` },
+    { label: "Operations History",  max: 25, earned: sb.ops_history ?? 0,      note: `${readiness.valid_ops ?? readiness.total_ops ?? 0} verified ops` },
+    { label: "Op Recency",          max: 15, earned: sb.op_recency ?? 0,       note: readiness.days_since_last_op != null ? `Last op ${readiness.days_since_last_op}d ago` : "No ops" },
+    { label: "AAR Discipline",      max: 15, earned: sb.aar_discipline ?? 0,   note: `${readiness.completed_ops ?? 0} AARs for ${readiness.valid_ops ?? readiness.total_ops ?? 0} ops` },
+    { label: "Training Doctrine",   max: 50, earned: sb.training_doctrine ?? 0,note: `Knowledge factor ${readiness.training?.knowledge_factor ?? 0}/100` },
+    { label: "Discord Linked",      max: 10, earned: sb.discord ?? 0,          note: readiness.has_discord ? "Linked" : "Not linked" },
+    { label: "Page Maintenance",    max: 10, earned: sb.page_maintenance ?? 0, note: readiness.days_since_page_update != null ? `Updated ${readiness.days_since_page_update}d ago` : "Never updated" },
+    { label: "Reputation / Reviews",max: 10, earned: sb.reputation ?? 0,       note: `${readiness.review_count} review${readiness.review_count !== 1 ? "s" : ""}, avg ${readiness.avg_rep_score || "—"}` },
+    { label: "Combat Intel",         max: 20, earned: sb.combat_intel ?? 0,      note: sb.combat_intel > 0 ? `${sb.combat_intel}/20 — win rate & objective data` : "File 3+ AARs with outcomes to score" },
+    { label: "Game Breadth",         max: 15, earned: sb.game_breadth ?? 0,      note: "Min-strength capability across all games listed" },
+    { label: "Doctrine Bonus",       max: 15, earned: sb.doctrine_bonus ?? 0,    note: sb.doctrine_bonus > 0 ? "Full doctrine set — SOP + TTP + ROE + Drill (depth ≥70)" : "Requires SOP + TTP + ROE + Drill uploaded with avg depth ≥70" },
   ];
 
   return (
@@ -4018,19 +4875,21 @@ function ReadinessTab({ group }: any) {
         </div>
         <div className="space-y-1">
           <div className="flex justify-between text-xs font-display font-bold uppercase tracking-widest text-muted-foreground">
-            <span>Composite Readiness Score</span><span>{readiness.readiness_pct} / 100</span>
+            <span>Composite Readiness Score</span><span>{readiness.readiness_pct}%</span>
           </div>
           <div className="h-3 bg-secondary rounded-full overflow-hidden">
             <div className={`h-full rounded-full transition-all ${bc}`} style={{ width: `${readiness.readiness_pct}%` }} />
           </div>
-          <p className={`text-right text-xs font-display font-bold ${sc}`}>{readiness.readiness_pct}% COMPOSITE</p>
+          <p className={`text-right text-xs font-display font-bold ${sc}`}>{readiness.readiness_pct}% composite readiness</p>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-border text-center">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 pt-2 border-t border-border text-center">
           {[
             { label: "Total", value: readiness.total, col: "" },
             { label: "Active 7d", value: readiness.active_this_week, col: "text-green-400" },
             { label: "Active 30d", value: readiness.active_this_month, col: "text-blue-400" },
             { label: "Ops Logged", value: readiness.total_ops ?? 0, col: "text-primary" },
+            { label: "Win Rate", value: readiness.win_rate !== null && readiness.win_rate !== undefined ? `${readiness.win_rate}%` : "—",
+              col: readiness.win_rate !== null && readiness.win_rate !== undefined ? (readiness.win_rate >= 60 ? "text-green-400" : readiness.win_rate >= 35 ? "text-yellow-400" : "text-red-400") : "text-muted-foreground" },
           ].map(s => (
             <div key={s.label}>
               <p className={`text-xl font-display font-bold ${s.col || "text-foreground"}`}>{s.value}</p>
@@ -4046,11 +4905,21 @@ function ReadinessTab({ group }: any) {
           <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Readiness Flags</p>
           {readiness.flags.map((flag: any) => (
             <div key={flag.code} className={`rounded-lg border px-4 py-3 flex gap-3 ${
-              flag.severity === "red" ? "border-red-500/40 bg-red-500/5" : "border-yellow-500/30 bg-yellow-500/5"
+              flag.severity === "red"  ? "border-red-500/40 bg-red-500/5" :
+              flag.severity === "amber" ? "border-yellow-500/30 bg-yellow-500/5" :
+              "border-blue-500/30 bg-blue-500/5"
             }`}>
-              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${flag.severity === "red" ? "bg-red-500" : "bg-yellow-400"}`} />
+              <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                flag.severity === "red" ? "bg-red-500" :
+                flag.severity === "amber" ? "bg-yellow-400" :
+                "bg-blue-400"
+              }`} />
               <div>
-                <p className={`font-display font-bold uppercase tracking-widest text-xs ${flag.severity === "red" ? "text-red-400" : "text-yellow-400"}`}>
+                <p className={`font-display font-bold uppercase tracking-widest text-xs ${
+                  flag.severity === "red" ? "text-red-400" :
+                  flag.severity === "amber" ? "text-yellow-400" :
+                  "text-blue-400"
+                }`}>
                   {flag.label}
                 </p>
                 <p className="text-xs text-muted-foreground font-sans mt-0.5 leading-relaxed">{flag.detail}</p>
@@ -4062,7 +4931,7 @@ function ReadinessTab({ group }: any) {
 
       {/* ── Score Breakdown ───────────────────────────────────────────────── */}
       <div className="bg-card border border-border rounded-lg p-5 space-y-3">
-        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Score Breakdown — How Your {readiness.readiness_pct}pts Were Calculated</p>
+        <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Score Breakdown — {readiness.readiness_pct}% Composite Readiness</p>
         <div className="space-y-2">
           {scoreBreakdown.map(row => (
             <div key={row.label} className="flex items-center gap-3 text-xs">
@@ -4072,13 +4941,13 @@ function ReadinessTab({ group }: any) {
                   style={{ width: `${Math.min(100, (row.earned / row.max) * 100)}%`,
                     background: row.earned === 0 ? '#ef4444' : row.earned >= row.max * 0.75 ? '#22c55e' : row.earned >= row.max * 0.4 ? '#eab308' : '#f97316' }} />
               </div>
-              <span className="text-[10px] font-display shrink-0 w-14 text-right" style={{ color: row.earned === 0 ? '#ef4444' : row.earned >= row.max * 0.75 ? '#22c55e' : row.earned >= row.max * 0.4 ? '#eab308' : '#f97316' }}>{row.earned}/{row.max}</span>
+              <span className="text-[10px] font-display shrink-0 w-14 text-right" style={{ color: row.earned === 0 ? '#ef4444' : row.earned >= row.max * 0.75 ? '#22c55e' : row.earned >= row.max * 0.4 ? '#eab308' : '#f97316' }}>{Math.round((row.earned / row.max) * 100)}%</span>
               <span className="text-[10px] text-muted-foreground font-sans shrink-0 hidden sm:block">{row.note}</span>
             </div>
           ))}
         </div>
         <p className="text-[10px] text-muted-foreground font-sans pt-1 border-t border-border/50">
-          Max score = 100pts. Green ≥75 · Amber 45–74 · Red &lt;45. Units below squad strength (9 members) are forced Red regardless of score.
+          All scores shown as % of max. GREEN ≥68% · AMBER 41–67% · RED &lt;41%. Units below minimum game strength are forced Red regardless of score. Combat Intel unlocks after filing 3+ AARs with outcomes. Doctrine Bonus (+15pts) requires SOP + TTP + ROE + Drill at avg depth ≥70.
         </p>
       </div>
 
@@ -4183,7 +5052,7 @@ function ReputationTab({ group }: any) {
 
   useEffect(() => {
     Promise.all([
-      apiFetch<any>(`/api/milsim-groups/${group.id}/full`),
+      apiFetch<any>(`/milsimGroups?path=${group.id}/full`),
       apiFetch<any>(`/getProStatus?group_id=${group.id}`).catch(() => ({ is_pro: false })),
     ]).then(([g, proStatus]) => {
       setRoster(g.roster ?? []);
@@ -4196,7 +5065,7 @@ function ReputationTab({ group }: any) {
     setSelected(member);
     if (repData[member.userId]) return;
     try {
-      const data = await apiFetch<any>(`/api/reputation/${member.userId}`);
+      const data = await apiFetch<any>(`/reputation?path=${member.userId}`);
       setRepData(prev => ({ ...prev, [member.userId]: data }));
     } catch {}
   };
@@ -4205,7 +5074,7 @@ function ReputationTab({ group }: any) {
     if (!selected) return;
     setSubmitting(true);
     try {
-      await apiFetch(`/api/reputation/${selected.userId}`, {
+      await apiFetch(`/reputation?path=${selected.userId}`, {
         method: "POST",
         body: JSON.stringify({
           ...form,
@@ -4215,7 +5084,7 @@ function ReputationTab({ group }: any) {
         }),
       });
       // Refresh rep
-      const updated = await apiFetch<any>(`/api/reputation/${selected.userId}`);
+      const updated = await apiFetch<any>(`/reputation?path=${selected.userId}`);
       setRepData(prev => ({ ...prev, [selected.userId]: updated }));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -4467,7 +5336,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
     setLoading(true);
     try {
       const [data, proStatus] = await Promise.all([
-        apiFetch<any[]>(`/api/training-docs/${group.id}`),
+        apiFetch<any[]>(`/trainingDocs?path=${group.id}`),
         apiFetch<any>(`/getProStatus?group_id=${group.id}`).catch(() => ({ is_pro: false })),
       ]);
       setDocs(data ?? []);
@@ -4477,7 +5346,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
 
   const loadAssessment = useCallback(async () => {
     try {
-      const r = await apiFetch<any>(`/api/stats/readiness/${group.id}`);
+      const r = await apiFetch<any>(`/stats?path=readiness/${group.id}`);
       if (r?.training) setAssessment(r.training);
     } catch {}
   }, [group.id]);
@@ -4509,7 +5378,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
       fd.append("last_reviewed_at", form.last_reviewed_at ? new Date(form.last_reviewed_at).toISOString() : new Date().toISOString());
       fd.append("uploaded_by", user?.id ?? "");
       fd.append("uploaded_by_username", (user as any)?.username ?? "");
-      const result = await apiFetch<any>("/api/training-docs/upload", { method: "POST", body: fd, isFormData: true });
+      const result = await apiFetch<any>("/trainingDocs?path=upload", { method: "POST", body: fd, isFormData: true });
       if (result?.id) {
         setDocs(prev => [result, ...prev]);
         setForm({ title: "", description: "", doc_type: "SOP", last_reviewed_at: new Date().toISOString().split("T")[0] });
@@ -4532,7 +5401,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
   const deleteDoc = async (id: string) => {
     if (!confirm("Remove this training document?")) return;
     try {
-      await apiFetch(`/api/training-docs/${group.id}/${id}`, { method: "DELETE" });
+      await apiFetch(`/trainingDocs?path=${group.id}/${id}`, { method: "DELETE" });
       setDocs(prev => prev.filter(d => d.id !== id));
       showMsg(true, "Document removed.");
       loadAssessment();
@@ -4541,7 +5410,7 @@ function TrainingDocsTab({ group, showMsg }: any) {
 
   const markReviewed = async (doc: any) => {
     try {
-      const updated = await apiFetch<any>(`/api/training-docs/${group.id}/${doc.id}`, {
+      const updated = await apiFetch<any>(`/trainingDocs?path=${group.id}/${doc.id}`, {
         method: "PATCH", body: JSON.stringify({ last_reviewed_at: new Date().toISOString() }),
       });
       setDocs(prev => prev.map(d => d.id === doc.id ? { ...d, ...updated } : d));
@@ -6456,8 +7325,8 @@ function UnitLegacyTab({ group }: any) {
   useEffect(() => {
     const headers = { Authorization: `Bearer ${token}` };
     Promise.all([
-      apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`).catch(() => []),
-      apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).catch(() => []),
+      apiFetch<any[]>(`/milsimGroups?path=${group.id}/ops`).catch(() => []),
+      apiFetch<any[]>(`/milsimGroups?path=${group.id}/aars`).catch(() => []),
       fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`, { headers }).then(r => r.json()).catch(() => []),
       apiFetch<any>(`/getProStatus?group_id=${group.id}`).catch(() => ({ is_pro: false })),
     ]).then(([o, a, c, proStatus]) => {
@@ -7129,3 +7998,4 @@ function WebhookEndpointsSection({ group, showMsg, token }: { group: any; showMs
     </div>
   );
 }
+// cache-bust 1774705069

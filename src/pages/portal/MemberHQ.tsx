@@ -7,7 +7,7 @@ import {
   Shield, Loader2, AlertTriangle, Siren, ClipboardList, MapPin, Calendar,
   Star, FileText, UserCheck, ChevronDown, ChevronUp, CheckCircle2, XCircle,
   Award, PlusCircle, Clock, ThumbsUp, ThumbsDown, ExternalLink, Send, TrendingUp,
-  GripVertical, Rows3, Save, RefreshCw, Info, Crown
+  GripVertical, Rows3, Save, RefreshCw, Info, Crown, Radio, Activity, Crosshair, Users
 } from "lucide-react";
 import { Link } from "wouter";
 import { getRibbonModifiers } from '@/lib/ribbonModifiers';
@@ -35,7 +35,7 @@ const STATUS_OP: Record<string, string> = {
 /* ─── main component ──────────────────────────────────────────────────────── */
 export default function MemberHQ() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<"ops"|"briefings"|"aars"|"peer-review"|"unit-review"|"loa"|"service-file"|"ribbon-bar">("ops");
+  const [tab, setTab] = useState<"ops"|"warnos"|"sitreps"|"aars"|"peer-review"|"unit-review"|"loa"|"service-file"|"ribbon-bar">("ops");
   const [upvoteCount, setUpvoteCount] = useState<number>(0);
   const [hasVoted, setHasVoted] = useState<boolean>(false);
   const [upvoting, setUpvoting] = useState(false);
@@ -48,7 +48,8 @@ export default function MemberHQ() {
   const showMsg = (ok: boolean, text: string) => { setMsg({ok,text}); setTimeout(()=>setMsg(null),3500); };
 
   useEffect(() => {
-    apiFetch<any[]>("/api/milsim-groups/mine/memberships")
+    if (!user?.id) return;
+    apiFetch<any[]>("/milsimGroups?path=mine/memberships")
       .then(async (groups) => {
         setMemberships(groups ?? []);
         if (groups && groups.length > 0) {
@@ -57,12 +58,12 @@ export default function MemberHQ() {
       })
       .catch(() => setMemberships([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user?.id]);
 
   // Load roster entry for selected group
   useEffect(() => {
     if (!selectedGroup || !user) return;
-    apiFetch<any>(`/api/milsim-groups/${selectedGroup.id}/full`)
+    apiFetch<any>(`/milsimGroups?path=${selectedGroup.id}/full`)
       .then((g: any) => {
         const entry = (g.roster ?? []).find((r: any) => r.userId === (user as any).id || r.user_id === (user as any).id);
         setRosterEntry(entry ?? null);
@@ -72,7 +73,7 @@ export default function MemberHQ() {
 
   useEffect(() => {
     if (!selectedGroup) return;
-    apiFetch<{ count: number; voted: boolean }>(`/api/group-upvotes?path=/upvotes/${selectedGroup.id}`, { method: "GET" })
+    apiFetch<{ count: number; voted: boolean }>(`/groupUpvotes?path=upvotes/${selectedGroup.id}`, { method: "GET" })
       .then(d => { setUpvoteCount(d.count ?? 0); setHasVoted(d.voted ?? false); })
       .catch(() => {});
   }, [selectedGroup]);
@@ -81,7 +82,7 @@ export default function MemberHQ() {
     if (!selectedGroup || upvoting) return;
     setUpvoting(true);
     try {
-      const res = await apiFetch<{ count: number; voted: boolean }>(`/api/group-upvotes?path=/upvotes/${selectedGroup.id}`, { method: "POST" });
+      const res = await apiFetch<{ count: number; voted: boolean }>(`/groupUpvotes?path=upvotes/${selectedGroup.id}`, { method: "POST" });
       setUpvoteCount(res.count ?? 0);
       setHasVoted(res.voted ?? false);
     } catch {}
@@ -111,7 +112,8 @@ export default function MemberHQ() {
 
   const TABS = [
     { id: "ops",          label: "Live Ops",      icon: Siren },
-    { id: "briefings",    label: "Briefings",     icon: MapPin },
+    { id: "warnos",       label: "WARNOs",        icon: Radio },
+    { id: "sitreps",      label: "SITREPs",       icon: Activity },
     { id: "aars",         label: "AARs",          icon: ClipboardList },
     { id: "peer-review",  label: "Peer Review",   icon: Star },
     { id: "unit-review",   label: "Unit Review",   icon: Shield },
@@ -212,8 +214,9 @@ export default function MemberHQ() {
       </div>
 
       {/* Tab content */}
-      {selectedGroup && tab === "ops"          && <MemberOpsTab         group={selectedGroup} showMsg={showMsg} />}
-      {selectedGroup && tab === "briefings"    && <MemberBriefingsTab   group={selectedGroup} showMsg={showMsg} />}
+      {selectedGroup && tab === "ops"          && <MemberOpsTab         group={selectedGroup} showMsg={showMsg} rosterEntry={rosterEntry} user={user} />}
+      {selectedGroup && tab === "warnos"       && <MemberWarnosTab      group={selectedGroup} showMsg={showMsg} />}
+      {selectedGroup && tab === "sitreps"      && <MemberSitrepsTab     group={selectedGroup} showMsg={showMsg} rosterEntry={rosterEntry} />}
       {selectedGroup && tab === "aars"         && <MemberAARsTab        group={selectedGroup} showMsg={showMsg} rosterEntry={rosterEntry} />}
       {selectedGroup && tab === "peer-review"  && <MemberPeerReviewTab  group={selectedGroup} showMsg={showMsg} user={user} />}
       {selectedGroup && tab === "loa"          && <MemberLOATab         group={selectedGroup} showMsg={showMsg} user={user} rosterEntry={rosterEntry} />}
@@ -225,18 +228,48 @@ export default function MemberHQ() {
 }
 
 /* ─── Ops tab ─────────────────────────────────────────────────────────────── */
-function MemberOpsTab({ group, showMsg }: any) {
+function MemberOpsTab({ group, showMsg, rosterEntry, user }: any) {
   const [ops, setOps] = useState<any[]>([]);
+  const [rsvps, setRsvps] = useState<Record<string, string>>({}); // op_id → status
+  const [rsvping, setRsvping] = useState<string|null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string|null>(null);
 
-  useEffect(() => {
+  const loadOps = useCallback(() => {
     apiFetch<any>(`/activityCalendar?path=list&group_id=${group.id}`)
       .then((r: any) => setOps((r.events ?? []).sort((a: any, b: any) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime())))
       .catch(() => setOps([]))
       .finally(() => setLoading(false));
   }, [group.id]);
 
+  const loadRsvps = useCallback(() => {
+    if (!user?.id) return;
+    apiFetch<any>(`/milsimOps?path=my-rsvps&group_id=${group.id}`)
+      .then((r: any) => {
+        const map: Record<string, string> = {};
+        (r.rsvps ?? []).forEach((rv: any) => { map[rv.event_id ?? rv.op_id] = rv.status; });
+        setRsvps(map);
+      })
+      .catch(() => {});
+  }, [group.id, user?.id]);
+
+  useEffect(() => { loadOps(); loadRsvps(); }, [loadOps, loadRsvps]);
+
+  const handleRsvp = async (opId: string, status: "attending" | "declined") => {
+    setRsvping(opId + status);
+    try {
+      await apiFetch(`/milsimOps?path=rsvp`, {
+        method: "POST",
+        body: JSON.stringify({ op_id: opId, group_id: group.id, status }),
+      });
+      setRsvps(prev => ({ ...prev, [opId]: status }));
+      showMsg(true, status === "attending" ? "RSVP confirmed — you're on the manifest." : "RSVP declined.");
+    } catch {
+      showMsg(false, "Failed to submit RSVP — try again.");
+    } finally {
+      setRsvping(null);
+    }
+  };
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
@@ -251,96 +284,204 @@ function MemberOpsTab({ group, showMsg }: any) {
   return (
     <div className="space-y-3 max-w-3xl">
       <p className="text-xs text-muted-foreground font-sans">{ops.length} operation{ops.length !== 1 ? "s" : ""} on record</p>
-      {ops.map((op: any) => (
-        <div key={op.id} className="bg-card border border-border rounded-lg overflow-hidden">
-          <button onClick={() => setExpanded(expanded === op.id ? null : op.id)}
-            className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${STATUS_OP[op.status ?? "Planned"] ?? ""}`}>{op.status ?? "Planned"}</span>
-              <span className="font-display font-bold text-sm">{op.name ?? op.title}</span>
-              {op.game && <span className="text-xs text-muted-foreground">{op.game}</span>}
-            </div>
-            <div className="flex items-center gap-2 shrink-0 text-muted-foreground">
-              {op.scheduled_at && <span className="text-xs font-sans">{format(new Date(op.scheduled_at), "dd MMM yyyy")}</span>}
-              {expanded === op.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </div>
-          </button>
-          {expanded === op.id && (
-            <div className="border-t border-border p-5 bg-secondary/10 space-y-3">
-              {op.description && <p className="text-sm text-muted-foreground font-sans leading-relaxed">{op.description}</p>}
-              <div className="grid grid-cols-2 gap-3 text-xs font-sans">
-                {op.event_type && <div><span className="text-muted-foreground">Type: </span><span className="text-foreground">{op.event_type}</span></div>}
-                {op.scheduled_at && <div><span className="text-muted-foreground">Scheduled: </span><span className="text-foreground">{format(new Date(op.scheduled_at), "dd MMM yyyy HH:mm")}</span></div>}
-                {op.end_date && <div><span className="text-muted-foreground">End: </span><span className="text-foreground">{format(new Date(op.end_date), "dd MMM yyyy")}</span></div>}
+      {ops.map((op: any) => {
+        const myRsvp = rsvps[op.id];
+        const isUpcoming = op.status !== "Completed" && op.status !== "Cancelled";
+        return (
+          <div key={op.id} className="bg-card border border-border rounded-lg overflow-hidden">
+            <button onClick={() => setExpanded(expanded === op.id ? null : op.id)}
+              className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${STATUS_OP[op.status ?? "Planned"] ?? ""}`}>{op.status ?? "Planned"}</span>
+                <span className="font-display font-bold text-sm">{op.name ?? op.title}</span>
+                {op.game && <span className="text-xs text-muted-foreground">{op.game}</span>}
+                {myRsvp === "attending" && <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border text-green-400 border-green-500/30 bg-green-500/10">✓ Attending</span>}
+                {myRsvp === "declined"  && <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border text-red-400 border-red-500/30 bg-red-500/10">✗ Declined</span>}
               </div>
-            </div>
-          )}
-        </div>
-      ))}
+              <div className="flex items-center gap-2 shrink-0 text-muted-foreground">
+                {op.scheduled_at && <span className="text-xs font-sans">{format(new Date(op.scheduled_at), "dd MMM yyyy")}</span>}
+                {expanded === op.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </div>
+            </button>
+            {expanded === op.id && (
+              <div className="border-t border-border p-5 bg-secondary/10 space-y-4">
+                {op.description && <p className="text-sm text-muted-foreground font-sans leading-relaxed">{op.description}</p>}
+                <div className="grid grid-cols-2 gap-3 text-xs font-sans">
+                  {op.event_type  && <div><span className="text-muted-foreground">Type: </span><span className="text-foreground">{op.event_type}</span></div>}
+                  {op.scheduled_at && <div><span className="text-muted-foreground">Scheduled: </span><span className="text-foreground">{format(new Date(op.scheduled_at), "dd MMM yyyy HH:mm")}</span></div>}
+                  {op.end_date     && <div><span className="text-muted-foreground">End: </span><span className="text-foreground">{format(new Date(op.end_date), "dd MMM yyyy")}</span></div>}
+                </div>
+                {isUpcoming && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mr-1">RSVP:</p>
+                    <button
+                      disabled={!!rsvping}
+                      onClick={() => handleRsvp(op.id, "attending")}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                        myRsvp === "attending"
+                          ? "bg-green-500/15 border-green-500/50 text-green-400"
+                          : "border-border text-muted-foreground hover:border-green-500/40 hover:text-green-400"
+                      }`}>
+                      {rsvping === op.id + "attending" ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                      Attending
+                    </button>
+                    <button
+                      disabled={!!rsvping}
+                      onClick={() => handleRsvp(op.id, "declined")}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded border text-xs font-display font-bold uppercase tracking-wider transition-all ${
+                        myRsvp === "declined"
+                          ? "bg-red-500/15 border-red-500/50 text-red-400"
+                          : "border-border text-muted-foreground hover:border-red-500/40 hover:text-red-400"
+                      }`}>
+                      {rsvping === op.id + "declined" ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                      Decline
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-/* ─── Briefings tab ───────────────────────────────────────────────────────── */
-function MemberBriefingsTab({ group, showMsg }: any) {
-  const [briefings, setBriefings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<string|null>(null);
-
-  useEffect(() => {
-    apiFetch<any>(`/milsimBriefings?path=list&group_id=${group.id}`)
-      .then((r: any) => setBriefings((r.briefings ?? []).filter((b: any) => b.status === "published").sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime())))
-      .catch(() => setBriefings([]))
-      .finally(() => setLoading(false));
-  }, [group.id]);
-
-
-  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-
-  if (briefings.length === 0) return (
-    <div className="text-center py-16 border border-dashed border-border rounded-lg">
-      <MapPin className="w-10 h-10 mx-auto mb-3 opacity-20" />
-      <p className="font-display text-sm uppercase tracking-widest text-muted-foreground">No published briefings</p>
-      <p className="text-xs text-muted-foreground font-sans mt-1">Your commander will publish op briefings here before operations</p>
-    </div>
-  );
-
-  return (
-    <div className="space-y-3 max-w-3xl">
-      <p className="text-xs text-muted-foreground font-sans">{briefings.length} published briefing{briefings.length !== 1 ? "s" : ""}</p>
-      {briefings.map((b: any) => (
-        <div key={b.id} className="bg-card border border-border rounded-lg overflow-hidden">
-          <button onClick={() => setExpanded(expanded === b.id ? null : b.id)}
-            className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${CL[b.classification ?? "unclassified"] ?? ""}`}>
-                {(b.classification ?? "unclassified").replace("-"," ")}
-              </span>
-              <span className="font-display font-bold text-sm">{b.title}</span>
-              {b.op_date && <span className="text-xs text-muted-foreground">{format(new Date(b.op_date), "dd MMM yyyy")}</span>}
-            </div>
-            {expanded === b.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-          </button>
-          {expanded === b.id && (
-            <div className="border-t border-border p-5 bg-secondary/10 space-y-4">
-              {b.ao         && <BriefField label="Area of Operations" value={b.ao} />}
-              {b.objectives && <BriefField label="Objectives"         value={b.objectives} />}
-              {b.comms_plan && <BriefField label="Comms Plan"         value={b.comms_plan} />}
-              {b.roe        && <BriefField label="Rules of Engagement"value={b.roe} />}
-              {b.additional_notes && <BriefField label="Additional Notes" value={b.additional_notes} />}
-              {b.content && !b.ao && !b.objectives && <BriefField label="Content" value={b.content} />}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
+/* ─── Shared field renderer ──────────────────────────────────────────────── */
 function BriefField({ label, value }: any) {
   return (
     <div>
       <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
       <p className="text-sm font-sans whitespace-pre-wrap text-foreground">{value}</p>
+    </div>
+  );
+}
+
+/* ─── WARNOs tab ──────────────────────────────────────────────────────────── */
+function MemberWarnosTab({ group, showMsg }: any) {
+  const [warnos, setWarnos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<string|null>(null);
+
+  useEffect(() => {
+    apiFetch<any>(`/milsimGroups?path=%2F${group.id}%2Fwarnos`)
+      .then((r: any) => setWarnos((Array.isArray(r) ? r : (r.warnos ?? [])).sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime())))
+      .catch(() => setWarnos([]))
+      .finally(() => setLoading(false));
+  }, [group.id]);
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (warnos.length === 0) return (
+    <div className="text-center py-16 border border-dashed border-border rounded-lg">
+      <Radio className="w-10 h-10 mx-auto mb-3 opacity-20" />
+      <p className="font-display text-sm uppercase tracking-widest text-muted-foreground">No WARNOs issued</p>
+      <p className="text-xs text-muted-foreground font-sans mt-1">Warning orders from your commander will appear here</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3 max-w-3xl">
+      <p className="text-xs text-muted-foreground font-sans">{warnos.length} warning order{warnos.length !== 1 ? "s" : ""}</p>
+      {warnos.map((w: any) => (
+        <div key={w.id} className="bg-card border border-border rounded-lg overflow-hidden">
+          <button onClick={() => setExpanded(expanded === w.id ? null : w.id)}
+            className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${
+                w.status === "issued" ? "text-yellow-400 border-yellow-500/30 bg-yellow-500/10" :
+                w.status === "acknowledged" ? "text-green-400 border-green-500/30 bg-green-500/10" :
+                "text-muted-foreground border-border"
+              }`}>{w.status ?? "draft"}</span>
+              <span className="font-display font-bold text-sm">{w.title}</span>
+              {w.op_date && <span className="text-xs text-muted-foreground">{format(new Date(w.op_date + "T00:00:00"), "dd MMM yyyy")}</span>}
+            </div>
+            {expanded === w.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+          </button>
+          {expanded === w.id && (
+            <div className="border-t border-border p-5 bg-secondary/10 space-y-4">
+              {w.situation_ground   && <BriefField label="Situation — Ground"   value={w.situation_ground} />}
+              {w.situation_enemy    && <BriefField label="Situation — Enemy"    value={w.situation_enemy} />}
+              {w.situation_friendly && <BriefField label="Situation — Friendly" value={w.situation_friendly} />}
+              {w.mission            && <BriefField label="Mission"              value={w.mission} />}
+              {w.timings_hh         && <BriefField label="H-Hour"               value={w.timings_hh} />}
+              {w.timings_nmb        && <BriefField label="No Move Before"       value={w.timings_nmb} />}
+              {w.timings_other      && <BriefField label="Other Timings"        value={w.timings_other} />}
+              {w.css                && <BriefField label="CSS / Logistics"      value={w.css} />}
+              {(w.o_group_time || w.o_group_loc) && (
+                <BriefField label="O Group" value={[w.o_group_time && `Time: ${w.o_group_time}`, w.o_group_loc && `Location: ${w.o_group_loc}`, w.o_group_other].filter(Boolean).join(" · ")} />
+              )}
+              <p className="text-xs text-muted-foreground font-sans pt-1">Issued {formatDistanceToNow(new Date(w.created_date), { addSuffix: true })}</p>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── SITREPs tab ─────────────────────────────────────────────────────────── */
+function MemberSitrepsTab({ group, showMsg, rosterEntry }: any) {
+  const [sitreps, setSitreps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<string|null>(null);
+
+  useEffect(() => {
+    apiFetch<any>(`/milsimSitrep?path=list&group_id=${group.id}`)
+      .then((r: any) => setSitreps((r.sitreps ?? []).sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime())))
+      .catch(() => setSitreps([]))
+      .finally(() => setLoading(false));
+  }, [group.id]);
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (sitreps.length === 0) return (
+    <div className="text-center py-16 border border-dashed border-border rounded-lg">
+      <Activity className="w-10 h-10 mx-auto mb-3 opacity-20" />
+      <p className="font-display text-sm uppercase tracking-widest text-muted-foreground">No SITREPs filed</p>
+      <p className="text-xs text-muted-foreground font-sans mt-1">Situation reports from your commander will appear here</p>
+    </div>
+  );
+
+  const myCallsign = rosterEntry?.callsign ?? "";
+
+  return (
+    <div className="space-y-3 max-w-3xl">
+      <p className="text-xs text-muted-foreground font-sans">{sitreps.length} situation report{sitreps.length !== 1 ? "s" : ""}</p>
+      {sitreps.map((s: any) => (
+        <div key={s.id} className="bg-card border border-border rounded-lg overflow-hidden">
+          <button onClick={() => setExpanded(expanded === s.id ? null : s.id)}
+            className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/20 transition-colors text-left">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${
+                s.mission_status === "on_track" ? "text-green-400 border-green-500/30 bg-green-500/10" :
+                s.mission_status === "compromised" ? "text-red-400 border-red-500/30 bg-red-500/10" :
+                s.mission_status === "delayed" ? "text-yellow-400 border-yellow-500/30 bg-yellow-500/10" :
+                "text-muted-foreground border-border"
+              }`}>{(s.mission_status ?? "unknown").replace("_", " ")}</span>
+              <span className="font-display font-bold text-sm">{s.op_name ?? "SITREP"}</span>
+              <span className="text-xs text-muted-foreground">by {s.callsign}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 text-muted-foreground">
+              <span className="text-xs font-sans">{formatDistanceToNow(new Date(s.created_date), { addSuffix: true })}</span>
+              {expanded === s.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
+          </button>
+          {expanded === s.id && (
+            <div className="border-t border-border p-5 bg-secondary/10 space-y-4">
+              {s.position        && <BriefField label="Position"            value={s.position} />}
+              {s.activity        && <BriefField label="Current Activity"    value={s.activity} />}
+              {s.enemy_contact   && <BriefField label="Enemy Contact"       value={s.enemy_contact} />}
+              {s.enemy_notes     && <BriefField label="Enemy Notes"         value={s.enemy_notes} />}
+              {s.mission_notes   && <BriefField label="Mission Status"      value={s.mission_notes} />}
+              {s.next_action     && <BriefField label="Next Action"         value={s.next_action} />}
+              {s.additional_info && <BriefField label="Additional Info"     value={s.additional_info} />}
+              {s.friendly_casualties > 0 && <BriefField label="Friendly Casualties" value={`${s.friendly_casualties}${s.casualty_notes ? ` — ${s.casualty_notes}` : ""}`} />}
+              <p className="text-xs text-muted-foreground font-sans pt-1">Filed by {s.reported_by} · {formatDistanceToNow(new Date(s.created_date), { addSuffix: true })}</p>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -437,7 +578,7 @@ function MemberPeerReviewTab({ group, showMsg, user }: any) {
   const [form, setForm] = useState({ activity: 7, attitude: 7, experience: 5, discipline: 7, overall_vote: "commend", notes: "" });
 
   useEffect(() => {
-    apiFetch<any>(`/api/milsim-groups/${group.id}/full`)
+    apiFetch<any>(`/milsimGroups?path=${group.id}/full`)
       .then((g: any) => {
         // Filter out self
         const others = (g.roster ?? []).filter((r: any) => r.userId !== (user as any)?.id && r.user_id !== (user as any)?.id);
@@ -451,7 +592,7 @@ function MemberPeerReviewTab({ group, showMsg, user }: any) {
     if (!selected) return;
     setSubmitting(true);
     try {
-      await apiFetch(`/api/reputation/${selected.userId}`, {
+      await apiFetch(`/reputation?path=${selected.userId}`, {
         method: "POST",
         body: JSON.stringify({ ...form, group_id: group.id, group_name: group.name }),
       });
@@ -1012,7 +1153,7 @@ function MemberServiceFileTab({ user }: any) {
 
   useEffect(() => {
     if (!user?.id) { setLoading(false); return; }
-    apiFetch<any>(`/api/reputation/${user.id}`)
+    apiFetch<any>(`/reputation?path=${user.id}`)
       .then(setRep)
       .catch(() => setRep(null))
       .finally(() => setLoading(false));
@@ -1173,9 +1314,21 @@ function CssRibbon({ award, size = 40 }: { award: any; size?: number }) {
   );
 }
 
-function RibbonImage({ award, size = 40, modifierUrl }: { award: any; size?: number; modifierUrl?: string }) {
+function RibbonImage({ award, size = 40, modifierUrl, overlayUrl }: { award: any; size?: number; modifierUrl?: string; overlayUrl?: string }) {
   const url = ribbonImageUrl(award, modifierUrl);
   if (!url) return <CssRibbon award={award} size={size} />;
+  if (overlayUrl) {
+    return (
+      <div style={{ position: "relative", width: size * 1.6, height: size * 0.55, flexShrink: 0, borderRadius: 2, overflow: "hidden" }}>
+        <img src={url} alt={award.award_name ?? award.name ?? "ribbon"}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "fill" }}
+          onError={(e: any) => { e.currentTarget.style.display = "none"; }} />
+        <img src={overlayUrl} alt="device"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
+          onError={(e: any) => { e.currentTarget.style.display = "none"; }} />
+      </div>
+    );
+  }
   return (
     <img
       src={url}
@@ -1197,6 +1350,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
   const [saving, setSaving]             = useState(false);
   const [loading, setLoading]           = useState(true);
   const [hovered, setHovered]           = useState<string | null>(null);
+  const [previewMods, setPreviewMods]   = useState<Record<string, Record<string, string>>>({});
   const [localRoster, setLocalRoster]   = useState<any | null>(null);
   const [ribbonSearch, setRibbonSearch] = useState("");
   const [ribbonCountry, setRibbonCountry] = useState("all");
@@ -1309,28 +1463,27 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
   );
 
   // Compute active modifier image URL for a given ribbon
-  const getModifierUrl = (ribbon: any): string | undefined => {
-    const mods = barMods[ribbon.id];
-    if (!mods) return undefined;
+  // Resolve modifier URL + overlay — checks previewMods (and barMods when in rack)
+  const getModifierResult = (ribbon: any, usePreview = false): { url?: string; overlayUrl?: string } => {
     const baseUrl = ribbonImageUrl(ribbon);
     const modifiers = getRibbonModifiers(baseUrl);
-    // Select modifiers: find one with a value set
+    if (!modifiers.length) return {};
+    const mods = usePreview ? (previewMods[ribbon.id] ?? barMods[ribbon.id] ?? {}) : (barMods[ribbon.id] ?? previewMods[ribbon.id] ?? {});
+    let resultUrl: string | undefined;
+    let overlayUrl: string | undefined;
     for (const mod of modifiers) {
       if (mod.type === 'select' && mod.options) {
-        const selected = mods[mod.name];
-        if (selected) {
-          const opt = mod.options.find(o => o.value === selected);
-          if (opt?.url) return opt.url;
-        }
+        const sel = mods[mod.name] ?? mod.options[0]?.value;
+        if (sel) { const opt = mod.options.find(o => o.value === sel); if (opt?.url) resultUrl = opt.url; if (opt?.overlayUrl) overlayUrl = opt.overlayUrl; }
       }
+      if (mod.type === 'checkbox' && mod.affectsImage && mods[mod.name] === '1') resultUrl = mod.variantUrl;
     }
-    // Checkbox modifiers
-    for (const mod of modifiers) {
-      if (mod.type === 'checkbox' && mod.affectsImage && mods[mod.name] === '1') {
-        return mod.variantUrl;
-      }
-    }
-    return undefined;
+    return { url: resultUrl, overlayUrl };
+  };
+
+  const setPreviewMod = (ribbonId: string, modName: string, value: string) => {
+    setPreviewMods(prev => ({ ...prev, [ribbonId]: { ...(prev[ribbonId] ?? {}), [modName]: value } }));
+    if (barIds.includes(ribbonId)) setMod(ribbonId, modName, value);
   };
 
   const setMod = (ribbonId: string, modName: string, value: string) => {
@@ -1420,7 +1573,7 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
                       onMouseEnter={() => setHovered(ribbon.id)}
                       onMouseLeave={() => setHovered(null)}
                     >
-                      <RibbonImage award={ribbon} size={52} modifierUrl={getModifierUrl(ribbon)} />
+                      {(() => { const r = getModifierResult(ribbon, true); return <RibbonImage award={ribbon} size={52} modifierUrl={r.url} overlayUrl={r.overlayUrl} />; })()}
                       {hovered === ribbon.id && (
                         <button
                           onClick={() => toggleInBar(ribbon.id)}
@@ -1482,9 +1635,13 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
               {pagedRibbons.map((ribbon: any) => {
                 const inBar = barIds.includes(ribbon.id);
                 const baseUrl = ribbonImageUrl(ribbon);
-                const modifiers = inBar ? getRibbonModifiers(baseUrl) : [];
-                const currentMods = barMods[ribbon.id] ?? {};
-                const modUrl = inBar ? getModifierUrl(ribbon) : undefined;
+                const modifiers = getRibbonModifiers(baseUrl);
+                const hasModifiers = modifiers.length > 0;
+                const activeMods = inBar
+                  ? { ...(previewMods[ribbon.id] ?? {}), ...(barMods[ribbon.id] ?? {}) }
+                  : (previewMods[ribbon.id] ?? {});
+                const modResult = getModifierResult(ribbon, true);
+                const modUrl = modResult.url;
                 return (
                   <div
                     key={ribbon.id}
@@ -1494,9 +1651,8 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
                         : "border-border bg-card hover:border-primary/40 hover:bg-primary/5"
                     }`}
                   >
-                    {/* Clickable top area to toggle in/out of rack */}
                     <button className="flex flex-col items-center gap-2 w-full" onClick={() => toggleInBar(ribbon.id)}>
-                      <RibbonImage award={ribbon} size={44} modifierUrl={modUrl} />
+                      <RibbonImage award={ribbon} size={44} modifierUrl={modUrl} overlayUrl={getModifierResult(ribbon, true).overlayUrl} />
                       <div className="text-center">
                         <p className="text-[10px] font-display font-bold uppercase tracking-wider leading-tight line-clamp-2">
                           {ribbon.award_name ?? ribbon.name ?? "Ribbon"}
@@ -1511,18 +1667,22 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
                         {inBar ? "In Rack ✓" : "Add to Rack"}
                       </span>
                     </button>
-                    {/* Modifier controls — only when ribbon is in rack and has modifiers */}
-                    {inBar && modifiers.length > 0 && (
-                      <div className="w-full border-t border-primary/20 pt-2 space-y-1.5" onClick={e => e.stopPropagation()}>
+                    {/* Modifier controls — always visible when ribbon has variants */}
+                    {hasModifiers && (
+                      <div className={`w-full pt-2 space-y-1.5 border-t ${inBar ? "border-primary/20" : "border-border/60"}`}
+                        onClick={e => e.stopPropagation()}>
+                        <p className={`text-[8px] font-display font-bold uppercase tracking-widest mb-1 ${inBar ? "text-primary" : "text-muted-foreground"}`}>
+                          {inBar ? "Variants & Clasps" : "Preview Grade"}
+                        </p>
                         {modifiers.map((mod) => (
                           <div key={mod.name} className="flex flex-col gap-0.5">
                             {mod.type === 'select' && mod.options && (
                               <>
                                 <label className="text-[8px] text-muted-foreground font-sans uppercase tracking-wider">{mod.label}</label>
                                 <select
-                                  value={currentMods[mod.name] ?? mod.options[0].value}
-                                  onChange={e => setMod(ribbon.id, mod.name, e.target.value)}
-                                  className="text-[9px] bg-background border border-border rounded px-1 py-0.5 w-full font-sans"
+                                  value={activeMods[mod.name] ?? mod.options[0].value}
+                                  onChange={e => setPreviewMod(ribbon.id, mod.name, e.target.value)}
+                                  className="text-[9px] bg-background border border-border rounded px-1 py-0.5 w-full font-sans focus:outline-none focus:ring-1 focus:ring-primary/40"
                                 >
                                   {mod.options.map(opt => (
                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -1534,8 +1694,8 @@ function MemberRibbonBarTab({ group, user, rosterEntry }: any) {
                               <label className="flex items-center gap-1.5 cursor-pointer">
                                 <input
                                   type="checkbox"
-                                  checked={currentMods[mod.name] === '1'}
-                                  onChange={e => e.target.checked ? setMod(ribbon.id, mod.name, '1') : clearMod(ribbon.id, mod.name)}
+                                  checked={activeMods[mod.name] === '1'}
+                                  onChange={e => setPreviewMod(ribbon.id, mod.name, e.target.checked ? '1' : '')}
                                   className="w-3 h-3 accent-primary"
                                 />
                                 <span className="text-[9px] text-muted-foreground font-sans">{mod.label}</span>

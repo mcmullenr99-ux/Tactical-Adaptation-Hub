@@ -9,7 +9,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+    return await base44.asServiceRole.entities.AppUser.get(payload.sub) ?? null;
   } catch { return null; }
 }
 
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
       // Auto-promote to staff if approved
       if (body.status === 'approved') {
         const app = await base44.asServiceRole.entities.StaffApplication.get(parts[0]);
-        if (app) await base44.asServiceRole.entities.User.update(app.user_id, { role: 'staff' });
+        if (app) await base44.asServiceRole.entities.AppUser.update(app.user_id, { role: 'staff' });
       }
       return Response.json(updated);
     }

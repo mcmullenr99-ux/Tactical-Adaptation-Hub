@@ -29,9 +29,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.medals.pl/bc/r/au2cds.gif": [
     { type: 'select', name: "au2cds", label: 'Select variant', tooltip: "au2cds", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/au2cds.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/au2cds1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/au2cds2.gif" }] },
   ],
-  "https://www.medals.pl/bc/r/au2cns.gif": [
-    { type: 'select', name: "au2cns", label: 'Select variant', tooltip: "au2cns", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/au2cns.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/au2cns1.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/au2cns2.gif" }] },
-  ],
+
   "https://www.medals.pl/bc/r/au2drf.gif": [
     { type: 'select', name: "au2drf", label: 'Select variant', tooltip: "au2drf", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/au2drf.gif" }, { value: "2", label: "1 Clasp", url: "https://www.medals.pl/bc/r/au2drf1.gif" }, { value: "3", label: "2 Clasps", url: "https://www.medals.pl/bc/r/au2drf2.gif" }, { value: "4", label: "3 Clasps", url: "https://www.medals.pl/bc/r/au2drf3.gif" }, { value: "5", label: "4 Clasps", url: "https://www.medals.pl/bc/r/au2drf4.gif" }, { value: "6", label: "5 Clasps", url: "https://www.medals.pl/bc/r/au2drf5.gif" }, { value: "7", label: "6 Clasps", url: "https://www.medals.pl/bc/r/au2drf6.gif" }, { value: "8", label: "7 Clasps", url: "https://www.medals.pl/bc/r/au2drf7.gif" }] },
   ],
@@ -39,7 +37,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'select', name: "au2maa", label: 'Select variant', tooltip: "au2maa", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/au2maa.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/au2maa1.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/au2maa2.gif" }] },
   ],
   "https://www.medals.pl/bc/r/au2mbr1.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/au2mbr2.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/au2mbr1.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/au2mbr2.gif" }] },
   ],
   "https://www.medals.pl/bc/r/au2mcs.gif": [
     { type: 'select', name: "au2mcs", label: 'Select variant', tooltip: "au2mcs", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/au2mcs.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/au2mcs1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/au2mcs2.gif" }] },
@@ -56,14 +54,12 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.medals.pl/bc/r/au2mlsd.gif": [
     { type: 'select', name: "au2mlsd", label: 'Select variant', tooltip: "au2mlsd", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/au2mlsd.gif" }, { value: "2", label: "1 Clasp", url: "https://www.medals.pl/bc/r/au2mlsd1.gif" }, { value: "3", label: "2 Clasps", url: "https://www.medals.pl/bc/r/au2mlsd2.gif" }, { value: "4", label: "3 Clasps", url: "https://www.medals.pl/bc/r/au2mlsd3.gif" }, { value: "5", label: "4 Clasps", url: "https://www.medals.pl/bc/r/au2mlsd4.gif" }, { value: "6", label: "5 Clasps", url: "https://www.medals.pl/bc/r/au2mlsd5.gif" }, { value: "7", label: "6 Clasps", url: "https://www.medals.pl/bc/r/au2mlsd6.gif" }, { value: "8", label: "7 Clasps", url: "https://www.medals.pl/bc/r/au2mlsd7.gif" }] },
   ],
-  "https://www.medals.pl/bc/r/au2mpoov.gif": [
-    { type: 'select', name: "au2mpoov", label: 'Select variant', tooltip: "au2mpoov", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/au2mpoov.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/au2mpoov1.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/au2mpoov2.gif" }, { value: "4", label: "4", url: "https://www.medals.pl/bc/r/au2mpoov3.gif" }] },
-  ],
+
   "https://www.medals.pl/bc/r/au2mrf.gif": [
     { type: 'select', name: "au2mrf", label: 'Select variant', tooltip: "au2mrf", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/au2mrf.gif" }, { value: "2", label: "1 Clasp", url: "https://www.medals.pl/bc/r/au2mrf1.gif" }, { value: "3", label: "2 Clasps", url: "https://www.medals.pl/bc/r/au2mrf2.gif" }, { value: "4", label: "3 Clasps", url: "https://www.medals.pl/bc/r/au2mrf3.gif" }, { value: "5", label: "4 Clasps", url: "https://www.medals.pl/bc/r/au2mrf4.gif" }, { value: "6", label: "5 Clasps", url: "https://www.medals.pl/bc/r/au2mrf5.gif" }, { value: "7", label: "6 Clasps", url: "https://www.medals.pl/bc/r/au2mrf6.gif" }, { value: "8", label: "7 Clasps", url: "https://www.medals.pl/bc/r/au2mrf7.gif" }] },
   ],
   "https://www.medals.pl/bc/r/au2sco1.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/au2sco2.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/au2sco1.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/au2sco2.gif" }] },
   ],
   "https://www.medals.pl/bc/r/au2sga.gif": [
     { type: 'select', name: "au2sga", label: 'Select variant', tooltip: "au2sga", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/au2sga.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/au2sga1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/au2sga2.gif" }] },
@@ -83,25 +79,17 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.medals.pl/bc/r/ca2mbr.gif": [
     { type: 'select', name: "ca2mbr", label: 'Select variant', tooltip: "ca2mbr", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/ca2mbr.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/ca2mbr1.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/ca2mbr2.gif" }] },
   ],
-  "https://www.medals.pl/bc/r/ca2mgk1.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/ca2mgk1.gif", affectsImage: true },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/ca2mgk1.gif", affectsImage: false },
-  ],
+
   "https://www.medals.pl/bc/r/ca2mgsaf.gif": [
     { type: 'select', name: "ca2mgsaf", label: 'Select variant', tooltip: "ca2mgsaf", options: [{ value: "z", label: "No clasp", url: "https://www.medals.pl/bc/r/ca2mgsaf.gif" }, { value: "1", label: "1 Clasp", url: "https://www.medals.pl/bc/r/ca2mgsaf1.gif" }, { value: "2", label: "2 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsaf2.gif" }, { value: "3", label: "3 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsaf3.gif" }, { value: "4", label: "4 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsaf4.gif" }, { value: "5", label: "5 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsaf5.gif" }, { value: "6", label: "6 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsaf6.gif" }] },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/ca2mgsaf.gif", affectsImage: false },
   ],
   "https://www.medals.pl/bc/r/ca2mgsexp.gif": [
     { type: 'select', name: "ca2mgsexp", label: 'Select variant', tooltip: "ca2mgsexp", options: [{ value: "z", label: "No clasp", url: "https://www.medals.pl/bc/r/ca2mgsexp.gif" }, { value: "1", label: "1 Clasp", url: "https://www.medals.pl/bc/r/ca2mgsexp1.gif" }, { value: "2", label: "2 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsexp2.gif" }, { value: "3", label: "3 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsexp3.gif" }, { value: "4", label: "4 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsexp4.gif" }, { value: "5", label: "5 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsexp5.gif" }, { value: "6", label: "6 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsexp6.gif" }] },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/ca2mgsexp.gif", affectsImage: false },
   ],
   "https://www.medals.pl/bc/r/ca2mgsswa.gif": [
     { type: 'select', name: "ca2mgsswa", label: 'Select variant', tooltip: "ca2mgsswa", options: [{ value: "z", label: "No clasp", url: "https://www.medals.pl/bc/r/ca2mgsswa.gif" }, { value: "1", label: "1 Clasp", url: "https://www.medals.pl/bc/r/ca2mgsswa1.gif" }, { value: "2", label: "2 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsswa2.gif" }, { value: "3", label: "3 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsswa3.gif" }, { value: "4", label: "4 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsswa4.gif" }, { value: "5", label: "5 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsswa5.gif" }, { value: "6", label: "6 Clasps", url: "https://www.medals.pl/bc/r/ca2mgsswa6.gif" }] },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/ca2mgsswa.gif", affectsImage: false },
   ],
-  "https://www.medals.pl/bc/r/ca2mlsmp35.gif": [
-    { type: 'select', name: "ca2mlsmp", label: 'Select variant', tooltip: "ca2mlsmp", options: [{ value: "1", label: "20 yrs", url: "https://www.medals.pl/bc/r/ca2mlsmp.gif" }, { value: "2", label: "25 yrs", url: "https://www.medals.pl/bc/r/ca2mlsmp25.gif" }, { value: "3", label: "30 yrs", url: "https://www.medals.pl/bc/r/ca2mlsmp30.gif" }, { value: "4", label: "35 yrs", url: "https://www.medals.pl/bc/r/ca2mlsmp35.gif" }] },
-  ],
+
   "https://www.medals.pl/bc/r/ca2mmsm.gif": [
     { type: 'select', name: "ca2mmsm", label: 'Select variant', tooltip: "ca2mmsm", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/ca2mmsm.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/ca2mmsm1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/ca2mmsm2.gif" }] },
   ],
@@ -125,8 +113,6 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   ],
   "https://www.medals.pl/bc/r/ca2mswass.gif": [
     { type: 'select', name: "ca2mswas", label: 'Select variant', tooltip: "ca2mswas", options: [{ value: "z", label: "No clasp", url: "https://www.medals.pl/bc/r/ca2mswas.gif" }, { value: "1", label: "1 Clasp", url: "https://www.medals.pl/bc/r/ca2mswass1.gif" }, { value: "2", label: "2 Clasps", url: "https://www.medals.pl/bc/r/ca2mswass2.gif" }, { value: "3", label: "3 Clasps", url: "https://www.medals.pl/bc/r/ca2mswass3.gif" }, { value: "4", label: "4 Clasps", url: "https://www.medals.pl/bc/r/ca2mswass4.gif" }, { value: "5", label: "5 Clasps", url: "https://www.medals.pl/bc/r/ca2mswass5.gif" }, { value: "6", label: "6 Clasps", url: "https://www.medals.pl/bc/r/ca2mswass6.gif" }] },
-    { type: 'checkbox', name: "w_\"AFGHANISTAN\"_bar", label: "w. \"AFGHANISTAN\" bar", variantUrl: "https://www.medals.pl/bc/r/ca2mswass.gif", affectsImage: true },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/ca2mswass.gif", affectsImage: false },
   ],
   "https://www.medals.pl/bc/r/ca2omm1.gif": [
     { type: 'select', name: "ca2omm", label: 'Select variant', tooltip: "1.Companion (CMM)\n2.Officer (OMM)\n3.Member (MMM)", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/ca2omm1.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/ca2omma2.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/ca2omm3.gif" }] },
@@ -155,26 +141,24 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.medals.pl/bc/r/nz2manz.gif": [
     { type: 'select', name: "nz2manz", label: 'Select variant', tooltip: "nz2manz", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/nz2manz.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/nz2manz1.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/nz2manz2.gif" }] },
   ],
-  "https://www.medals.pl/bc/r/nz2mlsp.gif": [
-    { type: 'select', name: "nz2mlsp", label: 'Select variant', tooltip: "nz2mlsp", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/nz2mlsp.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/nz2mlsp1.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/nz2mlsp2.gif" }, { value: "4", label: "4", url: "https://www.medals.pl/bc/r/nz2mlsp3.gif" }, { value: "5", label: "5", url: "https://www.medals.pl/bc/r/nz2mlsp4.gif" }] },
-  ],
+
   "https://www.medals.pl/bc/r/nz2nzbd.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/nz2nzbd1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/nz2nzbd.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/nz2nzbd1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/nz2nzbm.gif": [
     { type: 'select', name: "nz2nzbm", label: 'Select variant', tooltip: "nz2nzbm", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/nz2nzbm.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/nz2nzbm1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/nz2nzbm2.gif" }] },
   ],
   "https://www.medals.pl/bc/r/nz2nzbs.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/nz2nzbs1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/nz2nzbs.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/nz2nzbs1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/nz2nzgd.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/nz2nzgd1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/nz2nzgd.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/nz2nzgd1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/nz2nzgm.gif": [
     { type: 'select', name: "nz2nzgm", label: 'Select variant', tooltip: "nz2nzgm", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/nz2nzgm.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/nz2nzgm1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/nz2nzgm2.gif" }] },
   ],
   "https://www.medals.pl/bc/r/nz2nzgs.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/nz2nzgs1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/nz2nzgs.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/nz2nzgs1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/nz2nzom.gif": [
     { type: 'select', name: "nz2nzom", label: 'Select variant', tooltip: "1.Knight/Dame Grand Companion (GNZM)\n2.Knight/Dame Companion (KNZM/DNZM)\n3.Companion (CNZM)\n4.Officer (ONZM)\n5.Member (MNZM)", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }, { value: "1a", label: "1a", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }, { value: "2a", label: "2a", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }, { value: "4", label: "4", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }, { value: "5", label: "5", url: "https://www.medals.pl/bc/r/nz2nzom.gif" }] },
@@ -194,27 +178,22 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.medals.pl/bc/r/uk1cmm.gif": [
     { type: 'select', name: "uk1cmm", label: 'Select variant', tooltip: "uk1cmm", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/uk1cmm.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/uk1cmm1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/uk1cmm2.gif" }] },
   ],
-  "https://www.medals.pl/bc/r/uk1crrc.gif": [
-    { type: 'select', name: "uk1crrc", label: 'Select variant', tooltip: "1.Royal Red Cross (RRC)\n2.Associate Royal Red Cross (ARRC)", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/uk1crrc.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/uk1crrc.gif" }] },
-  ],
+
   "https://www.medals.pl/bc/r/uk1macb.gif": [
     { type: 'select', name: "uk1macb", label: 'Select variant', tooltip: "uk1macb", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/uk1macb.gif" }, { value: "2", label: "1 Clasp", url: "https://www.medals.pl/bc/r/uk1macb1.gif" }, { value: "3", label: "2 Clasps", url: "https://www.medals.pl/bc/r/uk1macb2.gif" }, { value: "4", label: "3 Clasps", url: "https://www.medals.pl/bc/r/uk1macb3.gif" }, { value: "5", label: "4 Clasps", url: "https://www.medals.pl/bc/r/uk1macb4.gif" }, { value: "6", label: "5 Clasps", url: "https://www.medals.pl/bc/r/uk1macb5.gif" }, { value: "7", label: "6 Clasps", url: "https://www.medals.pl/bc/r/uk1macb6.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mas.gif": [
     { type: 'select', name: "uk1mas", label: 'Select variant', tooltip: "uk1mas", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/uk1mas.gif" }, { value: "2", label: "1 Clasp", url: "https://www.medals.pl/bc/r/uk1mas1.gif" }, { value: "3", label: "2 Clasps", url: "https://www.medals.pl/bc/r/uk1mas2.gif" }, { value: "4", label: "3 Clasps", url: "https://www.medals.pl/bc/r/uk1mas3.gif" }] },
   ],
-  "https://www.medals.pl/bc/r/uk1mbecg.gif": [
-    { type: 'checkbox', name: "gallantry_emblem_(1957-74)", label: "gallantry emblem (1957-74)", variantUrl: "https://www.medals.pl/bc/r/uk1mbecg.gif", affectsImage: true },
-  ],
+
   "https://www.medals.pl/bc/r/uk1mcs_m.gif": [
     { type: 'select', name: "uk1mcs", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/uk1mcs.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/uk1mcs_m.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/uk1mcs_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1mcs_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1mcs_cvs.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mge.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mge1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1mge.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/uk1mge1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mgu.gif": [
-    { type: 'checkbox', name: "w_rosette", label: "w. rosette", variantUrl: "https://www.medals.pl/bc/r/uk1mgu1.gif", affectsImage: true },
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/uk1mgu_m.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1mgu.gif" }, { value: "w. rosette", label: "w. rosette", url: "https://www.medals.pl/bc/r/uk1mgu1.gif" }, { value: "MID emblem", label: "MID emblem", url: "https://www.medals.pl/bc/r/uk1mgu_m.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mhac.gif": [
     { type: 'select', name: "uk1mhac", label: 'Select variant', tooltip: "uk1mhac", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/uk1mhac.gif" }, { value: "2", label: "1 Clasp", url: "https://www.medals.pl/bc/r/uk1mhac1.gif" }, { value: "3", label: "2 Clasps", url: "https://www.medals.pl/bc/r/uk1mhac2.gif" }, { value: "4", label: "3 Clasps", url: "https://www.medals.pl/bc/r/uk1mhac3.gif" }] },
@@ -222,17 +201,15 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.medals.pl/bc/r/uk1mhsni.gif": [
     { type: 'select', name: "uk1mhsni", label: 'Select variant', tooltip: "uk1mhsni", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/uk1mhsni.gif" }, { value: "2", label: "1 Clasp", url: "https://www.medals.pl/bc/r/uk1mhsni1.gif" }, { value: "3", label: "2 Clasps", url: "https://www.medals.pl/bc/r/uk1mhsni2.gif" }, { value: "4", label: "3 Clasps", url: "https://www.medals.pl/bc/r/uk1mhsni3.gif" }] },
   ],
-  "https://www.medals.pl/bc/r/uk1mko_m.gif": [
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/uk1mko_m.gif", affectsImage: true },
-  ],
+
   "https://www.medals.pl/bc/r/uk1mlsa.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mlsa1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1mlsa.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/uk1mlsa1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mlsaf.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mlsaf1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1mlsaf.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/uk1mlsaf1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mlsn.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mlsn1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1mlsn.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/uk1mlsn1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mos_m2.gif": [
     { type: 'select', name: "uk1mos", label: 'Decoration', options: [{ value: "1", label: "MID", url: "https://www.medals.pl/bc/r/uk1mos_m2.gif" }, { value: "2", label: "MID + Rosette", url: "https://www.medals.pl/bc/r/uk1mos1_m2.gif" }, { value: "3", label: "Plain", url: "https://www.medals.pl/bc/r/uk1mos.gif" }, { value: "4", label: "Plain + Rosette", url: "https://www.medals.pl/bc/r/uk1mos1.gif" }, { value: "5", label: "QCB", url: "https://www.medals.pl/bc/r/uk1mos_cb.gif" }, { value: "6", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1mos_cba.gif" }, { value: "7", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1mos_cvs.gif" }] },
@@ -244,22 +221,24 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'select', name: "uk1mosco", label: 'Decoration', options: [{ value: "1", label: "MID", url: "https://www.medals.pl/bc/r/uk1mosco_m2.gif" }, { value: "2", label: "MID + Rosette", url: "https://www.medals.pl/bc/r/uk1mosco1_m2.gif" }, { value: "3", label: "Plain", url: "https://www.medals.pl/bc/r/uk1mosco.gif" }, { value: "4", label: "Plain + Rosette", url: "https://www.medals.pl/bc/r/uk1mosco1.gif" }, { value: "5", label: "QCB", url: "https://www.medals.pl/bc/r/uk1mosco_cb.gif" }, { value: "6", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1mosco_cba.gif" }, { value: "7", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1mosco_cvs.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1mqg.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1mqg1.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1mqg.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/uk1mqg1.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1msa1.gif": [
     { type: 'select', name: "uk1msa_variant", label: 'Variant', options: [{ value: "1", label: "With Rosette (no MID)", url: "https://www.medals.pl/bc/r/uk1msa.gif" }, { value: "2", label: "With MID emblem", url: "https://www.medals.pl/bc/r/uk1msa1.gif" }, { value: "3", label: "With Rosette + MID", url: "https://www.medals.pl/bc/r/uk1msa_m.gif" }] },
   ],
-  "https://www.medals.pl/bc/r/uk1mvns_m.gif": [
-    { type: 'checkbox', name: "MID", label: "MID", variantUrl: "https://www.medals.pl/bc/r/uk1mvns_m.gif", affectsImage: true },
-  ],
+
   "https://www.medals.pl/bc/r/uk1mvrs.gif": [
     { type: 'select', name: "uk1mvrs", label: 'Select variant', tooltip: "uk1mvrs", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/uk1mvrs.gif" }, { value: "2", label: "1 Clasp", url: "https://www.medals.pl/bc/r/uk1mvrs1.gif" }, { value: "3", label: "2 Clasps", url: "https://www.medals.pl/bc/r/uk1mvrs2.gif" }, { value: "4", label: "3 Clasps", url: "https://www.medals.pl/bc/r/uk1mvrs3.gif" }] },
   ],
-  "https://www.medals.pl/bc/r/uk1obecb.gif": [
-    { type: 'select', name: "uk1obecb", label: 'Select variant', tooltip: "1.Knight/Dame Grand Cross (GBE)\n2.Knight/Dame Commander (KBE/DBE)\n3.Commander (CBE)\n4.Officer (OBE)\n5.Member (MBE)", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/uk1obecb.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/uk1obecb.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/uk1obecb.gif" }, { value: "4", label: "4", url: "https://www.medals.pl/bc/r/uk1obecb.gif" }, { value: "5", label: "5", url: "https://www.medals.pl/bc/r/uk1obecb.gif" }] },
-  ],
+
   "https://www.medals.pl/bc/r/uk1obemb.gif": [
-    { type: 'select', name: "uk1obemb", label: 'Select variant', tooltip: "1.Knight/Dame Grand Cross (GBE)\n2.Knight/Dame Commander (KBE/DBE)\n3.Commander (CBE)\n4.Officer (OBE)\n5.Member (MBE)", options: [{ value: "1", label: "1", url: "https://www.medals.pl/bc/r/uk1obemb.gif" }, { value: "2", label: "2", url: "https://www.medals.pl/bc/r/uk1obemb.gif" }, { value: "3", label: "3", url: "https://www.medals.pl/bc/r/uk1obemb.gif" }, { value: "4", label: "4", url: "https://www.medals.pl/bc/r/uk1obemb.gif" }, { value: "5", label: "5", url: "https://www.medals.pl/bc/r/uk1obemb.gif" }] },
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: "Knight/Dame Grand Cross (GBE)", label: "Knight/Dame Grand Cross (GBE)", url: "https://www.medals.pl/bc/r/uk1obemb.gif" },
+      { value: "Knight/Dame Commander (KBE/DBE)", label: "Knight/Dame Commander (KBE/DBE)", url: "https://www.medals.pl/bc/r/uk1obemb.gif" },
+      { value: "Commander (CBE)", label: "Commander (CBE)", url: "https://www.medals.pl/bc/r/uk1obemb.gif" },
+      { value: "Officer (OBE)", label: "Officer (OBE)", url: "https://www.medals.pl/bc/r/uk1obemb.gif" },
+      { value: "Member (MBE)", label: "Member (MBE)", url: "https://www.medals.pl/bc/r/uk1obemb.gif" },
+    ] },
   ],
   "https://www.medals.pl/bc/r/uk1ods.gif": [
     { type: 'select', name: "uk1ods", label: 'Select variant', tooltip: "uk1ods", options: [{ value: "1", label: "Award", url: "https://www.medals.pl/bc/r/uk1ods.gif" }, { value: "2", label: "1 Bar", url: "https://www.medals.pl/bc/r/uk1ods1.gif" }, { value: "3", label: "2 Bars", url: "https://www.medals.pl/bc/r/uk1ods2.gif" }, { value: "4", label: "3 Bars", url: "https://www.medals.pl/bc/r/uk1ods3.gif" }] },
@@ -268,57 +247,29 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
     { type: 'select', name: "uk1miqc", label: 'Decoration', options: [{ value: "1", label: "MID", url: "https://www.medals.pl/bc/r/uk1miqc_m2.gif" }, { value: "2", label: "MID + Rosette", url: "https://www.medals.pl/bc/r/uk1miqc1_m2.gif" }, { value: "3", label: "Plain", url: "https://www.medals.pl/bc/r/uk1miqc.gif" }, { value: "4", label: "Plain + Rosette", url: "https://www.medals.pl/bc/r/uk1miqc1.gif" }, { value: "5", label: "QCB", url: "https://www.medals.pl/bc/r/uk1miqc_cb.gif" }, { value: "6", label: "QCBA", url: "https://www.medals.pl/bc/r/uk1miqc_cba.gif" }, { value: "7", label: "QCVS", url: "https://www.medals.pl/bc/r/uk1miqc_cvs.gif" }] },
   ],
   "https://www.medals.pl/bc/r/uk1vc.gif": [
-    { type: 'checkbox', name: "w_bar", label: "w. bar", variantUrl: "https://www.medals.pl/bc/r/uk1vc2.gif", affectsImage: true },
+    { type: 'select', name: 'variant', label: 'Select variant', options: [{ value: "Award", label: "Award", url: "https://www.medals.pl/bc/r/uk1vc.gif" }, { value: "w. bar", label: "w. bar", url: "https://www.medals.pl/bc/r/uk1vc2.gif" }] },
   ],
   // ── NATO medals ──────────────────────────────────────────────
-  "https://www.medals.pl/bc/r/nato.gif": [
-    { type: 'select', name: "nato", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/nato.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/nato_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/nato_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/nato_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/nato_cvs.gif" }] },
-  ],
-  "https://www.medals.pl/bc/r/natok.gif": [
-    { type: 'select', name: "natok", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/natok.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/natok_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/natok_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/natok_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/natok_cvs.gif" }] },
-  ],
-  "https://www.medals.pl/bc/r/natom.gif": [
-    { type: 'select', name: "natom", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/natom.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/natom_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/natom_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/natom_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/natom_cvs.gif" }] },
-  ],
-  "https://www.medals.pl/int/r/natob.gif": [
-    { type: 'select', name: "natob", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/int/r/natob.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/natob_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/natob_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/natob_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/natob_cvs.gif" }] },
-  ],
-  "https://www.medals.pl/bc/r/natoa5.gif": [
-    { type: 'select', name: "natoa5", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/natoa5.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/natoa5_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/natoa5_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/natoa5_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/natoa5_cvs.gif" }] },
-  ],
-  "https://www.medals.pl/bc/r/natoisaf.gif": [
-    { type: 'select', name: "natoisaf", label: 'Decoration', options: [{ value: "1", label: "Plain", url: "https://www.medals.pl/bc/r/natoisaf.gif" }, { value: "2", label: "MID", url: "https://www.medals.pl/bc/r/natoisaf_m2.gif" }, { value: "3", label: "QCB", url: "https://www.medals.pl/bc/r/natoisaf_cb.gif" }, { value: "4", label: "QCBA", url: "https://www.medals.pl/bc/r/natoisaf_cba.gif" }, { value: "5", label: "QCVS", url: "https://www.medals.pl/bc/r/natoisaf_cvs.gif" }] },
-  ],
+
+
+
+
+
+
 
   // ── BELGIUM ──────────────────────────────────────────────────────────────────
-  "https://www.medals.pl/be/r/be1ole4.gif": [
-    { type: 'select', name: "be1ole", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/be/r/be1ole4.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/be/r/be1ole4.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/be/r/be1ole4.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/be/r/be1ole4.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/be/r/be1ole4.gif" }] },
-  ],
-  "https://www.medals.pl/be/r/be1oleii.gif": [
-    { type: 'select', name: "be1oleii", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/be/r/be1oleii.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/be/r/be1oleii1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/be/r/be1oleii2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/be/r/be1oleii3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/be/r/be1oleii4.gif" }] },
-  ],
+
+
 
   // ── FRANCE ───────────────────────────────────────────────────────────────────
-  "https://www.medals.pl/fr/r/fr2olh4.gif": [
-    { type: 'select', name: "fr2olh", label: 'Class', options: [{ value: "1", label: "Grand Croix", url: "https://www.medals.pl/fr/r/fr2olh4.gif" }, { value: "2", label: "Grand Officier", url: "https://www.medals.pl/fr/r/fr2olh4.gif" }, { value: "3", label: "Commandeur", url: "https://www.medals.pl/fr/r/fr2olh4.gif" }, { value: "4", label: "Officier", url: "https://www.medals.pl/fr/r/fr2olh4.gif" }, { value: "5", label: "Chevalier", url: "https://www.medals.pl/fr/r/fr2olh4.gif" }] },
-  ],
+
 
   // ── ITALY ────────────────────────────────────────────────────────────────────
-  "https://www.medals.pl/it/r/it1omi.gif": [
-    { type: 'select', name: "it1omi", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/it/r/it1omi.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/it/r/it1omi1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/it/r/it1omi2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/it/r/it1omi3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/it/r/it1omi4.gif" }] },
-  ],
-  "https://www.medals.pl/it/r/it1oml.gif": [
-    { type: 'select', name: "it1oml", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/it/r/it1oml.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/it/r/it1oml1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/it/r/it1oml2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/it/r/it1oml3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/it/r/it1oml4.gif" }] },
-  ],
-  "https://www.medals.pl/it/r/it1ocr.gif": [
-    { type: 'select', name: "it1ocr", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/it/r/it1ocr.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/it/r/it1ocr1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/it/r/it1ocr2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/it/r/it1ocr3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/it/r/it1ocr4.gif" }] },
-  ],
-  "https://www.medals.pl/it/r/it2ome.gif": [
-    { type: 'select', name: "it2ome", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/it/r/it2ome.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/it/r/it2ome1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/it/r/it2ome2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/it/r/it2ome3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/it/r/it2ome4.gif" }] },
-  ],
-  "https://www.medals.pl/it/r/it2mvmi2.gif": [
-    { type: 'select', name: "it2mvmi", label: 'Grade', options: [{ value: "1", label: "Gold", url: "https://www.medals.pl/it/r/it2mvmi2.gif" }, { value: "2", label: "Silver", url: "https://www.medals.pl/it/r/it2mvmi2.gif" }] },
-  ],
+
+
+
+
+
 
   // ── GREECE ───────────────────────────────────────────────────────────────────
   "https://www.medals.pl/gr/r/gr1ore.gif": [
@@ -327,14 +278,10 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.medals.pl/gr/r/gr1oph.gif": [
     { type: 'select', name: "gr1oph", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/gr/r/gr1oph.gif" }, { value: "2", label: "2nd (Grand Commander)", url: "https://www.medals.pl/gr/r/gr1oph1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/gr/r/gr1oph2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/gr/r/gr1oph3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/gr/r/gr1oph4.gif" }] },
   ],
-  "https://www.medals.pl/gr/r/gr1oge.gif": [
-    { type: 'select', name: "gr1oge", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/gr/r/gr1oge.gif" }, { value: "2", label: "2nd (Grand Commander)", url: "https://www.medals.pl/gr/r/gr1oge1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/gr/r/gr1oge2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/gr/r/gr1oge3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/gr/r/gr1oge4.gif" }] },
-  ],
+
 
   // ── NORWAY ───────────────────────────────────────────────────────────────────
-  "https://www.medals.pl/no/r/no1ool.gif": [
-    { type: 'select', name: "no1ool", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/no/r/no1ool.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/no/r/no1ool1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/no/r/no1ool2.gif" }, { value: "4", label: "4th (Knight, 1st Class)", url: "https://www.medals.pl/no/r/no1ool3.gif" }, { value: "5", label: "5th (Knight)", url: "https://www.medals.pl/no/r/no1ool4.gif" }] },
-  ],
+
 
   // ── NETHERLANDS ──────────────────────────────────────────────────────────────
   "https://www.medals.pl/nl/r/nl1oon.gif": [
@@ -342,12 +289,8 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   ],
 
   // ── POLAND ───────────────────────────────────────────────────────────────────
-  "https://www.medals.pl/pl/r/pl4opr.gif": [
-    { type: 'select', name: "pl4opr", label: 'Class', options: [{ value: "1", label: "1st (Grand Cross)", url: "https://www.medals.pl/pl/r/pl4opr.gif" }, { value: "2", label: "2nd (Grand Officer)", url: "https://www.medals.pl/pl/r/pl4opr1.gif" }, { value: "3", label: "3rd (Commander)", url: "https://www.medals.pl/pl/r/pl4opr2.gif" }, { value: "4", label: "4th (Officer)", url: "https://www.medals.pl/pl/r/pl4opr3.gif" }, { value: "5", label: "5th (Member)", url: "https://www.medals.pl/pl/r/pl4opr4.gif" }] },
-  ],
-  "https://www.medals.pl/pl/r/pl2cvab.gif": [
-    { type: 'select', name: "pl2cvab", label: 'Grade', options: [{ value: "1", label: "Gold", url: "https://www.medals.pl/pl/r/pl2cvab.gif" }, { value: "2", label: "Silver", url: "https://www.medals.pl/pl/r/pl2cvab1.gif" }, { value: "3", label: "Bronze", url: "https://www.medals.pl/pl/r/pl2cvab2.gif" }] },
-  ],
+
+
 
   // ── LUXEMBOURG ───────────────────────────────────────────────────────────────
   "https://www.medals.pl/lu/r/lu1oan.gif": [
@@ -362,9 +305,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.uniformribbons.com/image/defense_distinguished_service_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "defense_distinguished_service_ribbon-1_bronze_oak_leaf", label: "1 OAK", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_oak_leaf.png" }, { value: "defense_distinguished_service_ribbon-2_bronze_oak_leaf", label: "2 OAK", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_oak_leaf.png" }, { value: "defense_distinguished_service_ribbon-3_bronze_oak_leaf", label: "3 OAK", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_oak_leaf.png" }, { value: "defense_distinguished_service_ribbon-4_bronze_oak_leaf", label: "4 OAK", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_oak_leaf.png" }, { value: "defense_distinguished_service_ribbon-5_bronze_oak_leaf", label: "5 OAK", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_oak_leaf.png" }] },
   ],
-  "https://www.uniformribbons.com/image/homeland_security_distinguished_service_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "homeland_security_distinguished_service_ribbon-1_bronze_oak", label: "1 OAK", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_oak.png" }, { value: "homeland_security_distinguished_service_ribbon-2_bronze_oak", label: "2 OAK", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_oak.png" }, { value: "homeland_security_distinguished_service_ribbon-3_bronze_oak", label: "3 OAK", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_oak.png" }, { value: "homeland_security_distinguished_service_ribbon-4_bronze_oak", label: "4 OAK", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_oak.png" }, { value: "homeland_security_distinguished_service_ribbon-5_bronze_oak", label: "5 OAK", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_oak.png" }, { value: "homeland_security_distinguished_service_ribbon-6_bronze_oak", label: "6 OAK", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_oak.png" }, { value: "homeland_security_distinguished_service_ribbon-7_bronze_oak", label: "7 OAK", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_oak.png" }, { value: "homeland_security_distinguished_service_ribbon-8_bronze_oak", label: "8 OAK", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_oak.png" }, { value: "homeland_security_distinguished_service_ribbon-9_bronze_oak", label: "9 OAK", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_oak.png" }] },
-  ],
+
   "https://www.uniformribbons.com/image/army_distinguished_service_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "army_distinguished_service_ribbon-1_bronze_oak", label: "1 OAK", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_oak.png" }, { value: "army_distinguished_service_ribbon-2_bronze_oak", label: "2 OAK", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_oak.png" }, { value: "army_distinguished_service_ribbon-3_bronze_oak", label: "3 OAK", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_oak.png" }, { value: "army_distinguished_service_ribbon-4_bronze_oak", label: "4 OAK", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_oak.png" }, { value: "army_distinguished_service_ribbon-5_bronze_oak", label: "5 OAK", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_oak.png" }, { value: "army_distinguished_service_ribbon-6_bronze_oak", label: "6 OAK", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_oak.png" }, { value: "army_distinguished_service_ribbon-7_bronze_oak", label: "7 OAK", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_oak.png" }, { value: "army_distinguished_service_ribbon-8_bronze_oak", label: "8 OAK", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_oak.png" }, { value: "army_distinguished_service_ribbon-9_bronze_oak", label: "9 OAK", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_oak.png" }] },
   ],
@@ -434,39 +375,23 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.uniformribbons.com/image/army_reserve_components_achievement_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "army_reserve_components_achievement_ribbon-1_bronze_oak", label: "1 OAK", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_oak.png" }, { value: "army_reserve_components_achievement_ribbon-2_bronze_oak", label: "2 OAK", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_oak.png" }, { value: "army_reserve_components_achievement_ribbon-3_bronze_oak", label: "3 OAK", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_oak.png" }, { value: "army_reserve_components_achievement_ribbon-4_bronze_oak", label: "4 OAK", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_oak.png" }, { value: "army_reserve_components_achievement_ribbon-5_bronze_oak", label: "5 OAK", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_oak.png" }, { value: "army_reserve_components_achievement_ribbon-6_bronze_oak", label: "6 OAK", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_oak.png" }, { value: "army_reserve_components_achievement_ribbon-7_bronze_oak", label: "7 OAK", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_oak.png" }, { value: "army_reserve_components_achievement_ribbon-8_bronze_oak", label: "8 OAK", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_oak.png" }, { value: "army_reserve_components_achievement_ribbon-9_bronze_oak", label: "9 OAK", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_oak.png" }] },
   ],
-  "https://www.uniformribbons.com/image/american_defense_service_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "american_defense_service_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "american_defense_service_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "american_defense_service_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "american_defense_service_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "american_defense_service_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
-  ],
-  "https://www.uniformribbons.com/image/american_campaign_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "american_campaign_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "american_campaign_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "american_campaign_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "american_campaign_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "american_campaign_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }, { value: "american_campaign_ribbon-6_bronze_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_star.png" }, { value: "american_campaign_ribbon-7_bronze_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_star.png" }, { value: "american_campaign_ribbon-8_bronze_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_star.png" }, { value: "american_campaign_ribbon-9_bronze_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_star.png" }] },
-  ],
-  "https://www.uniformribbons.com/image/asiatic_pacific_service_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "asiatic_pacific_service_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "asiatic_pacific_service_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "asiatic_pacific_service_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "asiatic_pacific_service_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "asiatic_pacific_service_ribbon-5_bronze_star", label: "5 SAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }, { value: "asiatic_pacific_service_ribbon-6_bronze_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_star.png" }, { value: "asiatic_pacific_service_ribbon-7_bronze_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_star.png" }, { value: "asiatic_pacific_service_ribbon-8_bronze_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_star.png" }, { value: "asiatic_pacific_service_ribbon-9_bronze_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_star.png" }] },
-  ],
-  "https://www.uniformribbons.com/image/european_african_middle_eastern_campaign_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "european_african_middle_eastern_campaign_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "european_african_middle_eastern_campaign_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "european_african_middle_eastern_campaign_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "european_african_middle_eastern_campaign_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "european_african_middle_eastern_campaign_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
-  ],
-  "https://www.uniformribbons.com/image/army_occupation_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "army_occupation_ribbon-plane", label: "plane", overlayUrl: "https://www.uniformribbons.com/img/plane.png" }] },
-  ],
-  "https://www.uniformribbons.com/image/humane_action_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "humane_action_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "humane_action_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "humane_action_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "humane_action_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "humane_action_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
-  ],
+
+
+
+
+
+
   "https://www.uniformribbons.com/image/national_defense_service_medal_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "national_defense_service_medal_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "national_defense_service_medal_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "national_defense_service_medal_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "national_defense_service_medal_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "national_defense_service_medal_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
   ],
-  "https://www.uniformribbons.com/image/korea_service_medal_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "korea_service_medal_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "korea_service_medal_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "korea_service_medal_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "korea_service_medal_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "korea_service_medal_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
-  ],
+
   "https://www.uniformribbons.com/image/antarctica_service_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "antarctica_service_ribbon-bronze_winter_over", label: "BRONZE", overlayUrl: "https://www.uniformribbons.com/img/bronze_winter_over.png" }, { value: "antarctica_service_ribbon-gold_winter_over", label: "GOLD", overlayUrl: "https://www.uniformribbons.com/img/gold_winter_over.png" }, { value: "antarctica_service_ribbon-silver_winter_over", label: "SILVER", overlayUrl: "https://www.uniformribbons.com/img/silver_winter_over.png" }] },
   ],
   "https://www.uniformribbons.com/image/armed_forces_expeditionary_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "armed_forces_expeditionary_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "armed_forces_expeditionary_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "armed_forces_expeditionary_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "armed_forces_expeditionary_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "armed_forces_expeditionary_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
   ],
-  "https://www.uniformribbons.com/image/vietnam_service_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "vietnam_service_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "vietnam_service_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "vietnam_service_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "vietnam_service_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "vietnam_service_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
-  ],
+
   "https://www.uniformribbons.com/image/southwest_asia_service_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "southwest_asia_service_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "southwest_asia_service_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "southwest_asia_service_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "southwest_asia_service_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "southwest_asia_service_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
   ],
@@ -512,24 +437,12 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.uniformribbons.com/image/army_reserve_components_overseas_training_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "army_reserve_components_overseas_training_ribbon-1_numeral", label: "1 NUM", overlayUrl: "https://www.uniformribbons.com/img/1_numeral.png" }, { value: "army_reserve_components_overseas_training_ribbon-2_numeral", label: "2 NUM", overlayUrl: "https://www.uniformribbons.com/img/2_numeral.png" }, { value: "army_reserve_components_overseas_training_ribbon-3_numeral", label: "3 NUM", overlayUrl: "https://www.uniformribbons.com/img/3_numeral.png" }, { value: "army_reserve_components_overseas_training_ribbon-4_numeral", label: "4 NUM", overlayUrl: "https://www.uniformribbons.com/img/4_numeral.png" }, { value: "army_reserve_components_overseas_training_ribbon-5_numeral", label: "5 NUM", overlayUrl: "https://www.uniformribbons.com/img/5_numeral.png" }, { value: "army_reserve_components_overseas_training_ribbon-6_numeral", label: "6 NUM", overlayUrl: "https://www.uniformribbons.com/img/6_numeral.png" }, { value: "army_reserve_components_overseas_training_ribbon-7_numeral", label: "7 NUM", overlayUrl: "https://www.uniformribbons.com/img/7_numeral.png" }, { value: "army_reserve_components_overseas_training_ribbon-8_numeral", label: "8 NUM", overlayUrl: "https://www.uniformribbons.com/img/8_numeral.png" }, { value: "army_reserve_components_overseas_training_ribbon-9_numeral", label: "9 NUM", overlayUrl: "https://www.uniformribbons.com/img/9_numeral.png" }] },
   ],
-  "https://www.uniformribbons.com/image/vietnam_gallantry_cross_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "vietnam_gallantry_cross_ribbon-palm_device", label: "PALM", overlayUrl: "https://www.uniformribbons.com/img/palm_device.png" }] },
-  ],
-  "https://www.uniformribbons.com/image/vietnam_civil_action_1c_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "vietnam_civil_action_1c_ribbon-palm_device", label: "PALM", overlayUrl: "https://www.uniformribbons.com/img/palm_device.png" }] },
-  ],
-  "https://www.uniformribbons.com/image/vietnam_civil_action_2c_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "vietnam_civil_action_2c_ribbon-palm_device", label: "PALM", overlayUrl: "https://www.uniformribbons.com/img/palm_device.png" }] },
-  ],
-  "https://www.uniformribbons.com/image/philippine_defense_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "philippine_defense_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "philippine_defense_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "philippine_defense_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "philippine_defense_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "philippine_defense_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }, { value: "philippine_defense_ribbon-6_bronze_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_star.png" }, { value: "philippine_defense_ribbon-7_bronze_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_star.png" }, { value: "philippine_defense_ribbon-8_bronze_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_star.png" }, { value: "philippine_defense_ribbon-9_bronze_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_star.png" }] },
-  ],
-  "https://www.uniformribbons.com/image/philippine_liberation_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "philippine_liberation_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "philippine_liberation_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "philippine_liberation_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "philippine_liberation_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "philippine_liberation_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }, { value: "philippine_liberation_ribbon-6_bronze_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_star.png" }, { value: "philippine_liberation_ribbon-7_bronze_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_star.png" }, { value: "philippine_liberation_ribbon-8_bronze_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_star.png" }, { value: "philippine_liberation_ribbon-9_bronze_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_star.png" }] },
-  ],
-  "https://www.uniformribbons.com/image/united_nations_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "united_nations_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "united_nations_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "united_nations_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "united_nations_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "united_nations_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }, { value: "united_nations_ribbon-6_bronze_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_star.png" }, { value: "united_nations_ribbon-7_bronze_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_star.png" }, { value: "united_nations_ribbon-8_bronze_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_star.png" }, { value: "united_nations_ribbon-9_bronze_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_star.png" }] },
-  ],
+
+
+
+
+
+
   "https://www.uniformribbons.com/image/nato_medal_meritorious_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "nato_medal_meritorious_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "nato_medal_meritorious_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "nato_medal_meritorious_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "nato_medal_meritorious_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "nato_medal_meritorious_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }, { value: "nato_medal_meritorious_ribbon-6_bronze_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_star.png" }, { value: "nato_medal_meritorious_ribbon-7_bronze_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_star.png" }, { value: "nato_medal_meritorious_ribbon-8_bronze_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_star.png" }, { value: "nato_medal_meritorious_ribbon-9_bronze_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_star.png" }] },
   ],
@@ -545,12 +458,8 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.uniformribbons.com/image/nato_isaf_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "nato_isaf_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "nato_isaf_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "nato_isaf_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "nato_isaf_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "nato_isaf_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }, { value: "nato_isaf_ribbon-6_bronze_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_star.png" }, { value: "nato_isaf_ribbon-7_bronze_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_star.png" }, { value: "nato_isaf_ribbon-8_bronze_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_star.png" }, { value: "nato_isaf_ribbon-9_bronze_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_star.png" }] },
   ],
-  "https://www.uniformribbons.com/image/multinational_forces_and_observer_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "multinational_forces_and_observer_ribbon-1_numeral", label: "NO 1", overlayUrl: "https://www.uniformribbons.com/img/1_numeral.png" }, { value: "multinational_forces_and_observer_ribbon-2_numeral", label: "NO 2", overlayUrl: "https://www.uniformribbons.com/img/2_numeral.png" }, { value: "multinational_forces_and_observer_ribbon-3_numeral", label: "NO 3", overlayUrl: "https://www.uniformribbons.com/img/3_numeral.png" }, { value: "multinational_forces_and_observer_ribbon-4_numeral", label: "NO 4", overlayUrl: "https://www.uniformribbons.com/img/4_numeral.png" }, { value: "multinational_forces_and_observer_ribbon-5_numeral", label: "NO 5", overlayUrl: "https://www.uniformribbons.com/img/5_numeral.png" }, { value: "multinational_forces_and_observer_ribbon-6_numeral", label: "NO 6", overlayUrl: "https://www.uniformribbons.com/img/6_numeral.png" }, { value: "multinational_forces_and_observer_ribbon-7_numeral", label: "NO 7", overlayUrl: "https://www.uniformribbons.com/img/7_numeral.png" }, { value: "multinational_forces_and_observer_ribbon-8_numeral", label: "NO 8", overlayUrl: "https://www.uniformribbons.com/img/8_numeral.png" }, { value: "multinational_forces_and_observer_ribbon-9_numeral", label: "NO 9", overlayUrl: "https://www.uniformribbons.com/img/9_numeral.png" }] },
-  ],
-  "https://www.uniformribbons.com/image/inter_american_defense_board_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "inter_american_defense_board_ribbon-1_silver_star", label: "1 SILVER STAR", overlayUrl: "https://www.uniformribbons.com/img/1_silver_star.png" }, { value: "inter_american_defense_board_ribbon-1_gold_star", label: "1 GOLD STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "inter_american_defense_board_ribbon-2_gold_star", label: "2 GOLD STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }] },
-  ],
+
+
   "https://www.uniformribbons.com/image/navy_marine_corps_presidential_unit_citation_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "navy_marine_corps_presidential_unit_citation_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "navy_marine_corps_presidential_unit_citation_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "navy_marine_corps_presidential_unit_citation_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "navy_marine_corps_presidential_unit_citation_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "navy_marine_corps_presidential_unit_citation_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }, { value: "navy_marine_corps_presidential_unit_citation_ribbon-6_bronze_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_star.png" }, { value: "navy_marine_corps_presidential_unit_citation_ribbon-7_bronze_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_star.png" }, { value: "navy_marine_corps_presidential_unit_citation_ribbon-8_bronze_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_star.png" }, { value: "navy_marine_corps_presidential_unit_citation_ribbon-9_bronze_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_star.png" }] },
   ],
@@ -560,9 +469,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.uniformribbons.com/image/air_force_outstanding_unit_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "air_force_outstanding_unit_ribbon-1_bronze_oak", label: "1 OAK", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_oak.png" }, { value: "air_force_outstanding_unit_ribbon-2_bronze_oak", label: "2 OAK", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_oak.png" }, { value: "air_force_outstanding_unit_ribbon-3_bronze_oak", label: "3 OAK", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_oak.png" }, { value: "air_force_outstanding_unit_ribbon-4_bronze_oak", label: "4 OAK", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_oak.png" }, { value: "air_force_outstanding_unit_ribbon-5_bronze_oak", label: "5 OAK", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_oak.png" }, { value: "air_force_outstanding_unit_ribbon-6_bronze_oak", label: "6 OAK", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_oak.png" }, { value: "air_force_outstanding_unit_ribbon-7_bronze_oak", label: "7 OAK", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_oak.png" }, { value: "air_force_outstanding_unit_ribbon-8_bronze_oak", label: "8 OAK", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_oak.png" }, { value: "air_force_outstanding_unit_ribbon-9_bronze_oak", label: "9 OAK", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_oak.png" }, { value: "air_force_outstanding_unit_ribbon-v_device", label: "V", overlayUrl: "https://www.uniformribbons.com/img/v_device.png" }, { value: "air_force_outstanding_unit_ribbon-1_bronze_oak_v_device", label: "1 OAK V", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_oak_v_device.png" }, { value: "air_force_outstanding_unit_ribbon-2_bronze_oak_v_device", label: "2 OAK V", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_oak_v_device.png" }, { value: "air_force_outstanding_unit_ribbon-3_bronze_oak_v_device", label: "3 OAK V", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_oak_v_device.png" }, { value: "air_force_outstanding_unit_ribbon-4_bronze_oak_v_device", label: "4 OAK V", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_oak_v_device.png" }, { value: "air_force_outstanding_unit_ribbon-5_bronze_oak_v_device", label: "5 OAK V", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_oak_v_device.png" }, { value: "air_force_outstanding_unit_ribbon-6_bronze_oak_v_device", label: "6 OAK V", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_oak_v_device.png" }, { value: "air_force_outstanding_unit_ribbon-7_bronze_oak_v_device", label: "7 OAK V", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_oak_v_device.png" }, { value: "air_force_outstanding_unit_ribbon-8_bronze_oak_v_device", label: "8 OAK V", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_oak_v_device.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_unit_commendation_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_unit_commendation_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "coast_guard_unit_commendation_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "coast_guard_unit_commendation_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "coast_guard_unit_commendation_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "coast_guard_unit_commendation_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }] },
-  ],
+
   "https://www.uniformribbons.com/image/navy_marine_corps_meritorious_unit_commendation_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "navy_marine_corps_meritorious_unit_commendation_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "navy_marine_corps_meritorious_unit_commendation_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "navy_marine_corps_meritorious_unit_commendation_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "navy_marine_corps_meritorious_unit_commendation_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "navy_marine_corps_meritorious_unit_commendation_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }, { value: "navy_marine_corps_meritorious_unit_commendation_ribbon-6_bronze_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_star.png" }, { value: "navy_marine_corps_meritorious_unit_commendation_ribbon-7_bronze_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_star.png" }, { value: "navy_marine_corps_meritorious_unit_commendation_ribbon-8_bronze_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_star.png" }, { value: "navy_marine_corps_meritorious_unit_commendation_ribbon-9_bronze_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_star.png" }] },
   ],
@@ -572,9 +479,7 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.uniformribbons.com/image/air_force_organizational_excellence_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "air_force_organizational_excellence_ribbon-1_bronze_oak", label: "1 OAK", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_oak.png" }, { value: "air_force_organizational_excellence_ribbon-2_bronze_oak", label: "2 OAK", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_oak.png" }, { value: "air_force_organizational_excellence_ribbon-3_bronze_oak", label: "3 OAK", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_oak.png" }, { value: "air_force_organizational_excellence_ribbon-4_bronze_oak", label: "4 OAK", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_oak.png" }, { value: "air_force_organizational_excellence_ribbon-5_bronze_oak", label: "5 OAK", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_oak.png" }, { value: "air_force_organizational_excellence_ribbon-6_bronze_oak", label: "6 OAK", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_oak.png" }, { value: "air_force_organizational_excellence_ribbon-7_bronze_oak", label: "7 OAK", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_oak.png" }, { value: "air_force_organizational_excellence_ribbon-8_bronze_oak", label: "8 OAK", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_oak.png" }, { value: "air_force_organizational_excellence_ribbon-9_bronze_oak", label: "9 OAK", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_oak.png" }, { value: "air_force_organizational_excellence_ribbon-v_device", label: "V", overlayUrl: "https://www.uniformribbons.com/img/v_device.png" }, { value: "air_force_organizational_excellence_ribbon-1_bronze_oak_v_device", label: "1 OAK V", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_oak_v_device.png" }, { value: "air_force_organizational_excellence_ribbon-2_bronze_oak_v_device", label: "2 OAK V", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_oak_v_device.png" }, { value: "air_force_organizational_excellence_ribbon-3_bronze_oak_v_device", label: "3 OAK V", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_oak_v_device.png" }, { value: "air_force_organizational_excellence_ribbon-4_bronze_oak_v_device", label: "4 OAK V", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_oak_v_device.png" }, { value: "air_force_organizational_excellence_ribbon-5_bronze_oak_v_device", label: "5 OAK V", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_oak_v_device.png" }, { value: "air_force_organizational_excellence_ribbon-6_bronze_oak_v_device", label: "6 OAK V", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_oak_v_device.png" }, { value: "air_force_organizational_excellence_ribbon-7_bronze_oak_v_device", label: "7 OAK V", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_oak_v_device.png" }, { value: "air_force_organizational_excellence_ribbon-8_bronze_oak_v_device", label: "8 OAK V", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_oak_v_device.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_meritorious_unit_commendation_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_meritorious_unit_commendation_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "coast_guard_meritorious_unit_commendation_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "coast_guard_meritorious_unit_commendation_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "coast_guard_meritorious_unit_commendation_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "coast_guard_meritorious_unit_commendation_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }] },
-  ],
+
   "https://www.uniformribbons.com/image/navy_cross_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "navy_cross_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "navy_cross_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "navy_cross_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "navy_cross_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "navy_cross_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }, { value: "navy_cross_ribbon-6_gold_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_gold_star.png" }, { value: "navy_cross_ribbon-7_gold_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_gold_star.png" }, { value: "navy_cross_ribbon-8_gold_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_gold_star.png" }, { value: "navy_cross_ribbon-9_gold_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_gold_star.png" }] },
   ],
@@ -602,12 +507,8 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.uniformribbons.com/image/navy_expeditionary_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "navy_expeditionary_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "navy_expeditionary_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "navy_expeditionary_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "navy_expeditionary_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "navy_expeditionary_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
   ],
-  "https://www.uniformribbons.com/image/china_service_medal_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "china_service_medal_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "china_service_medal_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "china_service_medal_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "china_service_medal_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "china_service_medal_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }, { value: "china_service_medal_ribbon-6_bronze_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_star.png" }, { value: "china_service_medal_ribbon-7_bronze_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_star.png" }, { value: "china_service_medal_ribbon-8_bronze_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_star.png" }, { value: "china_service_medal_ribbon-9_bronze_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_star.png" }] },
-  ],
-  "https://www.uniformribbons.com/image/navy_occupation_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "navy_occupation_ribbon-plane", label: "plane", overlayUrl: "https://www.uniformribbons.com/img/plane.png" }] },
-  ],
+
+
   "https://www.uniformribbons.com/image/navy_sea_service_deployment_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "navy_sea_service_deployment_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "navy_sea_service_deployment_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "navy_sea_service_deployment_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "navy_sea_service_deployment_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "navy_sea_service_deployment_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }, { value: "navy_sea_service_deployment_ribbon-6_bronze_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_star.png" }, { value: "navy_sea_service_deployment_ribbon-7_bronze_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_star.png" }, { value: "navy_sea_service_deployment_ribbon-8_bronze_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_star.png" }, { value: "navy_sea_service_deployment_ribbon-9_bronze_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_star.png" }] },
   ],
@@ -746,73 +647,722 @@ const RIBBON_MODIFIERS: Record<string, RibbonModifier[]> = {
   "https://www.uniformribbons.com/image/air_force_training_ribbon.png": [
     { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "air_force_training_ribbon-1_bronze_oak", label: "1 OAK", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_oak.png" }, { value: "air_force_training_ribbon-2_bronze_oak", label: "2 OAK", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_oak.png" }, { value: "air_force_training_ribbon-3_bronze_oak", label: "3 OAK", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_oak.png" }, { value: "air_force_training_ribbon-4_bronze_oak", label: "4 OAK", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_oak.png" }, { value: "air_force_training_ribbon-5_bronze_oak", label: "5 OAK", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_oak.png" }, { value: "air_force_training_ribbon-6_bronze_oak", label: "6 OAK", overlayUrl: "https://www.uniformribbons.com/img/6_bronze_oak.png" }, { value: "air_force_training_ribbon-7_bronze_oak", label: "7 OAK", overlayUrl: "https://www.uniformribbons.com/img/7_bronze_oak.png" }, { value: "air_force_training_ribbon-8_bronze_oak", label: "8 OAK", overlayUrl: "https://www.uniformribbons.com/img/8_bronze_oak.png" }, { value: "air_force_training_ribbon-9_bronze_oak", label: "9 OAK", overlayUrl: "https://www.uniformribbons.com/img/9_bronze_oak.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_cross_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_cross_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "coast_guard_cross_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "coast_guard_cross_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "coast_guard_cross_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "coast_guard_cross_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }] },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // ── Auto-generated class/grade selectors ────────────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/1/1c/RUS_Cross_of_Saint_George_1st_class_ribbon_2000.svg": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/1/1c/RUS_Cross_of_Saint_George_1st_class_ribbon_2000.svg" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/7/78/RUS_Cross_of_Saint_George_2nd_class_ribbon_2000.svg" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/2/2e/RUS_Cross_of_Saint_George_3rd_class_ribbon_2000.svg" }, { value: "4th Class", label: "4th Class", url: "https://upload.wikimedia.org/wikipedia/commons/3/3e/RUS_Cross_of_Saint_George_4th_class_ribbon_2000.svg" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_distinguished_service_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_distinguished_service_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "coast_guard_distinguished_service_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "coast_guard_distinguished_service_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "coast_guard_distinguished_service_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "coast_guard_distinguished_service_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }, { value: "coast_guard_distinguished_service_ribbon-6_gold_star", label: "6 STAR", overlayUrl: "https://www.uniformribbons.com/img/6_gold_star.png" }, { value: "coast_guard_distinguished_service_ribbon-7_gold_star", label: "7 STAR", overlayUrl: "https://www.uniformribbons.com/img/7_gold_star.png" }, { value: "coast_guard_distinguished_service_ribbon-8_gold_star", label: "8 STAR", overlayUrl: "https://www.uniformribbons.com/img/8_gold_star.png" }, { value: "coast_guard_distinguished_service_ribbon-9_gold_star", label: "9 STAR", overlayUrl: "https://www.uniformribbons.com/img/9_gold_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/5/56/RUS_Medal_for_Bravery_1-st_BAR_2023.svg": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/5/56/RUS_Medal_for_Bravery_1-st_BAR_2023.svg" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/b/bd/RUS_Medal_for_Bravery_2-st_BAR_2023.svg" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_medal_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_medal_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "coast_guard_medal_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "coast_guard_medal_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "coast_guard_medal_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "coast_guard_medal_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/b/b0/RUS_For_Merit_to_the_Fatherland_Order_3rd_class_with_swords_ribbon.svg": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "3rd Class (with Swords)", label: "3rd Class (with Swords)", url: "https://upload.wikimedia.org/wikipedia/commons/b/b0/RUS_For_Merit_to_the_Fatherland_Order_3rd_class_with_swords_ribbon.svg" }, { value: "4th Class (with Swords)", label: "4th Class (with Swords)", url: "https://upload.wikimedia.org/wikipedia/commons/c/cc/RUS_For_Merit_to_the_Fatherland_Order_4th_class_with_swords_ribbon.svg" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_commendation_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_commendation_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "coast_guard_commendation_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "coast_guard_commendation_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "coast_guard_commendation_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "coast_guard_commendation_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }, { value: "coast_guard_commendation_ribbon-device_v", label: "V", overlayUrl: "https://www.uniformribbons.com/img/device_v.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/b/bf/RUS_Order_of_Saint_George_1st_class_ribbon_2000.svg": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/b/bf/RUS_Order_of_Saint_George_1st_class_ribbon_2000.svg" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/4/47/RUS_Order_of_Saint_George_2nd_class_ribbon_2000.svg" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/3/3f/RUS_Order_of_Saint_George_3rd_class_ribbon_2000.svg" }, { value: "4th Class", label: "4th Class", url: "https://upload.wikimedia.org/wikipedia/commons/1/18/RUS_Order_of_Saint_George_4th_class_ribbon_2000.svg" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_achievement_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_achievement_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "coast_guard_achievement_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "coast_guard_achievement_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "coast_guard_achievement_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "coast_guard_achievement_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/AUT_Wehrdienstzeichen_1._Klasse_BAR.svg/250px-AUT_Wehrdienstzeichen_1._Klasse_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/AUT_Wehrdienstzeichen_1._Klasse_BAR.svg/250px-AUT_Wehrdienstzeichen_1._Klasse_BAR.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/AUT_Wehrdienstzeichen_2._Klasse_BAR.svg/250px-AUT_Wehrdienstzeichen_2._Klasse_BAR.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/AUT_Wehrdienstzeichen_3._Klasse_BAR.svg/250px-AUT_Wehrdienstzeichen_3._Klasse_BAR.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/commandant_letter_of_commendation_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "commandant_letter_of_commendation_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "commandant_letter_of_commendation_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "commandant_letter_of_commendation_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "commandant_letter_of_commendation_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "commandant_letter_of_commendation_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/GEO_Vakhtang_Gorgasal_Order_1rank_BAR.svg/250px-GEO_Vakhtang_Gorgasal_Order_1rank_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Rank", label: "1st Rank", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/GEO_Vakhtang_Gorgasal_Order_1rank_BAR.svg/250px-GEO_Vakhtang_Gorgasal_Order_1rank_BAR.svg.png" }, { value: "2nd Rank", label: "2nd Rank", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/GEO_Vakhtang_Gorgasal_Order_2rank_BAR.svg/250px-GEO_Vakhtang_Gorgasal_Order_2rank_BAR.svg.png" }, { value: "3rd Rank", label: "3rd Rank", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/GEO_Vakhtang_Gorgasal_Order_3rank_BAR.svg/250px-GEO_Vakhtang_Gorgasal_Order_3rank_BAR.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_combat_action_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_combat_action_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "coast_guard_combat_action_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "coast_guard_combat_action_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "coast_guard_combat_action_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "coast_guard_combat_action_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Valor_dei_carabinieri_gold_medal_BAR.svg/250px-Valor_dei_carabinieri_gold_medal_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Gold", label: "Gold", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Valor_dei_carabinieri_gold_medal_BAR.svg/250px-Valor_dei_carabinieri_gold_medal_BAR.svg.png" }, { value: "Silver", label: "Silver", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Valor_dei_carabinieri_silver_medal_BAR.svg/250px-Valor_dei_carabinieri_silver_medal_BAR.svg.png" }, { value: "Bronze", label: "Bronze", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Valor_dei_carabinieri_bronze_medal_BAR.svg/250px-Valor_dei_carabinieri_bronze_medal_BAR.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_presidential_unit_citation_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_presidential_unit_citation_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "coast_guard_presidential_unit_citation_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "coast_guard_presidential_unit_citation_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "coast_guard_presidential_unit_citation_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "coast_guard_presidential_unit_citation_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }, { value: "coast_guard_presidential_unit_citation_ribbon-hurricane_katrina", label: "HURRICANE K", overlayUrl: "https://www.uniformribbons.com/img/hurricane_katrina.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/RF_honour_ribbon_lv1.svg/250px-RF_honour_ribbon_lv1.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/RF_honour_ribbon_lv1.svg/250px-RF_honour_ribbon_lv1.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/RF_honour_ribbon_lv2.svg/250px-RF_honour_ribbon_lv2.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/RF_honour_ribbon_lv3.svg/250px-RF_honour_ribbon_lv3.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/department_of_homeland_security_outstanding_unit.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "department_of_homeland_security_outstanding_unit-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "department_of_homeland_security_outstanding_unit-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "department_of_homeland_security_outstanding_unit-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "department_of_homeland_security_outstanding_unit-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "department_of_homeland_security_outstanding_unit-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/DPRK_ribbon_bar_-_Order_of_National_Flag_1st_Class.svg/250px-DPRK_ribbon_bar_-_Order_of_National_Flag_1st_Class.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/DPRK_ribbon_bar_-_Order_of_National_Flag_1st_Class.svg/250px-DPRK_ribbon_bar_-_Order_of_National_Flag_1st_Class.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/DPRK_ribbon_bar_-_Order_of_National_Flag_2nd_Class.svg/250px-DPRK_ribbon_bar_-_Order_of_National_Flag_2nd_Class.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/DPRK_ribbon_bar_-_Order_of_National_Flag_3rd_Class.svg/250px-DPRK_ribbon_bar_-_Order_of_National_Flag_3rd_Class.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_secretary_of_transportation_outstanding_unit_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_secretary_of_transportation_outstanding_unit_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "coast_guard_secretary_of_transportation_outstanding_unit_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "coast_guard_secretary_of_transportation_outstanding_unit_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "coast_guard_secretary_of_transportation_outstanding_unit_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "coast_guard_secretary_of_transportation_outstanding_unit_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/POL_Polonia_Restituta_Wielki_BAR.svg/250px-POL_Polonia_Restituta_Wielki_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Grand Cross", label: "Grand Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/POL_Polonia_Restituta_Wielki_BAR.svg/250px-POL_Polonia_Restituta_Wielki_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/POL_Polonia_Restituta_Komandorski_BAR.svg/250px-POL_Polonia_Restituta_Komandorski_BAR.svg.png" }, { value: "Officer", label: "Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/POL_Polonia_Restituta_Oficerski_BAR.svg/250px-POL_Polonia_Restituta_Oficerski_BAR.svg.png" }, { value: "Knight", label: "Knight", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/POL_Polonia_Restituta_Kawalerski_BAR.svg/250px-POL_Polonia_Restituta_Kawalerski_BAR.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_meritorious_team_commendation_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_meritorious_team_commendation_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "coast_guard_meritorious_team_commendation_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "coast_guard_meritorious_team_commendation_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "coast_guard_meritorious_team_commendation_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "coast_guard_meritorious_team_commendation_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Valor_dell%27esercito_gold_medal_BAR.svg/250px-Valor_dell%27esercito_gold_medal_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Gold", label: "Gold", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Valor_dell%27esercito_gold_medal_BAR.svg/250px-Valor_dell%27esercito_gold_medal_BAR.svg.png" }, { value: "Silver", label: "Silver", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Valor_dell%27esercito_silver_medal_BAR.svg/250px-Valor_dell%27esercito_silver_medal_BAR.svg.png" }, { value: "Bronze", label: "Bronze", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Valor_dell%27esercito_bronze_medal_BAR.svg/250px-Valor_dell%27esercito_bronze_medal_BAR.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_e_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_e_ribbon-1_gold_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_gold_star.png" }, { value: "coast_guard_e_ribbon-2_gold_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_gold_star.png" }, { value: "coast_guard_e_ribbon-3_gold_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_gold_star.png" }, { value: "coast_guard_e_ribbon-4_gold_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_gold_star.png" }, { value: "coast_guard_e_ribbon-5_gold_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_gold_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/BEL_Order_of_Leopold_II_-_Knight_BAR.svg/250px-BEL_Order_of_Leopold_II_-_Knight_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Knight", label: "Knight", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/BEL_Order_of_Leopold_II_-_Knight_BAR.svg/250px-BEL_Order_of_Leopold_II_-_Knight_BAR.svg.png" }, { value: "Officer", label: "Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/BEL_Order_of_Leopold_II_-_Officer_BAR.svg/250px-BEL_Order_of_Leopold_II_-_Officer_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/BEL_Order_of_Leopold_II_-_Commander_BAR.svg/250px-BEL_Order_of_Leopold_II_-_Commander_BAR.svg.png" }, { value: "Grand Officer", label: "Grand Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/BEL_Order_of_Leopold_II_-_Grand_Officer_BAR.svg/250px-BEL_Order_of_Leopold_II_-_Grand_Officer_BAR.svg.png" }, { value: "Grand Cross", label: "Grand Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/BEL_Order_of_Leopold_II_-_Grand_Cross_BAR.svg/250px-BEL_Order_of_Leopold_II_-_Grand_Cross_BAR.svg.png" }, { value: "Gold", label: "Gold", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/BEL_Order_of_Leopold_II_-_Gold_Medal_BAR.png/250px-BEL_Order_of_Leopold_II_-_Gold_Medal_BAR.png" }, { value: "Silver", label: "Silver", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/BEL_Order_of_Leopold_II_-_Silver_Medal_BAR.png/250px-BEL_Order_of_Leopold_II_-_Silver_Medal_BAR.png" }, { value: "Bronze", label: "Bronze", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/BEL_Order_of_Leopold_II_-_Bronze_Medal_BAR.png/250px-BEL_Order_of_Leopold_II_-_Bronze_Medal_BAR.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_good_conduct_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_good_conduct_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "coast_guard_good_conduct_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "coast_guard_good_conduct_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "coast_guard_good_conduct_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "coast_guard_good_conduct_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Air Force Cross of Merit with Swords", label: "Air Force Cross of Merit with Swords", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png" }, { value: "2nd Award", label: "2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg/250px-POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_reserve_good_conduct_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_reserve_good_conduct_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "coast_guard_reserve_good_conduct_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "coast_guard_reserve_good_conduct_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "coast_guard_reserve_good_conduct_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "coast_guard_reserve_good_conduct_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/AF_honour_ribbon_lv1.svg/250px-AF_honour_ribbon_lv1.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/AF_honour_ribbon_lv1.svg/250px-AF_honour_ribbon_lv1.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/AF_honour_ribbon_lv2.svg/250px-AF_honour_ribbon_lv2.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/AF_honour_ribbon_lv3.svg/250px-AF_honour_ribbon_lv3.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_gold_life_saving_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_gold_life_saving_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "coast_guard_gold_life_saving_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "coast_guard_gold_life_saving_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "coast_guard_gold_life_saving_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "coast_guard_gold_life_saving_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/CZE_Cross_of_Merit_Min-of-Def_1st_BAR.svg/250px-CZE_Cross_of_Merit_Min-of-Def_1st_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/CZE_Cross_of_Merit_Min-of-Def_1st_BAR.svg/250px-CZE_Cross_of_Merit_Min-of-Def_1st_BAR.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/CZE_Cross_of_Merit_Min-of-Def_2nd_BAR.svg/250px-CZE_Cross_of_Merit_Min-of-Def_2nd_BAR.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/CZE_Cross_of_Merit_Min-of-Def_3rd_BAR.svg/250px-CZE_Cross_of_Merit_Min-of-Def_3rd_BAR.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_silver_life_saving_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_silver_life_saving_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "coast_guard_silver_life_saving_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "coast_guard_silver_life_saving_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "coast_guard_silver_life_saving_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "coast_guard_silver_life_saving_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/POL_Order_Zaslugi_RP_kl1_BAR.svg/250px-POL_Order_Zaslugi_RP_kl1_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/POL_Order_Zaslugi_RP_kl1_BAR.svg/250px-POL_Order_Zaslugi_RP_kl1_BAR.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/POL_Order_Zaslugi_RP_kl2_BAR.svg/250px-POL_Order_Zaslugi_RP_kl2_BAR.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/POL_Order_Zaslugi_RP_kl3_BAR.svg/250px-POL_Order_Zaslugi_RP_kl3_BAR.svg.png" }, { value: "4th Class", label: "4th Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/POL_Order_Zaslugi_RP_kl4_BAR.svg/250px-POL_Order_Zaslugi_RP_kl4_BAR.svg.png" }, { value: "5th Class", label: "5th Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/POL_Order_Zaslugi_RP_kl5_BAR.svg/250px-POL_Order_Zaslugi_RP_kl5_BAR.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_special_operations_service_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_special_operations_service_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "coast_guard_special_operations_service_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "coast_guard_special_operations_service_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "coast_guard_special_operations_service_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "coast_guard_special_operations_service_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/BEL_Militair_Kruis_1klasse_BAR.svg/250px-BEL_Militair_Kruis_1klasse_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/BEL_Militair_Kruis_1klasse_BAR.svg/250px-BEL_Militair_Kruis_1klasse_BAR.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/BEL_Militair_Kruis_2klasse_BAR.svg/250px-BEL_Militair_Kruis_2klasse_BAR.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_sea_service_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_sea_service_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "coast_guard_sea_service_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "coast_guard_sea_service_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "coast_guard_sea_service_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "coast_guard_sea_service_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/CZE_MoD_Medal_For_Service_Abroad_KFOR_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_KFOR_1st_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Medal for Service Abroad - KFOR (Kosovo) 1st Award", label: "Medal for Service Abroad - KFOR (Kosovo) 1st Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/CZE_MoD_Medal_For_Service_Abroad_KFOR_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_KFOR_1st_BAR.svg.png" }, { value: "Medal for Service Abroad - KFOR (Kosovo) 2nd Award", label: "Medal for Service Abroad - KFOR (Kosovo) 2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/CZE_MoD_Medal_For_Service_Abroad_KFOR_2st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_KFOR_2st_BAR.svg.png" }, { value: "Medal for Service Abroad - KFOR (Kosovo) 3rd Award", label: "Medal for Service Abroad - KFOR (Kosovo) 3rd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/CZE_MoD_Medal_For_Service_Abroad_KFOR_3st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_KFOR_3st_BAR.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_restricted_duty_service_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_restricted_duty_service_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "coast_guard_restricted_duty_service_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "coast_guard_restricted_duty_service_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "coast_guard_restricted_duty_service_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "coast_guard_restricted_duty_service_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Ruotsin_miekkaritarikunnan_suurristin_nauha.png/250px-Ruotsin_miekkaritarikunnan_suurristin_nauha.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Grand Cross", label: "Grand Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Ruotsin_miekkaritarikunnan_suurristin_nauha.png/250px-Ruotsin_miekkaritarikunnan_suurristin_nauha.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Ruotsin_miekkaritarikunnan_komenta_nauha.png/250px-Ruotsin_miekkaritarikunnan_komenta_nauha.png" }, { value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Ruotsin_miekkaritarikunnan_ritarimerkin_nauha.png/250px-Ruotsin_miekkaritarikunnan_ritarimerkin_nauha.png" }, { value: "Knight", label: "Knight", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Ruotsin_miekkaritarikunnan_nauha.png/250px-Ruotsin_miekkaritarikunnan_nauha.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_oversea_service_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_oversea_service_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "coast_guard_oversea_service_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "coast_guard_oversea_service_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "coast_guard_oversea_service_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "coast_guard_oversea_service_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/CZE_MoD_Medal_For_Service_Abroad_Africa_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Africa_1st_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Medal for Service Abroad - Africa 1st Award", label: "Medal for Service Abroad - Africa 1st Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/CZE_MoD_Medal_For_Service_Abroad_Africa_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Africa_1st_BAR.svg.png" }, { value: "Medal for Service Abroad - Africa 2nd Award", label: "Medal for Service Abroad - Africa 2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/CZE_MoD_Medal_For_Service_Abroad_Africa_2st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Africa_2st_BAR.svg.png" }, { value: "Medal for Service Abroad - Africa 3rd Award", label: "Medal for Service Abroad - Africa 3rd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/CZE_MoD_Medal_For_Service_Abroad_Africa_3st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Africa_3st_BAR.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_recruiting_service_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_recruiting_service_ribbon-1_bronze_star", label: "1 STAR", overlayUrl: "https://www.uniformribbons.com/img/1_bronze_star.png" }, { value: "coast_guard_recruiting_service_ribbon-2_bronze_star", label: "2 STAR", overlayUrl: "https://www.uniformribbons.com/img/2_bronze_star.png" }, { value: "coast_guard_recruiting_service_ribbon-3_bronze_star", label: "3 STAR", overlayUrl: "https://www.uniformribbons.com/img/3_bronze_star.png" }, { value: "coast_guard_recruiting_service_ribbon-4_bronze_star", label: "4 STAR", overlayUrl: "https://www.uniformribbons.com/img/4_bronze_star.png" }, { value: "coast_guard_recruiting_service_ribbon-5_bronze_star", label: "5 STAR", overlayUrl: "https://www.uniformribbons.com/img/5_bronze_star.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/CZE_MoD_Medal_For_Service_Abroad_Iraq_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Iraq_1st_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Medal for Service Abroad - Iraq 1st Award", label: "Medal for Service Abroad - Iraq 1st Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/CZE_MoD_Medal_For_Service_Abroad_Iraq_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Iraq_1st_BAR.svg.png" }, { value: "Medal for Service Abroad - Iraq 2nd Award", label: "Medal for Service Abroad - Iraq 2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/CZE_MoD_Medal_For_Service_Abroad_Iraq_2st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Iraq_2st_BAR.svg.png" }, { value: "Medal for Service Abroad - Iraq 3rd Award", label: "Medal for Service Abroad - Iraq 3rd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/CZE_MoD_Medal_For_Service_Abroad_Iraq_3st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Iraq_3st_BAR.svg.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_rifle_marksmanship_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_rifle_marksmanship_ribbon", label: "M", overlayUrl: "https://www.uniformribbons.com/img/coast_guard_rifle_marksmanship_ribbon.png" }, { value: "coast_guard_rifle_marksmanship_ribbon-cgsharpshooter", label: "S", overlayUrl: "https://www.uniformribbons.com/img/cgsharpshooter.png" }, { value: "coast_guard_rifle_marksmanship_ribbon-cgexpert", label: "E", overlayUrl: "https://www.uniformribbons.com/img/cgexpert.png" }, { value: "coast_guard_rifle_marksmanship_ribbon-distinguished_markman", label: "DISTINGUISHED", overlayUrl: "https://www.uniformribbons.com/img/distinguished_markman.png" }, { value: "coast_guard_rifle_marksmanship_ribbon-silver_rifle_excellence", label: "SILVER EXPERT", overlayUrl: "https://www.uniformribbons.com/img/silver_rifle_excellence.png" }, { value: "coast_guard_rifle_marksmanship_ribbon-bronze_rifle_excellence", label: "BRONZE EXPERT", overlayUrl: "https://www.uniformribbons.com/img/bronze_rifle_excellence.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/LUX_Order_of_Adolphe_Nassau_Grand_Cross_BAR.png/250px-LUX_Order_of_Adolphe_Nassau_Grand_Cross_BAR.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Grand Cross", label: "Grand Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/LUX_Order_of_Adolphe_Nassau_Grand_Cross_BAR.png/250px-LUX_Order_of_Adolphe_Nassau_Grand_Cross_BAR.png" }, { value: "Grand Officer", label: "Grand Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/LUX_Order_of_Adolphe_Nassau_Grand_Officer_BAR.png/250px-LUX_Order_of_Adolphe_Nassau_Grand_Officer_BAR.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/LUX_Order_of_Adolphe_Nassau_Commander_BAR.png/250px-LUX_Order_of_Adolphe_Nassau_Commander_BAR.png" }, { value: "Officer", label: "Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/LUX_Order_of_Adolphe_Nassau_Officer_BAR.png/250px-LUX_Order_of_Adolphe_Nassau_Officer_BAR.png" }, { value: "Knight", label: "Knight", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/LUX_Order_of_Adolphe_Nassau_Knight_BAR.png/250px-LUX_Order_of_Adolphe_Nassau_Knight_BAR.png" }] },
   ],
-  "https://www.uniformribbons.com/image/coast_guard_pistol_marksmanship_ribbon.png": [
-    { type: 'select', name: "device", label: 'Device/Award', options: [{ value: "coast_guard_pistol_marksmanship_ribbon", label: "M", overlayUrl: "https://www.uniformribbons.com/img/coast_guard_pistol_marksmanship_ribbon.png" }, { value: "coast_guard_pistol_marksmanship_ribbon-cgsharpshooter", label: "S", overlayUrl: "https://www.uniformribbons.com/img/cgsharpshooter.png" }, { value: "coast_guard_pistol_marksmanship_ribbon-cgexpert", label: "E", overlayUrl: "https://www.uniformribbons.com/img/cgexpert.png" }, { value: "coast_guard_pistol_marksmanship_ribbon-distinguished_pistol", label: "DISTINGUISHED", overlayUrl: "https://www.uniformribbons.com/img/distinguished_pistol.png" }, { value: "coast_guard_pistol_marksmanship_ribbon-silver_pistol_shot", label: "SILVER SHOT", overlayUrl: "https://www.uniformribbons.com/img/silver_pistol_shot.png" }, { value: "coast_guard_pistol_marksmanship_ribbon-bronze_pistol_shot", label: "BRONZE SHOT", overlayUrl: "https://www.uniformribbons.com/img/bronze_pistol_shot.png" }] },
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/BEL_Kroonorde_Ridder_BAR.svg/250px-BEL_Kroonorde_Ridder_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Knight", label: "Knight", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/BEL_Kroonorde_Ridder_BAR.svg/250px-BEL_Kroonorde_Ridder_BAR.svg.png" }, { value: "Officer", label: "Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/BEL_Kroonorde_Officier_BAR.svg/250px-BEL_Kroonorde_Officier_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/BEL_Kroonorde_Commandeur_BAR.svg/250px-BEL_Kroonorde_Commandeur_BAR.svg.png" }, { value: "Grand Officer", label: "Grand Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/BEL_Kroonorde_Grootofficier_BAR.svg/250px-BEL_Kroonorde_Grootofficier_BAR.svg.png" }, { value: "Grand Cross", label: "Grand Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/BEL_Kroonorde_Grootkruis_BAR.svg/250px-BEL_Kroonorde_Grootkruis_BAR.svg.png" }, { value: "Gold", label: "Gold", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/BEL_Kroonorde_Med_Goud_BAR.svg/250px-BEL_Kroonorde_Med_Goud_BAR.svg.png" }, { value: "Silver", label: "Silver", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/BEL_Kroonorde_Med_Zilver_BAR.svg/250px-BEL_Kroonorde_Med_Zilver_BAR.svg.png" }, { value: "Bronze", label: "Bronze", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/BEL_Kroonorde_Med_Brons_BAR.svg/250px-BEL_Kroonorde_Med_Brons_BAR.svg.png" }] },
   ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Army Cross of Merit with Swords", label: "Army Cross of Merit with Swords", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png" }, { value: "2nd Award", label: "2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg/250px-POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/EST_White_Cross_of_the_Estonian_Defence_League_1st_class_ribbon.svg/250px-EST_White_Cross_of_the_Estonian_Defence_League_1st_class_ribbon.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/EST_White_Cross_of_the_Estonian_Defence_League_1st_class_ribbon.svg/250px-EST_White_Cross_of_the_Estonian_Defence_League_1st_class_ribbon.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/EST_White_Cross_of_the_Estonian_Defence_League_2nd_class_ribbon.svg/250px-EST_White_Cross_of_the_Estonian_Defence_League_2nd_class_ribbon.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/EST_White_Cross_of_the_Estonian_Defence_League_3rd_class_ribbon.svg/250px-EST_White_Cross_of_the_Estonian_Defence_League_3rd_class_ribbon.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/POL_Virtuti_Militari_Wielki_BAR.svg/250px-POL_Virtuti_Militari_Wielki_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Grand Cross", label: "Grand Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/POL_Virtuti_Militari_Wielki_BAR.svg/250px-POL_Virtuti_Militari_Wielki_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/POL_Virtuti_Militari_Komandorski_BAR.svg/250px-POL_Virtuti_Militari_Komandorski_BAR.svg.png" }, { value: "Knight", label: "Knight", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/POL_Virtuti_Militari_Kawalerski_BAR.svg/250px-POL_Virtuti_Militari_Kawalerski_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/BEL_-_Order_of_Leopold_-_Knight_bar.svg/250px-BEL_-_Order_of_Leopold_-_Knight_bar.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Knight", label: "Knight", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/BEL_-_Order_of_Leopold_-_Knight_bar.svg/250px-BEL_-_Order_of_Leopold_-_Knight_bar.svg.png" }, { value: "Officer", label: "Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/BEL_-_Order_of_Leopold_-_Officer_bar.svg/250px-BEL_-_Order_of_Leopold_-_Officer_bar.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/BEL_-_Order_of_Leopold_-_Commander_bar.svg/250px-BEL_-_Order_of_Leopold_-_Commander_bar.svg.png" }, { value: "Grand Officer", label: "Grand Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/BEL_-_Order_of_Leopold_-_Grand_Officer_bar.svg/250px-BEL_-_Order_of_Leopold_-_Grand_Officer_bar.svg.png" }, { value: "Grand Cordon", label: "Grand Cordon", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/BEL_-_Order_of_Leopold_-_Grand_Cordon_bar.svg/250px-BEL_-_Order_of_Leopold_-_Grand_Cordon_bar.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/POL_Order_Krzy%C5%BCa_Wojskowego_Wielki_BAR.svg/250px-POL_Order_Krzy%C5%BCa_Wojskowego_Wielki_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Grand Cross", label: "Grand Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/POL_Order_Krzy%C5%BCa_Wojskowego_Wielki_BAR.svg/250px-POL_Order_Krzy%C5%BCa_Wojskowego_Wielki_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/POL_Order_Krzy%C5%BCa_Wojskowego_Komandorski_BAR.svg/250px-POL_Order_Krzy%C5%BCa_Wojskowego_Komandorski_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/LTU_Order_for_Merits_to_Lithuania_-_Grand_Cross_BAR.svg/250px-LTU_Order_for_Merits_to_Lithuania_-_Grand_Cross_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Grand Cross", label: "Grand Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/LTU_Order_for_Merits_to_Lithuania_-_Grand_Cross_BAR.svg/250px-LTU_Order_for_Merits_to_Lithuania_-_Grand_Cross_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/LTU_Order_for_Merits_to_Lithuania_-_Commander%27s_Grand_Cross_BAR.svg/250px-LTU_Order_for_Merits_to_Lithuania_-_Commander%27s_Grand_Cross_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/LTU_Order_for_Merits_to_Lithuania_-_Commander%27s_Cross_BAR.svg/250px-LTU_Order_for_Merits_to_Lithuania_-_Commander%27s_Cross_BAR.svg.png" }, { value: "Officer", label: "Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/LTU_Order_for_Merits_to_Lithuania_-_Officer%27s_Cross_BAR.svg/250px-LTU_Order_for_Merits_to_Lithuania_-_Officer%27s_Cross_BAR.svg.png" }, { value: "Knight", label: "Knight", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/LTU_Order_for_Merits_to_Lithuania_-_Knight%27s_Cross_BAR.svg/250px-LTU_Order_for_Merits_to_Lithuania_-_Knight%27s_Cross_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/CZE_MoD_Medal_For_Service_Abroad_ISAF_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_ISAF_1st_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Medal for Service Abroad - ISAF (Afghanistan) 1st Award", label: "Medal for Service Abroad - ISAF (Afghanistan) 1st Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/CZE_MoD_Medal_For_Service_Abroad_ISAF_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_ISAF_1st_BAR.svg.png" }, { value: "Medal for Service Abroad - ISAF (Afghanistan) 2nd Award", label: "Medal for Service Abroad - ISAF (Afghanistan) 2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/CZE_MoD_Medal_For_Service_Abroad_ISAF_2st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_ISAF_2st_BAR.svg.png" }, { value: "Medal for Service Abroad - ISAF (Afghanistan) 3rd Award", label: "Medal for Service Abroad - ISAF (Afghanistan) 3rd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/CZE_MoD_Medal_For_Service_Abroad_ISAF_3st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_ISAF_3st_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/LTU_Order_of_Vytautas_the_Great_-_Grand_Cross_BAR.svg/250px-LTU_Order_of_Vytautas_the_Great_-_Grand_Cross_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Grand Cross", label: "Grand Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/LTU_Order_of_Vytautas_the_Great_-_Grand_Cross_BAR.svg/250px-LTU_Order_of_Vytautas_the_Great_-_Grand_Cross_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/LTU_Order_of_Vytautas_the_Great_-_Commander%27s_Grand_Cross_BAR.svg/250px-LTU_Order_of_Vytautas_the_Great_-_Commander%27s_Grand_Cross_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/LTU_Order_of_Vytautas_the_Great_-_Commander%27s_Cross_BAR.svg/250px-LTU_Order_of_Vytautas_the_Great_-_Commander%27s_Cross_BAR.svg.png" }, { value: "Officer", label: "Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/LTU_Order_of_Vytautas_the_Great_-_Officer%27s_Cross_BAR.svg/250px-LTU_Order_of_Vytautas_the_Great_-_Officer%27s_Cross_BAR.svg.png" }, { value: "Knight", label: "Knight", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/LTU_Order_of_Vytautas_the_Great_-_Knight%27s_Cross_BAR.svg/250px-LTU_Order_of_Vytautas_the_Great_-_Knight%27s_Cross_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/POL_Krzy%C5%BC_Wojskowy_BAR.svg/250px-POL_Krzy%C5%BC_Wojskowy_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Military Cross", label: "Military Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/POL_Krzy%C5%BC_Wojskowy_BAR.svg/250px-POL_Krzy%C5%BC_Wojskowy_BAR.svg.png" }, { value: "2nd Award", label: "2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/POL_Krzy%C5%BC_Wojskowy_2r_BAR.svg/250px-POL_Krzy%C5%BC_Wojskowy_2r_BAR.svg.png" }, { value: "3rd Award", label: "3rd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/POL_Krzy%C5%BC_Wojskowy_3r_BAR.svg/250px-POL_Krzy%C5%BC_Wojskowy_3r_BAR.svg.png" }, { value: "4th Award", label: "4th Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/POL_Krzy%C5%BC_Wojskowy_4r_BAR.svg/250px-POL_Krzy%C5%BC_Wojskowy_4r_BAR.svg.png" }] },
+  ],
+
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/SVK_Med_voj_obranneho_spravodajstva_1-st_BAR.png/250px-SVK_Med_voj_obranneho_spravodajstva_1-st_BAR.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/SVK_Med_voj_obranneho_spravodajstva_1-st_BAR.png/250px-SVK_Med_voj_obranneho_spravodajstva_1-st_BAR.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/SVK_Med_voj_obranneho_spravodajstva_2-st_BAR.png/250px-SVK_Med_voj_obranneho_spravodajstva_2-st_BAR.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/SVK_Med_voj_obranneho_spravodajstva_3-st_BAR.png/250px-SVK_Med_voj_obranneho_spravodajstva_3-st_BAR.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/CZE_MoD_Medal_For_Service_Abroad_SFOR_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_SFOR_1st_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Medal for Service Abroad - SFOR (Bosnia) 1st Award", label: "Medal for Service Abroad - SFOR (Bosnia) 1st Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/CZE_MoD_Medal_For_Service_Abroad_SFOR_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_SFOR_1st_BAR.svg.png" }, { value: "Medal for Service Abroad - SFOR (Bosnia) 2nd Award", label: "Medal for Service Abroad - SFOR (Bosnia) 2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/CZE_MoD_Medal_For_Service_Abroad_SFOR_2st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_SFOR_2st_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/SVK_Pamatny_kriz_nacelnika_GS_OSSR_1-st_BAR.svg/250px-SVK_Pamatny_kriz_nacelnika_GS_OSSR_1-st_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/SVK_Pamatny_kriz_nacelnika_GS_OSSR_1-st_BAR.svg/250px-SVK_Pamatny_kriz_nacelnika_GS_OSSR_1-st_BAR.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/SVK_Pamatny_kriz_nacelnika_GS_OSSR_2-st_BAR.svg/250px-SVK_Pamatny_kriz_nacelnika_GS_OSSR_2-st_BAR.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/SVK_Pamatny_kriz_nacelnika_GS_OSSR_3-st_BAR.svg/250px-SVK_Pamatny_kriz_nacelnika_GS_OSSR_3-st_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Grand%27Croix_BAR.svg/250px-LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Grand%27Croix_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Grand Cross", label: "Grand Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Grand%27Croix_BAR.svg/250px-LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Grand%27Croix_BAR.svg.png" }, { value: "Grand Officer", label: "Grand Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Grand-Officier_BAR.svg/250px-LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Grand-Officier_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Commandeur_BAR.svg/250px-LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Commandeur_BAR.svg.png" }, { value: "Officer", label: "Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Officier_BAR.svg/250px-LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Officier_BAR.svg.png" }, { value: "Knight", label: "Knight", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Chevalier_BAR.svg/250px-LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Chevalier_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg/250px-POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Military Cross of Merit", label: "Military Cross of Merit", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg/250px-POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg.png" }, { value: "2nd Award", label: "2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_2r_BAR.svg/250px-POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_2r_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/DPRK_ribbon_bar_-_Order_of_Friendship_1st_Class.svg/250px-DPRK_ribbon_bar_-_Order_of_Friendship_1st_Class.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/DPRK_ribbon_bar_-_Order_of_Friendship_1st_Class.svg/250px-DPRK_ribbon_bar_-_Order_of_Friendship_1st_Class.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/DPRK_ribbon_bar_-_Order_of_Friendship_2nd_Class.svg/250px-DPRK_ribbon_bar_-_Order_of_Friendship_2nd_Class.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Valor_militare_gold_medal_BAR.svg/250px-Valor_militare_gold_medal_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Gold", label: "Gold", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Valor_militare_gold_medal_BAR.svg/250px-Valor_militare_gold_medal_BAR.svg.png" }, { value: "Silver", label: "Silver", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Valor_militare_silver_medal_BAR.svg/250px-Valor_militare_silver_medal_BAR.svg.png" }, { value: "Bronze", label: "Bronze", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Valor_militare_bronze_medal_BAR.svg/250px-Valor_militare_bronze_medal_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/BEL_Foreign_Service_Honour_Cross_1st_Class_ribbon.PNG/250px-BEL_Foreign_Service_Honour_Cross_1st_Class_ribbon.PNG": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/BEL_Foreign_Service_Honour_Cross_1st_Class_ribbon.PNG/250px-BEL_Foreign_Service_Honour_Cross_1st_Class_ribbon.PNG" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/BEL_Foreign_Service_Honour_Cross_2nd_Class_ribbon.PNG/250px-BEL_Foreign_Service_Honour_Cross_2nd_Class_ribbon.PNG" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/BEL_Foreign_Service_Honour_Cross_3rd_Class_ribbon.PNG/250px-BEL_Foreign_Service_Honour_Cross_3rd_Class_ribbon.PNG" }] },
+  ],
+
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/PLA_service_ribbon_medal_of_defending_the_frontiers_lv1.svg/250px-PLA_service_ribbon_medal_of_defending_the_frontiers_lv1.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/PLA_service_ribbon_medal_of_defending_the_frontiers_lv1.svg/250px-PLA_service_ribbon_medal_of_defending_the_frontiers_lv1.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/PLA_service_ribbon_medal_of_defending_the_frontiers_lv2.svg/250px-PLA_service_ribbon_medal_of_defending_the_frontiers_lv2.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/PLA_service_ribbon_medal_of_defending_the_frontiers_lv3.svg/250px-PLA_service_ribbon_medal_of_defending_the_frontiers_lv3.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/PLA_honour_ribbon_commendation_for_individual_lv1.svg/250px-PLA_honour_ribbon_commendation_for_individual_lv1.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/PLA_honour_ribbon_commendation_for_individual_lv1.svg/250px-PLA_honour_ribbon_commendation_for_individual_lv1.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/PLA_honour_ribbon_commendation_for_individual_lv2.svg/250px-PLA_honour_ribbon_commendation_for_individual_lv2.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/PLA_honour_ribbon_commendation_for_individual_lv3.svg/250px-PLA_honour_ribbon_commendation_for_individual_lv3.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/SVK_Commemorative_Medal_Min-of-Def_1st_BAR.svg/250px-SVK_Commemorative_Medal_Min-of-Def_1st_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/SVK_Commemorative_Medal_Min-of-Def_1st_BAR.svg/250px-SVK_Commemorative_Medal_Min-of-Def_1st_BAR.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/SVK_Commemorative_Medal_Min-of-Def_2nd_BAR.svg/250px-SVK_Commemorative_Medal_Min-of-Def_2nd_BAR.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/SVK_Commemorative_Medal_Min-of-Def_3rd_BAR.svg/250px-SVK_Commemorative_Medal_Min-of-Def_3rd_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/SVK_Med_voj_spravodajskej_sluzby_1-st_BAR.png/250px-SVK_Med_voj_spravodajskej_sluzby_1-st_BAR.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/SVK_Med_voj_spravodajskej_sluzby_1-st_BAR.png/250px-SVK_Med_voj_spravodajskej_sluzby_1-st_BAR.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/SVK_Med_voj_spravodajskej_sluzby_2-st_BAR.png/250px-SVK_Med_voj_spravodajskej_sluzby_2-st_BAR.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/SVK_Med_voj_spravodajskej_sluzby_3-st_BAR.png/250px-SVK_Med_voj_spravodajskej_sluzby_3-st_BAR.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/POL_Krzy%C5%BC_Walecznych_BAR.svg/250px-POL_Krzy%C5%BC_Walecznych_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Cross of Valour", label: "Cross of Valour", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/POL_Krzy%C5%BC_Walecznych_BAR.svg/250px-POL_Krzy%C5%BC_Walecznych_BAR.svg.png" }, { value: "2nd Award", label: "2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/POL_Krzy%C5%BC_Walecznych_2r_BAR.svg/250px-POL_Krzy%C5%BC_Walecznych_2r_BAR.svg.png" }, { value: "3rd Award", label: "3rd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/POL_Krzy%C5%BC_Walecznych_3r_BAR.svg/250px-POL_Krzy%C5%BC_Walecznych_3r_BAR.svg.png" }, { value: "4th Award", label: "4th Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/POL_Krzy%C5%BC_Walecznych_4r_BAR.svg/250px-POL_Krzy%C5%BC_Walecznych_4r_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Zlatna_medalja_Hrvatske_vojske_-_mala_oznaka.jpg/250px-Zlatna_medalja_Hrvatske_vojske_-_mala_oznaka.jpg": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Gold", label: "Gold", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Zlatna_medalja_Hrvatske_vojske_-_mala_oznaka.jpg/250px-Zlatna_medalja_Hrvatske_vojske_-_mala_oznaka.jpg" }, { value: "Silver", label: "Silver", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Srebrna_medalja_Hrvatske_vojske.jpg/250px-Srebrna_medalja_Hrvatske_vojske.jpg" }, { value: "Bronze", label: "Bronze", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Bron%C4%8Dana_medalja_Hrvatske_vojske_-_mala_oznaka.jpg/250px-Bron%C4%8Dana_medalja_Hrvatske_vojske_-_mala_oznaka.jpg" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/SVK_Pribinov_Kriz_1_triedy_BAR.svg/250px-SVK_Pribinov_Kriz_1_triedy_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/SVK_Pribinov_Kriz_1_triedy_BAR.svg/250px-SVK_Pribinov_Kriz_1_triedy_BAR.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/SVK_Pribinov_Kriz_2_triedy_BAR.svg/250px-SVK_Pribinov_Kriz_2_triedy_BAR.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/SVK_Pribinov_Kriz_3_triedy_BAR.svg/250px-SVK_Pribinov_Kriz_3_triedy_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/POL_Medal_Wojska_BAR.svg/250px-POL_Medal_Wojska_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Medal of the Armed Forces", label: "Medal of the Armed Forces", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/POL_Medal_Wojska_BAR.svg/250px-POL_Medal_Wojska_BAR.svg.png" }, { value: "2nd Award", label: "2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/POL_Medal_Wojska_2r_BAR.svg/250px-POL_Medal_Wojska_2r_BAR.svg.png" }, { value: "3rd Award", label: "3rd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/POL_Medal_Wojska_3r_BAR.svg/250px-POL_Medal_Wojska_3r_BAR.svg.png" }, { value: "4th Award", label: "4th Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/POL_Medal_Wojska_4r_BAR.svg/250px-POL_Medal_Wojska_4r_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Order_of_Fat%27h_%281st_Class%29.svg/250px-Order_of_Fat%27h_%281st_Class%29.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Order_of_Fat%27h_%281st_Class%29.svg/250px-Order_of_Fat%27h_%281st_Class%29.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Order_of_Fat%27h_%282nd_Class%29.svg/250px-Order_of_Fat%27h_%282nd_Class%29.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Order_of_Fat%27h_%283rd_Class%29.svg/250px-Order_of_Fat%27h_%283rd_Class%29.svg.png" }] },
+  ],
+
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/PLA_service_ribbon_overseas_deployment_lv1.svg/250px-PLA_service_ribbon_overseas_deployment_lv1.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/PLA_service_ribbon_overseas_deployment_lv1.svg/250px-PLA_service_ribbon_overseas_deployment_lv1.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/PLA_service_ribbon_overseas_deployment_lv2.svg/250px-PLA_service_ribbon_overseas_deployment_lv2.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/PLA_service_ribbon_overseas_deployment_lv3.svg/250px-PLA_service_ribbon_overseas_deployment_lv3.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv1.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv1.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv1.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv1.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv2.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv2.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv3.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv3.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Navy Cross of Merit with Swords", label: "Navy Cross of Merit with Swords", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png" }, { value: "2nd Award", label: "2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg/250px-POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_2r_BAR.svg.png" }] },
+  ],
+
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Valor_di_marina_gold_medal_2010_BAR.svg/250px-Valor_di_marina_gold_medal_2010_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Gold", label: "Gold", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Valor_di_marina_gold_medal_2010_BAR.svg/250px-Valor_di_marina_gold_medal_2010_BAR.svg.png" }, { value: "Silver", label: "Silver", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Valor_di_marina_silver_medal_BAR.svg/250px-Valor_di_marina_silver_medal_BAR.svg.png" }, { value: "Bronze", label: "Bronze", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Valor_di_marina_bronze_medal_BAR.svg/250px-Valor_di_marina_bronze_medal_BAR.svg.png" }, { value: "Medal of Valor of the Navy", label: "Medal of Valor of the Navy", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Valor_di_marina_medal_BAR.svg/250px-Valor_di_marina_medal_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv1.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv1.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv1.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv1.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv2.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv2.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv3.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv3.svg.png" }, { value: "4th Class", label: "4th Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv4.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv4.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/CZE_MoD_Medal_For_Service_Abroad_EF_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_EF_1st_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Medal for Service Abroad - Enhanced Forward Presence 1st Award", label: "Medal for Service Abroad - Enhanced Forward Presence 1st Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/CZE_MoD_Medal_For_Service_Abroad_EF_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_EF_1st_BAR.svg.png" }, { value: "Medal for Service Abroad - Enhanced Forward Presence 2nd Award", label: "Medal for Service Abroad - Enhanced Forward Presence 2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/CZE_MoD_Medal_For_Service_Abroad_EF_2st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_EF_2st_BAR.svg.png" }, { value: "Medal for Service Abroad - Enhanced Forward Presence 3rd Award", label: "Medal for Service Abroad - Enhanced Forward Presence 3rd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/CZE_MoD_Medal_For_Service_Abroad_EF_3st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_EF_3st_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/POL_Z%C5%82oty_Medal_Wojska_Polskiego_BAR.svg/250px-POL_Z%C5%82oty_Medal_Wojska_Polskiego_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Gold", label: "Gold", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/POL_Z%C5%82oty_Medal_Wojska_Polskiego_BAR.svg/250px-POL_Z%C5%82oty_Medal_Wojska_Polskiego_BAR.svg.png" }, { value: "Silver", label: "Silver", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/POL_Srebrny_Medal_Wojska_Polskiego_BAR.svg/250px-POL_Srebrny_Medal_Wojska_Polskiego_BAR.svg.png" }, { value: "Bronze", label: "Bronze", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/POL_Br%C4%85zowy_Medal_Wojska_Polskiego_BAR.svg/250px-POL_Br%C4%85zowy_Medal_Wojska_Polskiego_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/SVK_Rad_Bieleho_Dvojkriza_1_triedy_BAR.svg/250px-SVK_Rad_Bieleho_Dvojkriza_1_triedy_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/SVK_Rad_Bieleho_Dvojkriza_1_triedy_BAR.svg/250px-SVK_Rad_Bieleho_Dvojkriza_1_triedy_BAR.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/SVK_Rad_Bieleho_Dvojkriza_2_triedy_BAR.svg/250px-SVK_Rad_Bieleho_Dvojkriza_2_triedy_BAR.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/SVK_Rad_Bieleho_Dvojkriza_3_triedy_BAR.svg/250px-SVK_Rad_Bieleho_Dvojkriza_3_triedy_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Zlatna_domovinska_medalja_-_mala_oznaka.jpg/250px-Zlatna_domovinska_medalja_-_mala_oznaka.jpg": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Gold", label: "Gold", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Zlatna_domovinska_medalja_-_mala_oznaka.jpg/250px-Zlatna_domovinska_medalja_-_mala_oznaka.jpg" }, { value: "Silver", label: "Silver", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Srebrna_domovinska_medalja_-_mala_oznaka.jpg/250px-Srebrna_domovinska_medalja_-_mala_oznaka.jpg" }, { value: "Bronze", label: "Bronze", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Bron%C4%8Dana_domovinska_medalja_-_mala_oznaka.jpg/250px-Bron%C4%8Dana_domovinska_medalja_-_mala_oznaka.jpg" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Navy_honour_ribbon_lv1.svg/250px-Navy_honour_ribbon_lv1.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Navy_honour_ribbon_lv1.svg/250px-Navy_honour_ribbon_lv1.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Navy_honour_ribbon_lv2.svg/250px-Navy_honour_ribbon_lv2.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Navy_honour_ribbon_lv3.svg/250px-Navy_honour_ribbon_lv3.svg.png" }] },
+  ],
+
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/POL_Medal_Lotniczy_BAR.svg/250px-POL_Medal_Lotniczy_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Air Force Medal", label: "Air Force Medal", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/POL_Medal_Lotniczy_BAR.svg/250px-POL_Medal_Lotniczy_BAR.svg.png" }, { value: "2nd Award", label: "2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/POL_Medal_Lotniczy_2r_BAR.svg/250px-POL_Medal_Lotniczy_2r_BAR.svg.png" }, { value: "3rd Award", label: "3rd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/POL_Medal_Lotniczy_3r_BAR.svg/250px-POL_Medal_Lotniczy_3r_BAR.svg.png" }, { value: "4th Award", label: "4th Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/POL_Medal_Lotniczy_4r_BAR.svg/250px-POL_Medal_Lotniczy_4r_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/CZE_Rad_Bileho_Lva_1_tridy_BAR.svg/250px-CZE_Rad_Bileho_Lva_1_tridy_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/CZE_Rad_Bileho_Lva_1_tridy_BAR.svg/250px-CZE_Rad_Bileho_Lva_1_tridy_BAR.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/CZE_Rad_Bileho_Lva_2_tridy_BAR.svg/250px-CZE_Rad_Bileho_Lva_2_tridy_BAR.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/CZE_Rad_Bileho_Lva_3_tridy_BAR.svg/250px-CZE_Rad_Bileho_Lva_3_tridy_BAR.svg.png" }, { value: "4th Class", label: "4th Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/CZE_Rad_Bileho_Lva_4_tridy_BAR.svg/250px-CZE_Rad_Bileho_Lva_4_tridy_BAR.svg.png" }, { value: "5th Class", label: "5th Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/CZE_Rad_Bileho_Lva_5_tridy_BAR.svg/250px-CZE_Rad_Bileho_Lva_5_tridy_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Medaille_d%27Outre-Mer_%28Coloniale%29_ribbon.svg/250px-Medaille_d%27Outre-Mer_%28Coloniale%29_ribbon.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Medaille d", label: "Medaille d", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Medaille_d%27Outre-Mer_%28Coloniale%29_ribbon.svg/250px-Medaille_d%27Outre-Mer_%28Coloniale%29_ribbon.svg.png" }, { value: "Medaille d", label: "Medaille d", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Medaille_d%27honneur_du_Service_de_Sante_des_Armees_Bronze_ribbon.svg/250px-Medaille_d%27honneur_du_Service_de_Sante_des_Armees_Bronze_ribbon.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Valor_aeronautico_gold_medal_2010_BAR.svg/250px-Valor_aeronautico_gold_medal_2010_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Gold", label: "Gold", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Valor_aeronautico_gold_medal_2010_BAR.svg/250px-Valor_aeronautico_gold_medal_2010_BAR.svg.png" }, { value: "Silver", label: "Silver", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Valor_aeronautico_silver_medal_BAR.svg/250px-Valor_aeronautico_silver_medal_BAR.svg.png" }, { value: "Bronze", label: "Bronze", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Valor_aeronautico_bronze_medal_BAR.svg/250px-Valor_aeronautico_bronze_medal_BAR.svg.png" }, { value: "Medal of Valor of the Air Forces", label: "Medal of Valor of the Air Forces", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Valor_aeronautico_medal_BAR.svg/250px-Valor_aeronautico_medal_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/CZE_Medaile_Za_Sluzbu_v_OS_CR_1st_BAR.svg/250px-CZE_Medaile_Za_Sluzbu_v_OS_CR_1st_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "1st Class", label: "1st Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/CZE_Medaile_Za_Sluzbu_v_OS_CR_1st_BAR.svg/250px-CZE_Medaile_Za_Sluzbu_v_OS_CR_1st_BAR.svg.png" }, { value: "1st Class (20 yrs)", label: "1st Class (20 yrs)", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/CZE_Medaile_Za_Sluzbu_v_OS_CR_1st_XX_BAR.svg/250px-CZE_Medaile_Za_Sluzbu_v_OS_CR_1st_XX_BAR.svg.png" }, { value: "2nd Class", label: "2nd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/CZE_Medaile_Za_Sluzbu_v_OS_CR_2st_BAR.svg/250px-CZE_Medaile_Za_Sluzbu_v_OS_CR_2st_BAR.svg.png" }, { value: "3rd Class", label: "3rd Class", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/CZE_Medaile_Za_Sluzbu_v_OS_CR_3st_BAR.svg/250px-CZE_Medaile_Za_Sluzbu_v_OS_CR_3st_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/CZE_MoD_Medal_For_Service_Abroad_Combat_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Combat_1st_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Medal for Service Abroad - Combat 1st Award", label: "Medal for Service Abroad - Combat 1st Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/CZE_MoD_Medal_For_Service_Abroad_Combat_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Combat_1st_BAR.svg.png" }, { value: "Medal for Service Abroad - Combat 2nd Award", label: "Medal for Service Abroad - Combat 2nd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/CZE_MoD_Medal_For_Service_Abroad_Combat_2st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Combat_2st_BAR.svg.png" }, { value: "Medal for Service Abroad - Combat 3rd Award", label: "Medal for Service Abroad - Combat 3rd Award", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/CZE_MoD_Medal_For_Service_Abroad_Combat_3st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Combat_3st_BAR.svg.png" }] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/LTU_Order_of_the_Cross_of_Vytis_-_Grand_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Grand_Cross_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [{ value: "Grand Cross", label: "Grand Cross", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/LTU_Order_of_the_Cross_of_Vytis_-_Grand_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Grand_Cross_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LTU_Order_of_the_Cross_of_Vytis_-_Commander%27s_Grand_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Commander%27s_Grand_Cross_BAR.svg.png" }, { value: "Commander", label: "Commander", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/LTU_Order_of_the_Cross_of_Vytis_-_Commander%27s_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Commander%27s_Cross_BAR.svg.png" }, { value: "Officer", label: "Officer", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/LTU_Order_of_the_Cross_of_Vytis_-_Officer%27s_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Officer%27s_Cross_BAR.svg.png" }, { value: "Knight", label: "Knight", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/LTU_Order_of_the_Cross_of_Vytis_-_Knight%27s_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Knight%27s_Cross_BAR.svg.png" }, { value: "Medal", label: "Medal", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/LTU_Order_of_the_Cross_of_Vytis_-_Medal_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Medal_BAR.svg.png" }] },
+  ],
+
+
+  // ── ITALY: Order of Merit of the Republic (OMRI) — 6 grades ────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/ITA_OMRI_2001_Cav_BAR.svg/250px-ITA_OMRI_2001_Cav_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Cavaliere', label: 'Cavaliere', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/ITA_OMRI_2001_Cav_BAR.svg/250px-ITA_OMRI_2001_Cav_BAR.svg.png' },
+      { value: 'Ufficiale', label: 'Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/ITA_OMRI_2001_Uff_BAR.svg/250px-ITA_OMRI_2001_Uff_BAR.svg.png' },
+      { value: 'Commendatore', label: 'Commendatore', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/ITA_OMRI_2001_Com_BAR.svg/250px-ITA_OMRI_2001_Com_BAR.svg.png' },
+      { value: 'Grande Ufficiale', label: 'Grande Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/ITA_OMRI_2001_GUff_BAR.svg/250px-ITA_OMRI_2001_GUff_BAR.svg.png' },
+      { value: 'Gran Croce', label: 'Gran Croce', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/ITA_OMRI_2001_GC_BAR.svg/250px-ITA_OMRI_2001_GC_BAR.svg.png' },
+      { value: 'Gran Cordone', label: 'Gran Cordone', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/ITA_OMRI_2001_GC-GCord_BAR.svg/250px-ITA_OMRI_2001_GC-GCord_BAR.svg.png' },
+    ] },
+  ],
+  // ── ITALY: Order of Saints Maurice and Lazarus — 3 grades ──────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Cavaliere_SSML_BAR.svg/250px-Cavaliere_SSML_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Cavaliere', label: 'Cavaliere', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Cavaliere_SSML_BAR.svg/250px-Cavaliere_SSML_BAR.svg.png' },
+      { value: 'Ufficiale', label: 'Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Ufficiale_SSML_BAR.svg/250px-Ufficiale_SSML_BAR.svg.png' },
+      { value: 'Commendatore', label: 'Commendatore', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Commendatore_SSML_BAR.svg/250px-Commendatore_SSML_BAR.svg.png' },
+    ] },
+  ],
+  // ── FRANCE: Croix de la Valeur Militaire — 5 grades ────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/a/af/Ruban_de_la_Croix_de_la_Valeur_militaire.PNG": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Plain (no device)', label: 'Plain (no device)', url: 'https://upload.wikimedia.org/wikipedia/commons/a/af/Ruban_de_la_Croix_de_la_Valeur_militaire.PNG' },
+      { value: 'Etoile de Bronze', label: 'Etoile de Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Croix_de_la_Valeur_Militaire_avec_l%27etoile_bronze_ribbon.svg/250px-Croix_de_la_Valeur_Militaire_avec_l%27etoile_bronze_ribbon.svg.png' },
+      { value: 'Etoile d\'Argent', label: 'Etoile d\'Argent', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Croix_de_la_Valeur_Militaire_avec_l%27etoile_argent_ribbon.svg/250px-Croix_de_la_Valeur_Militaire_avec_l%27etoile_argent_ribbon.svg.png' },
+      { value: 'Etoile de Vermeil', label: 'Etoile de Vermeil', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Croix_de_la_Valeur_Militaire_avec_l%27etoile_vermeil_ribbon.svg/250px-Croix_de_la_Valeur_Militaire_avec_l%27etoile_vermeil_ribbon.svg.png' },
+      { value: 'Palme de Bronze', label: 'Palme de Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Croix_de_la_Valeur_militaire_avec_palme_de_bronze.svg/250px-Croix_de_la_Valeur_militaire_avec_palme_de_bronze.svg.png' },
+    ] },
+  ],
+  // ── FRANCE: Ordre National du Merite — 5 grades ─────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Ordre_national_du_Merite_Chevalier_ribbon.svg/250px-Ordre_national_du_Merite_Chevalier_ribbon.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Chevalier', label: 'Chevalier', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Ordre_national_du_Merite_Chevalier_ribbon.svg/250px-Ordre_national_du_Merite_Chevalier_ribbon.svg.png' },
+      { value: 'Officier', label: 'Officier', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Ordre_national_du_Merite_Officier_ribbon.svg/250px-Ordre_national_du_Merite_Officier_ribbon.svg.png' },
+      { value: 'Commandeur', label: 'Commandeur', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Ordre_national_du_Merite_Commandeur_ribbon.svg/250px-Ordre_national_du_Merite_Commandeur_ribbon.svg.png' },
+      { value: 'Grand Officier', label: 'Grand Officier', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Ordre_national_du_Merite_GO_ribbon.svg/250px-Ordre_national_du_Merite_GO_ribbon.svg.png' },
+      { value: 'Grand Croix', label: 'Grand Croix', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Ordre_national_du_Merite_GC_ribbon.svg/250px-Ordre_national_du_Merite_GC_ribbon.svg.png' },
+    ] },
+  ],
+  // ── FRANCE: Medaille de la Defense Nationale — 4 grades ────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Medaille_de_la_Defense_Nationale_Bronze_ribbon.svg/250px-Medaille_de_la_Defense_Nationale_Bronze_ribbon.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Bronze', label: 'Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Medaille_de_la_Defense_Nationale_Bronze_ribbon.svg/250px-Medaille_de_la_Defense_Nationale_Bronze_ribbon.svg.png' },
+      { value: 'Argent', label: 'Argent', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Medaille_de_la_Defense_Nationale_Argent_ribbon.svg/250px-Medaille_de_la_Defense_Nationale_Argent_ribbon.svg.png' },
+      { value: 'Or', label: 'Or', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Medaille_de_la_Defense_Nationale_Or_ribbon.svg/250px-Medaille_de_la_Defense_Nationale_Or_ribbon.svg.png' },
+      { value: 'Or avec Citation', label: 'Or avec Citation', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Medaille_d%27Or_de_la_Defense_Nationale_pour_citation_sans_croix_ribbon.svg/250px-Medaille_d%27Or_de_la_Defense_Nationale_pour_citation_sans_croix_ribbon.svg.png' },
+    ] },
+  ],
+  // ── FRANCE: Medaille des Services Militaires Volontaires — 3 grades ─────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Bronze', label: 'Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg.png' },
+      { value: 'Argent', label: 'Argent', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Medaille_des_Services_Militaires_Volontaires_Argent_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Argent_ribbon.svg.png' },
+      { value: 'Or', label: 'Or', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Medaille_des_Services_Militaires_Volontaires_Or_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Or_ribbon.svg.png' },
+    ] },
+  ],
+  // ── NORWAY: National Service Medal — 4 branches ─────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Vernedyktighetsmedaljen_H%C3%A6ren_stripe.svg/250px-Vernedyktighetsmedaljen_H%C3%A6ren_stripe.svg.png": [
+    { type: 'select', name: 'branch', label: 'Branch', options: [
+      { value: 'Army', label: 'Army', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Vernedyktighetsmedaljen_H%C3%A6ren_stripe.svg/250px-Vernedyktighetsmedaljen_H%C3%A6ren_stripe.svg.png' },
+      { value: 'Navy', label: 'Navy', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Vernedyktighetsmedaljen_Sj%C3%B8forsvaret_stripe.svg/250px-Vernedyktighetsmedaljen_Sj%C3%B8forsvaret_stripe.svg.png' },
+      { value: 'Air Force', label: 'Air Force', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Vernedyktighetsmedaljen_Luftforsvaret_stripe.svg/250px-Vernedyktighetsmedaljen_Luftforsvaret_stripe.svg.png' },
+      { value: 'Home Guard', label: 'Home Guard', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Vernedyktighetsmedaljen_Heimevernet_stripe.svg/250px-Vernedyktighetsmedaljen_Heimevernet_stripe.svg.png' },
+    ] },
+  ],
+  // ── SWEDEN: Armed Forces Medal of Merit with Sword (1995-2007) — Gold/Silver ─
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_guld.png/250px-F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_guld.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Gold', label: 'Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_guld.png/250px-F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_guld.png' },
+      { value: 'Silver', label: 'Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_silver.png/250px-F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_silver.png' },
+    ] },
+  ],
+  // ── SWEDEN: Armed Forces Medal of Merit (2008-2023) — Gold/Silver ───────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/FMGM.png/250px-FMGM.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Gold', label: 'Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/FMGM.png/250px-FMGM.png' },
+      { value: 'Silver', label: 'Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/FMGMmsv.png/250px-FMGMmsv.png' },
+    ] },
+  ],
+  // ── SWEDEN: Armed Forces Medal for Wounded in Battle — Silver w/ Star / Silver
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/FMSMsismstj.png/250px-FMSMsismstj.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Silver with Star', label: 'Silver with Star', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/FMSMsismstj.png/250px-FMSMsismstj.png' },
+      { value: 'Silver', label: 'Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/FMSNsismstj2.png/250px-FMSNsismstj2.png' },
+    ] },
+  ],
+
+  // ── SWITZERLAND: Skill-at-Arms — 2 levels each ─────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/CHE_Skill-at-arms_decoration_Assault_rifle_level_1.png/250px-CHE_Skill-at-arms_decoration_Assault_rifle_level_1.png": [
+    { type: 'select', name: 'level', label: 'Level', options: [
+      { value: 'Level 1', label: 'Level 1', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/CHE_Skill-at-arms_decoration_Assault_rifle_level_1.png/250px-CHE_Skill-at-arms_decoration_Assault_rifle_level_1.png' },
+      { value: 'Level 2', label: 'Level 2', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/CHE_Skill-at-arms_decoration_Assault_rifle_level_2.png/250px-CHE_Skill-at-arms_decoration_Assault_rifle_level_2.png' },
+    ] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/CHE_Skill-at-arms_decoration_Pistol_level_1.png/250px-CHE_Skill-at-arms_decoration_Pistol_level_1.png": [
+    { type: 'select', name: 'level', label: 'Level', options: [
+      { value: 'Level 1', label: 'Level 1', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/CHE_Skill-at-arms_decoration_Pistol_level_1.png/250px-CHE_Skill-at-arms_decoration_Pistol_level_1.png' },
+      { value: 'Level 2', label: 'Level 2', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/CHE_Skill-at-arms_decoration_Pistol_level_2.png/250px-CHE_Skill-at-arms_decoration_Pistol_level_2.png' },
+    ] },
+  ],
+  // ── FINLAND: Order of the Cross of Liberty — 5 grades ──────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/FIN_Order_of_the_Cross_of_Liberty_GCross_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_GCross_peace_military_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Grand Cross', label: 'Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/FIN_Order_of_the_Cross_of_Liberty_GCross_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_GCross_peace_military_BAR.svg.png' },
+      { value: '1st Class with Star', label: '1st Class with Star', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/FIN_Order_of_the_Cross_of_Liberty_1Class_Star_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_1Class_Star_peace_military_BAR.svg.png' },
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/FIN_Order_of_the_Cross_of_Liberty_1Class_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_1Class_peace_military_BAR.svg.png' },
+      { value: 'Liberty Medal', label: 'Liberty Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/FIN_Order_of_the_Cross_of_Liberty_Medal_1Class_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_Medal_1Class_BAR.svg.png' },
+      { value: 'Medal of Merit (Gold)', label: 'Medal of Merit (Gold)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/FIN_Order_of_the_Cross_of_Liberty_Medal_Merit_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_Medal_Merit_BAR.svg.png' },
+    ] },
+  ],
+  // ── LATVIA: Order of the Three Stars — 4 grades ──────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Order_of_the_Three_Stars_Grand_Cross_BAR_%28Latvia%29.png/250px-Order_of_the_Three_Stars_Grand_Cross_BAR_%28Latvia%29.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Grand Cross', label: 'Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Order_of_the_Three_Stars_Grand_Cross_BAR_%28Latvia%29.png/250px-Order_of_the_Three_Stars_Grand_Cross_BAR_%28Latvia%29.png' },
+      { value: 'Gold Medal', label: 'Gold Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/LVA_Order_of_the_Three_Stars_-_Gold_Medal_BAR.png/250px-LVA_Order_of_the_Three_Stars_-_Gold_Medal_BAR.png' },
+      { value: 'Silver Medal', label: 'Silver Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/LVA_Order_of_the_Three_Stars_-_Silver_Medal_BAR.png/250px-LVA_Order_of_the_Three_Stars_-_Silver_Medal_BAR.png' },
+      { value: 'Bronze Medal', label: 'Bronze Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/LVA_Order_of_the_Three_Stars_-_Bronze_Medal_BAR.png/250px-LVA_Order_of_the_Three_Stars_-_Bronze_Medal_BAR.png' },
+    ] },
+  ],
+  // ── AUSTRIA: Wound Medal — 1st / 2nd wound ──────────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/AUT_Verwundetenmedaille_BAR.svg/250px-AUT_Verwundetenmedaille_BAR.svg.png": [
+    { type: 'select', name: 'wound', label: 'Number of Wounds', options: [
+      { value: '1st Wound', label: '1st Wound', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/AUT_Verwundetenmedaille_BAR.svg/250px-AUT_Verwundetenmedaille_BAR.svg.png' },
+      { value: '2nd Wound', label: '2nd Wound', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/AUT_Verwundetenmedaille_2x_BAR.svg/250px-AUT_Verwundetenmedaille_2x_BAR.svg.png' },
+    ] },
+  ],
+  // ── AUSTRIA: Armed Forces Operations Medal — Foreign / Military Defence ──────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/AUT_Einsatzmedaille_a_BAR.svg/250px-AUT_Einsatzmedaille_a_BAR.svg.png": [
+    { type: 'select', name: 'type', label: 'Operation Type', options: [
+      { value: 'Foreign Operations', label: 'Foreign Operations', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/AUT_Einsatzmedaille_a_BAR.svg/250px-AUT_Einsatzmedaille_a_BAR.svg.png' },
+      { value: 'Military Defence', label: 'Military Defence', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/AUT_Einsatzmedaille_d_BAR.svg/250px-AUT_Einsatzmedaille_d_BAR.svg.png' },
+    ] },
+  ],
+  // ── SWEDEN: Royal Order of Vasa ──────────────────────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/SWE_Order_of_Vasa_-_Commander_Grand_Cross_BAR.png/250px-SWE_Order_of_Vasa_-_Commander_Grand_Cross_BAR.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Commander Grand Cross', label: 'Commander Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/SWE_Order_of_Vasa_-_Commander_Grand_Cross_BAR.png/250px-SWE_Order_of_Vasa_-_Commander_Grand_Cross_BAR.png' },
+      { value: 'Commander 1st Class', label: 'Commander 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/SWE_Order_of_Vasa_-_Commander_1st_Class_BAR.png/250px-SWE_Order_of_Vasa_-_Commander_1st_Class_BAR.png' },
+    ] },
+  ],
+  // ── SWEDEN: International Service Medal — with / without Sword ───────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/FMintGMmsv_bar.png/250px-FMintGMmsv_bar.png": [
+    { type: 'select', name: 'variant', label: 'Variant', options: [
+      { value: 'with Sword', label: 'with Sword', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/FMintGMmsv_bar.png/250px-FMintGMmsv_bar.png' },
+      { value: 'without Sword', label: 'without Sword', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/FMintSMmsv.png/250px-FMintSMmsv.png' },
+    ] },
+  ],
+  // ── SWEDEN: Service Medal — National Defence / Generic ───────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/SWE_Armed_Forces_Medal_for_National_Defense.png/250px-SWE_Armed_Forces_Medal_for_National_Defense.png": [
+    { type: 'select', name: 'variant', label: 'Variant', options: [
+      { value: 'National Defence', label: 'National Defence', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/SWE_Armed_Forces_Medal_for_National_Defense.png/250px-SWE_Armed_Forces_Medal_for_National_Defense.png' },
+      { value: 'Generic Service', label: 'Generic Service', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/FMSMmsv.png/250px-FMSMmsv.png' },
+    ] },
+  ],
+  // ── POLAND: Cross of Merit with Swords — Gold / Silver / Bronze ─────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/POL_Z%C5%82oty_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Z%C5%82oty_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Gold', label: 'Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/POL_Z%C5%82oty_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Z%C5%82oty_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+      { value: 'Silver', label: 'Silver', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/POL_Srebrny_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Srebrny_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+      { value: 'Bronze', label: 'Bronze', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/POL_Br%C4%85zowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Br%C4%85zowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+    ] },
+  ],
+  // ── POLAND: Navy Medal — Oak Leaf devices ────────────────────────────────────
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/POL_Medal_Morski_BAR.svg/250px-POL_Medal_Morski_BAR.svg.png": [
+    { type: 'select', name: 'award', label: 'Award Number', options: [
+      { value: '1st Award', label: '1st Award (plain)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/POL_Medal_Morski_BAR.svg/250px-POL_Medal_Morski_BAR.svg.png' },
+      { value: '2nd Award (1 Oak Leaf)', label: '2nd Award (1 Oak Leaf)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/POL_Medal_Morski_1ok_BAR.svg/250px-POL_Medal_Morski_1ok_BAR.svg.png' },
+      { value: '3rd Award (2 Oak Leaves)', label: '3rd Award (2 Oak Leaves)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/POL_Medal_Morski_2ok_BAR.svg/250px-POL_Medal_Morski_2ok_BAR.svg.png' },
+      { value: '4th Award (3 Oak Leaves)', label: '4th Award (3 Oak Leaves)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/POL_Medal_Morski_3ok_BAR.svg/250px-POL_Medal_Morski_3ok_BAR.svg.png' },
+    ] },
+  ],
+
+  // ══════════════════════════════════════════════════════════════════════
+  // UNITED STATES — missing ribbons (oak leaf devices)
+  // ══════════════════════════════════════════════════════════════════════
+  // Medal of Honor - no devices, single award
+  // Korea Defense Service Medal - no devices
+  // Army Service Ribbon - no devices  
+  // Arctic Service Ribbon - no devices
+  // Kuwait Liberation (Saudi Arabia) - no devices
+  // Kuwait Liberation (Kuwait) - no devices
+  // Navy Fleet Marine Force Ribbon - no devices
+  // Marine Corps Combat Instructor Ribbon - no devices
+  // Air Force BMT Honor Graduate - no devices
+  // (All 9 are correctly without modifiers — single-award ribbons)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // UNITED KINGDOM — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Polar Medal — awarded with clasps for each expedition area
+  "https://www.medals.pl/bc/r/uk1mpo.gif": [
+    { type: 'select', name: 'clasp', label: 'Clasp', options: [
+      { value: 'No Clasp', label: 'No Clasp', url: 'https://www.medals.pl/bc/r/uk1mpo.gif' },
+      { value: 'Arctic', label: 'Arctic', url: 'https://www.medals.pl/bc/r/uk1mpo.gif' },
+      { value: 'Antarctic', label: 'Antarctic', url: 'https://www.medals.pl/bc/r/uk1mpo.gif' },
+    ] },
+  ],
+  // (MID, INTERFET, Iraq Reconstruction, Civilian Service Medal, RFA Medal, 
+  //  Golden/Diamond Jubilee, GC, BEM, MSM — all single-award, no modifier needed)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // AUSTRALIA — missing ribbons  
+  // ══════════════════════════════════════════════════════════════════════
+  // Commendation for Gallantry — single award
+  // Commendation for Distinguished Service — single award
+  // Australian Defence Medal — no variants
+  // Afghanistan Medal — with/without clasps (SOLIC, ICAT etc) but same ribbon image
+  // Iraq Medal — single clasp system but same ribbon image
+  // Australian Centenary Medal — single award
+  // Commendation for Brave Conduct — single award
+  // Medal of the Order of Australia (OAM) Military — single award
+  // Australian Service Medal (ASM) — clasps by theatre (same ribbon image)
+  // (All correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // CANADA — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Somalia Medal — single award (clasp: SOMALIA but same image)
+  // CPSM — single award
+  // 125th Anniversary Medal — single award
+  // Cross of Valour — single award (highest Canadian decoration)
+  // (All correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // NEW ZEALAND — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // NZC, ONZ, NZ MSM — single award
+  // NZ Operational Service Medal — with/without clasp (same image)
+  // GSM variants — single award per theatre  
+  // NZ East Timor Medal — single award
+  // NZ General Service Medal Warlike/Non-Warlike — single award each
+  // Special Service Medal Asian Tsunami — single award
+  // (All correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // FRANCE — missing ribbons (Wikipedia SVG URLs)
+  // ══════════════════════════════════════════════════════════════════════
+  // Medaille Militaire — single award (no grades)
+  // Croix du Combattant — single award
+  // Croix du Combattant Volontaire (1983) — single award
+  // Medaille des Blesses de Guerre — grades shown by star devices on ribbon
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg/250px-Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg.png": [
+    { type: 'select', name: 'wound', label: 'Number of Wounds', options: [
+      { value: '1st Wound', label: '1st Wound', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg/250px-Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg.png' },
+      { value: '2nd Wound', label: '2nd Wound (1 star)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg/250px-Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg.png' },
+      { value: '3rd Wound', label: '3rd Wound (2 stars)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg/250px-Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg.png' },
+    ] },
+  ],
+  // Medaille Commemorative Francaise — clasps by operation (same base ribbon)
+  // Medaille de la Protection Militaire — single award
+  // (Most French medals correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ITALY — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Military Order of Italy — 5 grades, all different ribbons — needs modifier
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Cavaliere_BAR.svg/250px-Cavaliere_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Cavaliere (Knight)', label: 'Cavaliere (Knight)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Cavaliere_BAR.svg/250px-Cavaliere_BAR.svg.png' },
+      { value: 'Ufficiale (Officer)', label: 'Ufficiale (Officer)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Ufficiale_BAR.svg/250px-Ufficiale_BAR.svg.png' },
+      { value: 'Commendatore (Commander)', label: 'Commendatore', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Commendatore_BAR.svg/250px-Commendatore_BAR.svg.png' },
+      { value: 'Grande Ufficiale (Grand Officer)', label: 'Grande Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Grande_Ufficiale_BAR.svg/250px-Grande_Ufficiale_BAR.svg.png' },
+      { value: 'Cavaliere di Gran Croce (Grand Cross)', label: 'Gran Croce', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Gran_Croce_BAR.svg/250px-Gran_Croce_BAR.svg.png' },
+    ] },
+  ],
+  // War Cross for Military Valor — single award (multiple awards shown by palms/stars on medal, same ribbon)
+  // War Merit Cross — single award; WITH Silver Clasp is its own entry already
+  // War Merit Cross with Silver Clasp — already a separate entry (keep as-is)
+  // Order of Merit of the Italian Republic — 5 grades
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Cavaliere_OMRI_BAR.svg/250px-Cavaliere_OMRI_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Cavaliere (Knight)', label: 'Cavaliere (Knight)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Cavaliere_OMRI_BAR.svg/250px-Cavaliere_OMRI_BAR.svg.png' },
+      { value: 'Ufficiale (Officer)', label: 'Ufficiale (Officer)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Ufficiale_OMRI_BAR.svg/250px-Ufficiale_OMRI_BAR.svg.png' },
+      { value: 'Commendatore', label: 'Commendatore', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Commendatore_OMRI_BAR.svg/250px-Commendatore_OMRI_BAR.svg.png' },
+      { value: 'Grande Ufficiale', label: 'Grande Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Grande_Ufficiale_OMRI_BAR.svg/250px-Grande_Ufficiale_OMRI_BAR.svg.png' },
+      { value: 'Cavaliere di Gran Croce', label: 'Gran Croce', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Gran_Croce_OMRI_BAR.svg/250px-Gran_Croce_OMRI_BAR.svg.png' },
+    ] },
+  ],
+  // Order of the Star of Italy — 5 grades (same structure as OMRI)
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Cavaliere (Knight)', label: 'Cavaliere (Knight)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png' },
+      { value: 'Ufficiale (Officer)', label: 'Ufficiale (Officer)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png' },
+      { value: 'Commendatore', label: 'Commendatore', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png' },
+      { value: 'Grande Ufficiale', label: 'Grande Ufficiale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png' },
+      { value: 'Cavaliere di Gran Croce', label: 'Gran Croce', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png' },
+    ] },
+  ],
+  // Order of Merit for Labour — 5 grades (same ribbon for all)
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg/250px-1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Gold Medal', label: 'Gold Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg/250px-1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg.png' },
+      { value: 'Silver Medal', label: 'Silver Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg/250px-1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg.png' },
+      { value: 'Bronze Medal', label: 'Bronze Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg/250px-1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg.png' },
+    ] },
+  ],
+  // War Cross for Military Valor + War Merit Cross — single awards (correctly no modifier)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // NETHERLANDS — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Military Order of William — 4 grades (highest Dutch military decoration)
+  "https://www.medals.pl/nl/r/nl1owi.gif": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Knight 4th Class', label: 'Knight 4th Class', url: 'https://www.medals.pl/nl/r/nl1owi.gif' },
+      { value: 'Knight 3rd Class', label: 'Knight 3rd Class', url: 'https://www.medals.pl/nl/r/nl1owi.gif' },
+      { value: 'Commander 2nd Class', label: 'Commander 2nd Class', url: 'https://www.medals.pl/nl/r/nl1owi.gif' },
+      { value: 'Grand Cross 1st Class', label: 'Grand Cross 1st Class', url: 'https://www.medals.pl/nl/r/nl1owi.gif' },
+    ] },
+  ],
+  // Bronze Lion, Bronze Cross, Flying Cross, Cross of Merit — single awards (correctly no modifier)
+  "https://www.medals.pl/nl/r/nl1bli.gif": [
+    { type: 'select', name: 'award', label: 'Award Number', options: [
+      { value: '1st Award', label: '1st Award', url: 'https://www.medals.pl/nl/r/nl1bli.gif' },
+      { value: '2nd Award', label: '2nd Award (w/ clasp)', url: 'https://www.medals.pl/nl/r/nl1bli.gif' },
+    ] },
+  ],
+
+  // ══════════════════════════════════════════════════════════════════════
+  // BELGIUM — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Military Decoration for Gallantry — 2 grades (1st and 2nd class)
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BEL_Military_Decoration_for_Gallantry.PNG/250px-BEL_Military_Decoration_for_Gallantry.PNG": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '2nd Class', label: '2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BEL_Military_Decoration_for_Gallantry.PNG/250px-BEL_Military_Decoration_for_Gallantry.PNG' },
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BEL_Military_Decoration_for_Gallantry.PNG/250px-BEL_Military_Decoration_for_Gallantry.PNG' },
+    ] },
+  ],
+  // Croix de Guerre (1954) — awarded with palms/stars for valor (same ribbon)
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BEL_Croix_de_Guerre_1954_ribbon.svg/250px-BEL_Croix_de_Guerre_1954_ribbon.svg.png": [
+    { type: 'select', name: 'device', label: 'Device', options: [
+      { value: 'No Device', label: 'No Device', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BEL_Croix_de_Guerre_1954_ribbon.svg/250px-BEL_Croix_de_Guerre_1954_ribbon.svg.png' },
+      { value: 'Bronze Palm', label: 'Bronze Palm', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BEL_Croix_de_Guerre_1954_ribbon.svg/250px-BEL_Croix_de_Guerre_1954_ribbon.svg.png' },
+      { value: 'Silver Palm', label: 'Silver Palm', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BEL_Croix_de_Guerre_1954_ribbon.svg/250px-BEL_Croix_de_Guerre_1954_ribbon.svg.png' },
+      { value: 'Gold Palm', label: 'Gold Palm', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BEL_Croix_de_Guerre_1954_ribbon.svg/250px-BEL_Croix_de_Guerre_1954_ribbon.svg.png' },
+    ] },
+  ],
+  // Military Decoration for Faithful Service — 1st/2nd class
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/BEL_Military_Decoration_for_Faithful_Service.PNG/250px-BEL_Military_Decoration_for_Faithful_Service.PNG": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '2nd Class', label: '2nd Class (15 years)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/BEL_Military_Decoration_for_Faithful_Service.PNG/250px-BEL_Military_Decoration_for_Faithful_Service.PNG' },
+      { value: '1st Class', label: '1st Class (25 years)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/BEL_Military_Decoration_for_Faithful_Service.PNG/250px-BEL_Military_Decoration_for_Faithful_Service.PNG' },
+    ] },
+  ],
+
+  // ══════════════════════════════════════════════════════════════════════
+  // NORWAY — Orders and medals with grades
+  // ══════════════════════════════════════════════════════════════════════
+  // Royal Norwegian Order of St. Olav — 3 grades
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/St._Olavs_Orden_stripe.svg/250px-St._Olavs_Orden_stripe.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Knight 1st Class', label: 'Knight 1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/St._Olavs_Orden_stripe.svg/250px-St._Olavs_Orden_stripe.svg.png' },
+      { value: 'Commander', label: 'Commander', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/St._Olavs_Orden_stripe.svg/250px-St._Olavs_Orden_stripe.svg.png' },
+      { value: 'Grand Cross', label: 'Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/St._Olavs_Orden_stripe.svg/250px-St._Olavs_Orden_stripe.svg.png' },
+    ] },
+  ],
+  // Royal Norwegian Order of Merit — 3 grades  
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Den_kongelige_norske_fortjenstorden.svg/250px-Den_kongelige_norske_fortjenstorden.svg.png": [
+    { type: 'select', name: 'class', label: 'Class / Grade', options: [
+      { value: 'Knight', label: 'Knight', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Den_kongelige_norske_fortjenstorden.svg/250px-Den_kongelige_norske_fortjenstorden.svg.png' },
+      { value: 'Commander', label: 'Commander', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Den_kongelige_norske_fortjenstorden.svg/250px-Den_kongelige_norske_fortjenstorden.svg.png' },
+      { value: 'Grand Cross', label: 'Grand Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Den_kongelige_norske_fortjenstorden.svg/250px-Den_kongelige_norske_fortjenstorden.svg.png' },
+    ] },
+  ],
+  // War Cross with Sword, War Cross, Defence Cross of Honour, Medal for Heroic Deeds,
+  // Wounded in Action Medal, Defence Service Medal with Laurel, Home Guard Medal,
+  // Army/Navy/Air Force/Intel/Special Ops/Norwegian Police/Logistics Medals of Merit,
+  // War Medal, UN Medal, NATO Medal — all single award each (no grade variants, correctly no modifier)
+  // Medal for Meritorious Service, Beret Badges, and campaign medals — single award
+
+  // ══════════════════════════════════════════════════════════════════════
+  // SWEDEN — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Royal Order of the Seraphim — single grade (highest Swedish order, no subdivisions)
+  // Medal of Merit (1995-2007) — already superseded, single award
+  // Reserve Officer Medal — single award
+  // (All correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // FINLAND — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Medal for Military Merits — 3 classes (Gold, Silver, Bronze)
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/FIN_Military_Merit_Medal_BAR.svg/250px-FIN_Military_Merit_Medal_BAR.svg.png": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: 'Gold', label: 'Gold Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/FIN_Military_Merit_Medal_BAR.svg/250px-FIN_Military_Merit_Medal_BAR.svg.png' },
+      { value: 'Silver', label: 'Silver Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/FIN_Military_Merit_Medal_BAR.svg/250px-FIN_Military_Merit_Medal_BAR.svg.png' },
+      { value: 'Bronze', label: 'Bronze Class', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/FIN_Military_Merit_Medal_BAR.svg/250px-FIN_Military_Merit_Medal_BAR.svg.png' },
+    ] },
+  ],
+
+  // ══════════════════════════════════════════════════════════════════════
+  // POLAND — missing ribbons (all single-award; PKW medals are per-rotation but same ribbon)
+  // All correctly without modifiers — Order of the White Eagle (1 grade), 
+  // Virtuti Militari grades already separate entries, Polonia Restituta grades separate,
+  // Cross of Merit for Bravery (single), Air/Navy Cross of Merit (single each),
+  // Medal for Sacrifice and Courage (single), Gloria Intrepidis (single),
+  // PKW campaign medals (single award per person), Centenary Medal (single)
+  // ══════════════════════════════════════════════════════════════════════
+
+  // ══════════════════════════════════════════════════════════════════════
+  // CZECH REPUBLIC — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Honour Badge, Military Logistics Badge, Medal for Injury — single awards
+  // Medal for Service Abroad (generic) — single award (specific theatre versions separate)
+  // (All correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // SLOVAKIA — missing ribbons  
+  // ══════════════════════════════════════════════════════════════════════
+  // All Slovak medals listed are single-award (no grade variants)
+  // (Correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // AUSTRIA — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Military Recognition Medal — single award
+  // Militia Medal — single award
+  // (Correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ESTONIA — all are single-award (cross grades already in name, decorations single)
+  // LATVIA — Order of Lacplesis has 3 classes but all use same ribbon image
+  // LUXEMBOURG — Croix de Guerre and Military Medal both single-award
+  // ══════════════════════════════════════════════════════════════════════
+
+  // ══════════════════════════════════════════════════════════════════════
+  // CHINA — missing ribbons (PLA service ribbons and awards — all single-award)
+  // ══════════════════════════════════════════════════════════════════════
+
+  // ══════════════════════════════════════════════════════════════════════
+  // RUSSIA — Orders with grades
+  // ══════════════════════════════════════════════════════════════════════
+  // Order of Courage — single award (Russia) - correctly no modifier
+  // Medal for Courage — single award - correctly no modifier
+  // Orders of Saints (Suvorov, Kutuzov, Ushakov, Nakhimov, Zhukov) — 3 grades each but different ribbons per grade
+  "https://upload.wikimedia.org/wikipedia/commons/e/ea/RUS_Order_of_Suvorov_ribbon_2010.svg": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/e/ea/RUS_Order_of_Suvorov_ribbon_2010.svg' },
+      { value: '2nd Class', label: '2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/e/ea/RUS_Order_of_Suvorov_ribbon_2010.svg' },
+      { value: '3rd Class', label: '3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/e/ea/RUS_Order_of_Suvorov_ribbon_2010.svg' },
+    ] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/a/a3/RUS_Order_of_Kutuzov_ribbon_2010.svg": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/a/a3/RUS_Order_of_Kutuzov_ribbon_2010.svg' },
+      { value: '2nd Class', label: '2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/a/a3/RUS_Order_of_Kutuzov_ribbon_2010.svg' },
+      { value: '3rd Class', label: '3rd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/a/a3/RUS_Order_of_Kutuzov_ribbon_2010.svg' },
+    ] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/c/c1/RUS_Order_of_Ushakov_ribbon_2010.svg": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/RUS_Order_of_Ushakov_ribbon_2010.svg' },
+      { value: '2nd Class', label: '2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/RUS_Order_of_Ushakov_ribbon_2010.svg' },
+    ] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/8/8e/RUS_Order_of_Nakhimov_ribbon_2010.svg": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/RUS_Order_of_Nakhimov_ribbon_2010.svg' },
+      { value: '2nd Class', label: '2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/RUS_Order_of_Nakhimov_ribbon_2010.svg' },
+    ] },
+  ],
+  "https://upload.wikimedia.org/wikipedia/commons/8/80/RUS_Order_of_Zhukov_ribbon.svg": [
+    { type: 'select', name: 'class', label: 'Class', options: [
+      { value: '1st Class', label: '1st Class', url: 'https://upload.wikimedia.org/wikipedia/commons/8/80/RUS_Order_of_Zhukov_ribbon.svg' },
+      { value: '2nd Class', label: '2nd Class', url: 'https://upload.wikimedia.org/wikipedia/commons/8/80/RUS_Order_of_Zhukov_ribbon.svg' },
+    ] },
+  ],
+  // Orders of Military Merit, Naval Merit, and medals for Suvorov/Ushakov/Zhukov/Nesterov
+  // and Border Protection — all single-award (correctly no modifier)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // GREECE — missing ribbons
+  // ══════════════════════════════════════════════════════════════════════
+  // Cross of Valour — single award (highest Greek gallantry award)
+  // Medal for Outstanding Acts — single award
+  // (Correctly without modifiers)
+
+  // ══════════════════════════════════════════════════════════════════════
+  // GERMANY (NVA) — grades already in name (Gold/Silver/Bronze), single-award each
+  // CROATIA — all single-award orders
+  // GEORGIA — all single-award
+  // IRAN — all single-award  
+  // NORTH KOREA — all single-award
+  // PAKISTAN — service medals by length are separate entries; single-award each
+  // LITHUANIA — all single-award
+  // UNITED NATIONS — all single-award per mission (correctly no modifier)
+  // INTERNATIONAL — all single-award
+  // ══════════════════════════════════════════════════════════════════════
+
 };

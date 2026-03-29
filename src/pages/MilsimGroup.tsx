@@ -7,7 +7,7 @@ import { BRANCH_ICONS, type Branch } from "@/lib/milsimConstants";
 import {
   Shield, Globe, ExternalLink, Loader2, Users, Award, Crosshair,
   FileText, ChevronLeft, Star, BookOpen, Map, Radio, Medal,
-  Zap, Target, TrendingUp, Activity, Archive, Zap, ClipboardList, Siren,
+  Zap, Target, TrendingUp, Activity, Archive, ClipboardList, Siren, Trophy,
 } from "lucide-react";
 const OrbatBuilder = lazy(() => import("@/components/OrbatBuilder"));
 const CAMPAIGNS_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/campaigns";
@@ -150,12 +150,13 @@ export default function MilsimGroup() {
   const [readiness, setReadiness] = useState<ReadinessData | null>(null);
   const [readinessLoaded, setReadinessLoaded] = useState(false);
   const [applyAnswers, setApplyAnswers] = useState<Record<string, string>>({});
+  const [applyErrorMsg, setApplyErrorMsg] = useState<string>("");
   const [applySubmitting, setApplySubmitting] = useState(false);
   const [applyResult, setApplyResult] = useState<"success" | "already" | "error" | null>(null);
 
   useEffect(() => {
     if (!slug) return;
-    apiFetch<GroupDetail>(`/api/milsim-groups/${slug}`)
+    apiFetch<GroupDetail>(`/milsimGroups?path=${slug}`)
       .then(g => { setGroup(g); })
       .catch(() => setGroup(null))
       .finally(() => setLoading(false));
@@ -164,7 +165,7 @@ export default function MilsimGroup() {
   useEffect(() => {
 
     if ((tab === "capabilities" || tab === "overview") && group && !readinessLoaded) {
-      apiFetch<ReadinessData>(`/api/stats/readiness/${group.id}`)
+      apiFetch<ReadinessData>(`/stats?path=readiness/${group.id}`)
         .then(data => { setReadiness(data); setReadinessLoaded(true); })
         .catch(() => { setReadinessLoaded(true); });
     }
@@ -266,6 +267,16 @@ export default function MilsimGroup() {
               </div>
               {group.tagLine && (
                 <p className="font-display font-bold uppercase tracking-widest text-primary text-sm mb-3">{group.tagLine}</p>
+              )}
+              {(group.owner_username ?? group.ownerUsername) && (
+                <p className="text-xs text-muted-foreground font-sans mb-3 flex items-center gap-1">
+                  <span className="font-display uppercase tracking-widest text-[10px]">Commander:</span>
+                  <Link href={`/u/${group.owner_username ?? group.ownerUsername}`}>
+                    <span className="text-primary hover:underline underline-offset-2 cursor-pointer font-display uppercase tracking-widest text-[10px]">
+                      {group.owner_username ?? group.ownerUsername}
+                    </span>
+                  </Link>
+                </p>
               )}
 
               {/* Branch + unit type + capability tier */}
@@ -378,7 +389,7 @@ export default function MilsimGroup() {
                         style={{ width: `${readiness.readiness_pct}%`, background: readiness.status === "green" ? "#4ade80" : readiness.status === "amber" ? "#facc15" : "#f87171" }} />
                     </div>
                     <p className="text-xs text-muted-foreground font-sans">
-                      {readiness.total} members · {readiness.active_this_month} active 30d · {readiness.review_count} rep review{readiness.review_count !== 1 ? "s" : ""}
+                      {readiness.total} members · {readiness.active_this_month} active 30d · {readiness.review_count} rep review{readiness.review_count !== 1 ? "s" : ""} · Score: {readiness.readiness_pct}%
                     </p>
                   </div>
                 </div>
@@ -402,7 +413,7 @@ export default function MilsimGroup() {
                         <p className={`font-display font-black text-2xl uppercase ${
                           readiness.status === "green" ? "text-green-400" : readiness.status === "amber" ? "text-yellow-400" : "text-red-400"
                         }`}>{readiness.status.toUpperCase()}</p>
-                        <p className="text-xs text-muted-foreground mt-1 font-sans">{readiness.readiness_pct}% composite score</p>
+                        <p className="text-xs text-muted-foreground mt-1 font-sans">{readiness.readiness_pct}% composite readiness</p>
                       </div>
                     </div>
                     <div className="bg-card border border-border rounded-lg p-6 flex items-center gap-5">
@@ -432,10 +443,39 @@ export default function MilsimGroup() {
                           <s.icon className="w-4 h-4 text-primary" />
                           <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">{s.label}</p>
                         </div>
-                        <p className="font-display font-black text-2xl text-foreground">{s.value}</p>
+                        <p className={`font-display font-black text-2xl ${(s as any).col || "text-foreground"}`}>{s.value}</p>
                         <p className="text-[10px] text-muted-foreground font-sans mt-0.5">{s.sub}</p>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Scoring method explainer */}
+                  <div className="bg-card border border-border/50 rounded-lg p-4 space-y-2">
+                    <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">How This Score Is Calculated</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] font-sans text-muted-foreground">
+                      {[
+                        { label: "Manpower",         max: 30, desc: "Verified members vs game full-strength threshold" },
+                        { label: "Member Activity",  max: 20, desc: "% of roster active in last 30 days" },
+                        { label: "Ops History",      max: 25, desc: "Verified ops with real RSVPs" },
+                        { label: "Op Recency",       max: 15, desc: "Days since last operation" },
+                        { label: "AAR Discipline",   max: 15, desc: "AARs filed per verified op" },
+                        { label: "Training Doctrine",max: 50, desc: "Document quality, depth, breadth & recency" },
+                        { label: "Discord",          max: 10, desc: "Discord server linked" },
+                        { label: "Page Maintenance", max: 10, desc: "How recently the group page was updated" },
+                        { label: "Reputation",       max: 10, desc: "External reviews from non-members" },
+                        { label: "Combat Intel",     max: 20, desc: "Win rate + objective success across 3+ AARs" },
+                        { label: "Game Breadth",     max: 15, desc: "Capability across multiple titles" },
+                        { label: "Doctrine Bonus",   max: 15, desc: "+15 for full SOP+TTP+ROE+Drill set at depth ≥70" },
+                      ].map(f => (
+                        <div key={f.label} className="flex items-start gap-1.5">
+                          <span className="text-primary font-display font-bold shrink-0">{f.label}</span>
+                          <span className="text-muted-foreground/70">(0–{f.max}): {f.desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/60 pt-1 border-t border-border/40">
+                      All scores shown as % of max · GREEN ≥68% · AMBER 41–67% · RED &lt;41% · Anti-gaming checks exclude fake ops, thin AARs, and new-account padding
+                    </p>
                   </div>
 
                   {/* System-generated narrative */}
@@ -508,7 +548,7 @@ export default function MilsimGroup() {
                       })}
                     </div>
                     <p className="text-[10px] text-muted-foreground font-sans pt-3 border-t border-border">
-                      Tier is computed from operations logged, AAR discipline, average troop experience, troop utilisation, training documentation depth, and game breadth — units that operate across multiple titles demonstrate wider mixed-force skillsets. Win rate is not used — we can only assess what commanders actually log.
+                      Tier is computed from operations logged, AAR discipline, average troop experience, troop utilisation, training documentation depth, and game breadth. The Op Capability Score (0–100) feeds the tier — it does not use the composite readiness score. Win rate and objective data influence the Composite Readiness Score (shown as % of max) via the Combat Intel factor, which unlocks after 3+ AARs with outcomes filed.
                     </p>
                   </div>
                 </>
@@ -682,7 +722,7 @@ export default function MilsimGroup() {
               if (group.orbat) {
                 try {
                   const parsed = JSON.parse(group.orbat);
-                  hasValidOrbat = !!(parsed && (parsed.id || parsed.tree));
+                  hasValidOrbat = !!(parsed && ((Array.isArray(parsed) && parsed.length > 0) || parsed.id || parsed.tree));
                 } catch { /* invalid JSON */ }
               }
               if (!hasValidOrbat) {
@@ -780,7 +820,7 @@ export default function MilsimGroup() {
                         onSubmit={async (e) => {
                           e.preventDefault();
                           const token = localStorage.getItem("tag_auth_token");
-                          if (!token) { window.location.href = "/login"; return; }
+                          if (!token) { setApplyResult("error"); return; }
                           const required = questions.filter(q => q.required);
                           const missing = required.some(q => !(applyAnswers[q.id] ?? "").trim());
                           if (missing) { setApplyResult("error"); return; }
@@ -795,14 +835,19 @@ export default function MilsimGroup() {
                             });
                             if (res.status === 409) { setApplyResult("already"); }
                             else if (res.ok) { setApplyResult("success"); }
-                            else { setApplyResult("error"); }
-                          } catch { setApplyResult("error"); }
+                            else {
+                              let errMsg = "Submission failed. Please try again.";
+                              try { const j = await res.json(); errMsg = j.error ?? errMsg; } catch {}
+                              setApplyErrorMsg(errMsg);
+                              setApplyResult("error");
+                            }
+                          } catch { setApplyErrorMsg("Network error. Check your connection."); setApplyResult("error"); }
                           finally { setApplySubmitting(false); }
                         }}
                       >
                         {applyResult === "error" && (
                           <p className="text-xs text-red-400 font-display font-bold uppercase tracking-wide">
-                            Please fill in all required fields before submitting.
+                            {applyErrorMsg || "Please fill in all required fields before submitting."}
                           </p>
                         )}
                         <ol className="space-y-5">
@@ -1019,8 +1064,8 @@ function PublicLegacyTab({ group }: { group: any }) {
     const token = localStorage.getItem("tag_auth_token") ?? "";
     const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
     Promise.all([
-      apiFetch<any[]>(`/api/milsim-groups/${group.id}/ops`).catch(() => []),
-      apiFetch<any[]>(`/api/milsim-groups/${group.id}/aars`).catch(() => []),
+      apiFetch<any[]>(`/milsimGroups?path=${group.id}/ops`).catch(() => []),
+      apiFetch<any[]>(`/milsimGroups?path=${group.id}/aars`).catch(() => []),
       fetch(`${CAMPAIGNS_URL}?path=list&group_id=${group.id}`, { headers }).then(r => r.json()).catch(() => []),
     ]).then(([o, a, c]) => {
       setOps(Array.isArray(o) ? o : []);

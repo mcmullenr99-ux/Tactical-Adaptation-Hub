@@ -9,7 +9,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+    return await base44.asServiceRole.entities.AppUser.get(payload.sub) ?? null;
   } catch { return null; }
 }
 
@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
         let awardedByName = a.awarded_by ?? '';
         if (a.awarded_by) {
           try {
-            const awarder = await base44.asServiceRole.entities.User.get(a.awarded_by);
+            const awarder = await base44.asServiceRole.entities.AppUser.get(a.awarded_by);
             awardedByName = awarder?.username ?? awarder?.full_name ?? a.awarded_by;
           } catch {}
         }

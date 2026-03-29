@@ -108,12 +108,12 @@ function SearchResult({ user, currentUserId }: { user: SearchUser; currentUserId
 
   const { data: status, isLoading: statusLoading } = useQuery<FriendStatus>({
     queryKey: ["friend-status", user.id],
-    queryFn: () => apiFetch(`/api/friends/status/${user.id}`),
+    queryFn: () => apiFetch(`/friends?path=status/${user.id}`),
     enabled: user.id !== currentUserId,
   });
 
   const sendRequest = useMutation({
-    mutationFn: () => apiFetch(`/api/friends/request/${user.id}`, { method: "POST" }),
+    mutationFn: () => apiFetch(`/friends?path=request/${user.id}`, { method: "POST" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["friend-status", user.id] });
       toast({ title: "Request Sent", description: `Friend request sent to ${user.username}.` });
@@ -174,32 +174,34 @@ export default function Friends() {
 
   const { data: friends = [], isLoading: friendsLoading, refetch: refetchFriends } = useQuery<FriendUser[]>({
     queryKey: ["friends"],
-    queryFn: () => apiFetch("/api/friends"),
+    queryFn: () => apiFetch("/friends"),
+    enabled: !!user?.id,
   });
 
   const { data: requests = [], isLoading: requestsLoading, refetch: refetchRequests } = useQuery<FriendUser[]>({
     queryKey: ["friend-requests"],
-    queryFn: () => apiFetch("/api/friends/requests"),
+    queryFn: () => apiFetch("/friends?path=requests"),
+    enabled: !!user?.id,
   });
 
   const { data: searchResults = [], isLoading: searchLoading } = useQuery<SearchUser[]>({
     queryKey: ["user-search", debouncedQuery],
-    queryFn: () => apiFetch(`/api/users/search?q=${encodeURIComponent(debouncedQuery)}`),
+    queryFn: () => apiFetch(`/users?path=search?q=${encodeURIComponent(debouncedQuery)}`),
     enabled: debouncedQuery.length >= 2,
   });
 
   const acceptMutation = useMutation({
-    mutationFn: (id: number) => apiFetch(`/api/friends/${id}/accept`, { method: "PATCH" }),
+    mutationFn: (id: number) => apiFetch(`/friends?path=${id}/accept`, { method: "PATCH" }),
     onSuccess: () => { refetchFriends(); refetchRequests(); toast({ title: "Connected", description: "Friend request accepted." }); },
   });
 
   const declineMutation = useMutation({
-    mutationFn: (id: number) => apiFetch(`/api/friends/${id}/decline`, { method: "PATCH" }),
+    mutationFn: (id: number) => apiFetch(`/friends?path=${id}/decline`, { method: "PATCH" }),
     onSuccess: () => { refetchRequests(); toast({ title: "Request Declined" }); },
   });
 
   const removeMutation = useMutation({
-    mutationFn: (userId: number) => apiFetch(`/api/friends/${userId}`, { method: "DELETE" }),
+    mutationFn: (userId: number) => apiFetch(`/friends?path=${userId}`, { method: "DELETE" }),
     onSuccess: () => { refetchFriends(); toast({ title: "Friend Removed" }); },
   });
 

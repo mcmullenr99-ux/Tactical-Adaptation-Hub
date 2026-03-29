@@ -23,7 +23,15 @@
       "type": "string"
     },
     "outcome": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "VICTORY",
+        "DEFEAT",
+        "DRAW",
+        "PARTIAL VICTORY",
+        "INCOMPLETE"
+      ],
+      "default": "INCOMPLETE"
     },
     "lessons_learned": {
       "type": "string"
@@ -48,12 +56,24 @@
       "default": "unclassified"
     },
     "objectives_hit": {
-      "type": "string"
+      "type": "number",
+      "default": 0
     },
     "objectives_missed": {
-      "type": "string"
+      "type": "number",
+      "default": 0
     },
     "casualties": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "LOW",
+        "MODERATE",
+        "HEAVY"
+      ],
+      "default": "NONE"
+    },
+    "casualties_note": {
       "type": "string"
     },
     "commendations": {
@@ -61,6 +81,30 @@
     },
     "op_date": {
       "type": "string"
+    },
+    "eyewitness_confirmations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "callsign": {
+            "type": "string"
+          },
+          "confirmed_at": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "eyewitness_count": {
+      "type": "number",
+      "default": 0
     }
   },
   "required": [],

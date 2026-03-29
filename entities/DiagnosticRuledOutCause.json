@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "incident_id": {
+      "type": "string"
+    },
+    "hypothesis_id": {
+      "type": "string"
+    },
+    "cause_name": {
+      "type": "string"
+    },
+    "reason_ruled_out": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "DiagnosticRuledOutCause"
+}

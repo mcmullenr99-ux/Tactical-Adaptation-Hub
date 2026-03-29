@@ -20,7 +20,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+    return await base44.asServiceRole.entities.AppUser.get(payload.sub) ?? null;
   } catch { return null; }
 }
 
@@ -60,7 +60,9 @@ Deno.serve(async (req) => {
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
       const existing = await base44.asServiceRole.entities.MilsimApplication.filter({ group_id: parts[0], applicant_id: full.id });
-      if (existing.length > 0) return Response.json({ error: 'Already applied' }, { status: 409 });
+      // Only block if there's an active pending or approved application — rejected ones can reapply
+      const activeApp = existing.find((a: any) => a.status === 'pending' || a.status === 'approved');
+      if (activeApp) return Response.json({ error: 'Already applied' }, { status: 409 });
 
       const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
       if (!group) return Response.json({ error: 'Group not found' }, { status: 404 });
@@ -92,7 +94,7 @@ Deno.serve(async (req) => {
       if (body.status === 'approved') {
         const app = await base44.asServiceRole.entities.MilsimApplication.get(parts[2]);
         if (app) {
-          const applicantUser = await base44.asServiceRole.entities.User.get(app.applicant_id).catch(() => null);
+          const applicantUser = await base44.asServiceRole.entities.AppUser.get(app.applicant_id).catch(() => null);
           if (!applicantUser) return Response.json({ error: 'Applicant account not found.' }, { status: 404 });
           if (!applicantUser.email_verified) {
             return Response.json({ error: 'This applicant has not verified their email address. They must verify their email before being added to a roster.' }, { status: 403 });

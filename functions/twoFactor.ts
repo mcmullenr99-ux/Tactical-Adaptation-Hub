@@ -14,7 +14,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+    return await base44.asServiceRole.entities.AppUser.get(payload.sub) ?? null;
   } catch { return null; }
 }
 
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       const qrCode = await QRCode.toDataURL(otpauthUrl);
 
       // Store secret temporarily (not enabled yet — only enabled after verify)
-      await base44.asServiceRole.entities.User.update(caller.id, {
+      await base44.asServiceRole.entities.AppUser.update(caller.id, {
         totp_secret: secret,
         totp_enabled: false,
       });
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
       // Hash backup codes for storage
       const hashedCodes = await Promise.all(backupCodes.map(c => bcrypt.hash(c, 10)));
 
-      await base44.asServiceRole.entities.User.update(caller.id, {
+      await base44.asServiceRole.entities.AppUser.update(caller.id, {
         totp_enabled: true,
         totp_backup_codes: hashedCodes,
       });
@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
       const valid = await bcrypt.compare(password, caller.password_hash ?? '');
       if (!valid) return Response.json({ error: 'Incorrect password' }, { status: 400 });
 
-      await base44.asServiceRole.entities.User.update(caller.id, {
+      await base44.asServiceRole.entities.AppUser.update(caller.id, {
         totp_enabled: false,
         totp_secret: null,
         totp_backup_codes: [],
@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
       const backupCodes = generateBackupCodes();
       const hashedCodes = await Promise.all(backupCodes.map(c => bcrypt.hash(c, 10)));
 
-      await base44.asServiceRole.entities.User.update(caller.id, {
+      await base44.asServiceRole.entities.AppUser.update(caller.id, {
         totp_backup_codes: hashedCodes,
       });
 

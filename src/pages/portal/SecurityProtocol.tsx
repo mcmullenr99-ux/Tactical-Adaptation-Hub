@@ -136,8 +136,8 @@ export default function SecurityProtocol() {
   const [showRollbackConfirm, setShowRollbackConfirm] = useState(false);
 
   const logsUrl = filterUserIdApplied
-    ? `/api/security/audit-logs?userId=${filterUserIdApplied}&limit=200`
-    : `/api/security/audit-logs?limit=200`;
+    ? `/security?path=audit-logs?userId=${filterUserIdApplied}&limit=200`
+    : `/security?path=audit-logs?limit=200`;
 
   const { data: logs = [], isLoading: logsLoading } = useQuery<AuditLog[]>({
     queryKey: ["audit-logs", filterUserIdApplied],
@@ -146,12 +146,12 @@ export default function SecurityProtocol() {
 
   const { data: incidents = [] } = useQuery<SecurityIncident[]>({
     queryKey: ["security-incidents"],
-    queryFn: () => apiFetch("/api/security/incidents"),
+    queryFn: () => apiFetch("/security?path=incidents"),
   });
 
   const emergencyMutation = useMutation({
     mutationFn: () =>
-      apiFetch("/api/security/emergency", {
+      apiFetch("/security?path=emergency", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -175,7 +175,7 @@ export default function SecurityProtocol() {
 
   const rollbackMutation = useMutation({
     mutationFn: (userId: number) =>
-      apiFetch(`/api/security/rollback/${userId}`, { method: "POST" }),
+      apiFetch(`/security?path=rollback/${userId}`, { method: "POST" }),
     onSuccess: (data) => {
       toast({
         title: "Rollback Complete",
@@ -190,7 +190,7 @@ export default function SecurityProtocol() {
 
   const downloadEvidence = async (userId: number) => {
     try {
-      const data = await apiFetch(`/api/security/evidence/${userId}`);
+      const data = await apiFetch(`/security?path=evidence/${userId}`);
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -206,7 +206,7 @@ export default function SecurityProtocol() {
 
   const resolveIncident = useMutation({
     mutationFn: (id: number) =>
-      apiFetch(`/api/security/incidents/${id}/resolve`, { method: "PATCH" }),
+      apiFetch(`/security?path=incidents/${id}/resolve`, { method: "PATCH" }),
     onSuccess: () => {
       toast({ title: "Incident Resolved" });
       qc.invalidateQueries({ queryKey: ["security-incidents"] });

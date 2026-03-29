@@ -12,7 +12,7 @@ export interface RibbonTemplate {
   sku?: string;
 }
 
-export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand', 'Belgium', 'France', 'Italy', 'Greece', 'Norway', 'Netherlands', 'Russia', 'Poland', 'Luxembourg'];
+export const RIBBON_COUNTRIES: string[] = ['United States', 'NATO', 'United Nations', 'United Kingdom', 'Australia', 'Canada', 'New Zealand', 'Belgium', 'France', 'Italy', 'Greece', 'Norway', 'Netherlands', 'Russia', 'Germany (NVA)', 'Poland', 'Luxembourg', 'Switzerland', 'Croatia', 'Finland', 'Estonia', 'Austria', 'Czech Republic', 'Sweden', 'Slovakia', 'Georgia', 'Iran', 'North Korea', 'Pakistan', 'Belgium', 'Italy', 'Norway', 'Switzerland', 'Luxembourg', 'Lithuania', 'Latvia', 'China'];
 
 export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'United States': ['US Gallantry', 'US Orders & Distinguished Service', 'US Commendations', 'US Campaign Medals', 'US Service Medals', 'US Long Service', 'US Commemorative'],
@@ -22,15 +22,31 @@ export const RIBBON_BRANCHES_BY_COUNTRY: Record<string, string[]> = {
   'Australia': ['Australia Gallantry', 'Australia Orders', 'Australia Commendations', 'Australia Campaign Medals', 'Australia Service Medals', 'Australia Jubilee & Commemorative'],
   'Canada': ['Canada Gallantry', 'Canada Orders', 'Canada Campaign Medals', 'Canada Service Medals', 'Canada Jubilee & Commemorative'],
   'New Zealand': ['New Zealand Gallantry', 'New Zealand Orders', 'New Zealand Campaign Medals', 'New Zealand Service Medals', 'New Zealand Jubilee & Commemorative'],
-  'Belgium': ['Belgium Orders', 'Belgium Gallantry & Crosses', 'Belgium Campaign Medals'],
-  'France': ['France Orders', 'France Gallantry & Crosses', 'France Campaign Medals'],
-  'Italy': ['Italy Orders', 'Italy Gallantry & Crosses', 'Italy Campaign Medals'],
-  'Greece': ['Greece Orders', 'Greece Gallantry & Crosses', 'Greece Campaign Medals'],
-  'Norway': ['Norway Orders', 'Norway Gallantry & Crosses', 'Norway Campaign Medals'],
-  'Netherlands': ['Netherlands Orders', 'Netherlands Gallantry & Crosses', 'Netherlands Campaign Medals'],
-  'Russia': ['Russia Orders'],
-  'Poland': ['Poland Orders', 'Poland Gallantry & Crosses'],
+  'Belgium': ['Belgium Orders & Distinguished Service', 'Belgium Gallantry', 'Belgium Service Medals', 'Belgium Long Service', 'Belgium Campaign Medals'],
+  'France': ['France Gallantry', 'France Orders & Distinguished Service', 'France Service Medals', 'France Campaign Medals'],
+  'Italy': ['Italy Orders', 'Italy Gallantry & Crosses'],
+  'Greece': ['Greece Orders', 'Greece Gallantry & Crosses'],
+  'Norway': ['Norway Orders', 'Norway Gallantry', 'Norway Service Medals', 'Norway Long Service', 'Norway Campaign Medals', 'Norway Commemorative'],
+  'Netherlands': ['Netherlands Orders', 'Netherlands Gallantry & Crosses'],
+  'Russia': ['Russia Gallantry', 'Russia Orders & Distinguished Service', 'Russia Commendations'],
+  'Germany (NVA)': ['Germany (NVA) Orders & Distinguished Service', 'Germany (NVA) Long Service', 'Germany (NVA) Commemorative'],
+  'Poland': ['Poland Orders', 'Poland Gallantry & Crosses', 'Poland Service Medals', 'Poland Campaign Medals', 'Poland Commemorative'],
   'Luxembourg': ['Luxembourg Orders', 'Luxembourg Gallantry & Crosses'],
+  'Switzerland': ['Switzerland Gallantry', 'Switzerland Service Medals', 'Switzerland Long Service', 'Switzerland Campaign Medals'],
+  'Croatia': ['Croatia Gallantry', 'Croatia Orders & Distinguished Service', 'Croatia Service Medals', 'Croatia Campaign Medals'],
+  'Finland': ['Finland Gallantry', 'Finland Commendations', 'Finland Long Service'],
+  'Estonia': ['Estonia Gallantry', 'Estonia Commendations', 'Estonia Long Service', 'Estonia Commemorative'],
+  'Austria': ['Austria Gallantry', 'Austria Commendations', 'Austria Service Medals', 'Austria Campaign Medals', 'Austria Long Service'],
+  'Czech Republic': ['Czech Republic Gallantry', 'Czech Republic Orders & Distinguished Service', 'Czech Republic Service Medals', 'Czech Republic Campaign Medals'],
+  'Sweden': ['Sweden Orders', 'Sweden Military Medals', 'Sweden Long Service'],
+  'Slovakia': ['Slovakia Orders', 'Slovakia Gallantry', 'Slovakia Service Medals', 'Slovakia Commemorative'],
+  'Georgia': ['Georgia Orders', 'Georgia Service Medals'],
+  'Iran': ['Iran Orders', 'Iran Gallantry', 'Iran Service Medals'],
+  'North Korea': ['North Korea Orders', 'North Korea Service Medals', 'North Korea Commemorative'],
+  'Pakistan': ['Pakistan Gallantry', 'Pakistan Orders & Distinguished Service', 'Pakistan Service Medals', 'Pakistan Long Service'],
+  'Lithuania': ['Lithuania Orders', 'Lithuania Service Medals', 'Lithuania Commemorative'],
+  'Latvia': ['Latvia Orders', 'Latvia Gallantry'],
+  'China': ['China Gallantry', 'China Service Medals', 'China Campaign Medals', 'China Long Service'],
 };
 
 export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL ───
@@ -96,8 +112,8 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Victoria Cross (VC)', url: 'https://www.medals.pl/bc/r/uk1vc.gif' },
   { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Conspicuous Gallantry Cross (CGC)', url: 'https://www.medals.pl/bc/r/uk1cgc.gif' },
   { country: 'United Kingdom', branch: 'UK Commendations', name: 'King\'s/Queen\'s Commendation for Bravery (KCB/QCB)', url: 'https://www.medals.pl/bc/r/uk1bqcb.gif' },
-  { country: 'United Kingdom', branch: 'UK Commendations', name: 'King\'s/Queen\'s Commendation for Bravery in the Air', url: 'https://www.medals.pl/bc/r/uk1bqcba.gif' },
-  { country: 'United Kingdom', branch: 'UK Commendations', name: 'King\'s/Queen\'s Commendation for Valuable Service', url: 'https://www.medals.pl/bc/r/uk1bqcvs.gif' },
+  { country: 'United Kingdom', branch: 'UK Commendations', name: 'King\'s/Queen\'s Commendation for Valuable Service (KCVS/QCVS)', url: 'https://www.medals.pl/bc/r/uk1bqcvs.gif' },
+  { country: 'United Kingdom', branch: 'UK Commendations', name: 'King\'s/Queen\'s Commendation for Bravery in the Air (KCBA/QCBA)', url: 'https://www.medals.pl/bc/r/uk1bqcba.gif' },
   { country: 'United Kingdom', branch: 'UK Commendations', name: 'Mention in Despatches (MID)', url: 'https://www.medals.pl/bc/r/uk1bmid2.gif' },
   { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'South Atlantic Medal 1982 (Falklands)', url: 'https://www.medals.pl/bc/r/uk1msa1.gif' },
   { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Gulf Medal 1991', url: 'https://www.medals.pl/bc/r/uk1mgu.gif' },
@@ -110,7 +126,6 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Civilian Service Medal - Afghanistan', url: 'https://www.medals.pl/bc/r/uk1mcsaf.gif' },
   { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Accumulated Campaign Service Medal (1994-2011)', url: 'https://www.medals.pl/bc/r/uk1mas.gif' },
   { country: 'United Kingdom', branch: 'UK Campaign Medals', name: 'Accumulated Campaign Service Medal (2011)', url: 'https://www.medals.pl/bc/r/uk1macb.gif' },
-  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'King\'s/Queen\'s Volunteer Reserves Medal (KVRM/QVRM)', url: 'https://www.medals.pl/bc/r/uk1mqvr.gif' },
   { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Volunteer Reserves Service Medal (VRSM)', url: 'https://www.medals.pl/bc/r/uk1mvrs.gif' },
   { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Volunteer Reserves Service Medal - HAC', url: 'https://www.medals.pl/bc/r/uk1mhac.gif' },
   { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Northern Ireland Home Service Medal', url: 'https://www.medals.pl/bc/r/uk1mhsni.gif' },
@@ -133,9 +148,6 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Australia', branch: 'Australia Service Medals', name: 'Australian Defence Medal', url: 'https://www.medals.pl/bc/r/au2mad.gif' },
   { country: 'Australia', branch: 'Australia Campaign Medals', name: 'Afghanistan Medal', url: 'https://www.medals.pl/bc/r/au2maf.gif' },
   { country: 'Australia', branch: 'Australia Campaign Medals', name: 'Iraq Medal', url: 'https://www.medals.pl/bc/r/au2miq.gif' },
-  { country: 'Australia', branch: 'Australia Campaign Medals', name: 'International Force East Timor Medal (INTERFET)', url: 'https://www.medals.pl/bc/r/interfet.gif' },
-  { country: 'Australia', branch: 'Australia Jubilee & Commemorative', name: 'Golden Jubilee Medal 2002', url: 'https://www.medals.pl/bc/r/uk1mju2002.gif' },
-  { country: 'Australia', branch: 'Australia Jubilee & Commemorative', name: 'Diamond Jubilee Medal 2012', url: 'https://www.medals.pl/bc/r/uk1mju2012.gif' },
   { country: 'Australia', branch: 'Australia Jubilee & Commemorative', name: 'Australian Centenary Medal 2000', url: 'https://www.medals.pl/bc/r/au2mce.gif' },
   { country: 'Australia', branch: 'Australia Service Medals', name: 'Unit Citation for Gallantry', url: 'https://www.medals.pl/bc/r/au2ucga1.gif' },
   { country: 'Australia', branch: 'Australia Service Medals', name: 'Meritorious Unit Citation', url: 'https://www.medals.pl/bc/r/au2ucms1.gif' },
@@ -154,10 +166,7 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Canada', branch: 'Canada Campaign Medals', name: 'Operational Service Medal - SW Asia', url: 'https://www.medals.pl/bc/r/ca2mosswa.gif' },
   { country: 'Canada', branch: 'Canada Campaign Medals', name: 'Special Service Medal (SSM)', url: 'https://www.medals.pl/bc/r/ca2mss.gif' },
   { country: 'Canada', branch: 'Canada Campaign Medals', name: 'Canadian Peacekeeping Service Medal (CPSM)', url: 'https://www.medals.pl/bc/r/ca2mpe.gif' },
-  { country: 'Canada', branch: 'Canada Campaign Medals', name: 'International Force East Timor Medal (INTERFET)', url: 'https://www.medals.pl/bc/r/interfet.gif' },
   { country: 'Canada', branch: 'Canada Jubilee & Commemorative', name: '125th Anniversary of Confederation Medal 1992', url: 'https://www.medals.pl/bc/r/ca2m125.gif' },
-  { country: 'Canada', branch: 'Canada Jubilee & Commemorative', name: 'Golden Jubilee Medal 2002', url: 'https://www.medals.pl/bc/r/uk1mju2002.gif' },
-  { country: 'Canada', branch: 'Canada Jubilee & Commemorative', name: 'Diamond Jubilee Medal 2012', url: 'https://www.medals.pl/bc/r/uk1mju2012.gif' },
 
   // ── New Zealand ──────────────────────────────────────────────────
   { country: 'New Zealand', branch: 'New Zealand Gallantry', name: 'New Zealand Cross (NZC)', url: 'https://www.medals.pl/bc/r/nz2nzc.gif' },
@@ -181,12 +190,9 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'General Service Medal - Timor Leste', url: 'https://www.medals.pl/bc/r/nz2mgstl.gif' },
   { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'NZ General Service Medal (Warlike)', url: 'https://www.medals.pl/bc/r/nz2mgsw.gif' },
   { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'NZ General Service Medal (Non-Warlike)', url: 'https://www.medals.pl/bc/r/nz2mgsp.gif' },
-  { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'International Force East Timor Medal (INTERFET)', url: 'https://www.medals.pl/bc/r/interfet.gif' },
   { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'NZ Army LS & GC Medal', url: 'https://www.medals.pl/bc/r/uk1mlsa.gif' },
   { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'NZ Navy LS & GC Medal', url: 'https://www.medals.pl/bc/r/uk1mlsn.gif' },
   { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'NZ Air Force LS & GC Medal', url: 'https://www.medals.pl/bc/r/uk1mlsaf.gif' },
-  { country: 'New Zealand', branch: 'New Zealand Jubilee & Commemorative', name: 'Golden Jubilee Medal 2002', url: 'https://www.medals.pl/bc/r/uk1mju2002.gif' },
-  { country: 'New Zealand', branch: 'New Zealand Jubilee & Commemorative', name: 'Diamond Jubilee Medal 2012', url: 'https://www.medals.pl/bc/r/uk1mju2012.gif' },
   { country: 'New Zealand', branch: 'New Zealand Campaign Medals', name: 'Special Service Medal - Asian Tsunami', url: 'https://www.medals.pl/bc/r/nz2mssat.gif' },
   { country: 'United Kingdom', branch: 'UK Gallantry', name: 'George Cross (GC)', url: 'https://www.medals.pl/bc/r/uk1gc.gif' },
   { country: 'United Kingdom', branch: 'UK Gallantry', name: 'Distinguished Service Order (DSO)', url: 'https://www.medals.pl/bc/r/uk1ods.gif' },
@@ -221,23 +227,62 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Canada', branch: 'Canada Campaign Medals', name: 'General Service Medal - Expedition', url: 'https://www.medals.pl/bc/r/ca2mgsexp.gif' },
   { country: 'Canada', branch: 'Canada Campaign Medals', name: 'Operational Service Medal - South Sudan', url: 'https://www.medals.pl/bc/r/ca2moss.gif' },
   { country: 'New Zealand', branch: 'New Zealand Service Medals', name: 'New Zealand Antarctic Medal (NZAM)', url: 'https://www.medals.pl/bc/r/nz2manz.gif' },
-  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Army Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsa.gif' },
-  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'Naval Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsn.gif' },
-  { country: 'United Kingdom', branch: 'UK Service Medals', name: 'RAF Long Service & Good Conduct Medal', url: 'https://www.medals.pl/bc/r/uk1mlsaf.gif' },
   // ─── BELGIUM ────────────────────────────────────────────────────────────────
-  { country: 'Belgium', branch: 'Belgium Orders', name: "Order of Léopold", url: 'https://www.medals.pl/be/r/be1ole4.gif' },
-  { country: 'Belgium', branch: 'Belgium Orders', name: "Order of Léopold II", url: 'https://www.medals.pl/be/r/be1oleii.gif' },
+  // Orders & Distinguished Service - Order of Leopold (all 5 grades, military division)
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/BEL_-_Order_of_Leopold_-_Knight_bar.svg/250px-BEL_-_Order_of_Leopold_-_Knight_bar.svg.png' },
+  // Order of Leopold II (all 5 grades + 3 medals)
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of Leopold II', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/BEL_Order_of_Leopold_II_-_Knight_BAR.svg/250px-BEL_Order_of_Leopold_II_-_Knight_BAR.svg.png' },
+  // Order of the Crown (Kroonorde) - all 5 grades + 3 medals
+  { country: 'Belgium', branch: 'Belgium Orders & Distinguished Service', name: 'Order of the Crown', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/BEL_Kroonorde_Ridder_BAR.svg/250px-BEL_Kroonorde_Ridder_BAR.svg.png' },
+  // Gallantry
+  { country: 'Belgium', branch: 'Belgium Gallantry', name: 'Military Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/BEL_Militair_Kruis_1klasse_BAR.svg/250px-BEL_Militair_Kruis_1klasse_BAR.svg.png' },
+  { country: 'Belgium', branch: 'Belgium Gallantry', name: 'Military Decoration for Gallantry', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BEL_Military_Decoration_for_Gallantry.PNG/250px-BEL_Military_Decoration_for_Gallantry.PNG' },
+  { country: 'Belgium', branch: 'Belgium Gallantry', name: 'Croix de Guerre (1954 - modern)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/BEL_Croix_de_Guerre_1954_ribbon.svg/250px-BEL_Croix_de_Guerre_1954_ribbon.svg.png' },
+  // Service Medals
+  { country: 'Belgium', branch: 'Belgium Service Medals', name: 'Military Decoration for Faithful Service', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/BEL_Military_Decoration_for_Faithful_Service.PNG/250px-BEL_Military_Decoration_for_Faithful_Service.PNG' },
+  // Campaign Medals / Foreign Service
+  { country: 'Belgium', branch: 'Belgium Campaign Medals', name: 'Foreign Service Honour Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/BEL_Foreign_Service_Honour_Cross_1st_Class_ribbon.PNG/250px-BEL_Foreign_Service_Honour_Cross_1st_Class_ribbon.PNG' },
 
   // ─── FRANCE ─────────────────────────────────────────────────────────────────
-  { country: 'France', branch: 'France Orders', name: "Légion d'Honneur", url: 'https://www.medals.pl/fr/r/fr2olh4.gif' },
-  { country: 'France', branch: 'France Gallantry & Crosses', name: "Médaille Militaire", url: 'https://www.medals.pl/fr/r/fr2mm.gif' },
-  { country: 'France', branch: 'France Gallantry & Crosses', name: 'Croix du Combattant', url: 'https://www.medals.pl/fr/r/fr2cc.gif' },
+  // Gallantry
+  { country: 'France', branch: 'France Gallantry', name: 'Legion d\'Honneur', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Legion_Honneur_Chevalier_ribbon.svg/250px-Legion_Honneur_Chevalier_ribbon.svg.png' },
+  { country: 'France', branch: 'France Gallantry', name: 'Medaille Militaire', url: 'https://upload.wikimedia.org/wikipedia/commons/0/0c/Ruban_de_la_M%C3%A9daille_militaire.PNG' },
+  { country: 'France', branch: 'France Gallantry', name: 'Croix de Guerre - Theatres d\'Operations Exterieures', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Croix_de_Guerre_des_Theatres_d%27Operations_Exterieurs_ribbon.svg/250px-Croix_de_Guerre_des_Theatres_d%27Operations_Exterieurs_ribbon.svg.png' },
+  { country: 'France', branch: 'France Gallantry', name: 'Croix de la Valeur Militaire', url: 'https://upload.wikimedia.org/wikipedia/commons/a/af/Ruban_de_la_Croix_de_la_Valeur_militaire.PNG' },
+  { country: 'France', branch: 'France Gallantry', name: 'Croix du Combattant', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Croix_du_Combattant_%281930_France%29_ribbon.svg/250px-Croix_du_Combattant_%281930_France%29_ribbon.svg.png' },
+  { country: 'France', branch: 'France Gallantry', name: 'Croix du Combattant Volontaire (1983)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Croix_du_Combattant_Volontaire_1939-1945_ribbon.svg/250px-Croix_du_Combattant_Volontaire_1939-1945_ribbon.svg.png' },
+  // Orders & Distinguished Service
+  { country: 'France', branch: 'France Orders & Distinguished Service', name: 'Ordre National du Merite', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Ordre_national_du_Merite_Chevalier_ribbon.svg/250px-Ordre_national_du_Merite_Chevalier_ribbon.svg.png' },
+  // Service Medals
+  { country: 'France', branch: 'France Service Medals', name: 'Medaille de la Defense Nationale', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Medaille_de_la_Defense_Nationale_Bronze_ribbon.svg/250px-Medaille_de_la_Defense_Nationale_Bronze_ribbon.svg.png' },
+  { country: 'France', branch: 'France Service Medals', name: 'Medaille d\'Outre-Mer', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Medaille_d%27Outre-Mer_%28Coloniale%29_ribbon.svg/250px-Medaille_d%27Outre-Mer_%28Coloniale%29_ribbon.svg.png' },
+  { country: 'France', branch: 'France Service Medals', name: 'Medaille des Services Militaires Volontaires', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg/250px-Medaille_des_Services_Militaires_Volontaires_Bronze_ribbon.svg.png' },
+  { country: 'France', branch: 'France Service Medals', name: 'Medaille des Blesses de Guerre', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg/250px-Medaille_%28Insigne%29_des_Blesses_Militaires_ribbon.svg.png' },
+  // Campaign Medals
+  { country: 'France', branch: 'France Campaign Medals', name: 'Medaille Commemorative Francaise (Operations Exterieures)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Medaille_commemorative_Francaise_ribbon.svg/250px-Medaille_commemorative_Francaise_ribbon.svg.png' },
+  { country: 'France', branch: 'France Campaign Medals', name: 'Medaille de la Protection Militaire du Territoire', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Medaille_de_la_protection_militaire_du_territoire.svg/250px-Medaille_de_la_protection_militaire_du_territoire.svg.png' },
 
   // ─── ITALY ──────────────────────────────────────────────────────────────────
-  { country: 'Italy', branch: 'Italy Orders', name: "Order of St. Maurice & St. Lazarus", url: 'https://www.medals.pl/it/r/it1oml.gif' },
-  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Merit of the Italian Republic', url: 'https://www.medals.pl/it/r/it2ome.gif' },
-  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal for Military Valor', url: 'https://www.medals.pl/it/r/it2mvmi2.gif' },
-  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'War Merit Cross', url: 'https://www.medals.pl/it/r/it2cmg.gif' },
+  // Orders - OMRI (Order of Merit of the Italian Republic) - all 6 grades
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Merit of the Republic (OMRI)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/ITA_OMRI_2001_Cav_BAR.svg/250px-ITA_OMRI_2001_Cav_BAR.svg.png' },
+  // Military Order of Italy (OMI)
+  { country: 'Italy', branch: 'Italy Orders', name: 'Military Order of Italy (OMI)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Cavaliere_BAR.svg/250px-Cavaliere_BAR.svg.png' },
+  // Order of Saints Maurice and Lazarus (SSML) - 3 confirmed grades
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Saints Maurice and Lazarus (SSML)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Cavaliere_SSML_BAR.svg/250px-Cavaliere_SSML_BAR.svg.png' },
+  // Medal of Military Valor - 3 grades
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Military Valor', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Valor_militare_gold_medal_BAR.svg/250px-Valor_militare_gold_medal_BAR.svg.png' },
+  // War Crosses
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'War Cross for Military Valor', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Croce_di_guerra_al_valor_militare_BAR.svg/250px-Croce_di_guerra_al_valor_militare_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'War Merit Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Croce_di_guerra_al_merito_BAR.svg/250px-Croce_di_guerra_al_merito_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'War Merit Cross with Silver Clasp', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Croce_di_guerra_al_merito_SC_BAR.svg/250px-Croce_di_guerra_al_merito_SC_BAR.svg.png' },
+  // Medal of Valor of the Army - 3 grades
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Army', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Valor_dell%27esercito_gold_medal_BAR.svg/250px-Valor_dell%27esercito_gold_medal_BAR.svg.png' },
+  // Medal of Valor of the Navy - 3 grades
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Navy', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Valor_di_marina_gold_medal_2010_BAR.svg/250px-Valor_di_marina_gold_medal_2010_BAR.svg.png' },
+  // Medal of Valor of the Air Forces - 3 grades
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Air Forces', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Valor_aeronautico_gold_medal_2010_BAR.svg/250px-Valor_aeronautico_gold_medal_2010_BAR.svg.png' },
+  // Medal of Valor of the Carabinieri - 3 grades
+  { country: 'Italy', branch: 'Italy Gallantry & Crosses', name: 'Medal of Valor of the Carabinieri', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Valor_dei_carabinieri_gold_medal_BAR.svg/250px-Valor_dei_carabinieri_gold_medal_BAR.svg.png' },
 
   // ─── GREECE ─────────────────────────────────────────────────────────────────
   { country: 'Greece', branch: 'Greece Orders', name: 'Order of the Redeemer', url: 'https://www.medals.pl/gr/r/gr1ore.gif' },
@@ -246,9 +291,48 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Greece', branch: 'Greece Gallantry & Crosses', name: 'Medal for Outstanding Acts', url: 'https://www.medals.pl/gr/r/gr1moab.gif' },
 
   // ─── NORWAY ─────────────────────────────────────────────────────────────────
-  { country: 'Norway', branch: 'Norway Orders', name: 'Order of St. Olaf', url: 'https://www.medals.pl/no/r/no1ool.gif' },
-  { country: 'Norway', branch: 'Norway Gallantry & Crosses', name: 'War Cross', url: 'https://www.medals.pl/no/r/no1cw.gif' },
-  { country: 'Norway', branch: 'Norway Orders', name: "St. Olaf's Medal with Oak Wreath", url: 'https://www.medals.pl/no/r/no1molo.gif' },
+  // Orders
+  { country: 'Norway', branch: 'Norway Orders', name: 'Royal Norwegian Order of St. Olav', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/St._Olavs_Orden_stripe.svg/250px-St._Olavs_Orden_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Orders', name: 'Royal Norwegian Order of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Den_kongelige_norske_fortjenstorden.svg/250px-Den_kongelige_norske_fortjenstorden.svg.png' },
+  // Gallantry
+  { country: 'Norway', branch: 'Norway Gallantry', name: 'War Cross with Sword', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Krigskorset_med_sverd_stripe.svg/250px-Krigskorset_med_sverd_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Gallantry', name: 'War Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Krigskorset_stripe.svg/250px-Krigskorset_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Gallantry', name: 'Norwegian Defence Cross of Honour', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Forsvarets_hederskors_stripe.svg/250px-Forsvarets_hederskors_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Gallantry', name: 'Armed Forces Medal for Heroic Deeds', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Forsvarets_medalje_for_edel_d%C3%A5d.svg/250px-Forsvarets_medalje_for_edel_d%C3%A5d.svg.png' },
+  { country: 'Norway', branch: 'Norway Gallantry', name: 'Wounded in Action Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Forsvarets_medalje_for_s%C3%A5rede_i_strid.svg/250px-Forsvarets_medalje_for_s%C3%A5rede_i_strid.svg.png' },
+  // Service Medals
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Defence Service Medal with Laurel Branch', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Forsvarsmedaljen_med_laurb%C3%A6rgren_stripe.svg/250px-Forsvarsmedaljen_med_laurb%C3%A6rgren_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Home Guard Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Heimevernets_fortjenstmedalje_stripe.svg/250px-Heimevernets_fortjenstmedalje_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Army Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/H%C3%A6rens_fortjenstmedalje_stripe.png/250px-H%C3%A6rens_fortjenstmedalje_stripe.png' },
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Navy Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Sj%C3%B8forsvarets_fortjenstmedalje_stripe.png/250px-Sj%C3%B8forsvarets_fortjenstmedalje_stripe.png' },
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Air Force Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Luftforsvarets_fortjenstmedalje_stripe.png/250px-Luftforsvarets_fortjenstmedalje_stripe.png' },
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Intelligence Service Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Etterretningstjenestens_fortjenstmedalje_stripe.png/250px-Etterretningstjenestens_fortjenstmedalje_stripe.png' },
+  { country: 'Norway', branch: 'Norway Service Medals', name: 'Armed Forces Medal for International Operations', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Forsvarets_medalje_for_internasjonale_operasjoner_stripe.svg/250px-Forsvarets_medalje_for_internasjonale_operasjoner_stripe.svg.png' },
+  // Long Service
+  { country: 'Norway', branch: 'Norway Long Service', name: 'Defence Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Forsvarsmedaljen_stripe.svg/250px-Forsvarsmedaljen_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Long Service', name: 'National Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Vernedyktighetsmedaljen_H%C3%A6ren_stripe.svg/250px-Vernedyktighetsmedaljen_H%C3%A6ren_stripe.svg.png' },
+  // Campaign Medals - Defence Service Abroad (older series)
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Service Abroad', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Forsvarets_innsatsmedalje_stripe.svg/250px-Forsvarets_innsatsmedalje_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Service Abroad - Saudi Arabia', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Forsvarets_innsatsmedalje_-_Saudi_Arabia_stripe.svg/250px-Forsvarets_innsatsmedalje_-_Saudi_Arabia_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Service Abroad - Balkans', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Forsvarets_innsatsmedalje_-_Balkan_stripe.svg/250px-Forsvarets_innsatsmedalje_-_Balkan_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Service Abroad - Afghanistan', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Forsvarets_innsatsmedalje_med_rosett_-_Afghanistan_stripe.svg/250px-Forsvarets_innsatsmedalje_med_rosett_-_Afghanistan_stripe.svg.png' },
+  // Campaign Medals - Defence Operations Abroad (newer series, theatre-specific)
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Kosovo', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Forsvarets_operasjonsmedalje_Kosovo_Serbia-Montenegro_stripe.svg/250px-Forsvarets_operasjonsmedalje_Kosovo_Serbia-Montenegro_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Active Endeavour', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Forsvarets_operasjonsmedalje_Active_Endeavour_stripe.svg/250px-Forsvarets_operasjonsmedalje_Active_Endeavour_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Afghanistan', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Forsvarets_operasjonsmedalje_Afghanistan_stripe.svg/250px-Forsvarets_operasjonsmedalje_Afghanistan_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Iraq', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Forsvarets_operasjonsmedalje_Irak_stripe.svg/250px-Forsvarets_operasjonsmedalje_Irak_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Baltic Accession', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Forsvarets_operasjonsmedalje_Baltic_Accession-Litauen_stripe.svg/250px-Forsvarets_operasjonsmedalje_Baltic_Accession-Litauen_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Bosnia-Herzegovina', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Forsvarets_operasjonsmedalje_Bosnia_stripe.svg/250px-Forsvarets_operasjonsmedalje_Bosnia_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Sudan', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Forsvarets_operasjonsmedalje_Sudan_stripe.svg/250px-Forsvarets_operasjonsmedalje_Sudan_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Lebanon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Forsvarets_operasjonsmedalje_Libanon_stripe.svg/250px-Forsvarets_operasjonsmedalje_Libanon_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Chad', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Forsvarets_operasjonsmedalje_Tsjad_stripe.svg/250px-Forsvarets_operasjonsmedalje_Tsjad_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Somalia', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Forsvarets_operasjonsmedalje_Somalia_stripe.svg/250px-Forsvarets_operasjonsmedalje_Somalia_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Libya', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Forsvarets_operasjonsmedalje_Libya_stripe.svg/250px-Forsvarets_operasjonsmedalje_Libya_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Syria', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Forsvarets_operasjonsmedalje_Syria_stripe.svg/250px-Forsvarets_operasjonsmedalje_Syria_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Mali', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Forsvarets_operasjonsmedalje_Mali_stripe.png/250px-Forsvarets_operasjonsmedalje_Mali_stripe.png' },
+  { country: 'Norway', branch: 'Norway Campaign Medals', name: 'Medal for Defence Operations Abroad - Mediterranean Sea', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Forsvarets_operasjonsmedalje_Middelhavet_stripe.png/250px-Forsvarets_operasjonsmedalje_Middelhavet_stripe.png' },
+  // Commemorative
+  { country: 'Norway', branch: 'Norway Commemorative', name: 'King Harald V\'s Jubilee Medal 1991-2016', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Kong_Harald_Vs_jubileumsmedalje_1991-2016.png/250px-Kong_Harald_Vs_jubileumsmedalje_1991-2016.png' },
 
   // ─── NETHERLANDS ────────────────────────────────────────────────────────────
   { country: 'Netherlands', branch: 'Netherlands Orders', name: 'Military Order of William', url: 'https://www.medals.pl/nl/r/nl1owi.gif' },
@@ -259,13 +343,177 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'Netherlands', branch: 'Netherlands Gallantry & Crosses', name: 'Cross of Merit', url: 'https://www.medals.pl/nl/r/nl1cme.gif' },
 
   // ─── RUSSIA ─────────────────────────────────────────────────────────────────
-  { country: 'Russia', branch: 'Russia Orders', name: 'Cross/Medal of St. George', url: 'https://www.medals.pl/ru/r/ru1ogeo.gif' },
+  // Gallantry
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Order of Saint George', url: 'https://upload.wikimedia.org/wikipedia/commons/b/bf/RUS_Order_of_Saint_George_1st_class_ribbon_2000.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Cross of Saint George', url: 'https://upload.wikimedia.org/wikipedia/commons/1/1c/RUS_Cross_of_Saint_George_1st_class_ribbon_2000.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Order of Courage', url: 'https://upload.wikimedia.org/wikipedia/commons/f/f5/RUS_Order_of_Courage_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Medal for Courage', url: 'https://upload.wikimedia.org/wikipedia/commons/f/f5/RUS_Medal_For_Courage_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Medal for Bravery', url: 'https://upload.wikimedia.org/wikipedia/commons/5/56/RUS_Medal_for_Bravery_1-st_BAR_2023.svg' },
+  { country: 'Russia', branch: 'Russia Gallantry', name: 'Order of Saint Andrew the Apostle (with Swords)', url: 'https://upload.wikimedia.org/wikipedia/commons/9/97/RUS_Saint_Andrew_the_Apostle_the_First-Called_Order_with_swords_ribbon.svg' },
+  // Orders & Distinguished Service
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Alexander Nevsky', url: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Order_of_Alexander_Nevsky_2010_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Suvorov', url: 'https://upload.wikimedia.org/wikipedia/commons/e/ea/RUS_Order_of_Suvorov_ribbon_2010.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Kutuzov', url: 'https://upload.wikimedia.org/wikipedia/commons/a/a3/RUS_Order_of_Kutuzov_ribbon_2010.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Ushakov', url: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/RUS_Order_of_Ushakov_ribbon_2010.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Nakhimov', url: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/RUS_Order_of_Nakhimov_ribbon_2010.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Zhukov', url: 'https://upload.wikimedia.org/wikipedia/commons/8/80/RUS_Order_of_Zhukov_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Military Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/9/93/RUS_Order_of_Military_Merit_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order of Naval Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/c/c0/RUS_Order_of_Naval_Merit_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Orders & Distinguished Service', name: 'Order For Merit to the Fatherland', url: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/RUS_For_Merit_to_the_Fatherland_Order_3rd_class_with_swords_ribbon.svg' },
+  // Commendations
+  { country: 'Russia', branch: 'Russia Commendations', name: 'Medal of Suvorov', url: 'https://upload.wikimedia.org/wikipedia/commons/6/66/RUS_Medal_of_Suvorov_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Commendations', name: 'Medal of Ushakov', url: 'https://upload.wikimedia.org/wikipedia/commons/2/2d/RUS_Medal_of_Ushakov_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Commendations', name: 'Medal of Zhukov', url: 'https://upload.wikimedia.org/wikipedia/commons/c/c6/RUS_Medal_of_Zhukov_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Commendations', name: 'Medal of Nesterov', url: 'https://upload.wikimedia.org/wikipedia/commons/2/23/RUS_Medal_of_Nesterov_ribbon.svg' },
+  { country: 'Russia', branch: 'Russia Commendations', name: 'Medal for Distinction in Protection of State Borders', url: 'https://upload.wikimedia.org/wikipedia/commons/c/cc/RUS_Medal_For_Distinction_in_the_Protection_of_the_State_Borders_ribbon.svg' },
+
+
+  // ─── AUSTRIA ──────────────────────────────────────────────────────────────
+  // Gallantry
+  { country: 'Austria', branch: 'Austria Gallantry', name: 'Wound Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/AUT_Verwundetenmedaille_BAR.svg/250px-AUT_Verwundetenmedaille_BAR.svg.png' },
+  // Commendations
+  { country: 'Austria', branch: 'Austria Commendations', name: 'Military Recognition Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/AUT_Milit%C3%A4r-Anerkennungsmedaille_BAR.svg/250px-AUT_Milit%C3%A4r-Anerkennungsmedaille_BAR.svg.png' },
+  // Campaign Medals
+  { country: 'Austria', branch: 'Austria Campaign Medals', name: 'Armed Forces Operations Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/AUT_Einsatzmedaille_a_BAR.svg/250px-AUT_Einsatzmedaille_a_BAR.svg.png' },
+  // Service Medals
+  // Long Service
+  { country: 'Austria', branch: 'Austria Long Service', name: 'Military Service Award', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/AUT_Wehrdienstzeichen_1._Klasse_BAR.svg/250px-AUT_Wehrdienstzeichen_1._Klasse_BAR.svg.png' },
+  { country: 'Austria', branch: 'Austria Long Service', name: 'Militia Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/AUT_Milizmedaille_BAR.svg/250px-AUT_Milizmedaille_BAR.svg.png' },
+
+
+  // ─── ESTONIA ──────────────────────────────────────────────────────────────
+  // Gallantry
+  { country: 'Estonia', branch: 'Estonia Gallantry', name: 'Cross of Liberty - 1st Division', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/EST_Cross_of_Liberty_I_division_ribbon.svg/250px-EST_Cross_of_Liberty_I_division_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Gallantry', name: 'Cross of Liberty - 2nd Division', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/EST_Cross_of_Liberty_II_division_ribbon.svg/250px-EST_Cross_of_Liberty_II_division_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Gallantry', name: 'Cross of Liberty - 3rd Division', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/EST_Cross_of_Liberty_III_division_ribbon.svg/250px-EST_Cross_of_Liberty_III_division_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Gallantry', name: 'Defence Forces Decoration for Battle Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/EST_Defence_Forces_Decoration_for_battle_merit_ribbon.svg/250px-EST_Defence_Forces_Decoration_for_battle_merit_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Gallantry', name: 'Navy Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/EST_Navy_Cross_ribbon.svg/250px-EST_Navy_Cross_ribbon.svg.png' },
+  // Commendations
+  { country: 'Estonia', branch: 'Estonia Commendations', name: 'Defence Forces Decoration for Defence Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/EST_Defence_Forces_Decoration_for_defence_merit_ribbon.svg/250px-EST_Defence_Forces_Decoration_for_defence_merit_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Commendations', name: 'Defence Forces Merit Cross for Meritorious Service', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/EST_Defence_Forces_Merit_Cross_for_meritorious_service_ribbon.svg/250px-EST_Defence_Forces_Merit_Cross_for_meritorious_service_ribbon.svg.png' },
+  { country: 'Estonia', branch: 'Estonia Commendations', name: 'Defence Forces Merit Cross for National Defence Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/EST_Defence_Forces_Merit_Cross_for_national_defence_merit_ribbon.svg/250px-EST_Defence_Forces_Merit_Cross_for_national_defence_merit_ribbon.svg.png' },
+  // Long Service
+  { country: 'Estonia', branch: 'Estonia Long Service', name: 'Long Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/EST_Kaitsev%C3%A4e_pikaajalise_teenistuse_medal.png/250px-EST_Kaitsev%C3%A4e_pikaajalise_teenistuse_medal.png' },
+  { country: 'Estonia', branch: 'Estonia Long Service', name: 'White Cross of the Estonian Defence League', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/EST_White_Cross_of_the_Estonian_Defence_League_1st_class_ribbon.svg/250px-EST_White_Cross_of_the_Estonian_Defence_League_1st_class_ribbon.svg.png' },
+  // Commemorative
+  { country: 'Estonia', branch: 'Estonia Commemorative', name: 'Memorial Medal - 10 Years of the Re-Established Defence Forces', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/EST_Memorial_Medal_10_Years_of_the_Re-Established_Defence_Forces.png/250px-EST_Memorial_Medal_10_Years_of_the_Re-Established_Defence_Forces.png' },
+
+
+  // ─── FINLAND ──────────────────────────────────────────────────────────────
+  // Gallantry
+  { country: 'Finland', branch: 'Finland Gallantry', name: 'Order of the Cross of Liberty', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/FIN_Order_of_the_Cross_of_Liberty_GCross_peace_military_BAR.svg/250px-FIN_Order_of_the_Cross_of_Liberty_GCross_peace_military_BAR.svg.png' },
+  // Commendations
+  { country: 'Finland', branch: 'Finland Commendations', name: 'Medal for Military Merits', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/FIN_Military_Merit_Medal_BAR.svg/250px-FIN_Military_Merit_Medal_BAR.svg.png' },
+  // Long Service / Liberty Medals
+
+
+  // ─── CROATIA ──────────────────────────────────────────────────────────────
+  // Orders & Distinguished Service
+  { country: 'Croatia', branch: 'Croatia Orders & Distinguished Service', name: 'Grand Order of King Tomislav', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Ribbon_of_an_order_of_king_Tomislav.png/250px-Ribbon_of_an_order_of_king_Tomislav.png' },
+  { country: 'Croatia', branch: 'Croatia Orders & Distinguished Service', name: 'Order of Ban Jelacic', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Ribbon_of_an_Order_of_Ban_Jela%C4%8Di%C4%87.png/250px-Ribbon_of_an_Order_of_Ban_Jela%C4%8Di%C4%87.png' },
+  { country: 'Croatia', branch: 'Croatia Orders & Distinguished Service', name: 'Order of the Croatian Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Ribbon_of_an_Order_of_the_Croatian_Cross.png/250px-Ribbon_of_an_Order_of_the_Croatian_Cross.png' },
+  // Gallantry
+  { country: 'Croatia', branch: 'Croatia Gallantry', name: 'Order of Duke Trpimir', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Ribbon_of_the_Order_of_Duke_Trpimir.png/250px-Ribbon_of_the_Order_of_Duke_Trpimir.png' },
+  { country: 'Croatia', branch: 'Croatia Gallantry', name: 'Order of Duke Domagoj', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Ribbon_of_an_Order_of_Duke_Domagoj.png/250px-Ribbon_of_an_Order_of_Duke_Domagoj.png' },
+  { country: 'Croatia', branch: 'Croatia Gallantry', name: 'Order of Nikola Subic Zrinski', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Ribbon_of_an_Order_of_Nikola_%C5%A0ubi%C4%87_Zrinski.png/250px-Ribbon_of_an_Order_of_Nikola_%C5%A0ubi%C4%87_Zrinski.png' },
+  // Campaign Medals
+  { country: 'Croatia', branch: 'Croatia Campaign Medals', name: 'Homeland\'s Gratitude Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Homelands_Gratitude_Medal.jpg/250px-Homelands_Gratitude_Medal.jpg' },
+  { country: 'Croatia', branch: 'Croatia Campaign Medals', name: 'Homeland Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Zlatna_domovinska_medalja_-_mala_oznaka.jpg/250px-Zlatna_domovinska_medalja_-_mala_oznaka.jpg' },
+  // Service Medals
+  { country: 'Croatia', branch: 'Croatia Service Medals', name: 'Medal of the Croatian Armed Forces', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Zlatna_medalja_Hrvatske_vojske_-_mala_oznaka.jpg/250px-Zlatna_medalja_Hrvatske_vojske_-_mala_oznaka.jpg' },
+
+
+  // ─── SWITZERLAND ──────────────────────────────────────────────────────────
+  // Gallantry
+  { country: 'Switzerland', branch: 'Switzerland Gallantry', name: 'Exceptional Service Decoration (Chef de l\'Armee)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/CHE_CdA_decoration.svg/250px-CHE_CdA_decoration.svg.png' },
+  // Long Service
+  { country: 'Switzerland', branch: 'Switzerland Long Service', name: 'Length of Service Decoration', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/CHE_Length_of_service_decoration.svg/250px-CHE_Length_of_service_decoration.svg.png' },
+  // Service Medals / Specialist
+  { country: 'Switzerland', branch: 'Switzerland Service Medals', name: 'Alpine Decoration', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/CHE_Alpine_Decoration.png/250px-CHE_Alpine_Decoration.png' },
+  { country: 'Switzerland', branch: 'Switzerland Service Medals', name: 'Skill-at-Arms - Assault Rifle', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/CHE_Skill-at-arms_decoration_Assault_rifle_level_1.png/250px-CHE_Skill-at-arms_decoration_Assault_rifle_level_1.png' },
+  { country: 'Switzerland', branch: 'Switzerland Service Medals', name: 'Skill-at-Arms - Pistol', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/CHE_Skill-at-arms_decoration_Pistol_level_1.png/250px-CHE_Skill-at-arms_decoration_Pistol_level_1.png' },
+  // Campaign Medals / Mission Insignia
+  { country: 'Switzerland', branch: 'Switzerland Campaign Medals', name: 'Operations within Switzerland (Inland-Einsatze)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/CHE_Mission_Insignia_Operations_within_Switzerland.png/250px-CHE_Mission_Insignia_Operations_within_Switzerland.png' },
+  { country: 'Switzerland', branch: 'Switzerland Campaign Medals', name: 'Kosovo Mission Insignia (SWISSCOY)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/CHE_Operations_abroad_Kosovo_%28SWISSCOY%29.png/250px-CHE_Operations_abroad_Kosovo_%28SWISSCOY%29.png' },
+  { country: 'Switzerland', branch: 'Switzerland Campaign Medals', name: 'Bosnia-Herzegovina Mission Insignia (SHQSU)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/CHE_Operations_abroad_Bosnia-Herzegovina_%28SHQSU%29.png/250px-CHE_Operations_abroad_Bosnia-Herzegovina_%28SHQSU%29.png' },
+  { country: 'Switzerland', branch: 'Switzerland Campaign Medals', name: 'Korea Mission Insignia (NNSC)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/CHE_Operations_abroad_Korea_%28NNSC%29.png/250px-CHE_Operations_abroad_Korea_%28NNSC%29.png' },
+  { country: 'Switzerland', branch: 'Switzerland Campaign Medals', name: 'Namibia Mission Insignia (UNTAG)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/CHE_Operations_abroad_Namibia_%28GANUPT%29.png/250px-CHE_Operations_abroad_Namibia_%28GANUPT%29.png' },
+  { country: 'Switzerland', branch: 'Switzerland Campaign Medals', name: 'Western Sahara Mission Insignia (MINURSO)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/CHE_Operations_abroad_Western_Sahara_%28MINURSO%29.png/250px-CHE_Operations_abroad_Western_Sahara_%28MINURSO%29.png' },
+  { country: 'Switzerland', branch: 'Switzerland Campaign Medals', name: 'Peace Support Mission Insignia', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/CHE_Operations_abroad_Peace_Support.png/250px-CHE_Operations_abroad_Peace_Support.png' },
+  { country: 'Switzerland', branch: 'Switzerland Campaign Medals', name: 'UN Military Observer Mission Insignia', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/CHE_Operations_abroad_UN_Military_Observer.png/250px-CHE_Operations_abroad_UN_Military_Observer.png' },
+  { country: 'Switzerland', branch: 'Switzerland Campaign Medals', name: 'Partnership for Peace Mission Insignia', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/CHE_Partnership_for_Peace_Mission_Insignia.png/250px-CHE_Partnership_for_Peace_Mission_Insignia.png' },
+  { country: 'Switzerland', branch: 'Switzerland Campaign Medals', name: 'Long Leave for Military Duties Abroad (LAK)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/CHE_Long_leave_for_military_duties_abroad.png/250px-CHE_Long_leave_for_military_duties_abroad.png' },
+  { country: 'Switzerland', branch: 'Switzerland Campaign Medals', name: 'UN/OSCE/NATO Mandate Mission Badge', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/CHE_UNO_OSZE_Mandate.png/250px-CHE_UNO_OSZE_Mandate.png' },
+
+  // ─── GERMANY (NVA) ──────────────────────────────────────────────────────────
+  // Orders & Distinguished Service
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Orders & Distinguished Service', name: 'Militarischer Verdienstorden - Gold (Order of Military Merit - Gold)', url: 'https://www.medals.pl/de/r/drmvo1.gif' },
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Orders & Distinguished Service', name: 'Militarischer Verdienstorden - Silver (Order of Military Merit - Silver)', url: 'https://www.medals.pl/de/r/drmvo2.gif' },
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Orders & Distinguished Service', name: 'Militarischer Verdienstorden - Bronze (Order of Military Merit - Bronze)', url: 'https://www.medals.pl/de/r/drmvo3.gif' },
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Orders & Distinguished Service', name: 'Militarische Verdienstmedaille (Medal of Military Merit)', url: 'https://www.medals.pl/de/r/drmvm.gif' },
+  // Long Service
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Long Service', name: 'Ehrenzeichen fur Verdienste in der Reservistenarbeit - Gold (Reserve Service Medal - Gold)', url: 'https://www.medals.pl/de/r/drmvres1.gif' },
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Long Service', name: 'Ehrenzeichen fur Verdienste in der Reservistenarbeit - Silver (Reserve Service Medal - Silver)', url: 'https://www.medals.pl/de/r/drmvres2.gif' },
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Long Service', name: 'Ehrenzeichen fur Verdienste in der Reservistenarbeit - Bronze (Reserve Service Medal - Bronze)', url: 'https://www.medals.pl/de/r/drmvres3.gif' },
+  // Commemorative
+  { country: 'Germany (NVA)', branch: 'Germany (NVA) Commemorative', name: 'Ehrenmedaille 30 Jahre Nationale Volksarmee (30th Anniversary of NVA Medal)', url: 'https://www.medals.pl/de/r/drmnva30.gif' },
 
   // ─── POLAND ─────────────────────────────────────────────────────────────────
-  { country: 'Poland', branch: 'Poland Orders', name: 'Order Virtuti Militari', url: 'https://www.medals.pl/pl/r/pl4ovm.gif' },
-  { country: 'Poland', branch: 'Poland Orders', name: 'Order of Polonia Restituta', url: 'https://www.medals.pl/pl/r/pl4opr.gif' },
-  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Valor', url: 'https://www.medals.pl/pl/r/pl2cvab.gif' },
-  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Merit', url: 'https://www.medals.pl/pl/r/pl2cme.gif' },
+  // Orders
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order of the White Eagle', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/POL_Order_Or%C5%82a_Bia%C5%82ego_BAR.svg/250px-POL_Order_Or%C5%82a_Bia%C5%82ego_BAR.svg.png' },
+  // Order Virtuti Militari - 5 grades
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Virtuti Militari', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/POL_Virtuti_Militari_Wielki_BAR.svg/250px-POL_Virtuti_Militari_Wielki_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Virtuti Militari - Gold Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/POL_Virtuti_Militari_Z%C5%82oty_BAR.svg/250px-POL_Virtuti_Militari_Z%C5%82oty_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Virtuti Militari - Silver Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/POL_Virtuti_Militari_Srebrny_BAR.svg/250px-POL_Virtuti_Militari_Srebrny_BAR.svg.png' },
+  // Order of the Military Cross (Krzyz Wojskowy) - established 2014
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order of the Military Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/POL_Order_Krzy%C5%BCa_Wojskowego_Wielki_BAR.svg/250px-POL_Order_Krzy%C5%BCa_Wojskowego_Wielki_BAR.svg.png' },
+  // Order Polonia Restituta - 5 grades
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Polonia Restituta', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/POL_Polonia_Restituta_Wielki_BAR.svg/250px-POL_Polonia_Restituta_Wielki_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order Polonia Restituta - Commander with Star', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/POL_Polonia_Restituta_Komandorski_ZG_BAR.svg/250px-POL_Polonia_Restituta_Komandorski_ZG_BAR.svg.png' },
+  // Order of Merit of the Republic of Poland - 5 grades
+  { country: 'Poland', branch: 'Poland Orders', name: 'Order of Merit of the Republic of Poland', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/POL_Order_Zaslugi_RP_kl1_BAR.svg/250px-POL_Order_Zaslugi_RP_kl1_BAR.svg.png' },
+  // Gallantry & Crosses
+  // Cross of Valour - up to 4 awards
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Valour', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/POL_Krzy%C5%BC_Walecznych_BAR.svg/250px-POL_Krzy%C5%BC_Walecznych_BAR.svg.png' },
+  // Military Cross (Krzyz Wojskowy - cross, not the Order)
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Military Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/POL_Krzy%C5%BC_Wojskowy_BAR.svg/250px-POL_Krzy%C5%BC_Wojskowy_BAR.svg.png' },
+  // Cross of Merit for Bravery
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Merit for Bravery', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/POL_Krzy%C5%BC_Zas%C5%82ugi_za_Dzielno%C5%9B%C4%87_BAR.svg/250px-POL_Krzy%C5%BC_Zas%C5%82ugi_za_Dzielno%C5%9B%C4%87_BAR.svg.png' },
+  // Cross of Merit with Swords (Army, Air Force, Navy)
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Army Cross of Merit with Swords', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Air Force Cross of Merit with Swords', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Navy Cross of Merit with Swords', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+
+  // Cross of Merit with Swords - Gold/Silver/Bronze (state awards)
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Cross of Merit with Swords', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/POL_Z%C5%82oty_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg/250px-POL_Z%C5%82oty_Krzy%C5%BC_Zas%C5%82ugi_z_Mieczami_BAR.svg.png' },
+  // Military/Air/Navy Cross of Merit (without swords - non-combat service merit)
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Military Cross of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg/250px-POL_Wojskowy_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Air Force Cross of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg/250px-POL_Lotniczy_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg.png' },
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Navy Cross of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg/250px-POL_Morski_Krzy%C5%BC_Zas%C5%82ugi_BAR.svg.png' },
+  // Medal for Sacrifice and Courage (Odznaka za Rany i Kontuzje - wound/courage medal)
+  { country: 'Poland', branch: 'Poland Gallantry & Crosses', name: 'Medal for Sacrifice and Courage', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/POL_Medal_za_Ofiarno%C5%9B%C4%87_i_Odwag%C4%99_BAR.svg/250px-POL_Medal_za_Ofiarno%C5%9B%C4%87_i_Odwag%C4%99_BAR.svg.png' },  // Service Medals (Army/Air/Navy merit medals, multi-award)
+  // Medal Wojska (Army Service Medal)
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Army Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/POL_Z%C5%82oty_Medal_Wojska_Polskiego_BAR.svg/250px-POL_Z%C5%82oty_Medal_Wojska_Polskiego_BAR.svg.png' },
+  // Medal Wojska (multi-award service medal)
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Medal of the Armed Forces', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/POL_Medal_Wojska_BAR.svg/250px-POL_Medal_Wojska_BAR.svg.png' },
+  // Medal Lotniczy (Air Force Medal)
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Air Force Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/POL_Medal_Lotniczy_BAR.svg/250px-POL_Medal_Lotniczy_BAR.svg.png' },
+  // Medal Morski (Navy Medal)
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Navy Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/POL_Medal_Morski_BAR.svg/250px-POL_Medal_Morski_BAR.svg.png' },
+  // Medal Gloria Intrepidis (for distinguished acts in military operations)
+  { country: 'Poland', branch: 'Poland Service Medals', name: 'Medal Gloria Intrepidis et Animi Promptis', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/POL_Medal_Gloria_Intrepidis_et_Animi_Promptis_BAR.svg/250px-POL_Medal_Gloria_Intrepidis_et_Animi_Promptis_BAR.svg.png' },
+  // Campaign Medals - Afghanistan (PKW RS rotations)
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW Afghanistan Commemorative Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/POL_Medal_Pam_Xzm_PKW_Afganistan_RS_BAR.svg/250px-POL_Medal_Pam_Xzm_PKW_Afganistan_RS_BAR.svg.png' },
+  // Campaign Medals - Iraq
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW Iraq Commemorative Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/POL_Medal_Pam_PKW_Irak_NMI_BAR.svg/250px-POL_Medal_Pam_PKW_Irak_NMI_BAR.svg.png' },
+  // Campaign Medals - KFOR (Kosovo)
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW KFOR Commemorative Badge (generic)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/POL_Odznaka_pam_PKW_KFOR_BAR.svg/250px-POL_Odznaka_pam_PKW_KFOR_BAR.svg.png' },
+  // Campaign Medals - EUFOR Althea (Bosnia)
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW EUFOR Althea Commemorative Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/POL_Medal_Pam_XVIzm_PKW_EUFOR_Althea_BAR.svg/250px-POL_Medal_Pam_XVIzm_PKW_EUFOR_Althea_BAR.svg.png' },
+  // Campaign Medals - Lebanon
+  { country: 'Poland', branch: 'Poland Campaign Medals', name: 'PKW Lebanon Commemorative Medal (2023)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/POL_Medal_Pam_PKW_Liban_%282023%29_BAR.svg/250px-POL_Medal_Pam_PKW_Liban_%282023%29_BAR.svg.png' },
+  // Commemorative
+  { country: 'Poland', branch: 'Poland Commemorative', name: 'Medal of the Centenary of Regained Independence', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/POL_Medal_Stulecia_Odzyskanej_Niepodl_BAR.svg/250px-POL_Medal_Stulecia_Odzyskanej_Niepodl_BAR.svg.png' },
 
   // ─── LUXEMBOURG ─────────────────────────────────────────────────────────────
   { country: 'Luxembourg', branch: 'Luxembourg Orders', name: 'Order of Adolph of Nassau', url: 'https://www.medals.pl/lu/r/lu1oan.gif' },
@@ -321,8 +569,6 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United States', branch: 'US Service Medals', name: 'Army Reserve Componenets Overseas Training', url: 'https://www.uniformribbons.com/image/army_reserve_components_overseas_training_ribbon.png' },
   { country: 'United States', branch: 'US Campaign Medals', name: 'Kuwait Liberation Saudi Arabia Ribbon', url: 'https://www.uniformribbons.com/image/kuwait_liberation_saudi_arabia_ribbon.png' },
   { country: 'United States', branch: 'US Campaign Medals', name: 'Kuwait Liberation Kuwait Ribbon', url: 'https://www.uniformribbons.com/image/kuwait_liberation_kuwait_ribbon.png' },
-  { country: 'United States', branch: 'US Campaign Medals', name: 'Kuwait Liberation Medal (Saudi Arabia) Ribbon', url: 'https://www.uniformribbons.com/image/kuwait_liberation_saudi_arabia_ribbon.png' },
-  { country: 'United States', branch: 'US Campaign Medals', name: 'Kuwait Liberation Medal (Kuwait) Ribbon', url: 'https://www.uniformribbons.com/image/kuwait_liberation_kuwait_ribbon.png' },
   { country: 'United States', branch: 'US Gallantry', name: 'Navy Cross Ribbon', url: 'https://www.uniformribbons.com/image/navy_cross_ribbon.png' },
   { country: 'United States', branch: 'US Orders & Distinguished Service', name: 'Navy Distinguished Service Ribbon', url: 'https://www.uniformribbons.com/image/navy_distinguished_service_ribbon.png' },
   { country: 'United States', branch: 'US Long Service', name: 'Navy Marine Corps Ribbon', url: 'https://www.uniformribbons.com/image/navy_marine_corps_ribbon.png' },
@@ -337,14 +583,6 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United States', branch: 'US Orders & Distinguished Service', name: 'Naval Reserve Meritorious Service Ribbon', url: 'https://www.uniformribbons.com/image/naval_reserve_meritorious_service_ribbon.png' },
   { country: 'United States', branch: 'US Service Medals', name: 'Navy Fleet Marine Force Ribbon', url: 'https://www.uniformribbons.com/image/navy_fleet_marine_force_ribbon.png' },
   { country: 'United States', branch: 'US Service Medals', name: 'Navy Expeditionary Ribbon', url: 'https://www.uniformribbons.com/image/navy_expeditionary_ribbon.png' },
-  { country: 'United States', branch: 'US Service Medals', name: 'National Defense Service Ribbon', url: 'https://www.uniformribbons.com/image/national_defense_service_medal_ribbon.png' },
-  { country: 'United States', branch: 'US Service Medals', name: 'Armed Forces Expeditionary Ribbon', url: 'https://www.uniformribbons.com/image/armed_forces_expeditionary_ribbon.png' },
-  { country: 'United States', branch: 'US Campaign Medals', name: 'Southwest Asia Service Ribbon', url: 'https://www.uniformribbons.com/image/southwest_asia_service_ribbon.png' },
-  { country: 'United States', branch: 'US Campaign Medals', name: 'Kosovo Campaign Ribbon', url: 'https://www.uniformribbons.com/image/kosovo_campaign_ribbon.png' },
-  { country: 'United States', branch: 'US Campaign Medals', name: 'Afghanistan Campaign Ribbon', url: 'https://www.uniformribbons.com/image/afghanistan_campaign_ribbon.png' },
-  { country: 'United States', branch: 'US Campaign Medals', name: 'Iraq Campaign Ribbon', url: 'https://www.uniformribbons.com/image/iraq_campaign_ribbon.png' },
-  { country: 'United States', branch: 'US Campaign Medals', name: 'Korea Defense Service Ribbon', url: 'https://www.uniformribbons.com/image/korea_defense_service_ribbon.png' },
-  { country: 'United States', branch: 'US Service Medals', name: 'Humanitarian Service Ribbon', url: 'https://www.uniformribbons.com/image/humanitarian_service_ribbon.png' },
   { country: 'United States', branch: 'US Service Medals', name: 'Navy Sea Service Deployment Ribbon', url: 'https://www.uniformribbons.com/image/navy_sea_service_deployment_ribbon.png' },
   { country: 'United States', branch: 'US Service Medals', name: 'Navy Reserve Sea Service Ribbon', url: 'https://www.uniformribbons.com/image/navy_reserve_sea_service_ribbon.png' },
   { country: 'United States', branch: 'US Service Medals', name: 'Navy Marine Corps Overseas Service Ribbon', url: 'https://www.uniformribbons.com/image/navy_marine_corps_overseas_service_ribbon.png' },
@@ -355,7 +593,6 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United States', branch: 'US Service Medals', name: 'Navy Reserve Ribbon', url: 'https://www.uniformribbons.com/image/navy_reserve_ribbon.png' },
   { country: 'United States', branch: 'US Long Service', name: 'Navy Rifleman Ribbon', url: 'https://www.uniformribbons.com/image/navy_rifleman_ribbon.png' },
   { country: 'United States', branch: 'US Long Service', name: 'Navy Pistol Ribbon', url: 'https://www.uniformribbons.com/image/navy_pistol_ribbon.png' },
-  { country: 'United States', branch: 'US Gallantry', name: 'Navy Marine Corps Medal Ribbon', url: 'https://www.uniformribbons.com/image/navy_marine_corps_ribbon.png' },
   { country: 'United States', branch: 'US Long Service', name: 'Marine Corps Good Conduct Ribbon', url: 'https://www.uniformribbons.com/image/marine_corps_good_conduct_ribbon.png' },
   { country: 'United States', branch: 'US Service Medals', name: 'Selected Marine Corps Reserve Ribbon', url: 'https://www.uniformribbons.com/image/selected_marine_corps_reserve_ribbon.png' },
   { country: 'United States', branch: 'US Service Medals', name: 'Marine Corps Expeditionary Ribbon', url: 'https://www.uniformribbons.com/image/marine_corps_expeditionary_ribbon.png' },
@@ -364,17 +601,14 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United States', branch: 'US Service Medals', name: 'Marine Corps Security Guard Ribbon', url: 'https://www.uniformribbons.com/image/marine_corps_security_guard_ribbon.png' },
   { country: 'United States', branch: 'US Long Service', name: 'Marine Corps Combat Instructor Ribbon', url: 'https://www.uniformribbons.com/image/marine_corps_combat_instructor_ribbon.png' },
   { country: 'United States', branch: 'US Long Service', name: 'Marine Corps Reserve Ribbon', url: 'https://www.uniformribbons.com/image/marine_corps_reserve_ribbon.png' },
-  { country: 'United States', branch: 'US Campaign Medals', name: 'Kuwait Liberation Saudi Arabia', url: 'https://www.uniformribbons.com/image/kuwait_liberation_saudi_arabia_ribbon.png' },
   { country: 'United States', branch: 'US Gallantry', name: 'Air Force Cross Ribbon', url: 'https://www.uniformribbons.com/image/air_force_cross_ribbon.png' },
   { country: 'United States', branch: 'US Orders & Distinguished Service', name: 'Air Force Distinguished Service Ribbon', url: 'https://www.uniformribbons.com/image/air_force_distinguished_service_ribbon.png' },
   { country: 'United States', branch: 'US Long Service', name: 'Airman Ribbon', url: 'https://www.uniformribbons.com/image/airman_ribbon.png' },
-  { country: 'United States', branch: 'US Long Service', name: 'Air Ribbon', url: 'https://www.uniformribbons.com/image/air_medal_ribbon.png' },
   { country: 'United States', branch: 'US Gallantry', name: 'Aerial Achievement Ribbon', url: 'https://www.uniformribbons.com/image/aerial_achievement_ribbon.png' },
   { country: 'United States', branch: 'US Commendations', name: 'Air Force Commendation Ribbon', url: 'https://www.uniformribbons.com/image/air_force_commendation_ribbon.png' },
   { country: 'United States', branch: 'US Commendations', name: 'Air Force Achievement Ribbon', url: 'https://www.uniformribbons.com/image/air_force_achievement_ribbon.png' },
   { country: 'United States', branch: 'US Gallantry', name: 'Air Force Combat Action Ribbon', url: 'https://www.uniformribbons.com/image/air_force_combat_action_ribbon.png' },
   { country: 'United States', branch: 'US Commendations', name: 'Air Force Presidential Unit Citation Ribbon', url: 'https://www.uniformribbons.com/image/air_force_presidential_unit_citation_ribbon.png' },
-  { country: 'United States', branch: 'US Commendations', name: 'Joint Meritorious Unit Award Ribbon', url: 'https://www.uniformribbons.com/image/joint_service_meritorious_unit_ribbon.png' },
   { country: 'United States', branch: 'US Commendations', name: 'Air Force Gallant Unit Citation Ribbon', url: 'https://www.uniformribbons.com/image/air_force_gallant_unit_ribbon.png' },
   { country: 'United States', branch: 'US Commendations', name: 'Air Force Meritorious Unit Award Ribbon', url: 'https://www.uniformribbons.com/image/air_force_meritorious_unit_ribbon.png' },
   { country: 'United States', branch: 'US Commendations', name: 'Air Force Outstanding Unit Award Ribbon', url: 'https://www.uniformribbons.com/image/air_force_outstanding_unit_ribbon.png' },
@@ -399,7 +633,195 @@ export const RIBBON_TEMPLATES: RibbonTemplate[] = [  // ─── INTERNATIONAL 
   { country: 'United States', branch: 'US Long Service', name: 'Air Force BMT Honor Graduate Ribbon', url: 'https://www.uniformribbons.com/image/air_force_BMT_honor_graduate_ribbon.png' },
   { country: 'United States', branch: 'US Long Service', name: 'Small Arms Expert Marksmanship Ribbon', url: 'https://www.uniformribbons.com/image/small_arms_expert_marksmanship_ribbon.png' },
   { country: 'United States', branch: 'US Long Service', name: 'Air Force Training Ribbon', url: 'https://www.uniformribbons.com/image/air_force_training_ribbon.png' },
-  { country: 'United States', branch: 'US Orders & Distinguished Service', name: 'Air Force Distinguished Service Medal Ribbon', url: 'https://www.uniformribbons.com/image/air_force_distinguished_service_ribbon.png' },
-  { country: 'United States', branch: 'US Gallantry', name: 'Airman Medal Ribbon', url: 'https://www.uniformribbons.com/image/airman_ribbon.png' },
-  { country: 'United States', branch: 'US Orders & Distinguished Service', name: 'Air Reserve Meritorious Service Medal Ribbon', url: 'https://www.uniformribbons.com/image/air_reserve_meritorious_service_ribbon.png' },
+
+  // ─── CZECH REPUBLIC ─────────────────────────────────────────────────────────
+  // Orders & Distinguished Service
+  // Military Order of the White Lion (re-established 1994, military division) - all 5 grades
+  { country: 'Czech Republic', branch: 'Czech Republic Orders & Distinguished Service', name: 'Military Order of the White Lion', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/CZE_Rad_Bileho_Lva_1_tridy_BAR.svg/250px-CZE_Rad_Bileho_Lva_1_tridy_BAR.svg.png' },
+  // Cross of Merit of the Minister of Defence - 3 grades
+  { country: 'Czech Republic', branch: 'Czech Republic Orders & Distinguished Service', name: 'Cross of Merit of the Minister of Defence', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/CZE_Cross_of_Merit_Min-of-Def_1st_BAR.svg/250px-CZE_Cross_of_Merit_Min-of-Def_1st_BAR.svg.png' },
+  // Honour Badge of the Czech Armed Forces for Merit (3rd class confirmed ribbon)
+  { country: 'Czech Republic', branch: 'Czech Republic Orders & Distinguished Service', name: 'Honour Badge of the Czech Armed Forces for Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/CZE_Cestny_Odznak_ACR_Za_zasluhy_3st_BAR.svg/250px-CZE_Cestny_Odznak_ACR_Za_zasluhy_3st_BAR.svg.png' },
+  // Military Logistics Commemorative Badge
+  { country: 'Czech Republic', branch: 'Czech Republic Orders & Distinguished Service', name: 'Military Logistics Commemorative Badge', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/CZE_Pametni_Odznak_Vojenske_Logistiky_BAR.svg/250px-CZE_Pametni_Odznak_Vojenske_Logistiky_BAR.svg.png' },
+  // Gallantry / Wounds
+  { country: 'Czech Republic', branch: 'Czech Republic Gallantry', name: 'Medal for Injury (Wound Medal)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/CZE_Medaile_za_zraneni_BAR.svg/250px-CZE_Medaile_za_zraneni_BAR.svg.png' },
+  // Service Medals
+  { country: 'Czech Republic', branch: 'Czech Republic Service Medals', name: 'Medal of the Armed Forces of the Czech Republic', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/CZE_Medaile_Za_Sluzbu_v_OS_CR_1st_BAR.svg/250px-CZE_Medaile_Za_Sluzbu_v_OS_CR_1st_BAR.svg.png' },
+  // Campaign Medals - Medal for Service Abroad (theatre-specific series)
+  { country: 'Czech Republic', branch: 'Czech Republic Campaign Medals', name: 'Medal for Service Abroad (generic)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/CZE_Medal_For_Service_Abroad.svg/250px-CZE_Medal_For_Service_Abroad.svg.png' },
+  { country: 'Czech Republic', branch: 'Czech Republic Campaign Medals', name: 'Medal for Service Abroad - SFOR (Bosnia)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/CZE_MoD_Medal_For_Service_Abroad_SFOR_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_SFOR_1st_BAR.svg.png' },
+  { country: 'Czech Republic', branch: 'Czech Republic Campaign Medals', name: 'Medal for Service Abroad - KFOR (Kosovo)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/CZE_MoD_Medal_For_Service_Abroad_KFOR_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_KFOR_1st_BAR.svg.png' },
+  { country: 'Czech Republic', branch: 'Czech Republic Campaign Medals', name: 'Medal for Service Abroad - Iraq', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/CZE_MoD_Medal_For_Service_Abroad_Iraq_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Iraq_1st_BAR.svg.png' },
+  { country: 'Czech Republic', branch: 'Czech Republic Campaign Medals', name: 'Medal for Service Abroad - ISAF (Afghanistan)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/CZE_MoD_Medal_For_Service_Abroad_ISAF_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_ISAF_1st_BAR.svg.png' },
+  { country: 'Czech Republic', branch: 'Czech Republic Campaign Medals', name: 'Medal for Service Abroad - Enhanced Forward Presence', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/CZE_MoD_Medal_For_Service_Abroad_EF_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_EF_1st_BAR.svg.png' },
+  { country: 'Czech Republic', branch: 'Czech Republic Campaign Medals', name: 'Medal for Service Abroad - Africa', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/CZE_MoD_Medal_For_Service_Abroad_Africa_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Africa_1st_BAR.svg.png' },
+  { country: 'Czech Republic', branch: 'Czech Republic Campaign Medals', name: 'Medal for Service Abroad - Combat', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/CZE_MoD_Medal_For_Service_Abroad_Combat_1st_BAR.svg/250px-CZE_MoD_Medal_For_Service_Abroad_Combat_1st_BAR.svg.png' },
+
+  // ─── SWEDEN ──────────────────────────────────────────────────────────────────
+  // Orders (Royal Orders - reactivated 2023, first awarded March 2024)
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of the Seraphim', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Seraphimerorden_ribbon.svg/250px-Seraphimerorden_ribbon.svg.png' },
+  // Royal Order of the Sword
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of the Sword', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Ruotsin_miekkaritarikunnan_suurristin_nauha.png/250px-Ruotsin_miekkaritarikunnan_suurristin_nauha.png' },
+  // Royal Order of Vasa (reactivated 2023)
+  { country: 'Sweden', branch: 'Sweden Orders', name: 'Royal Order of Vasa', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/SWE_Order_of_Vasa_-_Commander_Grand_Cross_BAR.png/250px-SWE_Order_of_Vasa_-_Commander_Grand_Cross_BAR.png' },
+  // Military Medals
+  // Swedish Armed Forces Medal of Merit (1995-2009 with sword variants)
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Medal of Merit with Sword (1995-2007)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_guld.png/250px-F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_med_sv%C3%A4rd_i_guld.png' },
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Medal of Merit (1995-2007)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_utan_sv%C3%A4rd.png/250px-F%C3%B6rsvarsmaktens_f%C3%B6rtj%C3%A4nstmedalj_%281995%E2%80%932007%29_utan_sv%C3%A4rd.png' },
+  // Swedish Armed Forces Medal of Merit (2008-2023 series)
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Medal of Merit (2008-2023)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/FMGM.png/250px-FMGM.png' },
+  // Swedish Armed Forces Medal for Wounded in Battle (2011-)
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Medal for Wounded in Battle', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/FMSMsismstj.png/250px-FMSMsismstj.png' },
+  // Swedish Armed Forces International Service Medal (1991-)
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces International Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/FMintGMmsv_bar.png/250px-FMintGMmsv_bar.png' },
+  // Reserve Officer Medal (2003/2008-)
+  { country: 'Sweden', branch: 'Sweden Military Medals', name: 'Swedish Armed Forces Reserve Officer Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/FMresoffSM_-_F%C3%B6rsvarsmaktens_reservofficersmedalj_%28Sverige%29.png/250px-FMresoffSM_-_F%C3%B6rsvarsmaktens_reservofficersmedalj_%28Sverige%29.png' },
+  // Service Medal for National Defence (2015-)
+  { country: 'Sweden', branch: 'Sweden Long Service', name: 'Swedish Armed Forces Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/SWE_Armed_Forces_Medal_for_National_Defense.png/250px-SWE_Armed_Forces_Medal_for_National_Defense.png' },
+  // Service Medal
+
+  // ─── SLOVAKIA ────────────────────────────────────────────────────────────────
+  // Orders - Pribina Cross (merit order awarded to military personnel)
+  { country: 'Slovakia', branch: 'Slovakia Orders', name: 'Pribina Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/SVK_Pribinov_Kriz_1_triedy_BAR.svg/250px-SVK_Pribinov_Kriz_1_triedy_BAR.svg.png' },
+  // White Double Cross (awarded to foreign military & diplomats - borderline keep as international prestige award)
+  { country: 'Slovakia', branch: 'Slovakia Orders', name: 'Order of the White Double Cross', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/SVK_Rad_Bieleho_Dvojkriza_1_triedy_BAR.svg/250px-SVK_Rad_Bieleho_Dvojkriza_1_triedy_BAR.svg.png' },
+  // Gallantry
+  { country: 'Slovakia', branch: 'Slovakia Gallantry', name: 'Medal for Bravery', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/SVK_Medaila_za_statocnost_BAR.svg/250px-SVK_Medaila_za_statocnost_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Gallantry', name: 'Medal for Wounds in Combat', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/SVK_Medaila_Za_zranenie_v_boji_3x_BAR.svg/250px-SVK_Medaila_Za_zranenie_v_boji_3x_BAR.svg.png' },
+  // Service Medals
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal of the President of the Slovak Republic (2001)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/SVK_Medaila_prezidenta_SR_2001_BAR.svg/250px-SVK_Medaila_prezidenta_SR_2001_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal of the President of the Slovak Republic (2008)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/SVK_Medaila_prezidenta_SR_2008_BAR.svg/250px-SVK_Medaila_prezidenta_SR_2008_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Gratitude Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/SVK_Gratitude_Medal_BAR.svg/250px-SVK_Gratitude_Medal_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal for Humanitarian Aid', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/SVK_Medaila_Za_humanitarnu_pomoc_BAR.svg/250px-SVK_Medaila_Za_humanitarnu_pomoc_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal for Observer of Peacekeeping Missions', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/SVK_Med_Observer_Peacekeeping_Missions_2002_%28V%29_BAR.svg/250px-SVK_Med_Observer_Peacekeeping_Missions_2002_%28V%29_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal of Military Counterintelligence', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/SVK_Med_voj_obranneho_spravodajstva_1-st_BAR.png/250px-SVK_Med_voj_obranneho_spravodajstva_1-st_BAR.png' },
+  { country: 'Slovakia', branch: 'Slovakia Service Medals', name: 'Medal of Military Intelligence Service', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/SVK_Med_voj_spravodajskej_sluzby_1-st_BAR.png/250px-SVK_Med_voj_spravodajskej_sluzby_1-st_BAR.png' },
+  // Commemorative
+  { country: 'Slovakia', branch: 'Slovakia Commemorative', name: 'Commemorative Medal of the Minister of Defence', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/SVK_Commemorative_Medal_Min-of-Def_1st_BAR.svg/250px-SVK_Commemorative_Medal_Min-of-Def_1st_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Commemorative', name: 'Commemorative Cross of the Chief of General Staff', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/SVK_Pamatny_kriz_nacelnika_GS_OSSR_1-st_BAR.svg/250px-SVK_Pamatny_kriz_nacelnika_GS_OSSR_1-st_BAR.svg.png' },
+  { country: 'Slovakia', branch: 'Slovakia Commemorative', name: 'Commemorative Medal for 20th Anniversary of Slovak Armed Forces', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/SVK_Pam_Med_k20_vyr_vzn_OSSR_BAR.svg/250px-SVK_Pam_Med_k20_vyr_vzn_OSSR_BAR.svg.png' },
+
+  // ─── GEORGIA ─────────────────────────────────────────────────────────────────
+  { country: 'Georgia', branch: 'Georgia Orders', name: 'Order of Vakhtang Gorgasali', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/GEO_Vakhtang_Gorgasal_Order_1rank_BAR.svg/250px-GEO_Vakhtang_Gorgasal_Order_1rank_BAR.svg.png' },
+  { country: 'Georgia', branch: 'Georgia Orders', name: 'Order of David the Builder', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/GEO_David_Agmashenebeli_Order_BAR.svg/250px-GEO_David_Agmashenebeli_Order_BAR.svg.png' },
+  { country: 'Georgia', branch: 'Georgia Orders', name: 'Order of Honor', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Order_of_Honor_%28Georgia%29_ribbon.svg/250px-Order_of_Honor_%28Georgia%29_ribbon.svg.png' },
+  { country: 'Georgia', branch: 'Georgia Service Medals', name: 'Medal of Military Courage', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/GEO_Military_Courage_Medal_BAR.svg/250px-GEO_Military_Courage_Medal_BAR.svg.png' },
+  { country: 'Georgia', branch: 'Georgia Service Medals', name: 'Medal of Military Honor', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/GEO_Military_Honor_Medal_BAR.svg/250px-GEO_Military_Honor_Medal_BAR.svg.png' },
+  { country: 'Georgia', branch: 'Georgia Service Medals', name: 'Medal of Honor', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/GEO_Honor_Medal_BAR.svg/250px-GEO_Honor_Medal_BAR.svg.png' },
+
+  // ─── IRAN ─────────────────────────────────────────────────────────────────────
+  { country: 'Iran', branch: 'Iran Orders', name: 'Order of Fath', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Order_of_Fat%27h_%281st_Class%29.svg/250px-Order_of_Fat%27h_%281st_Class%29.svg.png' },
+  { country: 'Iran', branch: 'Iran Orders', name: 'Order of Nasr', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Order_of_Nasr_Ribbon.svg/250px-Order_of_Nasr_Ribbon.svg.png' },
+  { country: 'Iran', branch: 'Iran Gallantry', name: 'Zulfaqar Combat Badge', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/IRIA_Zulfaqar_Ribbon.svg/250px-IRIA_Zulfaqar_Ribbon.svg.png' },
+  { country: 'Iran', branch: 'Iran Gallantry', name: 'Jihad Merit Badge', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/IRIA_Jihad_Ribbon.svg/250px-IRIA_Jihad_Ribbon.svg.png' },
+  { country: 'Iran', branch: 'Iran Service Medals', name: 'Strategic Sciences Course Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/IRIA_Strategic_Sciences_Ribbon.svg/250px-IRIA_Strategic_Sciences_Ribbon.svg.png' },
+  { country: 'Iran', branch: 'Iran Service Medals', name: 'Supervision Course Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/IRIA_Supervision_Ribbon.svg/250px-IRIA_Supervision_Ribbon.svg.png' },
+  { country: 'Iran', branch: 'Iran Service Medals', name: 'Military University 3rd Year Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/IRIA_Military_University_3rd_Year_Ribbon_Bar.svg/250px-IRIA_Military_University_3rd_Year_Ribbon_Bar.svg.png' },
+
+  // ─── NORTH KOREA ─────────────────────────────────────────────────────────────
+  { country: 'North Korea', branch: 'North Korea Orders', name: 'Order of Kim Il-sung', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/DPRK_ribbon_bar_-_Order_of_Kim_Il-sung.svg/250px-DPRK_ribbon_bar_-_Order_of_Kim_Il-sung.svg.png' },
+  { country: 'North Korea', branch: 'North Korea Orders', name: 'Order of the National Flag', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/DPRK_ribbon_bar_-_Order_of_National_Flag_1st_Class.svg/250px-DPRK_ribbon_bar_-_Order_of_National_Flag_1st_Class.svg.png' },
+  { country: 'North Korea', branch: 'North Korea Orders', name: 'Order of Friendship', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/DPRK_ribbon_bar_-_Order_of_Friendship_1st_Class.svg/250px-DPRK_ribbon_bar_-_Order_of_Friendship_1st_Class.svg.png' },
+  { country: 'North Korea', branch: 'North Korea Orders', name: 'Order of Friendship Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/DPRK_ribbon_bar_-_Order_of_Friendship_Medal.svg/250px-DPRK_ribbon_bar_-_Order_of_Friendship_Medal.svg.png' },
+  { country: 'North Korea', branch: 'North Korea Orders', name: 'Order of the Kunjari', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/DPRK_ribbon_bar_-_Order_of_Kunjari.svg/250px-DPRK_ribbon_bar_-_Order_of_Kunjari.svg.png' },
+  { country: 'North Korea', branch: 'North Korea Orders', name: 'Order of Labour', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/DPRK_ribbon_bar_-_Order_of_Labor_V2.svg/250px-DPRK_ribbon_bar_-_Order_of_Labor_V2.svg.png' },
+  { country: 'North Korea', branch: 'North Korea Service Medals', name: 'Order of Military Service Honour Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/DPRK_ribbon_bar_-_Order_of_Military_Service_Honor_Medal.svg/250px-DPRK_ribbon_bar_-_Order_of_Military_Service_Honor_Medal.svg.png' },
+  { country: 'North Korea', branch: 'North Korea Service Medals', name: 'Meritorious Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/DPRK_ribbon_bar_-_Meritorious_Service_Medal.svg/250px-DPRK_ribbon_bar_-_Meritorious_Service_Medal.svg.png' },
+  { country: 'North Korea', branch: 'North Korea Service Medals', name: 'Military Merit Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/DPRK_ribbon_bar_-_Military_Merit_Medal.svg/250px-DPRK_ribbon_bar_-_Military_Merit_Medal.svg.png' },
+  { country: 'North Korea', branch: 'North Korea Commemorative', name: 'Fatherland Liberation War Commemorative Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/DPRK_ribbon_bar_-_Fatherland_Liberation_War_Commemoration_Medal.svg/250px-DPRK_ribbon_bar_-_Fatherland_Liberation_War_Commemoration_Medal.svg.png' },
+  { country: 'North Korea', branch: 'North Korea Commemorative', name: 'DPRK Foundation Commemorative Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/DPRK_ribbon_bar_-_DPRK_Foundation_Commemoration_Medal.svg/250px-DPRK_ribbon_bar_-_DPRK_Foundation_Commemoration_Medal.svg.png' },
+
+  // ─── PAKISTAN ─────────────────────────────────────────────────────────────────
+  { country: 'Pakistan', branch: 'Pakistan Gallantry', name: 'Nishan-e-Haider (Order of the Lion)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Nishan-e-Haider_Ribbon_Bar.png/250px-Nishan-e-Haider_Ribbon_Bar.png' },
+  { country: 'Pakistan', branch: 'Pakistan Gallantry', name: 'Hilal-e-Jurat (Crescent of Courage)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Hilal-e-Jurat.png/250px-Hilal-e-Jurat.png' },
+  { country: 'Pakistan', branch: 'Pakistan Gallantry', name: 'Sitara-e-Jurat (Star of Courage)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/PAK_Sitara-i-Juraat_ribbon.svg/250px-PAK_Sitara-i-Juraat_ribbon.svg.png' },
+  { country: 'Pakistan', branch: 'Pakistan Gallantry', name: 'Tamgha-e-Basalat (Medal of Valour)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Tamgha-e-Basalat.png/250px-Tamgha-e-Basalat.png' },
+  { country: 'Pakistan', branch: 'Pakistan Gallantry', name: 'Tamgha-e-Diffa (Defence Medal)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Tamgha-e-Diffa_Pakistan.svg/250px-Tamgha-e-Diffa_Pakistan.svg.png' },
+  { country: 'Pakistan', branch: 'Pakistan Long Service', name: '10 Years Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/10_years_Service_Medal_%28Pakistan_Armed_Forces%29.png/250px-10_years_Service_Medal_%28Pakistan_Armed_Forces%29.png' },
+  { country: 'Pakistan', branch: 'Pakistan Long Service', name: '20 Years Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/20_years_Service_Medal_%28Pakistan_Armed_Forces%29.png/250px-20_years_Service_Medal_%28Pakistan_Armed_Forces%29.png' },
+  { country: 'Pakistan', branch: 'Pakistan Long Service', name: '30 Years Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/30_years_Service_Medal_%28Pakistan_Armed_Forces%29.png/250px-30_years_Service_Medal_%28Pakistan_Armed_Forces%29.png' },
+  { country: 'Pakistan', branch: 'Pakistan Long Service', name: '35 Years Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/35_years_Service_Medal_%28Pakistan_Armed_Forces%29.png/250px-35_years_Service_Medal_%28Pakistan_Armed_Forces%29.png' },
+  { country: 'Pakistan', branch: 'Pakistan Long Service', name: '40 Years Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/40_years_Service_Medal_%28Pakistan_Armed_Forces%29.png/250px-40_years_Service_Medal_%28Pakistan_Armed_Forces%29.png' },
+
+  // ─── BELGIUM ─────────────────────────────────────────────────────────────────
+  // Order of Leopold (military & civilian)
+  // Order of Leopold II
+  // Order of the Crown (Kroonorde)
+  // Gallantry
+
+  // ─── ITALY ────────────────────────────────────────────────────────────────────
+  // Orders
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Merit of the Italian Republic', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Cavaliere_OMRI_BAR.svg/250px-Cavaliere_OMRI_BAR.svg.png' },
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of the Star of Italy', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/StellaItalia-Cav.png/250px-StellaItalia-Cav.png' },
+  { country: 'Italy', branch: 'Italy Orders', name: 'Order of Merit for Labour', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg/250px-1020px_ribbon_bar_of_the_Order_of_Merit_for_Labour.svg.png' },
+  // Gallantry
+
+  // ─── NORWAY ───────────────────────────────────────────────────────────────────
+  // Gallantry
+  { country: 'Norway', branch: 'Norway Gallantry', name: 'War Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Krigsmedaljen_stripe.svg/250px-Krigsmedaljen_stripe.svg.png' },
+  { country: 'Norway', branch: 'Norway Gallantry', name: 'Medal for Heroism in Gold', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Medaljen_for_edel_d%C3%A5d_stripe.svg/250px-Medaljen_for_edel_d%C3%A5d_stripe.svg.png' },
+  // Orders
+  { country: 'Norway', branch: 'Norway Orders', name: 'King\'s Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Kongens_fortjenstmedalje.svg/250px-Kongens_fortjenstmedalje.svg.png' },
+  // Service Medals
+  // Long Service
+
+  // ─── SWITZERLAND ─────────────────────────────────────────────────────────────
+
+  // ─── LUXEMBOURG ──────────────────────────────────────────────────────────────
+  { country: 'Luxembourg', branch: 'Luxembourg Orders', name: 'Order of Adolphe of Nassau', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/LUX_Order_of_Adolphe_Nassau_Grand_Cross_BAR.png/250px-LUX_Order_of_Adolphe_Nassau_Grand_Cross_BAR.png' },
+  { country: 'Luxembourg', branch: 'Luxembourg Orders', name: 'Order of Merit of the Grand Duchy', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Grand%27Croix_BAR.svg/250px-LUX_Ordre_de_M%C3%A9rite_du_Grand-Duch%C3%A9_de_Luxembourg_-_Grand%27Croix_BAR.svg.png' },
+  { country: 'Luxembourg', branch: 'Luxembourg Service Medals', name: 'Military Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/LUX_M%C3%A9daille_Militaire_BAR.svg/250px-LUX_M%C3%A9daille_Militaire_BAR.svg.png' },
+
+  // ─── LITHUANIA ───────────────────────────────────────────────────────────────
+  // Order of the Cross of Vytis (military order)
+  { country: 'Lithuania', branch: 'Lithuania Orders', name: 'Order of the Cross of Vytis', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/LTU_Order_of_the_Cross_of_Vytis_-_Grand_Cross_BAR.svg/250px-LTU_Order_of_the_Cross_of_Vytis_-_Grand_Cross_BAR.svg.png' },
+  // Order of Vytautas the Great
+  { country: 'Lithuania', branch: 'Lithuania Orders', name: 'Order of Vytautas the Great', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/LTU_Order_of_Vytautas_the_Great_-_Grand_Cross_BAR.svg/250px-LTU_Order_of_Vytautas_the_Great_-_Grand_Cross_BAR.svg.png' },
+  // Order for Merits to Lithuania
+  { country: 'Lithuania', branch: 'Lithuania Orders', name: 'Order for Merits to Lithuania', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/LTU_Order_for_Merits_to_Lithuania_-_Grand_Cross_BAR.svg/250px-LTU_Order_for_Merits_to_Lithuania_-_Grand_Cross_BAR.svg.png' },
+  // Service Medals
+  { country: 'Lithuania', branch: 'Lithuania Service Medals', name: 'Armed Forces Medal of Merit', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/LTU_Armed_Forces_Medal_of_Merit_BAR.svg/250px-LTU_Armed_Forces_Medal_of_Merit_BAR.svg.png' },
+  { country: 'Lithuania', branch: 'Lithuania Service Medals', name: 'Armed Forces Medal for Distinguished Service', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LTU_Armed_Forces_Medal_for_Distinguished_Service_BAR.svg/250px-LTU_Armed_Forces_Medal_for_Distinguished_Service_BAR.svg.png' },
+  { country: 'Lithuania', branch: 'Lithuania Service Medals', name: 'Armed Forces Medal for Injuries', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/LTU_Armed_Forces_Medal_for_Injuries_BAR.svg/250px-LTU_Armed_Forces_Medal_for_Injuries_BAR.svg.png' },
+  { country: 'Lithuania', branch: 'Lithuania Service Medals', name: 'Armed Forces Medal for Contribution to Mutual Support', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/LTU_Armed_Forces_Medal_for_Contribution_to_Mutual_Support_BAR.svg/250px-LTU_Armed_Forces_Medal_for_Contribution_to_Mutual_Support_BAR.svg.png' },
+  // Commemorative
+  { country: 'Lithuania', branch: 'Lithuania Commemorative', name: 'Commemorative Medal of Accession to NATO', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LTU_NDS_Commemorative_Medal_of_Accession_to_NATO_BAR.svg/250px-LTU_NDS_Commemorative_Medal_of_Accession_to_NATO_BAR.svg.png' },
+  { country: 'Lithuania', branch: 'Lithuania Commemorative', name: 'Commemorative Medal of 13 January', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/LTU_Commemorative_Medal_of_13_January_BAR.svg/250px-LTU_Commemorative_Medal_of_13_January_BAR.svg.png' },
+
+  // ─── LATVIA ───────────────────────────────────────────────────────────────────
+  { country: 'Latvia', branch: 'Latvia Gallantry', name: 'Order of Lacplesis (Military Order)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Lacplesis_Military_Order_Ribbon.png/250px-Lacplesis_Military_Order_Ribbon.png' },
+  { country: 'Latvia', branch: 'Latvia Orders', name: 'Order of the Three Stars', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Order_of_the_Three_Stars_Grand_Cross_BAR_%28Latvia%29.png/250px-Order_of_the_Three_Stars_Grand_Cross_BAR_%28Latvia%29.png' },
+
+  // ─── CHINA (PLA) ─────────────────────────────────────────────────────────────
+  // Highest Orders (wartime)
+  { country: 'China', branch: 'China Gallantry', name: 'Order of the Red Banner', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/PLA_honour_ribbon_order_of_red_banner.svg/250px-PLA_honour_ribbon_order_of_red_banner.svg.png' },
+  { country: 'China', branch: 'China Gallantry', name: 'Order of the Red Star', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/PLA_honour_ribbon_order_of_red_star.svg/250px-PLA_honour_ribbon_order_of_red_star.svg.png' },
+  // Wartime Honorary Titles
+  { country: 'China', branch: 'China Gallantry', name: 'Wartime Honorary Title - Special Class Combat Hero', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/PLA_honour_ribbon_honorary_title_individual_wartime_lv1.svg/250px-PLA_honour_ribbon_honorary_title_individual_wartime_lv1.svg.png' },
+  { country: 'China', branch: 'China Gallantry', name: 'Wartime Honorary Title - 1st Class Combat Hero', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/PLA_honour_ribbon_honorary_title_individual_wartime_lv2.svg/250px-PLA_honour_ribbon_honorary_title_individual_wartime_lv2.svg.png' },
+  { country: 'China', branch: 'China Gallantry', name: 'Wartime Honorary Title - 2nd Class Combat Hero', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/PLA_honour_ribbon_honorary_title_individual_wartime_lv3.svg/250px-PLA_honour_ribbon_honorary_title_individual_wartime_lv3.svg.png' },
+  // Wartime Meritorious Service Medals
+  { country: 'China', branch: 'China Gallantry', name: 'Wartime Meritorious Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv1.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_wartime_lv1.svg.png' },
+  // Medal of Valor
+  { country: 'China', branch: 'China Gallantry', name: 'Medal of Valor (Combat Disabled)', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/PLA_service_ribbon_bravery.svg/250px-PLA_service_ribbon_bravery.svg.png' },
+  // Peacetime Meritorious Service Medals
+  { country: 'China', branch: 'China Service Medals', name: 'Peacetime Meritorious Service Medal', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv1.svg/250px-PLA_honour_ribbon_meritorious_service_medal_individual_peacetime_lv1.svg.png' },
+  // Commendations
+  { country: 'China', branch: 'China Service Medals', name: 'Individual Commendation', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/PLA_honour_ribbon_commendation_for_individual_lv1.svg/250px-PLA_honour_ribbon_commendation_for_individual_lv1.svg.png' },
+  // Branch Honour Awards
+  { country: 'China', branch: 'China Service Medals', name: 'Navy Iron Shield Honour', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Navy_honour_ribbon_lv1.svg/250px-Navy_honour_ribbon_lv1.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Air Force Sky and Space Iron Fist Honour', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/AF_honour_ribbon_lv1.svg/250px-AF_honour_ribbon_lv1.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Rocket Force Sharpening Sword Vanguard Honour', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/RF_honour_ribbon_lv1.svg/250px-RF_honour_ribbon_lv1.svg.png' },
+  // Service Branch Ribbons
+  { country: 'China', branch: 'China Service Medals', name: 'PLA Ground Force Service Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/PLA_service_ribbon_ground_force.svg/250px-PLA_service_ribbon_ground_force.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'PLA Navy Service Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/PLA_service_ribbon_navy.svg/250px-PLA_service_ribbon_navy.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'PLA Air Force Service Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/PLA_service_ribbon_air_force.svg/250px-PLA_service_ribbon_air_force.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'PLA Rocket Force Service Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/PLA_service_ribbon_rocket_force.svg/250px-PLA_service_ribbon_rocket_force.svg.png' },
+  { country: 'China', branch: 'China Service Medals', name: 'Joint Logistics Support Force Service Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/PLA_service_ribbon_joint_logistics_support_force.svg/250px-PLA_service_ribbon_joint_logistics_support_force.svg.png' },
+  // Campaign / Operational Ribbons
+  { country: 'China', branch: 'China Campaign Medals', name: 'Combat Experience Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/PLA_service_ribbon_combat_mission.svg/250px-PLA_service_ribbon_combat_mission.svg.png' },
+  { country: 'China', branch: 'China Campaign Medals', name: 'Major MOOTW Experience Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/PLA_service_ribbon_vital_MOOTW.svg/250px-PLA_service_ribbon_vital_MOOTW.svg.png' },
+  { country: 'China', branch: 'China Campaign Medals', name: 'Overseas Deployment Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/PLA_service_ribbon_overseas_deployment_lv1.svg/250px-PLA_service_ribbon_overseas_deployment_lv1.svg.png' },
+  { country: 'China', branch: 'China Campaign Medals', name: 'Border Defence Service Ribbon', url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/PLA_service_ribbon_medal_of_defending_the_frontiers_lv1.svg/250px-PLA_service_ribbon_medal_of_defending_the_frontiers_lv1.svg.png' },
 ];

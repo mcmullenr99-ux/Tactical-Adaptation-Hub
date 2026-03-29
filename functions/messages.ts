@@ -9,7 +9,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+    return await base44.asServiceRole.entities.AppUser.get(payload.sub) ?? null;
   } catch { return null; }
 }
 
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
       if (!recipientId || !subject || !msgBody) return Response.json({ error: 'recipientId, subject, and body required' }, { status: 400 });
       if (msgBody.length > 5000) return Response.json({ error: 'Message body too long (max 5000 characters)' }, { status: 400 });
       if (subject.length > 200) return Response.json({ error: 'Subject too long (max 200 characters)' }, { status: 400 });
-      const recipient = await base44.asServiceRole.entities.User.get(recipientId);
+      const recipient = await base44.asServiceRole.entities.AppUser.get(recipientId);
       if (!recipient) return Response.json({ error: 'Recipient not found' }, { status: 400 });
       const msg = await base44.asServiceRole.entities.Message.create({
         sender_id: full.id, sender_username: full.username,

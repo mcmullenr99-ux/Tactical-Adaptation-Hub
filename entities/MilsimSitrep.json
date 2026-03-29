@@ -22,14 +22,18 @@
     "position": {
       "type": "string"
     },
+    "activity": {
+      "type": "string"
+    },
     "enemy_contact": {
       "type": "string",
       "enum": [
-        "None",
-        "Possible",
-        "Confirmed",
-        "Engaged"
-      ]
+        "NONE",
+        "POSSIBLE",
+        "CONFIRMED",
+        "ENGAGED"
+      ],
+      "default": "NONE"
     },
     "enemy_notes": {
       "type": "string"
@@ -37,11 +41,12 @@
     "friendly_casualties": {
       "type": "string",
       "enum": [
-        "None",
-        "Minor",
-        "Significant",
-        "Critical"
-      ]
+        "NONE",
+        "LOW",
+        "MODERATE",
+        "HEAVY"
+      ],
+      "default": "NONE"
     },
     "casualty_notes": {
       "type": "string"
@@ -49,11 +54,12 @@
     "mission_status": {
       "type": "string",
       "enum": [
-        "On Track",
-        "Delayed",
-        "Compromised",
-        "Abort"
-      ]
+        "ON TRACK",
+        "DELAYED",
+        "COMPROMISED",
+        "ABORT"
+      ],
+      "default": "ON TRACK"
     },
     "mission_notes": {
       "type": "string"
@@ -63,6 +69,27 @@
     },
     "additional_info": {
       "type": "string"
+    },
+    "eyewitness_confirmations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "callsign": {
+            "type": "string"
+          },
+          "confirmed_at": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "eyewitness_count": {
+      "type": "number",
+      "default": 0
     }
   },
   "required": [],

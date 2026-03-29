@@ -1,3 +1,4 @@
+// v2 - auto-roster CO on group create
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 
@@ -13,7 +14,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+    return await base44.asServiceRole.entities.AppUser.get(payload.sub) ?? null;
   } catch { return null; }
 }
 
@@ -24,7 +25,7 @@ async function recordActivityDateForRoster(base44: any, rosterIds: string[]): Pr
     try {
       const entry = await base44.asServiceRole.entities.MilsimRoster.get(rosterId);
       if (!entry?.user_id) return;
-      const user = await base44.asServiceRole.entities.User.get(entry.user_id);
+      const user = await base44.asServiceRole.entities.AppUser.get(entry.user_id);
       if (!user) return;
       const existing: string[] = Array.isArray(user.activity_dates) ? user.activity_dates : [];
       if (existing.includes(today)) return;
@@ -32,7 +33,7 @@ async function recordActivityDateForRoster(base44: any, rosterIds: string[]): Pr
       cutoff.setDate(cutoff.getDate() - 90);
       const cutoffStr = cutoff.toISOString().slice(0, 10);
       const updated = [...existing.filter((d: string) => d >= cutoffStr), today];
-      await base44.asServiceRole.entities.User.update(entry.user_id, { activity_dates: updated });
+      await base44.asServiceRole.entities.AppUser.update(entry.user_id, { activity_dates: updated });
     } catch {}
   }));
 }
@@ -239,6 +240,29 @@ Deno.serve(async (req: Request) => {
         branch: branch ?? null, unit_type: unitType ?? null,
         games: games ?? null, tags: tags ?? null,
       });
+
+      // Auto-add the commander to the roster as CO
+      const today = new Date().toISOString().split('T')[0];
+      const rosterEntry = await base44.asServiceRole.entities.MilsimRoster.create({
+        group_id: group.id,
+        user_id: full.id,
+        callsign: full.callsign ?? full.username,
+        status: 'Active',
+        join_date: today,
+        ops_count: 0,
+      });
+
+      // Set them as CO in chain of command
+      await base44.asServiceRole.entities.MilsimGroup.update(group.id, {
+        chain_of_command: [{
+          id: crypto.randomUUID(),
+          title: 'Commanding Officer',
+          roster_id: rosterEntry.id,
+          callsign: full.callsign ?? full.username,
+          sort_order: 0,
+        }],
+      });
+
       return new Response(JSON.stringify(await groupFullDetail(base44, group)), { status: 201, headers: cors });
     }
 
@@ -269,6 +293,7 @@ Deno.serve(async (req: Request) => {
       if (body.unitType !== undefined) updates.unit_type = body.unitType;
       if (body.games !== undefined) updates.games = body.games;
       if (body.tags !== undefined) updates.tags = body.tags;
+      if (body.chain_of_command !== undefined) updates.chain_of_command = body.chain_of_command;
       updates.last_page_update = new Date().toISOString();
       await base44.asServiceRole.entities.MilsimGroup.update(parts[0], updates);
       const updated = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
@@ -333,6 +358,19 @@ Deno.serve(async (req: Request) => {
       return new Response(null, { status: 204 });
     }
 
+
+    if (method === 'PATCH' && parts.length === 3 && parts[1] === 'roles' && parts[2] === 'reorder') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: cors });
+      const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
+      if (!group || group.owner_id !== full.id) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: cors });
+      const body = await req.json().catch(() => ({}));
+      // body.order = [{id, sort_order}, ...]
+      const updates = Array.isArray(body.order) ? body.order : [];
+      await Promise.all(updates.map((u: any) => base44.asServiceRole.entities.MilsimRole.update(u.id, { sort_order: u.sort_order })));
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: cors });
+    }
+
     // ── RANKS ────────────────────────────────────────────────────────────────
 
     if (method === 'POST' && parts.length === 2 && parts[1] === 'ranks') {
@@ -354,6 +392,19 @@ Deno.serve(async (req: Request) => {
       if (!group || group.owner_id !== full.id) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: cors });
       await base44.asServiceRole.entities.MilsimRank.delete(parts[2]);
       return new Response(null, { status: 204 });
+    }
+
+
+    if (method === 'PATCH' && parts.length === 3 && parts[1] === 'ranks' && parts[2] === 'reorder') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: cors });
+      const group = await base44.asServiceRole.entities.MilsimGroup.get(parts[0]);
+      if (!group || group.owner_id !== full.id) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: cors });
+      const body = await req.json().catch(() => ({}));
+      // body.order = [{id, sort_order}, ...]
+      const updates = Array.isArray(body.order) ? body.order : [];
+      await Promise.all(updates.map((u: any) => base44.asServiceRole.entities.MilsimRank.update(u.id, { sort_order: u.sort_order })));
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: cors });
     }
 
     // ── ROSTER ────────────────────────────────────────────────────────────────

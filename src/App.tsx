@@ -1,7 +1,7 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
-import { QueryClient } from "@tanstack/react-query";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/components/auth/AuthContext";
@@ -39,6 +39,7 @@ import Register from "@/pages/portal/Register";
 import Dashboard from "@/pages/portal/Dashboard";
 import Inbox from "@/pages/portal/Inbox";
 import Compose from "@/pages/portal/Compose";
+import Comms from "@/pages/portal/Comms";
 import Apply from "@/pages/portal/Apply";
 import ModPanel from "@/pages/portal/ModPanel";
 import AdminPanel from "@/pages/portal/AdminPanel";
@@ -71,12 +72,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Persist cache to localStorage — survives page refreshes and browser restarts
-// buster key = update this string any time you want to wipe old caches
-const persister = createSyncStoragePersister({
-  storage: window.localStorage,
-  key: "tag-query-cache-v1",
-});
 
 function Router() {
   return (
@@ -105,6 +100,7 @@ function Router() {
       <Route path="/portal/dashboard" component={Dashboard} />
       <Route path="/portal/inbox" component={Inbox} />
       <Route path="/portal/compose" component={Compose} />
+      <Route path="/portal/comms" component={Comms} />
       <Route path="/portal/apply" component={Apply} />
       <Route path="/portal/profile" component={Profile} />
       <Route path="/portal/mod" component={ModPanel} />
@@ -129,17 +125,17 @@ function Router() {
 function App() {
   return (
     <ThemeProvider>
-    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 24 * 60 * 60 * 1000 }}>
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <WouterRouter>
             <Router />
           </WouterRouter>
           <Toaster />
           <MacEasterEgg />
         </TooltipProvider>
       </AuthProvider>
-    </PersistQueryClientProvider>
+    </QueryClientProvider>
     </ThemeProvider>
   );
 }

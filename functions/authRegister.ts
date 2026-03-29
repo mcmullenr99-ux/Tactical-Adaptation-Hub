@@ -4,7 +4,7 @@ import { sign } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET     = Deno.env.get('JWT_SECRET')     ?? 'tag-secret-fallback-change-in-production';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
-const APP_URL        = Deno.env.get('APP_URL')        ?? 'https://tacticaladaptationgroup.co.uk';
+const APP_URL        = (Deno.env.get('APP_URL') ?? 'https://tacticaladaptationgroup.co.uk').replace(/\/+$/, '');
 
 // ─── DISPOSABLE EMAIL BLOCKLIST ───────────────────────────────────────────────
 // Covers the most common throwaway / burner providers used for smurf accounts.
@@ -73,7 +73,7 @@ async function isIpRateLimited(base44: any, ip: string): Promise<boolean> {
   if (!ip || ip === 'unknown') return false;
   try {
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const recentByIp = await base44.asServiceRole.entities.User.filter({ registration_ip: ip });
+    const recentByIp = await base44.asServiceRole.entities.AppUser.filter({ registration_ip: ip });
     const recent = recentByIp.filter((u: any) => u.created_date && u.created_date > cutoff);
     return recent.length >= 2;
   } catch { return false; }
@@ -159,12 +159,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Too many accounts registered from this network recently. Please try again later or contact support.' }, { status: 429 });
 
     // ── Duplicate email check ───────────────────────────────────────────────
-    const existingEmail = await base44.asServiceRole.entities.User.filter({ email: cleanEmail });
+    const existingEmail = await base44.asServiceRole.entities.AppUser.filter({ email: cleanEmail });
     if (existingEmail.length > 0)
       return Response.json({ error: 'An account with that email already exists' }, { status: 409 });
 
     // ── Duplicate username check (case-insensitive) ─────────────────────────
-    const allUsers   = await base44.asServiceRole.entities.User.list();
+    const allUsers   = await base44.asServiceRole.entities.AppUser.list();
     const dupUsername = allUsers.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
     if (dupUsername)
       return Response.json({ error: 'That username is already taken' }, { status: 409 });
@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
     const email_verify_token  = generateToken(48);
     const email_verify_expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    const user = await base44.asServiceRole.entities.User.create({
+    const user = await base44.asServiceRole.entities.AppUser.create({
       username,
       full_name: username,              // required by User schema; callsign serves as display name
       email: cleanEmail,

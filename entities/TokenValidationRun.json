@@ -1,0 +1,62 @@
+{
+  "type": "object",
+  "properties": {
+    "validation_id": {
+      "type": "string"
+    },
+    "token_id": {
+      "type": "string"
+    },
+    "provider_name": {
+      "type": "string"
+    },
+    "secret_name": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    },
+    "validation_status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "failed",
+        "inconclusive"
+      ]
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "valid",
+        "missing_secret",
+        "empty_secret",
+        "malformed_token",
+        "wrong_header_format",
+        "wrong_base_url",
+        "wrong_environment",
+        "insufficient_scope",
+        "revoked_token",
+        "expired_token",
+        "provider_auth_failure",
+        "provider_outage",
+        "rate_limited",
+        "account_mismatch",
+        "unknown"
+      ]
+    },
+    "provider_http_status": {
+      "type": "number"
+    },
+    "evidence_summary": {
+      "type": "string"
+    },
+    "masked_fingerprint": {
+      "type": "string"
+    },
+    "checked_endpoint": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "TokenValidationRun"
+}

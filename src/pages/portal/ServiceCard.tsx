@@ -62,13 +62,13 @@ export default function ServiceCard() {
 
   const { data: primaryUnit } = useQuery<any>({
     queryKey: ["my-milsim-group"],
-    queryFn: () => apiFetch("/api/milsim-groups/mine/all").catch(() => null),
+    queryFn: () => apiFetch("/milsimGroups?path=mine/all").catch(() => null),
     staleTime: 60_000,
   });
 
   const { data: repData } = useQuery<any>({
     queryKey: ["my-reputation", user?.id],
-    queryFn: () => user?.id ? apiFetch(`/api/reputation/${user.id}`).catch(() => null) : null,
+    queryFn: () => user?.id ? apiFetch(`/reputation?path=${user.id}`).catch(() => null) : null,
     staleTime: 60_000,
     enabled: !!user?.id,
   });
@@ -102,7 +102,7 @@ export default function ServiceCard() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await apiFetch<{ avatar_url: string }>("/api/auth/upload-avatar", {
+      const res = await apiFetch<{ avatar_url: string }>("/authUpdateProfile?path=upload-avatar", {
         method: "POST",
         body: formData,
       });

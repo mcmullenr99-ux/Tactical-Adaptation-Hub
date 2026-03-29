@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    const users = await base44.asServiceRole.entities.User.filter({ email: email.toLowerCase().trim() });
+    const users = await base44.asServiceRole.entities.AppUser.filter({ email: email.toLowerCase().trim() });
     const user = users[0];
 
     if (!user || !user.password_hash) {
@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     const token = sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
 
     // Update activity tracking
-    await base44.asServiceRole.entities.User.update(user.id, {
+    await base44.asServiceRole.entities.AppUser.update(user.id, {
       last_active_at: new Date().toISOString(),
       login_count: (user.login_count ?? 0) + 1,
     }).catch(() => {}); // non-fatal

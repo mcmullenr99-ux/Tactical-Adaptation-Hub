@@ -54,14 +54,14 @@ export default function OpsCalendar() {
 
   const { data: events = [], isLoading } = useQuery<OpsEvent[]>({
     queryKey: ["ops-events"],
-    queryFn: () => apiFetch<OpsEvent[]>("/api/events"),
+    queryFn: () => apiFetch<OpsEvent[]>("/events"),
   });
 
   const canManage = user && STAFF_ROLES.includes(user.role);
 
   const submitMutation = useMutation({
     mutationFn: (data: typeof form) => {
-      const url = editingEvent ? `/api/events/${editingEvent.id}` : "/api/events";
+      const url = editingEvent ? `/events?path=${editingEvent.id}` : "/events";
       return apiFetch(url, {
         method: editingEvent ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -84,7 +84,7 @@ export default function OpsCalendar() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiFetch(`/api/events/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) => apiFetch(`/events?path=${id}`, { method: "DELETE" }),
     onSuccess: () => { toast({ title: "Event Deleted" }); qc.invalidateQueries({ queryKey: ["ops-events"] }); },
   });
 

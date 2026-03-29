@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     const { email } = await req.json().catch(() => ({}));
     if (!email) return Response.json({ error: 'Email required' }, { status: 400 });
 
-    const users = await base44.asServiceRole.entities.User.filter({ email });
+    const users = await base44.asServiceRole.entities.AppUser.filter({ email });
     // Always respond 200 to prevent user enumeration
     if (!users[0]) return Response.json({ message: 'If that email exists, a reset link has been sent.' });
 

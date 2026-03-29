@@ -3,9 +3,9 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { MainLayout } from "./MainLayout";
 import { useLocation, Link } from "wouter";
 import {
-  Mail, PenTool, LayoutDashboard, ShieldCheck, Settings,
-  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert, Calendar, KeyRound, CreditCard,
-  LifeBuoy, Award,
+  PenTool, LayoutDashboard, ShieldCheck, Settings,
+  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert, Calendar, KeyRound,
+  LifeBuoy, Radio, Mail,
 } from "lucide-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useOutsiderMode } from "@/hooks/useOutsiderMode";
@@ -24,7 +24,7 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
 
   const { data: notifCounts } = useQuery({
     queryKey: ["notification-counts"],
-    queryFn: () => apiFetch("/api/notifications/counts"),
+    queryFn: () => apiFetch("/notifications?path=counts"),
     enabled: isAuthenticated,
     refetchInterval: 30_000,
   });
@@ -77,18 +77,12 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     admin: "text-destructive",
   };
 
-  const unreadMsgs: number = (notifCounts as any)?.unreadMessages ?? 0;
-  const pendingFriends: number = (notifCounts as any)?.pendingFriendRequests ?? 0;
 
   const navLinks = [
     { href: "/portal/dashboard", icon: <LayoutDashboard className="w-4 h-4 text-primary" />, label: "Dashboard" },
-    { href: "/portal/inbox", icon: <Mail className="w-4 h-4 text-primary" />, label: "Comms", badge: unreadMsgs > 0 ? unreadMsgs : 0 },
+    { href: "/portal/comms", icon: <Radio className="w-4 h-4 text-primary" />, label: "Comms" },
     { href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "Unit HQ" },
     { href: "/portal/member-hq", icon: <Users className="w-4 h-4 text-primary" />, label: "Member HQ" },
-    { href: "/portal/friends", icon: <Users className="w-4 h-4 text-primary" />, label: "Connections", badge: pendingFriends > 0 ? pendingFriends : 0 },
-    { href: "/portal/profile", icon: <User className="w-4 h-4 text-primary" />, label: "My Profile" },
-    { href: "/portal/service-card", icon: <CreditCard className="w-4 h-4 text-primary" />, label: "Service Card" },
-    { href: "/portal/ribbon-rack", icon: <Award className="w-4 h-4 text-primary" />, label: "Ribbon Rack" },
     { href: "/portal/support", icon: <LifeBuoy className="w-4 h-4 text-primary" />, label: "Support" },
     { href: "/portal/2fa", icon: <KeyRound className="w-4 h-4 text-primary" />, label: "2FA Security" },
     { href: "/ops", icon: <Calendar className="w-4 h-4 text-primary" />, label: "Ops Calendar" },

@@ -24,7 +24,7 @@ function formatAmount(amount: number, currency: string) {
 function useStripeProducts() {
   return useQuery({
     queryKey: ["stripe-products"],
-    queryFn: () => apiFetch<{ data: any[] }>("/api/stripe/products"),
+    queryFn: () => apiFetch<{ data: any[] }>("/createProCheckout?path=products"),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -32,7 +32,7 @@ function useStripeProducts() {
 function useMe() {
   return useQuery({
     queryKey: ["me"],
-    queryFn: () => apiFetch<{ id: number; username: string } | null>("/api/auth/me").catch(() => null),
+    queryFn: () => apiFetch<{ id: number; username: string } | null>("/authMe").catch(() => null),
     staleTime: 30 * 1000,
   });
 }
@@ -55,7 +55,7 @@ export default function Donate() {
     }
     setLoadingPrice(priceId);
     try {
-      const { url } = await apiFetch<{ url: string }>("/api/stripe/checkout", {
+      const { url } = await apiFetch<{ url: string }>("/createProCheckout", {
         method: "POST",
         body: JSON.stringify({ priceId, mode }),
       });

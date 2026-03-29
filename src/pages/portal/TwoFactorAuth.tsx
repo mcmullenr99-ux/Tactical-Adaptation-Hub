@@ -14,7 +14,7 @@ export default function TwoFactorAuth() {
 
   const { data: status, isLoading: statusLoading } = useQuery<{ enabled: boolean }>({
     queryKey: ["2fa-status"],
-    queryFn: () => apiFetch("/api/auth/2fa/status"),
+    queryFn: () => apiFetch("/twoFactor?path=status"),
   });
 
   const enabled = status?.enabled ?? false;
@@ -38,7 +38,7 @@ export default function TwoFactorAuth() {
   const startSetup = async () => {
     setLoading(true);
     try {
-      const data = await apiFetch("/api/auth/2fa/setup", { method: "POST" });
+      const data = await apiFetch("/twoFactor?path=setup", { method: "POST" });
       setSetupData(data);
       setStep("setup");
       setCode("");
@@ -53,7 +53,7 @@ export default function TwoFactorAuth() {
     if (!code.trim()) return;
     setLoading(true);
     try {
-      const data = await apiFetch("/api/auth/2fa/verify-setup", {
+      const data = await apiFetch("/twoFactor?path=verify-setup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: code.trim() }),
@@ -73,7 +73,7 @@ export default function TwoFactorAuth() {
     if (!password) return;
     setLoading(true);
     try {
-      await apiFetch("/api/auth/2fa/disable", {
+      await apiFetch("/twoFactor?path=disable", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password, code: code.trim() || undefined }),
@@ -93,7 +93,7 @@ export default function TwoFactorAuth() {
   const viewBackupCodes = async () => {
     setLoading(true);
     try {
-      const data = await apiFetch("/api/auth/2fa/backup-codes");
+      const data = await apiFetch("/twoFactor?path=backup-codes");
       setBackupCodes(data.backupCodes ?? []);
       setStep("backup");
     } catch (err: any) {
@@ -107,7 +107,7 @@ export default function TwoFactorAuth() {
     if (!password) { toast({ title: "Password required", variant: "destructive" }); return; }
     setLoading(true);
     try {
-      const data = await apiFetch("/api/auth/2fa/regenerate-backup-codes", {
+      const data = await apiFetch("/twoFactor?path=regenerate-backup-codes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),

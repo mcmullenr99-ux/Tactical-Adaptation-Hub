@@ -33,7 +33,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    const user = await base44.asServiceRole.entities.User.get(payload.sub);
+    const user = await base44.asServiceRole.entities.AppUser.get(payload.sub);
     return user ?? null;
   } catch {
     return null;
@@ -46,14 +46,39 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const url = new URL(req.url);
     const pathOverride = url.searchParams.get('path');
-    const parts = pathOverride
-      ? pathOverride.split('/').filter(Boolean)
+    // Strip query string from pathOverride before splitting into parts
+    // (apiFetch encodes the full path including ?q= into the path= param)
+    const pathForParts = pathOverride ? pathOverride.split('?')[0] : null;
+    const parts = pathForParts
+      ? pathForParts.split('/').filter(Boolean)
       : url.pathname.replace(/^\/functions\/users/, '').split('/').filter(Boolean);
     const method = req.method;
 
+    // GET /users/search?q= — search users by username (for friend finder)
+    // Note: apiFetch encodes full path e.g. /search?q=buffet into pathOverride
+    // parts is built from path stripped of query string, so parts[0] === 'search' correctly
+    // q is extracted from the pathOverride string directly
+    if (method === 'GET' && parts[0] === 'search') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      // Extract q from pathOverride (e.g. "/search?q=buffet") or outer query string
+      let q = (url.searchParams.get('q') ?? '').trim().toLowerCase();
+      if (!q && pathOverride) {
+        const qMatch = pathOverride.match(/[?&]q=([^&]*)/);
+        if (qMatch) q = decodeURIComponent(qMatch[1]).trim().toLowerCase();
+      }
+      if (q.length < 2) return Response.json([]);
+      const all = await base44.asServiceRole.entities.AppUser.list();
+      const results = all
+        .filter((u: any) => u.status === 'active' && u.id !== full.id && u.username?.toLowerCase().includes(q))
+        .slice(0, 20)
+        .map((u: any) => ({ id: u.id, username: u.username, role: u.role, nationality: u.nationality ?? null, bio: u.bio ?? null }));
+      return Response.json(results);
+    }
+
     // GET /users — list users (public, limited fields)
     if (method === 'GET' && parts.length === 0) {
-      const users = await base44.asServiceRole.entities.User.list();
+      const users = await base44.asServiceRole.entities.AppUser.list();
       return Response.json(users
         .filter((u: any) => u.status === 'active')
         .map((u: any) => ({
@@ -66,7 +91,7 @@ Deno.serve(async (req) => {
 
     // GET /users/:id — public profile
     if (method === 'GET' && parts.length === 1 && parts[0] !== 'me') {
-      const user = await base44.asServiceRole.entities.User.get(parts[0]);
+      const user = await base44.asServiceRole.entities.AppUser.get(parts[0]);
       if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
       return Response.json({
         id: user.id, username: user.username, role: user.role,
@@ -92,7 +117,7 @@ Deno.serve(async (req) => {
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       if (full.referral_code) return Response.json({ code: full.referral_code });
       const code = full.username.toUpperCase().slice(0, 6) + Math.random().toString(36).slice(2, 6).toUpperCase();
-      await base44.asServiceRole.entities.User.update(full.id, { referral_code: code });
+      await base44.asServiceRole.entities.AppUser.update(full.id, { referral_code: code });
       return Response.json({ code });
     }
 
@@ -101,7 +126,7 @@ Deno.serve(async (req) => {
       const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       if (!full.referral_code) return Response.json([]);
-      const recruits = await base44.asServiceRole.entities.User.filter({ referred_by: full.referral_code });
+      const recruits = await base44.asServiceRole.entities.AppUser.filter({ referred_by: full.referral_code });
       return Response.json(recruits.map((u: any) => ({ id: u.id, username: u.username, createdAt: u.created_date })));
     }
 
@@ -110,29 +135,70 @@ Deno.serve(async (req) => {
       const full = await getCallerUser(base44, req);
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const body = await req.json().catch(() => ({}));
-      await base44.asServiceRole.entities.User.update(full.id, { on_duty_status: body.status ?? 'available' });
+      await base44.asServiceRole.entities.AppUser.update(full.id, { on_duty_status: body.status ?? 'available' });
       return Response.json({ on_duty_status: body.status });
     }
 
-    // GET /users/profile/:username — public profile by username
+    // GET /users/profile/:username — public profile by username (enriched)
     if (method === 'GET' && parts.length === 2 && parts[0] === 'profile') {
       const username = parts[1];
-      const users = await base44.asServiceRole.entities.User.list();
+      const users = await base44.asServiceRole.entities.AppUser.list();
       const user = users.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
       if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
+
+      // Get milsim roster memberships
+      const rosters = await base44.asServiceRole.entities.MilsimRoster.filter({ user_id: user.id });
+      const milsimGroups: any[] = [];
+      for (const r of (rosters ?? [])) {
+        if (!r.group_id || r.status === 'inactive') continue;
+        try {
+          const g = await base44.asServiceRole.entities.MilsimGroup.get(r.group_id);
+          if (!g) continue;
+          // Get rank label
+          let rankLabel = null;
+          if (r.rank_id) {
+            try { const rank = await base44.asServiceRole.entities.MilsimRank.get(r.rank_id); rankLabel = rank ? `${rank.abbreviation ?? ''} ${rank.name ?? ''}`.trim() : null; } catch {}
+          }
+          // Get role label
+          let roleLabel = null;
+          if (r.role_id) {
+            try { const role = await base44.asServiceRole.entities.MilsimRole.get(r.role_id); roleLabel = role?.name ?? null; } catch {}
+          }
+          milsimGroups.push({
+            group_id: g.id, group_name: g.name, group_slug: g.slug,
+            logo_url: g.logo_url ?? null, country: g.country ?? null,
+            callsign: r.callsign ?? null, rank: rankLabel, role: roleLabel,
+            join_date: r.join_date ?? r.created_date, ops_count: r.ops_count ?? 0,
+            owner_id: g.owner_id, owner_username: g.owner_username,
+            is_owner: g.owner_id === user.id,
+          });
+        } catch {}
+      }
+
+      // Total op count across all groups
+      const total_ops = milsimGroups.reduce((s, g) => s + (g.ops_count ?? 0), 0);
+
+      // Post count
+      let post_count = 0;
+      try { const posts = await base44.asServiceRole.entities.Post.filter({ user_id: user.id }); post_count = (posts ?? []).length; } catch {}
+
       return Response.json({
         id: user.id, username: user.username, role: user.role,
         bio: user.bio ?? null, nationality: user.nationality ?? null,
-        discordTag: user.discord_tag ?? null,
-        on_duty_status: computeDutyStatus(user.activity_dates),
+        discord_tag: user.discord_tag ?? null,
+        avatar_url: user.avatar_url ?? null,
+        is_verified: user.is_verified ?? false,
         createdAt: user.created_date,
+        milsim_groups: milsimGroups,
+        total_ops, post_count,
+        login_count: user.login_count ?? 0,
       });
     }
 
     // GET /users/profile/:username/ribbons — public ribbon rack for a user
     if (method === 'GET' && parts.length === 3 && parts[0] === 'profile' && parts[2] === 'ribbons') {
       const username = parts[1];
-      const users = await base44.asServiceRole.entities.User.list();
+      const users = await base44.asServiceRole.entities.AppUser.list();
       const user = users.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
       if (!user) return Response.json([]);
       // Get rosters for this user

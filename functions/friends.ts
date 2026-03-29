@@ -9,7 +9,7 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    return await base44.asServiceRole.entities.User.get(payload.sub) ?? null;
+    return await base44.asServiceRole.entities.AppUser.get(payload.sub) ?? null;
   } catch { return null; }
 }
 
@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
         base44.asServiceRole.entities.Friendship.filter({ addressee_id: full.id, status: 'accepted' }),
       ]);
       const friendIds = [...asRequester.map((f: any) => f.addressee_id), ...asAddressee.map((f: any) => f.requester_id)];
-      const friends = await Promise.all(friendIds.map((id: string) => base44.asServiceRole.entities.User.get(id)));
+      const friends = await Promise.all(friendIds.map((id: string) => base44.asServiceRole.entities.AppUser.get(id)));
       return Response.json(friends.filter(Boolean).map((u: any) => ({ id: u.id, username: u.username, role: u.role, bio: u.bio ?? null, discord_tag: u.discord_tag ?? null, nationality: u.nationality ?? null })));
     }
 
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const pending = await base44.asServiceRole.entities.Friendship.filter({ addressee_id: full.id, status: 'pending' });
       const withUsers = await Promise.all(pending.map(async (f: any) => {
-        const sender = await base44.asServiceRole.entities.User.get(f.requester_id);
+        const sender = await base44.asServiceRole.entities.AppUser.get(f.requester_id);
         return { friendship_id: f.id, ...f, user: sender };
       }));
       return Response.json(withUsers);
@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
       if (full.id === parts[1]) return Response.json({ error: 'Cannot add yourself' }, { status: 400 });
       const existing = await getFriendship(base44, full.id, parts[1]);
       if (existing) return Response.json({ error: 'Friendship already exists', status: existing.status }, { status: 409 });
-      const other = await base44.asServiceRole.entities.User.get(parts[1]);
+      const other = await base44.asServiceRole.entities.AppUser.get(parts[1]);
       const friendship = await base44.asServiceRole.entities.Friendship.create({
         requester_id: full.id, requester_username: full.username,
         addressee_id: parts[1], addressee_username: other?.username ?? '', status: 'pending',

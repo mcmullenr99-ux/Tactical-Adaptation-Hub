@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { TagLogo } from "@/components/TagLogo";
 import { Link, useLocation } from "wouter";
 import { Menu, X, Sun, Moon } from "lucide-react";
-import { TagLogo } from "@/components/TagLogo";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -54,7 +55,7 @@ export function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group shrink-0">
-            <div className="relative flex items-center justify-center w-[68px] h-[68px] shrink-0 text-foreground group-hover:text-primary transition-colors duration-300">
+            <div className="relative flex items-center justify-center w-[68px] h-[68px] shrink-0 bg-transparent">
               <TagLogo size={68} />
             </div>
             <span className="font-display text-[10px] tracking-[0.2em] text-muted-foreground uppercase hidden sm:block group-hover:text-primary transition-colors">

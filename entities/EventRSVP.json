@@ -14,7 +14,8 @@
       "type": "string",
       "enum": [
         "attending",
-        "declined"
+        "declined",
+        "maybe"
       ],
       "default": "attending"
     }

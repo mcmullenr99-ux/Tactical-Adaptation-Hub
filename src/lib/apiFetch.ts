@@ -2,6 +2,7 @@
 export const FUNCTIONS_BASE = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions";
 
 // Route map: /api/<prefix> → function name
+// NOTE: longest prefix wins — more specific routes must be listed before generic ones
 const ROUTE_MAP: Record<string, string> = {
   "/api/auth/verify-email":      "authVerifyEmail",
   "/api/auth/resend-verification": "authResendVerification",
@@ -43,9 +44,30 @@ const ROUTE_MAP: Record<string, string> = {
   "/api/training-docs":         "trainingDocs",
 };
 
+// Sub-path routes: when a URL matches /api/milsim-groups/:id/<keyword>, route to a different function
+// Key = sub-path keyword, Value = function name
+const MILSIM_GROUP_SUBPATH_MAP: Record<string, string> = {
+  "qualifications": "qualifications",
+  "warnos":         "milsimGroups",
+  "briefings":      "milsimBriefings",
+};
+
 /** Resolve /api/... path to a full Base44 function URL, using ?path= for sub-paths */
 function resolveUrl(path: string): string {
   if (path.startsWith("http")) return path;
+
+  // Special case: /api/milsim-groups/:id/<keyword>/... → route to dedicated function
+  const mgSubMatch = path.match(/^\/api\/milsim-groups\/([^/]+)\/([^/?]+)(.*)?$/);
+  if (mgSubMatch) {
+    const groupId = mgSubMatch[1];
+    const keyword = mgSubMatch[2];
+    const rest = mgSubMatch[3] ?? "";
+    const fn = MILSIM_GROUP_SUBPATH_MAP[keyword];
+    if (fn) {
+      const subPath = `/${groupId}/${keyword}${rest}`;
+      return `${FUNCTIONS_BASE}/${fn}?path=${encodeURIComponent(subPath)}`;
+    }
+  }
 
   // Try longest prefix match
   let bestPrefix = "";
@@ -58,9 +80,8 @@ function resolveUrl(path: string): string {
   }
 
   if (bestFn) {
-    const subPath = path.slice(bestPrefix.length); // e.g. "" or "/mine/own" or "/123/info"
+    const subPath = path.slice(bestPrefix.length);
     if (subPath) {
-      // Pass sub-path as query param since Base44 functions only route at root
       return `${FUNCTIONS_BASE}/${bestFn}?path=${encodeURIComponent(subPath)}`;
     }
     return `${FUNCTIONS_BASE}/${bestFn}`;
