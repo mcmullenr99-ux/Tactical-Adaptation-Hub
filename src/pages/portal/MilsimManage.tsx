@@ -1458,10 +1458,10 @@ function CustomisationTab({ group, showMsg }: any) {
   return (
     <div className="space-y-4">
       {/* Sub-tab pills */}
-      <div className="flex items-center gap-2 border-b border-border pb-3 overflow-x-auto scrollbar-none flex-nowrap">
+      <div className="grid grid-cols-4 gap-1.5 border-b border-border pb-3">
         {SUB_TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setSub(id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-display font-bold uppercase tracking-wider transition-all border shrink-0 whitespace-nowrap ${
+            className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded text-xs font-display font-bold uppercase tracking-wider transition-all border ${
               sub === id ? "bg-primary/15 border-primary/50 text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60"
             }`}>
             <Icon className="w-3.5 h-3.5" />{label}
@@ -2554,10 +2554,10 @@ function EventsTab({ group, showMsg }: any) {
   ];
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 border-b border-border pb-3 overflow-x-auto scrollbar-none flex-nowrap">
+      <div className="grid grid-cols-4 gap-1.5 border-b border-border pb-3">
         {SUB_TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setSub(id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-display font-bold uppercase tracking-wider transition-all border shrink-0 whitespace-nowrap ${
+            className={`flex items-center justify-center gap-1.5 px-2 py-1.5 rounded text-xs font-display font-bold uppercase tracking-wider transition-all border ${
               sub === id ? "bg-primary/15 border-primary/50 text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/60"
             }`}>
             <Icon className="w-3.5 h-3.5" />{label}
