@@ -38,7 +38,8 @@ import {
   Loader2,
   Map,
   MapPin,
-  Medal, Search,
+  Medal,
+  Search,
   Megaphone,
   Pencil,
   PlaneTakeoff,
@@ -48,6 +49,7 @@ import {
   Zap,
   Save,
   Shield,
+  ShieldCheck,
   Siren,
   Star,
   Target,
@@ -69,11 +71,8 @@ import {
   Bell,
   ChevronRight,
   Download,
-  Zap,
-  Eye,
   BrainCircuit,
   TrendingDown,
-  Crosshair,
   FlaskConical
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
