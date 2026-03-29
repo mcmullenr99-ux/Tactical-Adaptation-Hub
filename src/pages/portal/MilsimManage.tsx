@@ -765,17 +765,18 @@ interface CoCPosition {
 function ChainOfCommandTab({ group, onUpdated, showMsg }: any) {
   const [positions, setPositions] = useState<CoCPosition[]>(() => {
     const saved: CoCPosition[] = Array.isArray(group.chain_of_command) ? group.chain_of_command : [];
-    // Merge defaults with saved — saved overrides defaults, preserve extras
     const map: Record<string, CoCPosition> = {};
     DEFAULT_COC_POSITIONS.forEach(d => { map[d.id] = { ...d, roster_id: "", callsign: "" }; });
     saved.forEach((s: CoCPosition) => { map[s.id] = s; });
-    // Add any extra saved positions not in defaults
     saved.forEach((s: CoCPosition) => { if (!map[s.id]) map[s.id] = s; });
     return Object.values(map).sort((a, b) => a.sort_order - b.sort_order);
   });
   const [saving, setSaving] = useState(false);
   const [addingNew, setAddingNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const dragItem = useRef<number | null>(null);
+  const dragOver = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const roster: any[] = group.roster ?? [];
 
@@ -802,6 +803,31 @@ function ChainOfCommandTab({ group, onUpdated, showMsg }: any) {
     setAddingNew(false);
   };
 
+  const handleDragStart = (idx: number) => {
+    dragItem.current = idx;
+  };
+  const handleDragEnter = (idx: number) => {
+    dragOver.current = idx;
+    setDragOverIdx(idx);
+  };
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOver.current === null || dragItem.current === dragOver.current) {
+      dragItem.current = null;
+      dragOver.current = null;
+      setDragOverIdx(null);
+      return;
+    }
+    setPositions(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(dragItem.current!, 1);
+      next.splice(dragOver.current!, 0, moved);
+      return next.map((p, i) => ({ ...p, sort_order: i + 1 }));
+    });
+    dragItem.current = null;
+    dragOver.current = null;
+    setDragOverIdx(null);
+  };
+
   const save = async () => {
     setSaving(true);
     try {
@@ -823,7 +849,7 @@ function ChainOfCommandTab({ group, onUpdated, showMsg }: any) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-display font-bold uppercase tracking-widest text-sm text-foreground">Chain of Command</h3>
-          <p className="text-xs text-muted-foreground font-sans mt-1">Assign roster members to command positions. Titles are fully editable — use whatever terminology your unit uses.</p>
+          <p className="text-xs text-muted-foreground font-sans mt-1">Drag rows to reorder. Assign roster members to command positions. Titles are fully editable.</p>
         </div>
         <button onClick={save} disabled={saving}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded font-display font-bold uppercase tracking-widest text-xs hover:bg-primary/90 transition-colors disabled:opacity-60">
@@ -834,12 +860,36 @@ function ChainOfCommandTab({ group, onUpdated, showMsg }: any) {
 
       <div className="space-y-2">
         {positions.map((pos, idx) => (
-          <div key={pos.id} className="bg-card border border-border rounded p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div
+            key={pos.id}
+            draggable
+            onDragStart={() => handleDragStart(idx)}
+            onDragEnter={() => handleDragEnter(idx)}
+            onDragEnd={handleDragEnd}
+            onDragOver={e => e.preventDefault()}
+            className={[
+              "bg-card border rounded p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 transition-all select-none",
+              dragOverIdx === idx && dragItem.current !== idx
+                ? "border-primary/70 bg-primary/5 scale-[1.01]"
+                : "border-border"
+            ].join(" ")}
+          >
+            {/* Drag handle */}
+            <div className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 pt-0.5" title="Drag to reorder">
+              <svg width="12" height="20" viewBox="0 0 12 20" fill="currentColor">
+                <circle cx="3" cy="4" r="1.5"/><circle cx="9" cy="4" r="1.5"/>
+                <circle cx="3" cy="10" r="1.5"/><circle cx="9" cy="10" r="1.5"/>
+                <circle cx="3" cy="16" r="1.5"/><circle cx="9" cy="16" r="1.5"/>
+              </svg>
+            </div>
+            {/* Position number */}
+            <span className="text-[10px] font-display font-bold text-muted-foreground/50 tracking-widest shrink-0 w-5 text-center">{idx + 1}</span>
             {/* Position title — editable */}
             <div className="flex-1 min-w-0">
               <input
                 value={pos.title}
                 onChange={e => updatePosition(pos.id, "title", e.target.value)}
+                onMouseDown={e => e.stopPropagation()}
                 className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-display font-bold uppercase tracking-wider text-foreground focus:outline-none focus:border-primary transition-colors"
                 placeholder="Position title…"
               />
@@ -849,6 +899,7 @@ function ChainOfCommandTab({ group, onUpdated, showMsg }: any) {
               <select
                 value={pos.roster_id}
                 onChange={e => updatePosition(pos.id, "roster_id", e.target.value)}
+                onMouseDown={e => e.stopPropagation()}
                 className="w-full bg-background border border-border rounded px-3 py-2 text-sm font-sans text-foreground focus:outline-none focus:border-primary transition-colors"
               >
                 <option value="">— Unassigned —</option>
