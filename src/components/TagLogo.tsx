@@ -14,9 +14,11 @@ export function TagLogo({ size = 200, className = "", variant = "helmet" }: TagL
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
+  const base = import.meta.env.BASE_URL;
+
   const src = variant === "skull"
-    ? (isDark ? "/images/tag-skull-dark.png" : "/images/tag-skull-light.png")
-    : (isDark ? "/images/tag-logo-dark.png"  : "/images/tag-logo-light.png");
+    ? (isDark ? `${base}images/tag-skull-dark.png` : `${base}images/tag-skull-light.png`)
+    : (isDark ? `${base}images/tag-logo-dark.png`  : `${base}images/tag-logo-light.png`);
 
   return (
     <img
