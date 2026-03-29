@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "pattern_name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "linked_incident_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "common_failure_mode": {
+      "type": "string"
+    },
+    "prevention_rule": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "DiagnosticRecurringPattern"
+}

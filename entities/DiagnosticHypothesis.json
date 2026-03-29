@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "properties": {
+    "incident_id": {
+      "type": "string"
+    },
+    "hypothesis_name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "confidence_score": {
+      "type": "number"
+    },
+    "supporting_evidence": {
+      "type": "string"
+    },
+    "contradicting_evidence": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "ruled_out",
+        "confirmed",
+        "insufficient_evidence"
+      ]
+    },
+    "times_tested": {
+      "type": "number"
+    },
+    "reopened_reason": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "DiagnosticHypothesis"
+}

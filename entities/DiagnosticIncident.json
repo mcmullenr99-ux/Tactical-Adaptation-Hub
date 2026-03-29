@@ -1,0 +1,86 @@
+{
+  "type": "object",
+  "properties": {
+    "incident_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "investigating",
+        "blocked",
+        "resolved"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "issue_type": {
+      "type": "string",
+      "enum": [
+        "bug",
+        "deployment_failure",
+        "cache_issue",
+        "build_issue",
+        "config_issue",
+        "routing_issue",
+        "unknown"
+      ]
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "local",
+        "preview",
+        "staging",
+        "production",
+        "unknown"
+      ]
+    },
+    "symptom_summary": {
+      "type": "string"
+    },
+    "expected_behavior": {
+      "type": "string"
+    },
+    "actual_behavior": {
+      "type": "string"
+    },
+    "affected_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "affected_components": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "current_working_summary": {
+      "type": "string"
+    },
+    "final_root_cause": {
+      "type": "string"
+    },
+    "final_resolution": {
+      "type": "string"
+    },
+    "prevention_notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "DiagnosticIncident"
+}

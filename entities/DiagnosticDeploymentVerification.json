@@ -1,0 +1,70 @@
+{
+  "type": "object",
+  "properties": {
+    "incident_id": {
+      "type": "string"
+    },
+    "deployment_id": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "preview",
+        "staging",
+        "production",
+        "unknown"
+      ]
+    },
+    "route_or_domain": {
+      "type": "string"
+    },
+    "expected_version": {
+      "type": "string"
+    },
+    "observed_version": {
+      "type": "string"
+    },
+    "origin_status": {
+      "type": "string"
+    },
+    "edge_status": {
+      "type": "string"
+    },
+    "cache_status": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "fresh",
+        "stale",
+        "mixed"
+      ]
+    },
+    "asset_status": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "correct",
+        "stale",
+        "mismatched"
+      ]
+    },
+    "verification_result": {
+      "type": "string",
+      "enum": [
+        "live_and_correct",
+        "deployed_not_live",
+        "wrong_environment",
+        "stale_cache",
+        "mismatched_assets",
+        "unrelated_fix",
+        "inconclusive"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "DiagnosticDeploymentVerification"
+}

@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "properties": {
+    "incident_id": {
+      "type": "string"
+    },
+    "hypothesis_id": {
+      "type": "string"
+    },
+    "attempt_type": {
+      "type": "string",
+      "enum": [
+        "fix",
+        "diagnostic",
+        "deployment",
+        "cache_purge",
+        "config_change",
+        "routing_change",
+        "build_validation",
+        "verification"
+      ]
+    },
+    "action_taken": {
+      "type": "string"
+    },
+    "systems_touched": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "deployment_id": {
+      "type": "string"
+    },
+    "expected_result": {
+      "type": "string"
+    },
+    "actual_result": {
+      "type": "string"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "failed",
+        "partial",
+        "succeeded"
+      ]
+    },
+    "failure_reason": {
+      "type": "string"
+    },
+    "evidence_produced": {
+      "type": "string"
+    },
+    "next_unexplored_branch": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "DiagnosticAttemptLog"
+}
