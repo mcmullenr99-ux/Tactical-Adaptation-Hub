@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Plus, Trash2, Save, ZoomIn, ZoomOut, Download, Copy, X, Edit3, Table2, Users, ChevronDown, ChevronUp, Flag } from "lucide-react";
+import { Plus, Trash2, Save, ZoomIn, ZoomOut, Download, Copy, X, Edit3, Table2, Users, ChevronDown, ChevronUp, Flag, ImagePlus, Loader2, ChevronsDownUp, ChevronsUpDown, FileText, Lock, Unlock, ArrowLeft } from "lucide-react";
 
 export type Affiliation = "friendly" | "hostile" | "neutral" | "unknown";
 export type Echelon = "" | "fireteam" | "squad" | "section" | "platoon" | "staffel" | "company" | "battalion" | "regiment" | "brigade" | "division" | "corps" | "army" | "theater" | "command";
@@ -21,6 +21,8 @@ export interface OrbatNode {
   weaponsChart?: WeaponEntry[]; vehiclesChart?: WeaponEntry[];
   weaponsChartFor?: string; vehiclesChartFor?: string;
   weaponsCols?: ChartColumn[]; vehiclesCols?: ChartColumn[];
+  pinX?: number; pinY?: number;
+  stackCount?: number;
 }
 
 function generateId() { return Math.random().toString(36).slice(2, 10); }
@@ -31,6 +33,64 @@ function defaultNode(o: Partial<OrbatNode> = {}): OrbatNode {
 }
 
 // ─── Site-matching monochrome theme ──────────────────────────────────────────
+// ─── Chart Themes ─────────────────────────────────────────────────────────────
+export type ChartTheme = "dark" | "light" | "colour";
+
+interface ThemePalette {
+  bg:string; bgCard:string; bgPanel:string; bgInput:string;
+  border:string; borderHover:string; text:string; textMuted:string;
+  textDim:string; primary:string; primaryFg:string; danger:string;
+  canvasBg:string; lineColor:string;
+}
+
+const THEMES: Record<ChartTheme, ThemePalette> = {
+  dark: {
+    bg:"hsl(0,0%,5%)", bgCard:"hsl(0,0%,8%)", bgPanel:"hsl(0,0%,6%)", bgInput:"hsl(0,0%,12%)",
+    border:"hsl(0,0%,17%)", borderHover:"hsl(0,0%,28%)",
+    text:"hsl(0,0%,92%)", textMuted:"hsl(0,0%,56%)", textDim:"hsl(0,0%,35%)",
+    primary:"hsl(0,0%,90%)", primaryFg:"hsl(0,0%,5%)", danger:"hsl(0,65%,48%)",
+    canvasBg:"hsl(0,0%,5%)", lineColor:"hsl(0,0%,60%)",
+  },
+  light: {
+    bg:"#f5f5f0", bgCard:"#ffffff", bgPanel:"#efefea", bgInput:"#e8e8e4",
+    border:"#222222", borderHover:"#444444",
+    text:"#111111", textMuted:"#555555", textDim:"#888888",
+    primary:"#111111", primaryFg:"#ffffff", danger:"#cc2222",
+    canvasBg:"#f5f5f0", lineColor:"#222222",
+  },
+  colour: {
+    bg:"#1a1a1a", bgCard:"#ffffff", bgPanel:"#111111", bgInput:"#1e1e1e",
+    border:"#111111", borderHover:"#333333",
+    text:"#111111", textMuted:"#444444", textDim:"#666666",
+    primary:"#111111", primaryFg:"#ffffff", danger:"#cc2222",
+    canvasBg:"#1a1a1a", lineColor:"#111111",
+  },
+};
+
+// ─── Arm colour fills (used in "colour" theme) ─────────────────────────────────
+const ARM_COLOURS: Record<string, string> = {
+  infantry:"#5a8a3c", infantry_airborne:"#5a8a3c", infantry_air_assault:"#5a8a3c",
+  infantry_armored:"#5a8a3c", infantry_amphibious:"#5a8a3c", infantry_arctic:"#5a8a3c",
+  infantry_mountain:"#5a8a3c", infantry_motorized:"#5a8a3c", ranger:"#5a8a3c",
+  special_forces:"#5a8a3c", sniper:"#5a8a3c", machine_gun:"#5a8a3c",
+  dismounted_atgm:"#5a8a3c", sof:"#5a8a3c", sfa:"#5a8a3c", weapons:"#5a8a3c",
+  armor:"#c8a830", armor_half_tracked:"#c8a830", mechanized:"#c8a830", cavalry:"#c8a830",
+  artillery:"#cc3333", field_artillery:"#cc3333", rocket_artillery:"#cc3333",
+  mortar:"#cc3333", antitank:"#cc3333", air_defense:"#cc3333",
+  aviation:"#003399", aviation_attack:"#003399", aviation_utility:"#003399",
+  aviation_fixed_wing:"#003399", aviation_uav:"#003399", atc:"#003399",
+  engineering:"#c87830", combat_engineer:"#c87830", bridging:"#c87830", obstacle:"#c87830", pioneer:"#c87830",
+  signal:"#9933cc", signals:"#9933cc", electronic_warfare:"#9933cc", cyber:"#9933cc", psyops:"#9933cc",
+  logistics:"#888888", medical:"#cc3366", supply:"#888888", maintenance:"#888888",
+  transport:"#888888", quartermaster:"#888888", ordnance:"#888888",
+  military_police:"#003366", intelligence:"#336633", recon:"#c8a830",
+  hq:"#aad4f5", command:"#aad4f5", css:"#888888", support:"#888888",
+};
+
+// Current theme — defaults to dark, can be changed at runtime via context
+let _chartTheme: ChartTheme = "dark";
+function getT(): ThemePalette { return THEMES[_chartTheme]; }
+
 // Mirrors the CSS variables from index.css dark mode
 const T = {
   bg: "hsl(0,0%,5%)",          // --background dark
@@ -260,9 +320,12 @@ function UnitIcon({ type, affiliation, size=48, fillColor, flagCode }: {
 const NW=120,NH=92,HG=32,VG=72,TS=48;
 interface LN { node:OrbatNode; x:number; y:number; }
 function lc(n:OrbatNode):number { if(n.collapsed||!n.children.length)return 1; return n.children.reduce((s,c)=>s+lc(c),0); }
+
+// Layout: parent centred over its subtree, children spaced across level below
 function layout(node:OrbatNode,sx:number,d:number):LN[] {
   const res:LN[]=[];
   const tw=lc(node)*(NW+HG);
+  // parent x = centre of its subtree column
   res.push({node,x:sx+tw/2,y:d*(NH+VG)});
   if(!node.collapsed&&node.children.length){
     let cx=sx;
@@ -270,17 +333,37 @@ function layout(node:OrbatNode,sx:number,d:number):LN[] {
   }
   return res;
 }
-function edges(nodes:LN[]){
+
+// Edges: classic military org-chart style
+// - single child: straight drop from parent bottom-centre
+// - multiple children: drop from parent bottom-centre, horizontal bus at mid-gap,
+//   then each child gets a short vertical stub down from the bus to its top
+// All connectors enter the top-centre of child nodes
+function edges(nodes:LN[]):{x1:number;y1:number;x2:number;y2:number}[]{
   const byId=new Map(nodes.map(n=>[n.node.id,n]));
   const e:{x1:number;y1:number;x2:number;y2:number}[]=[];
   for(const ln of nodes){
     if(ln.node.collapsed)continue;
-    for(const c of ln.node.children){
-      const cl=byId.get(c.id);if(!cl)continue;
-      const py=ln.y+NH+14,my=ln.y+NH+VG/2;
-      e.push({x1:ln.x,y1:py,x2:ln.x,y2:my});
-      e.push({x1:ln.x,y1:my,x2:cl.x,y2:my});
-      e.push({x1:cl.x,y1:my,x2:cl.x,y2:cl.y-2});
+    const kids=ln.node.children.map(c=>byId.get(c.id)).filter(Boolean) as LN[];
+    if(!kids.length)continue;
+    const parentBottom=ln.y+NH;
+    const busY=ln.y+NH+VG/2; // horizontal bus runs at mid-gap between parent bottom and children top
+    if(kids.length===1){
+      // straight drop
+      e.push({x1:ln.x,y1:parentBottom,x2:ln.x,y2:busY});
+      e.push({x1:ln.x,y1:busY,x2:kids[0].x,y2:busY});
+      e.push({x1:kids[0].x,y1:busY,x2:kids[0].x,y2:kids[0].y});
+    } else {
+      // drop from parent to bus
+      e.push({x1:ln.x,y1:parentBottom,x2:ln.x,y2:busY});
+      // horizontal bus spanning from first child to last child
+      const leftX=kids[0].x;
+      const rightX=kids[kids.length-1].x;
+      e.push({x1:leftX,y1:busY,x2:rightX,y2:busY});
+      // stub down from bus to each child top
+      for(const cl of kids){
+        e.push({x1:cl.x,y1:busY,x2:cl.x,y2:cl.y});
+      }
     }
   }
   return e;
@@ -306,16 +389,126 @@ function UnitCard({ln,onEdit,onAdd,onDel,onDup,onToggle,ro,onRootDragStart,isRoo
   const enter=()=>{if(timer.current)clearTimeout(timer.current);setShow(true);};
   const leave=()=>{timer.current=setTimeout(()=>setShow(false),700);};
 
+
+  const th=getT();
+  // In "colour" theme, use arm colour as fill; otherwise use node's custom fillColor or affiliation default
+  const armFill=undefined; // theme colour mode removed
+  const cardBg=node.fillColor||th.bgCard;
+  const cardText=th.text;
+  const cardBorder=th.border;
+
   return(
-    <div style={{position:"absolute",left:x-NW/2,top:y,width:NW,cursor:isRoot?"grab":"default"}} onMouseEnter={enter} onMouseLeave={leave}
+    <div style={{position:"absolute",left:x-NW/2,top:y,width:NW,cursor:"default",background:"none",backgroundColor:"rgba(0,0,0,0)",overflow:"visible",boxShadow:"none",border:"none",outline:"none",WebkitTapHighlightColor:"transparent"}}
+      onMouseEnter={enter} onMouseLeave={leave}
       onMouseDown={isRoot&&onRootDragStart?(e)=>{onRootDragStart(e,node.id);}:undefined}>
-      {/* Echelon */}
-      <div style={{textAlign:"center",height:16,lineHeight:"16px",marginBottom:2}}>
-        <span style={{fontSize:11,fontWeight:700,color:T.text,letterSpacing:1,fontFamily:"serif"}}>{em}</span>
+
+      {/* Stack depth cards — tight clones offset behind the node, matching colour & flag */}
+      {(node.stackCount??1)>1&&Array.from({length:Math.min((node.stackCount??1)-1,3)},(_,i)=>{
+        const off=(i+1)*3;
+        const stackOpacity=0.55-i*0.12;
+        return(
+          <div key={i} style={{
+            position:"absolute",
+            top:16+off,
+            left:off,
+            width:NW,
+            height:NH-16,
+            background:cardBg,
+            border:`1px solid ${cardBorder}`,
+            borderRadius:3,
+            zIndex:-1-i,
+            pointerEvents:"none",
+            opacity:stackOpacity,
+            overflow:"hidden",
+          }}>
+            {/* Flag strip if node has a flag — mirrors main card */}
+            {node.flagCode&&(
+              <div style={{
+                position:"absolute",top:0,left:0,right:0,bottom:0,
+                backgroundImage:`url(https://flagcdn.com/w40/${node.flagCode.toLowerCase()}.png)`,
+                backgroundSize:"cover",backgroundPosition:"center",
+                opacity:0.18,
+              }}/>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Echelon mark — sits above the card box */}
+      <div style={{textAlign:"center",height:16,lineHeight:"16px",marginBottom:1,background:"transparent"}}>
+        <span style={{fontSize:12,fontWeight:700,color:"#ffffff",letterSpacing:2,fontFamily:"serif",textShadow:"0 1px 4px rgba(0,0,0,0.95)"}}>{em}</span>
       </div>
-      {/* Action bar */}
+
+      {/* Modifier badge top-right */}
+      {mod&&<div style={{position:"absolute",top:0,right:-2,zIndex:10,background:th.bgCard,border:`1px solid ${cardBorder}`,color:cardText,fontSize:8,fontWeight:700,padding:"1px 3px",borderRadius:2,fontFamily:"monospace"}}>{mod}</div>}
+
+      {/* Main card box — transparent, no border, just symbol + label floating */}
+      <div onClick={()=>!ro&&onEdit(node)}
+        style={{
+          border:"none",borderRadius:2,
+          background:"transparent",backgroundColor:"transparent",cursor:ro?"default":"pointer",
+          overflow:"visible",position:"relative",
+          boxShadow:"none",
+        }}>
+
+        {/* Designation line above symbol — e.g. "505th Infantry" */}
+        {node.designation&&(
+          <div style={{textAlign:"center",fontSize:8,fontWeight:700,color:cardText,
+            fontFamily:"monospace",lineHeight:"14px",borderBottom:`1px solid ${cardBorder}`,
+            background:"transparent",
+            padding:"0 2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+            {node.designation}
+          </div>
+        )}
+
+        {/* NATO symbol centred in the box */}
+        <div style={{display:"flex",justifyContent:"center",alignItems:"center",padding:"4px 0",position:"relative"}}>
+          <UnitIcon type={node.unitType} affiliation={node.affiliation} size={40}
+            fillColor={armFill||node.fillColor||undefined} flagCode={node.flagCode}/>
+          {(node.rosterSlots&&node.rosterSlots.length>0)&&
+            <div style={{position:"absolute",bottom:2,right:4,background:th.primary,borderRadius:"50%",
+              width:12,height:12,display:"flex",alignItems:"center",justifyContent:"center",
+              fontSize:7,fontWeight:700,color:th.primaryFg}}>{node.rosterSlots.length}</div>}
+        </div>
+
+        {/* Label below symbol, inside box, with a top separator */}
+        <div style={{background:"transparent",padding:"2px 3px",textAlign:"center"}}>
+          <div style={{fontSize:9,fontWeight:700,color:"#ffffff",lineHeight:1.3,
+            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+            textShadow:"0 1px 3px rgba(0,0,0,0.9),0 0 6px rgba(0,0,0,0.9)"}} title={node.label}>
+            {node.label}
+          </div>
+          {node.nickname&&<div style={{fontSize:8,color:armFill?"rgba(0,0,0,0.6)":th.textMuted,
+            fontStyle:"italic",lineHeight:1.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+            "{node.nickname}"
+          </div>}
+          {(node.officers||node.enlisted)&&
+            <div style={{fontSize:7,color:armFill?"rgba(0,0,0,0.5)":th.textDim,marginTop:1}}>
+              {node.officers?`${node.officers}O`:""}{node.officers&&node.enlisted?"/":""}{node.enlisted?`${node.enlisted}E`:""}
+            </div>}
+          {node.description&&node.description.trim()&&(
+            <div style={{
+              marginTop:3,padding:"2px 3px",
+              borderTop:`1px solid ${cardBorder}`,
+              background:"rgba(0,0,0,0.18)",
+              fontSize:7,color:th.textMuted,
+              lineHeight:1.35,textAlign:"left",
+              wordBreak:"break-word" as const,
+              whiteSpace:"pre-wrap" as const,
+              maxHeight:36,overflow:"hidden",
+            }}>
+              {node.description.trim()}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Action bar — appears on hover */}
       {show&&!ro&&(
-        <div onMouseEnter={enter} onMouseLeave={leave} style={{position:"absolute",top:-30,left:"50%",transform:"translateX(-50%)",display:"flex",gap:2,background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:5,padding:"3px 5px",zIndex:30,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,0.6)"}}>
+        <div onMouseEnter={enter} onMouseLeave={leave}
+          style={{position:"absolute",top:-30,left:"50%",transform:"translateX(-50%)",display:"flex",gap:2,
+            background:th.bgCard,border:`1px solid ${th.border}`,borderRadius:5,padding:"3px 5px",
+            zIndex:30,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,0.6)"}}>
           {[
             {icon:<Plus size={11}/>,fn:()=>onAdd(node.id),t:"Add child"},
             {icon:<Edit3 size={11}/>,fn:()=>onEdit(node),t:"Edit"},
@@ -323,28 +516,20 @@ function UnitCard({ln,onEdit,onAdd,onDel,onDup,onToggle,ro,onRootDragStart,isRoo
             {icon:<Trash2 size={11}/>,fn:()=>onDel(node.id),t:"Delete"},
           ].map((b,i)=>(
             <button key={i} onClick={e=>{e.stopPropagation();b.fn();}} title={b.t}
-              style={{background:"transparent",border:"none",cursor:"pointer",color:T.textMuted,padding:"2px 4px",borderRadius:3,display:"flex",alignItems:"center"}}
-              onMouseEnter={e=>e.currentTarget.style.color=T.primary}
-              onMouseLeave={e=>e.currentTarget.style.color=T.textMuted}
+              style={{background:"transparent",border:"none",cursor:"pointer",color:th.textMuted,padding:"2px 4px",borderRadius:3,display:"flex",alignItems:"center"}}
+              onMouseEnter={e=>e.currentTarget.style.color=th.primary}
+              onMouseLeave={e=>e.currentTarget.style.color=th.textMuted}
             >{b.icon}</button>
           ))}
         </div>
       )}
-      {/* Icon + label */}
-      <div onClick={()=>!ro&&onEdit(node)} style={{display:"flex",flexDirection:"column",alignItems:"center",cursor:ro?"default":"pointer",position:"relative"}}>
-        {mod&&<div style={{position:"absolute",top:0,right:-2,zIndex:10,background:T.bgCard,border:`1px solid ${T.border}`,color:T.text,fontSize:8,fontWeight:700,padding:"1px 3px",borderRadius:3,fontFamily:"monospace"}}>{mod}</div>}
-        <div style={{position:"relative"}}>
-          <UnitIcon type={node.unitType} affiliation={node.affiliation} size={42} fillColor={node.fillColor} flagCode={node.flagCode}/>
-          {node.designation&&<div style={{position:"absolute",top:2,left:4,fontSize:8,fontWeight:700,color:"#000",fontFamily:"monospace",pointerEvents:"none"}}>{node.designation}</div>}
-          {(node.rosterSlots&&node.rosterSlots.length>0)&&<div style={{position:"absolute",bottom:2,right:2,background:T.primary,borderRadius:"50%",width:12,height:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:7,fontWeight:700,color:T.primaryFg}}>{node.rosterSlots.length}</div>}
-        </div>
-        <div style={{marginTop:4,textAlign:"center",width:NW}}>
-          <div style={{fontSize:10,fontWeight:700,color:T.text,lineHeight:1.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={node.label}>{node.label}</div>
-          {node.nickname&&<div style={{fontSize:9,color:T.textMuted,fontStyle:"italic",lineHeight:1.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>"{node.nickname}"</div>}
-          {(node.officers||node.enlisted)&&<div style={{fontSize:8,color:T.textDim,marginTop:1}}>{node.officers?`${node.officers}O`:""}{node.officers&&node.enlisted?"/":""}{node.enlisted?`${node.enlisted}E`:""}</div>}
-        </div>
-      </div>
-      {hasCh&&<button onClick={e=>{e.stopPropagation();onToggle(node.id);}} style={{position:"absolute",bottom:-13,left:"50%",transform:"translateX(-50%)",background:T.bgCard,border:`1px solid ${T.border}`,borderRadius:"50%",width:13,height:13,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:T.textMuted,padding:0}}>
+
+      {/* Collapse/expand toggle */}
+      {hasCh&&<button onClick={e=>{e.stopPropagation();onToggle(node.id);}}
+        style={{position:"absolute",bottom:-13,left:"50%",transform:"translateX(-50%)",
+          background:th.bgCard,border:`1px solid ${th.border}`,borderRadius:"50%",
+          width:13,height:13,display:"flex",alignItems:"center",justifyContent:"center",
+          cursor:"pointer",color:th.textMuted,padding:0}}>
         {node.collapsed?<ChevronDown size={7}/>:<ChevronUp size={7}/>}
       </button>}
     </div>
@@ -425,6 +610,63 @@ const WEAPONS_TEMPLATES:Record<string,{cols:ChartColumn[];rows:WeaponEntry[]}> =
     cols:[{id:"pl",label:"Pl HQ"},{id:"mg",label:"MG Sect"},{id:"mor",label:"Mor Sect"},{id:"at",label:"AT Sect"}],
     rows:[{name:"GPMG / HMG",pl:"",mg:"4",mor:"",at:""},{name:"Mortar (81mm)",pl:"",mg:"",mor:"4",at:""},{name:"ATGM (Javelin/NLAW/Milan)",pl:"",mg:"",mor:"",at:"4"},{name:"Sniper Rifle",pl:"2",mg:"",mor:"",at:""}],
   },
+  // ── Special Forces Loadouts ──────────────────────────────────────────────────
+  "UKSF Sabre Sqn Assault Troop": {
+    cols:[{id:"hq",label:"Tp HQ"},{id:"a",label:"Alpha Tm"},{id:"b",label:"Bravo Tm"},{id:"c",label:"Charlie Tm"}],
+    rows:[
+      {name:"C8 SFW Carbine (primary)",hq:"2",a:"3",b:"3",c:"3"},
+      {name:"HK416 / HK417 (DMR role)",hq:"1",a:"1",b:"1",c:"1"},
+      {name:"UCIW (ultra-compact IW — close terrain)",hq:"",a:"1",b:"1",c:"1"},
+      {name:"MP5SD / MP5K (CT / silent)",hq:"1",a:"",b:"",c:""},
+      {name:"HK G36 / HK33 (alias loadout)",hq:"",a:"",b:"",c:""},
+      {name:"L96A1 / AW50 (long-range / anti-mat)",hq:"1",a:"",b:"",c:""},
+      {name:"Glock 17 / SIG P226 (sidearm)",hq:"2",a:"4",b:"4",c:"4"},
+      {name:"M203 / UGL 40mm (underslung)",hq:"",a:"1",b:"1",c:"1"},
+      {name:"M72 LAW (disposable AT)",hq:"1",a:"1",b:"1",c:"1"},
+      {name:"Claymore APM (ambush/defence)",hq:"2",a:"2",b:"2",c:"2"},
+      {name:"Remington 870 (breaching shotgun)",hq:"1",a:"1",b:"",c:""},
+      {name:"Stinger MANPAD (optional air defence)",hq:"1",a:"",b:"",c:""},
+    ],
+  },
+  "UKSF Maritime / SBS Patrol": {
+    cols:[{id:"cmd",label:"Patrol Cmd"},{id:"t1",label:"Pair 1"},{id:"t2",label:"Pair 2"}],
+    rows:[
+      {name:"C8 SFW Carbine",cmd:"1",t1:"2",t2:"2"},
+      {name:"HK MP5 SD / SD6 (suppressed)",cmd:"1",t1:"1",t2:"1"},
+      {name:"Glock 17 (sidearm)",cmd:"1",t1:"2",t2:"2"},
+      {name:"Underwater Demolitions Charge",cmd:"",t1:"2",t2:"2"},
+      {name:"Rebreather (Mk16 LAR-V or equiv)",cmd:"1",t1:"2",t2:"2"},
+      {name:"Diving Knife / Titanium blade",cmd:"1",t1:"2",t2:"2"},
+      {name:"L96A1 (long patrol sniper, stowed)",cmd:"",t1:"1",t2:""},
+      {name:"Claymore (patrol defence)",cmd:"2",t1:"1",t2:"1"},
+    ],
+  },
+  "SF Sniper Pair": {
+    cols:[{id:"s1",label:"Sniper 1"},{id:"s2",label:"Sniper 2"}],
+    rows:[
+      {name:"L115A3 (.338 Lapua Magnum — 1100m+)",s1:"1",s2:""},
+      {name:"AW50 / Barrett M82A1 (.50 cal — anti-mat)",s1:"",s2:"1"},
+      {name:"HK417 DMR (7.62mm — medium range)",s1:"1",s2:"1"},
+      {name:"C8 / HK416 (personal protection carbine)",s1:"1",s2:"1"},
+      {name:"Glock 17 (sidearm)",s1:"1",s2:"1"},
+      {name:"Kestrel 5700 / ATRAG-X (ballistic computer)",s1:"1",s2:"1"},
+      {name:"SOPHIE TI / Bino Laser Rangefinder",s1:"1",s2:"1"},
+      {name:"Claymore (defensive)",s1:"1",s2:"1"},
+    ],
+  },
+  "SFSG / Ranger Platoon": {
+    cols:[{id:"hq",label:"Pl HQ"},{id:"s1",label:"1 Sect"},{id:"s2",label:"2 Sect"},{id:"s3",label:"3 Sect"}],
+    rows:[
+      {name:"HK416 A5 (primary assault)",hq:"4",s1:"8",s2:"8",s3:"8"},
+      {name:"HK417 DMR (7.62mm)",hq:"1",s1:"1",s2:"1",s3:"1"},
+      {name:"L110A3 Minimi (LMG)",hq:"1",s1:"2",s2:"2",s3:"2"},
+      {name:"L7A2 GPMG",hq:"1",s1:"",s2:"",s3:""},
+      {name:"Glock 17 (sidearm)",hq:"4",s1:"8",s2:"8",s3:"8"},
+      {name:"NLAW / Javelin (AT)",hq:"1",s1:"1",s2:"1",s3:"1"},
+      {name:"L16A2 81mm Mortar (Sp Pl)",hq:"",s1:"",s2:"",s3:""},
+      {name:"Remington 870 Breacher",hq:"1",s1:"1",s2:"1",s3:"1"},
+    ],
+  },
 };
 
 // ─── Vehicles Templates (vehicles only) ──────────────────────────────────────
@@ -464,6 +706,76 @@ const VEHICLES_TEMPLATES:Record<string,{cols:ChartColumn[];rows:WeaponEntry[]}> 
   "Engineer Squadron": {
     cols:[{id:"sqn",label:"Sqn HQ"},{id:"t1",label:"1 Tp"},{id:"t2",label:"2 Tp"},{id:"t3",label:"Sp Tp"}],
     rows:[{name:"AEV / Combat Engineer Vehicle",sqn:"",t1:"2",t2:"2",t3:""},{name:"AVLB / Bridgelayer",sqn:"",t1:"1",t2:"1",t3:""},{name:"D9 / Dozer",sqn:"",t1:"1",t2:"1",t3:"2"},{name:"Pontoon Bridge Set",sqn:"",t1:"",t2:"",t3:"1"}],
+  },
+  // ── Aquatic / Maritime ──────────────────────────────────────────────────────
+  "RIB Troop (SF Maritime)": {
+    cols:[{id:"tp",label:"Tp HQ"},{id:"r1",label:"RIB 1"},{id:"r2",label:"RIB 2"},{id:"r3",label:"RIB 3"}],
+    rows:[
+      {name:"RIB (e.g. Pacific 24 / Naiad)",tp:"",r1:"1",r2:"1",r3:"1"},
+      {name:"Outboard Engine (e.g. Yamaha 200hp twin)",tp:"",r1:"2",r2:"2",r3:"2"},
+      {name:"GPMG / Pintle Mount",tp:"",r1:"1",r2:"1",r3:"1"},
+      {name:".50 cal HMG Mount (optional)",tp:"",r1:"",r2:"",r3:""},
+      {name:"Crew (navigator + coxswain + 2 gunners)",tp:"",r1:"4",r2:"4",r3:"4"},
+    ],
+  },
+  "Inflatable Raiding Craft Section (IRC)": {
+    cols:[{id:"hq",label:"Sect HQ"},{id:"b1",label:"IRC 1"},{id:"b2",label:"IRC 2"}],
+    rows:[
+      {name:"IRC Mk2 (5m Zodiac-type)",hq:"",b1:"1",b2:"1"},
+      {name:"50hp Outboard Motor",hq:"",b1:"1",b2:"1"},
+      {name:"Capacity (fully laden troops)",hq:"",b1:"5",b2:"5"},
+      {name:"Paddle (emergency / silent approach)",hq:"",b1:"4",b2:"4"},
+      {name:"GPMG (pintle-mounted)",hq:"",b1:"1",b2:"1"},
+    ],
+  },
+  "Offshore Raiding Craft Troop (ORC)": {
+    cols:[{id:"tp",label:"Tp HQ"},{id:"o1",label:"ORC 1"},{id:"o2",label:"ORC 2"}],
+    rows:[
+      {name:"ORC (Offshore Raiding Craft — Royal Marines)",tp:"",o1:"1",o2:"1"},
+      {name:"Twin 200hp Outboard Engines",tp:"",o1:"2",o2:"2"},
+      {name:"GPMG / HITROLE-LT Mount",tp:"",o1:"1",o2:"1"},
+      {name:".50 cal HMG (optional fit)",tp:"",o1:"1",o2:"1"},
+      {name:"Crew",tp:"",o1:"3",o2:"3"},
+    ],
+  },
+  "Kayak / Canoe Patrol (SF)": {
+    cols:[{id:"cmd",label:"Patrol Cmd"},{id:"p1",label:"Pair 1"},{id:"p2",label:"Pair 2"},{id:"p3",label:"Pair 3"}],
+    rows:[
+      {name:"Klepper Mk2 Folding Kayak",cmd:"1",p1:"1",p2:"1",p3:"1"},
+      {name:"Canoe (2-man — crew + kit)",cmd:"2",p1:"2",p2:"2",p3:"2"},
+      {name:"Waterproofed C8 / HK416 (dry bag stowed)",cmd:"2",p1:"2",p2:"2",p3:"2"},
+      {name:"Underwater Demolition Kit",cmd:"",p1:"1",p2:"",p3:""},
+      {name:"Passive Night Goggles (NVG)",cmd:"2",p1:"2",p2:"2",p3:"2"},
+    ],
+  },
+  "Swimmer Delivery Vehicle Section (SDV)": {
+    cols:[{id:"hq",label:"Sect HQ"},{id:"s1",label:"SDV 1"},{id:"s2",label:"SDV 2"}],
+    rows:[
+      {name:"SDV Mk8 Mod1 (wet submersible — 6-8 pax)",hq:"",s1:"1",s2:"1"},
+      {name:"SWCS Shallow Water Combat Submersible",hq:"",s1:"",s2:""},
+      {name:"Combat Swimmers / Operators",hq:"",s1:"6",s2:"6"},
+      {name:"Underwater Demolitions Charge Set",hq:"",s1:"2",s2:"2"},
+      {name:"Rebreather Set (Mk16 / LAR-V)",hq:"",s1:"6",s2:"6"},
+      {name:"Diver Propulsion Device (DPD optional)",hq:"",s1:"",s2:""},
+    ],
+  },
+  "Landing Craft Vehicle Personnel (LCVP) Troop": {
+    cols:[{id:"hq",label:"Tp HQ"},{id:"l1",label:"LCVP 1"},{id:"l2",label:"LCVP 2"},{id:"l3",label:"LCVP 3"}],
+    rows:[
+      {name:"LCVP Mk5 (35 troops capacity)",hq:"",l1:"1",l2:"1",l3:"1"},
+      {name:"Crew (coxswain + bowman)",hq:"",l1:"2",l2:"2",l3:"2"},
+      {name:"GPMG (pintle-mounted fwd)",hq:"",l1:"1",l2:"1",l3:"1"},
+      {name:"Embarked Troops (per craft)",hq:"",l1:"35",l2:"35",l3:"35"},
+    ],
+  },
+  "Rigid Raider Craft Section (RRC)": {
+    cols:[{id:"hq",label:"Sect HQ"},{id:"r1",label:"RRC 1"},{id:"r2",label:"RRC 2"},{id:"r3",label:"RRC 3"}],
+    rows:[
+      {name:"Rigid Raider Mk2 / Mk3",hq:"",r1:"1",r2:"1",r3:"1"},
+      {name:"Twin 60hp Outboard",hq:"",r1:"2",r2:"2",r3:"2"},
+      {name:"Embarked Troops (per craft)",hq:"",r1:"9",r2:"9",r3:"9"},
+      {name:"GPMG (pintle-mounted)",hq:"",r1:"1",r2:"1",r3:"1"},
+    ],
   },
 };
 
@@ -630,12 +942,34 @@ function ChartBuilder({title,rows,cols,chartFor,onR,onC,onChartFor,isWeapons,fla
 }
 
 // ─── Node Editor ──────────────────────────────────────────────────────────────
+// ─── Image upload helper — routes through rankReorder backend with JWT auth ─────
+const ORBAT_UPLOAD_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/rankReorder?path=upload";
+async function uploadOrbatImage(file: File): Promise<string> {
+  // TAG uses JWT in sessionStorage/localStorage — credentials:include won't work.
+  // Route through rankReorder which forwards the Bearer token to Base44 upload API.
+  const token = sessionStorage.getItem("tag_auth_token") ?? localStorage.getItem("tag_auth_token") ?? "";
+  const fd = new FormData();
+  fd.append("file", file, file.name || "upload");
+  const res = await fetch(ORBAT_UPLOAD_URL, {
+    method: "POST",
+    body: fd,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) { const txt = await res.text().catch(() => ""); throw new Error(`Upload failed ${res.status}: ${txt.slice(0,120)}`); }
+  const data = await res.json().catch(() => ({}));
+  const url: string = data?.url ?? data?.file_url ?? "";
+  if (!url) throw new Error("Upload returned no URL");
+  return url;
+}
+
 function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];onSave:(n:OrbatNode)=>void;onClose:()=>void;}){
   const [d,setD]=useState<OrbatNode>({...node,rosterSlots:node.rosterSlots||[]});
-  const [tab,setTab]=useState<"unit"|"symbol"|"slots"|"charts">("unit");
+  const [tab,setTab]=useState<"unit"|"symbol"|"slots"|"charts"|"bg">("unit");
   const [symCat,setSymCat]=useState(SYM_BY_ID[node.unitType]?.cat||"Infantry");
+
   function s<K extends keyof OrbatNode>(k:K,v:OrbatNode[K]){setD(p=>({...p,[k]:v}));}
   const togSlot=(uid:string)=>{const sl=d.rosterSlots||[];s("rosterSlots",sl.includes(uid)?sl.filter(x=>x!==uid):[...sl,uid]);};
+
 
   return(
     <div style={{position:"fixed",inset:0,zIndex:100,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={onClose}>
@@ -667,6 +1001,20 @@ function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];on
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 <Fld label="Affiliation"><select value={d.affiliation} onChange={e=>s("affiliation",e.target.value as Affiliation)} style={IS}>{AFF_OPTS.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}</select></Fld>
+              <Fld label="Stack count (1–5)">
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  {[1,2,3,4,5].map(n=>(
+                    <button key={n} onClick={()=>s("stackCount",n===1?undefined:n)}
+                      style={{...BSm,minWidth:28,textAlign:"center" as const,fontWeight:700,
+                        background:(d.stackCount??1)===n?T.primary:T.bgInput,
+                        color:(d.stackCount??1)===n?T.primaryFg:T.textMuted,
+                        borderColor:(d.stackCount??1)===n?T.primary:T.border}}>
+                      {n}
+                    </button>
+                  ))}
+                  <span style={{fontSize:10,color:T.textDim,marginLeft:4}}>stacked copies shown on chart</span>
+                </div>
+              </Fld>
                 <Fld label="Echelon"><select value={d.echelon} onChange={e=>s("echelon",e.target.value as Echelon)} style={IS}>{ECHELON_OPTS.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}</select></Fld>
               </div>
               <Fld label="Modifier"><select value={d.modifier} onChange={e=>s("modifier",e.target.value as TaskForceModifier)} style={IS}>{MOD_OPTS.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}</select></Fld>
@@ -753,6 +1101,7 @@ function NodeEditor({node,roster,onSave,onClose}:{node:OrbatNode;roster:any[];on
             </div>
           )}
         </div>
+
         {/* Footer */}
         <div style={{display:"flex",justifyContent:"flex-end",gap:8,padding:"12px 16px",borderTop:`1px solid ${T.border}`,background:T.bgPanel}}>
           <button onClick={onClose} style={BSec}>Cancel</button>
@@ -838,18 +1187,21 @@ function CanvasChartCard({node, pathMap}:{node:OrbatNode; pathMap:Record<string,
 
 function OrbatCanvas({roots,onEdit,onAdd,onDel,onDup,onToggle,ro}:{
   roots:OrbatNode[];onEdit:(n:OrbatNode)=>void;onAdd:(id:string)=>void;
-  onDel:(id:string)=>void;onDup:(n:OrbatNode)=>void;onToggle:(id:string)=>void;ro:boolean;
+  onDel:(id:string)=>void;onDup:(n:OrbatNode)=>void;onToggle:(id:string)=>void;
+  ro:boolean;
 }){
   const [pan,setPan]=useState({x:0,y:0});
   const panStart=useRef<{mx:number;my:number;px:number;py:number}|null>(null);
+  const svgRef=useRef<SVGSVGElement>(null);
 
   let all:LN[]=[],ox=0;
   for(const r of roots){all.push(...layout(r,ox,0));ox+=lc(r)*(NW+HG)+TS;}
+
   const es=edges(all);
   let mx=0,my=0;for(const n of all){if(n.x+NW/2>mx)mx=n.x+NW/2;if(n.y+NH>my)my=n.y+NH;}
   const W=Math.max(ox,300),H=Math.max(my+80,200);
 
-  // Root node IDs (top-level units = the drag handles)
+  // Root node IDs (top-level units = canvas pan handles when not pinning)
   const rootIds=new Set(roots.map(r=>r.id));
 
   const onDragStart=useCallback((e:React.MouseEvent,nodeId:string)=>{
@@ -865,12 +1217,14 @@ function OrbatCanvas({roots,onEdit,onAdd,onDel,onDup,onToggle,ro}:{
     window.addEventListener("mouseup",onUp);
   },[pan,rootIds]);
 
+
+
   return(
     <div style={{position:"relative",width:W+Math.abs(pan.x),height:H+Math.abs(pan.y),minWidth:W,minHeight:H}}>
       <div style={{position:"absolute",transform:`translate(${pan.x}px,${pan.y}px)`,top:0,left:0}}>
         <div style={{position:"relative",width:W,height:H}}>
           <svg style={{position:"absolute",inset:0,overflow:"visible",pointerEvents:"none"}} width={W} height={H}>
-            {es.map((e,i)=><line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke={T.border} strokeWidth={1.5}/>)}
+            {es.map((e,i)=><line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke={getT().lineColor} strokeWidth={1.5}/>)}
           </svg>
           {all.map(ln=><UnitCard key={ln.node.id} ln={ln} onEdit={onEdit} onAdd={onAdd} onDel={onDel} onDup={onDup} onToggle={onToggle} ro={ro} onRootDragStart={onDragStart} isRoot={rootIds.has(ln.node.id)}/>)}
         </div>
@@ -883,26 +1237,109 @@ function OrbatCanvas({roots,onEdit,onAdd,onDel,onDup,onToggle,ro}:{
 interface OrbatBuilderProps {
   initialData?:OrbatNode[];onSave?:(n:OrbatNode[])=>void;
   value?:string;onChange?:(j:string)=>void;
-  groupName?:string;roster?:any[];readOnly?:boolean;
+  groupName?:string;roster?:any[];readOnly?:boolean;onBack?:()=>void;
 }
 
-export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[],readOnly=false}:OrbatBuilderProps){
+function stripPins(nodes:OrbatNode[]):OrbatNode[]{
+  return nodes.map(n=>({...n,pinX:undefined,pinY:undefined,children:stripPins(n.children)}));
+}
+
+interface OrbatState{nodes:OrbatNode[];canvasBg:string;bgOpacity:number;infoLogo:string;infoTitle:string;infoSubtitle:string;infoBio:string;}
+function parseOrbat(raw:string|undefined):OrbatState{
+  const def:OrbatState={nodes:[],canvasBg:"",bgOpacity:0.18,infoLogo:"",infoTitle:"",infoSubtitle:"",infoBio:""};
+  if(!raw)return def;
+  try{
+    const p=JSON.parse(raw);
+    // Full format: {nodes, canvasBg, bgOpacity, infoLogo, infoTitle, infoSubtitle, infoBio}
+    if(p&&!Array.isArray(p)&&Array.isArray(p.nodes)){
+      return{nodes:stripPins(p.nodes),canvasBg:p.canvasBg??"",bgOpacity:p.bgOpacity??0.18,
+        infoLogo:p.infoLogo??"",infoTitle:p.infoTitle??"",infoSubtitle:p.infoSubtitle??"",infoBio:p.infoBio??""};
+    }
+    // Legacy: plain array
+    if(Array.isArray(p)&&p.length>0)return{...def,nodes:stripPins(p)};
+  }catch{}
+  return def;
+}
+
+export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[],readOnly=false,onBack}:OrbatBuilderProps){
+  const _init=parseOrbat(value);
   const [nodes,setNodes]=useState<OrbatNode[]>(()=>{
-    if(initialData&&initialData.length>0)return initialData;
-    if(value){try{const p=JSON.parse(value);if(Array.isArray(p)&&p.length>0)return p;}catch{}}
-    return[];
+    if(initialData&&initialData.length>0)return stripPins(initialData);
+    return _init.nodes;
   });
+  // Initialise canvas state from parsed value
+  const _initBg=_init.canvasBg;
+  const _initOp=_init.bgOpacity;
   const [editing,setEditing]=useState<OrbatNode|null>(null);
   const [zoom,setZoom]=useState(1);
   const [init,setInit]=useState(false);
+  const chartTheme:ChartTheme="dark"; // fixed — theme switcher removed
+  const [canvasBg,setCanvasBg]=useState<string>(_initBg);
+  const [bgUploading,setBgUploading]=useState(false);
+  const [bgError,setBgError]=useState<string>("");
+  const [bgOpacity,setBgOpacity]=useState(_initOp);
+  const canvasBgRef=useRef<HTMLInputElement>(null);
+  const handleCanvasBgUpload=async(e:React.ChangeEvent<HTMLInputElement>)=>{
+    const file=e.target.files?.[0];
+    if(!file||file.size===0)return;
+    setBgUploading(true);
+    setBgError("");
+    try{
+      const url=await uploadOrbatImage(file);
+      if(!url)throw new Error("No URL returned from upload");
+      setCanvasBg(url);
+    }catch(err:any){
+      console.error("[OrbatBuilder] canvas bg upload failed:",err);
+      setBgError(err?.message??"Upload failed — check console for details");
+    }finally{setBgUploading(false);if(canvasBgRef.current)canvasBgRef.current.value="";}
+  };
+
+  // Unit Info Panel state — auto-show in readOnly if data exists, default false in edit mode
+  const [showInfoPanel,setShowInfoPanel]=useState(readOnly&&(_init.infoTitle||_init.infoBio||_init.infoLogo)?true:false);
+  const [infoLogo,setInfoLogo]=useState<string>(_init.infoLogo);
+  const [infoTitle,setInfoTitle]=useState<string>(_init.infoTitle);
+  const [infoSubtitle,setInfoSubtitle]=useState<string>(_init.infoSubtitle);
+  const [infoBio,setInfoBio]=useState<string>(_init.infoBio);
+  const [infoLogoUploading,setInfoLogoUploading]=useState(false);
+  const infoLogoRef=useRef<HTMLInputElement>(null);
+  const handleInfoLogoUpload=async(e:React.ChangeEvent<HTMLInputElement>)=>{
+    const file=e.target.files?.[0];
+    if(!file||file.size===0)return;
+    setInfoLogoUploading(true);
+    try{
+      const url=await uploadOrbatImage(file);
+      if(!url)throw new Error("No URL returned from upload");
+      setInfoLogo(url);
+    }catch(err:any){
+      console.error("[OrbatBuilder] info logo upload failed:",err);
+    }finally{setInfoLogoUploading(false);if(infoLogoRef.current)infoLogoRef.current.value="";}
+  };
 
   useEffect(()=>{
-    if(!init&&value){try{const p=JSON.parse(value);if(Array.isArray(p)&&p.length>0)setNodes(p);}catch{}setInit(true);}
+    if(!init&&value){
+      const parsed=parseOrbat(value);
+      if(parsed.nodes.length>0)setNodes(parsed.nodes);
+      if(parsed.canvasBg)setCanvasBg(parsed.canvasBg);
+      setBgOpacity(parsed.bgOpacity);
+      // Use explicit string assignment (not truthy check) so empty strings are correctly restored
+      setInfoLogo(parsed.infoLogo);
+      setInfoTitle(parsed.infoTitle);
+      setInfoSubtitle(parsed.infoSubtitle);
+      setInfoBio(parsed.infoBio);
+      setInit(true);
+    }
     else if(!init&&value==="")setInit(true);
   },[value,init]);
 
   const mounted=useRef(false);
-  useEffect(()=>{if(!mounted.current){mounted.current=true;return;}if(onChange)onChange(JSON.stringify(nodes));},[nodes]);
+  // Serialise full canvas state (nodes + background) whenever anything changes
+  function serialise(n:OrbatNode[],bg:string,op:number,logo:string,title:string,subtitle:string,bio:string):string{
+    return JSON.stringify({nodes:n,canvasBg:bg,bgOpacity:op,infoLogo:logo,infoTitle:title,infoSubtitle:subtitle,infoBio:bio});
+  }
+  useEffect(()=>{
+    if(!mounted.current){mounted.current=true;return;}
+    if(onChange)onChange(serialise(nodes,canvasBg,bgOpacity,infoLogo,infoTitle,infoSubtitle,infoBio));
+  },[nodes,canvasBg,bgOpacity,infoLogo,infoTitle,infoSubtitle,infoBio]);
 
   function upd(t:OrbatNode[],id:string,u:Partial<OrbatNode>):OrbatNode[]{return t.map(n=>n.id===id?{...n,...u}:{...n,children:upd(n.children,id,u)});}
   function del(t:OrbatNode[],id:string):OrbatNode[]{return t.filter(n=>n.id!==id).map(n=>({...n,children:del(n.children,id)}));}
@@ -924,6 +1361,9 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
   }
 
   const addChild=(pid:string)=>{const c=defaultNode({echelon:"section"});setNodes(p=>addC(p,pid,c));setEditing(c);};
+  function setCollapseAll(t:OrbatNode[],collapsed:boolean):OrbatNode[]{return t.map(n=>({...n,collapsed,children:setCollapseAll(n.children,collapsed)}));}
+  const collapseAll=()=>setNodes(p=>setCollapseAll(p,true));
+  const expandAll=()=>setNodes(p=>setCollapseAll(p,false));
   const addRoot=()=>{const n=defaultNode({echelon:"company"});setNodes(p=>[...p,n]);setEditing(n);};
   const saveEdit=(u:OrbatNode)=>{setNodes(p=>JSON.stringify(p).includes(`"id":"${u.id}"`)?rep(p,u.id,u):[...p,u]);};
   const doExport=()=>{const b=new Blob([JSON.stringify(nodes,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="orbat.json";a.click();};
@@ -931,13 +1371,19 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
   const allNodes=flat(nodes);
   const pathMap=buildPathMap(nodes);
 
+  // Sync global theme so UnitCard and edge renderer read the correct palette
+  _chartTheme = chartTheme;
+  const th = getT();
+
   return(
-    <div style={{display:"flex",flexDirection:"column",height:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:6,overflow:"hidden",fontFamily:"Arial,sans-serif"}}>
+    <div style={{display:"flex",flexDirection:"column",height:"100%",background:th.bg,border:`1px solid ${th.border}`,borderRadius:6,overflow:"hidden",fontFamily:"Arial,sans-serif"}}>
       {/* Toolbar */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 16px",borderBottom:`1px solid ${T.border}`,background:T.bgPanel,flexShrink:0}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 16px",borderBottom:`1px solid ${th.border}`,background:th.bgPanel,flexShrink:0,flexWrap:"wrap" as const,gap:6}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:11,fontWeight:700,color:T.textMuted,textTransform:"uppercase",letterSpacing:2}}>ORBAT</span>
-          <span style={{fontSize:9,background:"rgba(255,255,255,0.06)",color:T.textMuted,border:`1px solid ${T.border}`,borderRadius:3,padding:"1px 6px",fontWeight:700,letterSpacing:1}}>NATO APP-6</span>
+          {onBack&&<button onClick={onBack} style={{...IB,display:"flex",alignItems:"center",gap:4,paddingRight:8}} title="Back to Unit HQ"><ArrowLeft size={13}/><span style={{fontSize:10,fontWeight:700}}>Back</span></button>}
+          {onBack&&<div style={{width:1,height:16,background:th.border}}/>}
+          <span style={{fontSize:11,fontWeight:700,color:th.textMuted,textTransform:"uppercase",letterSpacing:2}}>ORBAT</span>
+          <span style={{fontSize:9,background:"rgba(255,255,255,0.06)",color:th.textMuted,border:`1px solid ${th.border}`,borderRadius:3,padding:"1px 6px",fontWeight:700,letterSpacing:1}}>NATO APP-6</span>
           {!readOnly&&(
             <select onChange={e=>{if(!e.target.value)return;const t=ORBAT_TEMPLATES.find(x=>x.label===e.target.value);if(t){setNodes(p=>[...p,t.build()]);}e.target.value="";}} style={{...IS,fontSize:10,padding:"2px 8px",width:"auto",marginLeft:8}}>
               <option value="">+ Structure template…</option>
@@ -945,17 +1391,43 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
             </select>
           )}
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
+        <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap" as const,flexShrink:1,minWidth:0}}>
+
           <button onClick={()=>setZoom(z=>Math.max(0.3,+(z-0.1).toFixed(1)))} style={IB}><ZoomOut size={13}/></button>
-          <span style={{fontSize:11,color:T.textMuted,fontFamily:"monospace",width:36,textAlign:"center"}}>{Math.round(zoom*100)}%</span>
+          <span style={{fontSize:11,color:th.textMuted,fontFamily:"monospace",width:36,textAlign:"center"}}>{Math.round(zoom*100)}%</span>
           <button onClick={()=>setZoom(z=>Math.min(2.5,+(z+0.1).toFixed(1)))} style={IB}><ZoomIn size={13}/></button>
-          <div style={{width:1,height:16,background:T.border,margin:"0 4px"}}/>
+          <div style={{width:1,height:16,background:th.border,margin:"0 4px"}}/>
+          {nodes.length>0&&<>
+            <button onClick={collapseAll} style={IB} title="Collapse all"><ChevronsDownUp size={13}/></button>
+            <button onClick={expandAll} style={IB} title="Expand all"><ChevronsUpDown size={13}/></button>
+            <div style={{width:1,height:16,background:th.border,margin:"0 4px"}}/>
+          </>}
           <button onClick={doExport} style={IB} title="Export JSON"><Download size={13}/></button>
+          {!readOnly&&<>
+            <div style={{width:1,height:16,background:T.border,margin:"0 2px"}}/>
+            <button onClick={()=>canvasBgRef.current?.click()} style={IB} title={canvasBg?"Change poster background":"Upload poster background"} disabled={bgUploading}>
+              {bgUploading?<Loader2 size={13} style={{animation:"spin 1s linear infinite"}}/>:<ImagePlus size={13}/>}
+            </button>
+            {canvasBg&&<>
+              <input type="range" min={0.05} max={0.5} step={0.01} value={bgOpacity} onChange={e=>setBgOpacity(+e.target.value)}
+                style={{width:60,accentColor:T.primary,cursor:"pointer"}} title="Background opacity"/>
+              <button onClick={()=>setCanvasBg("")} style={{...IB,color:T.danger,borderColor:T.danger}} title="Remove background">✕</button>
+            </>}
+            <input ref={canvasBgRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleCanvasBgUpload}/>
+            {bgError&&<span style={{fontSize:10,color:T.danger,marginLeft:4,maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={bgError}>⚠ {bgError}</span>}
+          </>}
+          {!readOnly&&<>
+            <div style={{width:1,height:16,background:T.border,margin:"0 2px"}}/>
+            <button onClick={()=>setShowInfoPanel(v=>!v)} style={{...IB,...(showInfoPanel?{background:T.primary,color:"#fff",borderColor:T.primary}:{})}} title="Unit info panel">
+              <FileText size={13}/>
+            </button>
+          </>}
           {!readOnly&&onSave&&<button onClick={()=>onSave(nodes)} style={BPri}><Save size={11}/> Save</button>}
         </div>
       </div>
       {/* Canvas */}
-      <div style={{flex:1,overflow:"auto",padding:24}}>
+      <div style={{flex:1,overflow:"auto",padding:24,position:"relative",background:th.canvasBg,...(canvasBg?{backgroundImage:`linear-gradient(rgba(13,14,17,${(1-bgOpacity).toFixed(2)}),rgba(13,14,17,${(1-bgOpacity).toFixed(2)})),url(${canvasBg})`,backgroundSize:"cover",backgroundPosition:"center",backgroundAttachment:"local"}:{})}}>
+        <div style={{position:"relative",zIndex:1}}>
         {nodes.length===0?(
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,textAlign:"center"}}>
             <div style={{opacity:0.2}}><UnitIcon type="infantry" affiliation="friendly" size={56}/></div>
@@ -968,6 +1440,7 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
               <OrbatCanvas roots={nodes} onEdit={setEditing} onAdd={addChild}
                 onDel={id=>setNodes(p=>del(p,id))} onDup={n=>setNodes(p=>[...p,dc(n)])}
                 onToggle={id=>setNodes(p=>upd(p,id,{collapsed:!find(p,id)?.collapsed}))}
+
                 ro={readOnly}/>
             </div>{/* end scaled */}
             {/* Charts — each with independent zoom */}
@@ -978,8 +1451,48 @@ export default function OrbatBuilder({initialData,onSave,value,onChange,roster=[
                 ))}
               </div>
             )}
+            {/* Unit Info Panel — rendered below chart on poster */}
+            {showInfoPanel&&(
+              <div style={{marginTop:24,border:`1px solid ${T.border}`,borderRadius:6,background:T.bgCard,display:"flex",alignItems:"stretch",overflow:"hidden",minHeight:120}}>
+                {/* Left: logo upload */}
+                <div style={{width:120,flexShrink:0,background:"rgba(0,0,0,0.2)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:12,borderRight:`1px solid ${T.border}`,cursor:readOnly?"default":"pointer"}}
+                  onClick={!readOnly?()=>infoLogoRef.current?.click():undefined}>
+                  {infoLogo?(
+                    <img src={infoLogo} alt="unit logo" style={{width:80,height:80,objectFit:"contain",borderRadius:4}}/>
+                  ):(
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,opacity:0.5}}>
+                      <ImagePlus size={24} style={{color:T.textMuted}}/>
+                      {!readOnly&&<span style={{fontSize:9,color:T.textMuted,textAlign:"center"}}>Upload logo</span>}
+                    </div>
+                  )}
+                  {infoLogoUploading&&<Loader2 size={14} style={{animation:"spin 1s linear infinite",color:T.primary}}/>}
+                  {!readOnly&&infoLogo&&<button onClick={e=>{e.stopPropagation();setInfoLogo("");}} style={{fontSize:9,background:"transparent",border:"none",color:T.danger,cursor:"pointer",padding:0}}>Remove</button>}
+                  {!readOnly&&<input ref={infoLogoRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleInfoLogoUpload}/>}
+                </div>
+                {/* Right: text fields */}
+                <div style={{flex:1,padding:"14px 16px",display:"flex",flexDirection:"column",gap:8}}>
+                  {readOnly?(
+                    <>
+                      {infoTitle&&<div style={{fontSize:18,fontWeight:800,color:T.text,letterSpacing:1,textTransform:"uppercase"}}>{infoTitle}</div>}
+                      {infoSubtitle&&<div style={{fontSize:12,color:T.textMuted,fontStyle:"italic",marginTop:-4}}>{infoSubtitle}</div>}
+                      {infoBio&&<div style={{fontSize:11,color:T.text,lineHeight:1.6,marginTop:4,whiteSpace:"pre-wrap"}}>{infoBio}</div>}
+                    </>
+                  ):(
+                    <>
+                      <input value={infoTitle} onChange={e=>setInfoTitle(e.target.value)} placeholder="Unit name / designation…"
+                        style={{...IS,fontSize:15,fontWeight:700,textTransform:"uppercase",letterSpacing:1,background:"transparent",border:`1px solid ${T.border}`,color:T.text}}/>
+                      <input value={infoSubtitle} onChange={e=>setInfoSubtitle(e.target.value)} placeholder="Subtitle / parent command / year…"
+                        style={{...IS,fontSize:11,fontStyle:"italic",background:"transparent",border:`1px solid ${T.border}`,color:T.textMuted}}/>
+                      <textarea value={infoBio} onChange={e=>setInfoBio(e.target.value)} placeholder="Unit history, background, doctrine notes…"
+                        rows={4} style={{...IS,fontSize:11,lineHeight:1.6,resize:"vertical",background:"transparent",border:`1px solid ${T.border}`,color:T.text,fontFamily:"inherit"}}/>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
+        </div>{/* end zIndex:1 */}
       </div>
       {editing&&<NodeEditor node={editing} roster={roster} onSave={saveEdit} onClose={()=>setEditing(null)}/>}
       {!readOnly&&nodes.length>0&&(
