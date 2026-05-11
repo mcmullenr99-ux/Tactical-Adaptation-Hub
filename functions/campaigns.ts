@@ -12,7 +12,13 @@ Deno.serve(async (req) => {
     // ── Check Pro ──────────────────────────────────────────────────────────────
     async function checkPro(group_id: string): Promise<boolean> {
       const records = await base44.asServiceRole.entities.CommanderPro.filter({ group_id });
-      return records.some((r: any) => r.status === 'active' || r.status === 'trialing');
+      return records.some((r: any) =>
+        r.status === 'active' ||
+        r.status === 'trialing' ||
+        r.status === 'manual_override' ||
+        r.stripe_customer_id === 'manual_override' ||
+        r.stripe_subscription_id === 'manual_override'
+      );
     }
 
     // ── GET /list?group_id= ─────────────────────────────────────────────────

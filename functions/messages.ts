@@ -13,6 +13,18 @@ async function getCallerUser(base44: any, req: Request) {
   } catch { return null; }
 }
 
+async function pushNotif(base44: any, userId: string, type: string, title: string, body: string, link?: string) {
+  try {
+    await base44.asServiceRole.entities.Notification.create({
+      user_id: userId, type, title, body,
+      ...(link ? { link } : {}),
+      is_read: false,
+    });
+  } catch (e) {
+    console.error('[pushNotif] failed:', e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   try {
@@ -64,6 +76,15 @@ Deno.serve(async (req) => {
         recipient_id: recipientId, recipient_username: recipient.username,
         subject, body: msgBody, is_read: false, deleted_by_sender: false, deleted_by_recipient: false,
       });
+      // Notify recipient
+      await pushNotif(
+        base44,
+        recipientId,
+        'message',
+        'New message from ' + full.username,
+        'Subject: ' + subject,
+        '/portal/comms'
+      );
       return Response.json(msg, { status: 201 });
     }
 
@@ -102,7 +123,7 @@ Deno.serve(async (req) => {
     }
 
     return Response.json({ error: 'Not found' }, { status: 404 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[messages]', error);
     return Response.json({ error: error.message }, { status: 500 });
   }

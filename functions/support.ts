@@ -1,12 +1,12 @@
 /**
  * Support Tickets & Feedback API
  * Routes (via ?path=):
- *   GET    /tickets                  — list user's own tickets
+ *   GET    /tickets                  — list user's own tickets (staff sees all)
  *   GET    /tickets/:id              — ticket detail + replies
  *   POST   /tickets                  — create ticket
  *   POST   /tickets/:id/reply        — add reply
  *   PATCH  /tickets/:id              — update status/resolution (staff)
- *   GET    /feedback                 — list feedback (staff)
+ *   GET    /feedback                 — list feedback (staff only)
  *   POST   /feedback                 — submit feedback
  *   PATCH  /feedback/:id             — mark reviewed (staff)
  *   DELETE /feedback/:id             — delete feedback (staff)
@@ -17,6 +17,14 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+
+function cors() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+}
 
 async function getCallerUser(base44: any, req: Request) {
   const authHeader = req.headers.get('Authorization') ?? '';
@@ -32,26 +40,18 @@ function isStaff(user: any) {
   return user && ['admin', 'moderator'].includes(user.role);
 }
 
-let ticketCounter = 0;
-async function makeTicketNumber(base44: any): Promise<string> {
-  const all = await base44.asServiceRole.entities.AuditLog.filter({ action_type: 'ticket_create' }).catch(() => []);
-  const num = String(all.length + 1 + ticketCounter++).padStart(4, '0');
-  return `TKT-${num}`;
-}
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors() });
+
   try {
     const base44 = createClientFromRequest(req);
     const url = new URL(req.url);
-    const pathOverride = url.searchParams.get('path');
-    const parts = pathOverride
-      ? pathOverride.split('/').filter(Boolean)
-      : url.pathname.replace(/^\/functions\/support/, '').split('/').filter(Boolean);
+    const pathOverride = url.searchParams.get('path') ?? '';
+    const parts = pathOverride.split('/').filter(Boolean);
     const method = req.method;
 
     const caller = await getCallerUser(base44, req);
-    if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!caller) return Response.json({ error: 'Unauthorized' }, { status: 401, headers: cors() });
 
     // ── TICKETS ──────────────────────────────────────────────────────────────
 
@@ -59,201 +59,148 @@ Deno.serve(async (req) => {
     if (method === 'GET' && parts[0] === 'tickets' && parts.length === 1) {
       let tickets: any[];
       if (isStaff(caller)) {
-        tickets = await base44.asServiceRole.entities.AuditLog.filter({ action_type: 'support_ticket' }).catch(() => []);
+        tickets = await base44.asServiceRole.entities.SupportTicket.list().catch(() => []);
       } else {
-        tickets = await base44.asServiceRole.entities.AuditLog.filter({
-          action_type: 'support_ticket',
-          user_id: caller.id,
-        }).catch(() => []);
+        tickets = await base44.asServiceRole.entities.SupportTicket.filter({ user_id: caller.id }).catch(() => []);
       }
-      // Parse ticket data from description/new_snapshot
-      const parsed = tickets.map((t: any) => {
-        try { return { ...JSON.parse(t.new_snapshot ?? '{}'), id: t.id, created_date: t.created_date }; }
-        catch { return null; }
-      }).filter(Boolean);
-      return Response.json(parsed.sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime()));
+      tickets.sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime());
+      return Response.json(tickets, { headers: cors() });
     }
 
     // GET /tickets/:id
     if (method === 'GET' && parts[0] === 'tickets' && parts.length === 2) {
-      const ticketLog = await base44.asServiceRole.entities.AuditLog.get(parts[1]).catch(() => null);
-      if (!ticketLog) return Response.json({ error: 'Ticket not found' }, { status: 404 });
-      let ticket: any;
-      try { ticket = { ...JSON.parse(ticketLog.new_snapshot ?? '{}'), id: ticketLog.id, created_date: ticketLog.created_date }; }
-      catch { return Response.json({ error: 'Malformed ticket' }, { status: 500 }); }
-      if (!isStaff(caller) && ticket.user_id !== caller.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
-      // Replies are SecurityIncidents with incident_type='ticket_reply' and target_id=ticketId
-      const replyLogs = await base44.asServiceRole.entities.SecurityIncident.filter({
-        incident_type: 'ticket_reply',
-        user_id: ticketLog.id,
-      }).catch(() => []);
-      const replies = replyLogs.map((r: any) => {
-        try { return { ...JSON.parse(r.description ?? '{}'), id: r.id, created_date: r.created_date }; }
-        catch { return null; }
-      }).filter(Boolean).sort((a: any, b: any) => new Date(a.created_date).getTime() - new Date(b.created_date).getTime());
-      return Response.json({ ...ticket, replies });
+      const ticket = await base44.asServiceRole.entities.SupportTicket.get(parts[1]).catch(() => null);
+      if (!ticket) return Response.json({ error: 'Ticket not found' }, { status: 404, headers: cors() });
+      if (!isStaff(caller) && ticket.user_id !== caller.id)
+        return Response.json({ error: 'Forbidden' }, { status: 403, headers: cors() });
+      const replies = await base44.asServiceRole.entities.TicketReply.filter({ ticket_id: parts[1] }).catch(() => []);
+      replies.sort((a: any, b: any) => new Date(a.created_date).getTime() - new Date(b.created_date).getTime());
+      return Response.json({ ...ticket, replies }, { headers: cors() });
     }
 
     // POST /tickets
     if (method === 'POST' && parts[0] === 'tickets' && parts.length === 1) {
       const body = await req.json().catch(() => ({}));
       const { subject, description, category = 'other', priority = 'medium' } = body;
-      if (!subject || !description) return Response.json({ error: 'Subject and description required' }, { status: 400 });
+      if (!subject?.trim() || !description?.trim())
+        return Response.json({ error: 'Subject and description required' }, { status: 400, headers: cors() });
+
       const ticket_number = `TKT-${Date.now().toString().slice(-6)}`;
-      const ticket = {
+      const ticket = await base44.asServiceRole.entities.SupportTicket.create({
         ticket_number, subject, description, category, priority,
-        status: 'open', user_id: caller.id, username: caller.username,
-      };
-      const record = await base44.asServiceRole.entities.AuditLog.create({
-        action_type: 'support_ticket',
+        status: 'open',
         user_id: caller.id,
         username: caller.username,
-        description: `[Support Ticket] ${subject}`,
-        new_snapshot: JSON.stringify(ticket),
-        method: 'POST',
-        path: '/support/tickets',
+        email: caller.email ?? '',
       });
-      return Response.json({ ...ticket, id: record.id, created_date: record.created_date }, { status: 201 });
+      return Response.json(ticket, { status: 201, headers: cors() });
     }
 
     // POST /tickets/:id/reply
     if (method === 'POST' && parts[0] === 'tickets' && parts[2] === 'reply') {
       const ticketId = parts[1];
-      const ticketLog = await base44.asServiceRole.entities.AuditLog.get(ticketId).catch(() => null);
-      if (!ticketLog) return Response.json({ error: 'Ticket not found' }, { status: 404 });
-      let ticket: any;
-      try { ticket = JSON.parse(ticketLog.new_snapshot ?? '{}'); }
-      catch { return Response.json({ error: 'Malformed ticket' }, { status: 500 }); }
-      if (!isStaff(caller) && ticket.user_id !== caller.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const ticket = await base44.asServiceRole.entities.SupportTicket.get(ticketId).catch(() => null);
+      if (!ticket) return Response.json({ error: 'Ticket not found' }, { status: 404, headers: cors() });
+      if (!isStaff(caller) && ticket.user_id !== caller.id)
+        return Response.json({ error: 'Forbidden' }, { status: 403, headers: cors() });
+
       const body = await req.json().catch(() => ({}));
-      if (!body.body?.trim()) return Response.json({ error: 'Reply body required' }, { status: 400 });
-      const reply = {
-        ticket_id: ticketId, body: body.body, author_id: caller.id,
-        author_username: caller.username, is_staff: isStaff(caller),
-      };
-      // Update ticket status if staff is replying
+      if (!body.body?.trim()) return Response.json({ error: 'Reply body required' }, { status: 400, headers: cors() });
+
+      // Auto-update status when staff first replies
       if (isStaff(caller) && ticket.status === 'open') {
-        ticket.status = 'in_progress';
-        await base44.asServiceRole.entities.AuditLog.update(ticketId, {
-          new_snapshot: JSON.stringify(ticket),
-        }).catch(() => {});
+        await base44.asServiceRole.entities.SupportTicket.update(ticketId, { status: 'in_progress' }).catch(() => {});
       }
-      const record = await base44.asServiceRole.entities.SecurityIncident.create({
-        incident_type: 'ticket_reply',
-        severity: 'low',
-        user_id: ticketId, // abuse this field to link reply → ticket
-        username: caller.username,
-        description: JSON.stringify(reply),
-        resolved: false,
+
+      const reply = await base44.asServiceRole.entities.TicketReply.create({
+        ticket_id: ticketId,
+        body: body.body,
+        author_id: caller.id,
+        author_username: caller.username,
+        is_staff: isStaff(caller),
       });
-      return Response.json({ ...reply, id: record.id, created_date: record.created_date }, { status: 201 });
+      return Response.json(reply, { status: 201, headers: cors() });
     }
 
-    // PATCH /tickets/:id — update status / resolution note (staff)
+    // PATCH /tickets/:id — update status / resolution note (staff only)
     if (method === 'PATCH' && parts[0] === 'tickets' && parts.length === 2) {
-      if (!isStaff(caller)) return Response.json({ error: 'Forbidden' }, { status: 403 });
-      const ticketLog = await base44.asServiceRole.entities.AuditLog.get(parts[1]).catch(() => null);
-      if (!ticketLog) return Response.json({ error: 'Ticket not found' }, { status: 404 });
-      let ticket: any;
-      try { ticket = JSON.parse(ticketLog.new_snapshot ?? '{}'); }
-      catch { return Response.json({ error: 'Malformed ticket' }, { status: 500 }); }
+      if (!isStaff(caller)) return Response.json({ error: 'Forbidden' }, { status: 403, headers: cors() });
+      const ticket = await base44.asServiceRole.entities.SupportTicket.get(parts[1]).catch(() => null);
+      if (!ticket) return Response.json({ error: 'Ticket not found' }, { status: 404, headers: cors() });
       const body = await req.json().catch(() => ({}));
-      if (body.status) ticket.status = body.status;
-      if (body.resolution_note !== undefined) ticket.resolution_note = body.resolution_note;
-      await base44.asServiceRole.entities.AuditLog.update(parts[1], { new_snapshot: JSON.stringify(ticket) });
-      return Response.json({ ...ticket, id: parts[1] });
+      const update: any = {};
+      if (body.status) update.status = body.status;
+      if (body.resolution_note !== undefined) update.resolution_note = body.resolution_note;
+      if (body.assigned_to !== undefined) { update.assigned_to = body.assigned_to; update.assigned_username = body.assigned_username ?? ''; }
+      if (body.status === 'resolved' || body.status === 'closed') update.closed_at = new Date().toISOString();
+      const updated = await base44.asServiceRole.entities.SupportTicket.update(parts[1], update);
+      return Response.json(updated, { headers: cors() });
     }
 
     // ── FEEDBACK ─────────────────────────────────────────────────────────────
 
     // GET /feedback — staff only
     if (method === 'GET' && parts[0] === 'feedback') {
-      if (!isStaff(caller)) return Response.json({ error: 'Forbidden' }, { status: 403 });
-      const logs = await base44.asServiceRole.entities.AuditLog.filter({ action_type: 'support_feedback' }).catch(() => []);
-      const parsed = logs.map((l: any) => {
-        try { return { ...JSON.parse(l.new_snapshot ?? '{}'), id: l.id, created_date: l.created_date }; }
-        catch { return null; }
-      }).filter(Boolean);
-      return Response.json(parsed.sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime()));
+      if (!isStaff(caller)) return Response.json({ error: 'Forbidden' }, { status: 403, headers: cors() });
+      const feedback = await base44.asServiceRole.entities.Feedback.list().catch(() => []);
+      feedback.sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime());
+      return Response.json(feedback, { headers: cors() });
     }
 
     // POST /feedback
     if (method === 'POST' && parts[0] === 'feedback') {
       const body = await req.json().catch(() => ({}));
       const { category = 'general', rating = 5, message, page } = body;
-      if (!message?.trim()) return Response.json({ error: 'Message required' }, { status: 400 });
-      const fb = {
-        category, rating, message, page: page ?? '/', reviewed: false,
-        user_id: caller.id, username: caller.username,
-      };
-      const record = await base44.asServiceRole.entities.AuditLog.create({
-        action_type: 'support_feedback',
-        user_id: caller.id, username: caller.username,
-        description: `[Feedback] ${category} — ${message.slice(0, 60)}`,
-        new_snapshot: JSON.stringify(fb),
-        method: 'POST', path: '/support/feedback',
+      if (!message?.trim()) return Response.json({ error: 'Message required' }, { status: 400, headers: cors() });
+      const fb = await base44.asServiceRole.entities.Feedback.create({
+        category, rating: Number(rating) || 5, message,
+        page: page ?? '/',
+        reviewed: false,
+        user_id: caller.id,
+        username: caller.username,
       });
-      return Response.json({ ...fb, id: record.id, created_date: record.created_date }, { status: 201 });
+      return Response.json(fb, { status: 201, headers: cors() });
     }
 
-    // PATCH /feedback/:id
+    // PATCH /feedback/:id — mark reviewed
     if (method === 'PATCH' && parts[0] === 'feedback' && parts.length === 2) {
-      if (!isStaff(caller)) return Response.json({ error: 'Forbidden' }, { status: 403 });
-      const log = await base44.asServiceRole.entities.AuditLog.get(parts[1]).catch(() => null);
-      if (!log) return Response.json({ error: 'Not found' }, { status: 404 });
+      if (!isStaff(caller)) return Response.json({ error: 'Forbidden' }, { status: 403, headers: cors() });
       const body = await req.json().catch(() => ({}));
-      let fb: any;
-      try { fb = JSON.parse(log.new_snapshot ?? '{}'); } catch { fb = {}; }
-      if (body.reviewed !== undefined) fb.reviewed = body.reviewed;
-      await base44.asServiceRole.entities.AuditLog.update(parts[1], { new_snapshot: JSON.stringify(fb) });
-      return Response.json({ ...fb, id: parts[1] });
+      const updated = await base44.asServiceRole.entities.Feedback.update(parts[1], { reviewed: !!body.reviewed });
+      return Response.json(updated, { headers: cors() });
     }
 
     // DELETE /feedback/:id
     if (method === 'DELETE' && parts[0] === 'feedback' && parts.length === 2) {
-      if (!isStaff(caller)) return Response.json({ error: 'Forbidden' }, { status: 403 });
-      await base44.asServiceRole.entities.AuditLog.delete(parts[1]).catch(() => {});
-      return Response.json({ ok: true });
+      if (!isStaff(caller)) return Response.json({ error: 'Forbidden' }, { status: 403, headers: cors() });
+      await base44.asServiceRole.entities.Feedback.delete(parts[1]);
+      return Response.json({ success: true }, { headers: cors() });
     }
 
-    // ── STATS (staff) ─────────────────────────────────────────────────────────
+    // ── STATS ─────────────────────────────────────────────────────────────────
 
+    // GET /stats — staff only
     if (method === 'GET' && parts[0] === 'stats') {
-      if (!isStaff(caller)) return Response.json({ error: 'Forbidden' }, { status: 403 });
-      const [ticketLogs, feedbackLogs] = await Promise.all([
-        base44.asServiceRole.entities.AuditLog.filter({ action_type: 'support_ticket' }).catch(() => []),
-        base44.asServiceRole.entities.AuditLog.filter({ action_type: 'support_feedback' }).catch(() => []),
+      if (!isStaff(caller)) return Response.json({ error: 'Forbidden' }, { status: 403, headers: cors() });
+      const [tickets, feedback] = await Promise.all([
+        base44.asServiceRole.entities.SupportTicket.list().catch(() => []),
+        base44.asServiceRole.entities.Feedback.list().catch(() => []),
       ]);
-      const tickets = ticketLogs.map((t: any) => { try { return JSON.parse(t.new_snapshot ?? '{}'); } catch { return {}; } });
-      const open_count     = tickets.filter((t: any) => t.status === 'open').length;
-      const inprog_count   = tickets.filter((t: any) => t.status === 'in_progress').length;
-      const resolved_count = tickets.filter((t: any) => t.status === 'resolved' || t.status === 'closed').length;
-      const avg_rating     = feedbackLogs.length > 0
-        ? Math.round(feedbackLogs.reduce((sum: number, l: any) => {
-            try { return sum + (JSON.parse(l.new_snapshot ?? '{}').rating ?? 5); } catch { return sum + 5; }
-          }, 0) / feedbackLogs.length * 10) / 10
-        : 0;
-      const critical_count = tickets.filter((t: any) => t.priority === 'critical' && (t.status === 'open' || t.status === 'in_progress')).length;
-      const unreviewed_count = feedbackLogs.filter((l: any) => { try { return !JSON.parse(l.new_snapshot ?? '{}').reviewed; } catch { return true; } }).length;
       return Response.json({
-        tickets: {
-          total: tickets.length,
-          open: open_count,
-          in_progress: inprog_count,
-          resolved: resolved_count,
-          critical: critical_count,
-        },
-        feedback: {
-          total: feedbackLogs.length,
-          unreviewed: unreviewed_count,
-          avg_rating,
-        },
-      });
+        total: tickets.length,
+        open: tickets.filter((t: any) => t.status === 'open').length,
+        in_progress: tickets.filter((t: any) => t.status === 'in_progress').length,
+        resolved: tickets.filter((t: any) => t.status === 'resolved').length,
+        closed: tickets.filter((t: any) => t.status === 'closed').length,
+        feedback_total: feedback.length,
+        feedback_unreviewed: feedback.filter((f: any) => !f.reviewed).length,
+      }, { headers: cors() });
     }
 
-    return Response.json({ error: 'Not found' }, { status: 404 });
-  } catch (error) {
-    console.error('[support]', error);
-    return Response.json({ error: error?.message ?? 'Unknown error' }, { status: 500 });
+    return Response.json({ error: 'Not found' }, { status: 404, headers: cors() });
+
+  } catch (err) {
+    console.error('[support]', err);
+    return Response.json({ error: 'Internal server error' }, { status: 500, headers: cors() });
   }
 });

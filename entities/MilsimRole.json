@@ -13,6 +13,29 @@
     "sort_order": {
       "type": "integer",
       "default": 0
+    },
+    "permissions": {
+      "type": "object",
+      "description": "Tab-level permissions map: {tabId: 'none'|'view'|'manage'}"
+    },
+    "slot_status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "limited"
+      ],
+      "default": "open"
+    },
+    "slots_total": {
+      "type": "integer"
+    },
+    "slots_filled": {
+      "type": "integer"
+    },
+    "publicly_visible": {
+      "type": "boolean",
+      "default": true
     }
   },
   "required": [

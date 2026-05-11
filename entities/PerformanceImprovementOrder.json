@@ -1,0 +1,66 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "roster_id": {
+      "type": "string"
+    },
+    "callsign": {
+      "type": "string"
+    },
+    "issued_by": {
+      "type": "string"
+    },
+    "issued_by_callsign": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "deadline": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "failed",
+        "withdrawn"
+      ]
+    },
+    "acknowledged_at": {
+      "type": "string"
+    },
+    "outcome_note": {
+      "type": "string"
+    },
+    "closed_at": {
+      "type": "string"
+    },
+    "closed_by": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "PerformanceImprovementOrder"
+}

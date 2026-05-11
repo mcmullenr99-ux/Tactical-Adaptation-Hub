@@ -26,6 +26,8 @@ const ROUTE_MAP: Record<string, string> = {
   "/api/friends":               "friends",
   "/api/notifications":         "notifications",
   "/api/milsim-groups/leaderboard-stats": "leaderboardStats",
+  "/api/milsim-groups-b":        "milsimGroupsB",
+  "/api/range-cards":            "rangeCards",
   "/api/milsim-groups":         "milsimGroups",
   "/api/leaderboard-stats":     "leaderboardStats",
   "/api/milsim-aars":           "milsimAars",
@@ -33,15 +35,19 @@ const ROUTE_MAP: Record<string, string> = {
   "/api/admin":                 "admin",
   "/api/security":              "security",
   "/api/staff-applications":    "staffApplications",
-  "/api/stats":                 "stats",
+  "/api/stats":                 "statsReadiness",
   "/api/support":               "support",
   "/api/stripe":                "stripe",
   "/api/referral-code":         "users",
   "/api/users/profile":         "users",
   "/api/reputation":            "reputation",
+  "/api/member-discharge":       "memberDischarge",
   "/api/group-upvotes":         "groupUpvotes",
+  "/api/promotion-rules":       "promotionEngine",
+  "/api/promotion-flags":       "promotionEngine",
   "/api/milsim-awards":         "milsimAwards",
   "/api/training-docs":         "trainingDocs",
+  "/api/alliances":              "unitAlliances",
 };
 
 // Sub-path routes: when a URL matches /api/milsim-groups/:id/<keyword>, route to a different function
@@ -126,4 +132,31 @@ export async function apiFetch<T = unknown>(path: string, options?: RequestInit)
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error ?? res.statusText);
   return data as T;
+}
+
+export const _BUILD_TS = 1775339618120703728;
+/** Upload a file via the rankReorder backend with JWT auth. Returns public CDN URL. */
+export async function uploadFileToBase44(file: File): Promise<string> {
+  // Route through rankReorder backend — it forwards the user Bearer token correctly.
+  // Direct base44.app calls with credentials:include don't work — TAG uses JWT in
+  // sessionStorage/localStorage, not cookies.
+  const token = sessionStorage.getItem("tag_auth_token") ?? localStorage.getItem("tag_auth_token") ?? "";
+  const fd = new FormData();
+  fd.append("file", file, file.name || "upload");
+  const res = await fetch(
+    `${FUNCTIONS_BASE}/rankReorder?path=upload`,
+    {
+      method: "POST",
+      body: fd,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }
+  );
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`Upload failed ${res.status}: ${txt.slice(0, 120)}`);
+  }
+  const data = await res.json().catch(() => ({}));
+  const url: string = data?.url ?? data?.file_url ?? "";
+  if (!url) throw new Error("Upload returned no URL");
+  return url;
 }

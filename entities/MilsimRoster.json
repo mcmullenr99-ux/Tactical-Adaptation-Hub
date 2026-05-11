@@ -51,6 +51,10 @@
     "ribbon_bar_mods": {
       "type": "object",
       "description": "Per-ribbon modifier selections: {awardId: {modifierName: value}}"
+    },
+    "hq_permissions": {
+      "type": "object",
+      "description": "Per-member permission overrides: {tabId: 'none'|'view'|'manage'}. Overrides role permissions for this individual."
     }
   },
   "required": [],

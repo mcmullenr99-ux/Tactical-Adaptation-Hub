@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { randomBytes } from 'node:crypto';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://tactical-adaptation-hub.pages.dev';
+const APP_URL = (Deno.env.get('APP_URL') ?? 'https://tacticaladaptationgroup.co.uk').replace(/\/+$/, '');
 
 async function sendEmail(to: string, subject: string, html: string) {
   if (!RESEND_API_KEY) { console.warn('[email] No RESEND_API_KEY, skipping send'); return; }
@@ -49,20 +49,22 @@ Deno.serve(async (req) => {
 
     const link = `${APP_URL}/portal/reset-password?token=${token}`;
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #1a1a2e;">Tactical Adaptation Group</h2>
-        <p>Hello <strong>${user.username}</strong>,</p>
-        <p>We received a request to reset your password. Click the button below to proceed:</p>
-        <a href="${link}" style="display: inline-block; padding: 12px 24px; background-color: #e63946; color: white; text-decoration: none; border-radius: 4px; margin: 16px 0;">Reset Password</a>
-        <p style="color: #666; font-size: 14px;">This link expires in 1 hour. If you did not request this, you can safely ignore this email.</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-        <p style="color: #999; font-size: 12px;">Tactical Adaptation Group | tacticaladaptationgroup.co.uk</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0d0d1a; color: #ffffff; padding: 32px; border-radius: 8px;">
+        <h2 style="color: #e63946; margin-bottom: 8px;">TACTICAL ADAPTATION GROUP</h2>
+        <h3 style="color: #ffffff; margin-top: 0;">Password Reset Request</h3>
+        <p style="color: #cccccc;">Hello <strong>${user.username}</strong>,</p>
+        <p style="color: #cccccc;">We received a request to reset your password. Click the button below to proceed:</p>
+        <p style="color: #aaaaaa; font-size: 13px;">This link expires in <strong style="color:#e63946;">1 hour</strong>.</p>
+        <a href="${link}" style="display: inline-block; padding: 14px 28px; background-color: #e63946; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; font-weight: bold; font-size: 15px; letter-spacing: 1px;">RESET PASSWORD</a>
+        <p style="color: #666; font-size: 12px; margin-top: 24px;">If you did not request this, you can safely ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #333; margin: 24px 0;">
+        <p style="color: #666; font-size: 12px;">Tactical Adaptation Group | tacticaladaptationgroup.co.uk</p>
       </div>
     `;
-    await sendEmail(email, 'TAG - Password Reset Request', html);
+    await sendEmail(email, 'TAG — Password Reset Request', html);
 
     return Response.json({ message: 'If that email exists, a reset link has been sent.' });
-  } catch (error) {
+  } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

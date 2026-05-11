@@ -1,6 +1,7 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useSEO } from "@/hooks/useSEO";
 import { Shield } from "lucide-react";
+import { TAG_DISCORD_URL } from '@/lib/constants';
 
 export default function PrivacyPolicy() {
   useSEO({ title: "Privacy Policy", description: "TAG Privacy Policy — how we handle your data." });
@@ -80,7 +81,7 @@ export default function PrivacyPolicy() {
                 <li><strong>Portability</strong> — contact staff for a data export</li>
                 <li><strong>Objection</strong> — contact staff on Discord</li>
               </ul>
-              <p>To exercise any right, contact TAG staff on Discord: <a href="https://discord.gg/matmFhU4yg" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">discord.gg/matmFhU4yg</a></p>
+              <p>To exercise any right, contact TAG staff on Discord: <a href={TAG_DISCORD_URL} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">{TAG_DISCORD_URL.replace("https://", "")}</a></p>
             </Section>
 
             <Section title="Cookies">
@@ -92,7 +93,7 @@ export default function PrivacyPolicy() {
             </Section>
 
             <Section title="Contact">
-              <p>For any privacy concerns: Discord — <a href="https://discord.gg/matmFhU4yg" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">discord.gg/matmFhU4yg</a></p>
+              <p>For any privacy concerns: Discord — <a href={TAG_DISCORD_URL} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">{TAG_DISCORD_URL.replace("https://", "")}</a></p>
             </Section>
 
           </div>

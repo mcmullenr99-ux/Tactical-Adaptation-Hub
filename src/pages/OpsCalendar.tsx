@@ -1,3 +1,4 @@
+// ops-calendar v2 — milsim op sync
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { apiFetch } from "@/lib/apiFetch";

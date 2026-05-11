@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "nationality": {
+      "type": "string"
+    },
+    "role_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "games": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "availability": {
+      "type": "string"
+    },
+    "doctrine_style": {
+      "type": "string"
+    },
+    "prior_leadership": {
+      "type": "boolean"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "filled"
+      ]
+    },
+    "expires_at": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "OperatorListing"
+}

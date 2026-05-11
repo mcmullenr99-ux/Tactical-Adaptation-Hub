@@ -1,6 +1,7 @@
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useSEO } from "@/hooks/useSEO";
 import { FileText } from "lucide-react";
+import { TAG_DISCORD_URL } from '@/lib/constants';
 
 export default function TermsOfService() {
   useSEO({ title: "Terms of Service", description: "TAG Terms of Service — rules and standards for community membership." });
@@ -88,7 +89,7 @@ export default function TermsOfService() {
             </Section>
 
             <Section title="Contact">
-              <p>Discord: <a href="https://discord.gg/matmFhU4yg" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">discord.gg/matmFhU4yg</a></p>
+              <p>Discord: <a href={TAG_DISCORD_URL} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">{TAG_DISCORD_URL.replace("https://", "")}</a></p>
             </Section>
 
           </div>

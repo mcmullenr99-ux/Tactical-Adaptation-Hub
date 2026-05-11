@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import {
   Terminal, Users, Shield, Search, Trash2, Ban, CheckCircle2,
   ChevronDown, AlertTriangle, ExternalLink, RefreshCw, X,
-  Lock, LockOpen, ShieldAlert, Info
+  Lock, LockOpen, ShieldAlert, Info, Star, Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -22,11 +22,11 @@ interface AdminUser {
 }
 
 interface AdminGroup {
-  id: number; name: string; slug: string; status: string;
+  id: string; name: string; slug: string; status: string;
   tag_line: string | null; description: string | null;
   discord_url: string | null; website_url: string | null;
   logo_url: string | null; created_at: string;
-  owner_id: number | null; owner_username: string | null; owner_email: string | null;
+  owner_id: string | null; owner_username: string | null; owner_email: string | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -134,7 +134,7 @@ function AccountsTab({ isAdmin }: { isAdmin: boolean }) {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return users.filter(u => u.username.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || String(u.id).includes(q));
+    return users.filter(u => (u.username ?? "").toLowerCase().includes(q) || (u.email ?? "").toLowerCase().includes(q) || String(u.id).includes(q));
   }, [users, search]);
 
   const banMutation = useMutation({
@@ -279,18 +279,18 @@ function GroupsTab({ isAdmin }: { isAdmin: boolean }) {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return groups.filter(g => g.name.toLowerCase().includes(q) || g.slug.toLowerCase().includes(q) || (g.owner_username || "").toLowerCase().includes(q));
+    return groups.filter(g => (g.name ?? "").toLowerCase().includes(q) || (g.slug ?? "").toLowerCase().includes(q) || (g.owner_username || "").toLowerCase().includes(q));
   }, [groups, search]);
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: string }) =>
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
       apiFetch(`/admin?path=milsim-groups/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin", "milsim-groups"] }); toast({ title: "Status Updated" }); },
     onError: () => toast({ title: "Failed", description: "Could not update group status.", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiFetch(`/admin?path=milsim-groups/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiFetch(`/admin?path=milsim-groups/${id}`, { method: "DELETE" }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin", "milsim-groups"] }); toast({ title: "Group Deleted" }); setDeleteTarget(null); },
     onError: () => toast({ title: "Failed", description: "Could not delete group.", variant: "destructive" }),
   });
@@ -427,7 +427,98 @@ function LockdownToggle() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-type Tab = "accounts" | "groups";
+// ─── Featured Requests Tab ────────────────────────────────────────────────────
+function FeaturedRequestsTab({ isAdmin }: { isAdmin: boolean }) {
+  const { data: groups = [], isLoading, refetch } = useQuery({
+    queryKey: ["admin-featured-requests"],
+    queryFn: () => apiFetch<any[]>("/admin?path=milsim-groups"),
+  });
+
+  const [acting, setActing] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const requests = (groups ?? []).filter((g: any) => g.featured_requested && g.status !== "featured");
+
+  const approve = async (group: any) => {
+    setActing(group.id);
+    try {
+      await apiFetch(`/admin?path=milsim-groups/${group.id}/status`, { method: "PATCH", body: JSON.stringify({ status: "featured", featured_requested: false }) });
+      toast({ title: "Approved", description: `${group.name} is now featured.` });
+      refetch();
+    } catch { toast({ title: "Error", variant: "destructive" }); }
+    setActing(null);
+  };
+
+  const decline = async (group: any) => {
+    setActing(group.id);
+    try {
+      await apiFetch(`/admin?path=milsim-groups/${group.id}/status`, { method: "PATCH", body: JSON.stringify({ featured_requested: false }) });
+      toast({ title: "Declined", description: `${group.name}'s request declined.` });
+      refetch();
+    } catch { toast({ title: "Error", variant: "destructive" }); }
+    setActing(null);
+  };
+
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display font-black text-lg uppercase tracking-wider text-foreground flex items-center gap-2">
+            <Star className="w-5 h-5 text-yellow-400" /> Featured Listing Requests
+          </h2>
+          <p className="text-xs text-muted-foreground font-sans mt-0.5">Units that have requested a featured position in the registry. Approve to set their status to Featured.</p>
+        </div>
+        <button onClick={() => refetch()} className="p-2 rounded border border-border text-muted-foreground hover:text-foreground transition-colors">
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      </div>
+
+      {requests.length === 0 ? (
+        <div className="text-center py-16 border border-dashed border-border rounded-lg">
+          <Star className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
+          <p className="font-display font-bold uppercase tracking-widest text-muted-foreground text-sm">No pending featured requests</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {requests.map((g: any) => (
+            <div key={g.id} className="bg-card border border-yellow-500/20 rounded-lg p-4 flex items-center gap-4">
+              <div className="w-10 h-10 shrink-0 bg-secondary border border-border rounded flex items-center justify-center overflow-hidden">
+                {g.logo_url ? <img src={g.logo_url} className="w-full h-full object-contain p-1" onError={e => (e.currentTarget.style.display="none")} /> : <Shield className="w-5 h-5 text-muted-foreground/40" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-display font-black text-sm uppercase tracking-wider text-foreground">{g.name}</div>
+                <div className="text-[10px] text-muted-foreground font-sans">{g.owner_username ?? "—"} · {g.status}</div>
+                {g.tag_line && <div className="text-[10px] text-muted-foreground font-sans truncate mt-0.5">{g.tag_line}</div>}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Link href={`/milsim/${g.slug}`} target="_blank" className="p-1.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+                {isAdmin && (
+                  <>
+                    <button onClick={() => approve(g)} disabled={acting === g.id}
+                      className="px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 rounded text-[10px] font-display font-bold uppercase tracking-widest hover:bg-yellow-500/20 transition-colors disabled:opacity-50 flex items-center gap-1">
+                      {acting === g.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Star className="w-3 h-3" />} Approve
+                    </button>
+                    <button onClick={() => decline(g)} disabled={acting === g.id}
+                      className="px-3 py-1.5 bg-destructive/10 border border-destructive/30 text-destructive rounded text-[10px] font-display font-bold uppercase tracking-widest hover:bg-destructive/20 transition-colors disabled:opacity-50">
+                      Decline
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+type Tab = "accounts" | "groups" | "featured";
 
 export default function CommandCenter() {
   const { user } = useAuth();
@@ -435,8 +526,9 @@ export default function CommandCenter() {
   const isAdmin = user?.role === "admin";
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "accounts", label: "Accounts",     icon: <Users className="w-4 h-4" /> },
-    { id: "groups",   label: "MilSim Groups", icon: <Shield className="w-4 h-4" /> },
+    { id: "accounts", label: "Accounts",          icon: <Users className="w-4 h-4" /> },
+    { id: "groups",   label: "MilSim Groups",      icon: <Shield className="w-4 h-4" /> },
+    { id: "featured", label: "Featured Requests",  icon: <Star className="w-4 h-4" /> },
   ];
 
   return (
@@ -492,6 +584,7 @@ export default function CommandCenter() {
 
         {tab === "accounts" && <AccountsTab isAdmin={isAdmin} />}
         {tab === "groups"   && <GroupsTab   isAdmin={isAdmin} />}
+        {tab === "featured" && <FeaturedRequestsTab isAdmin={isAdmin} />}
 
       </div>
     </PortalLayout>

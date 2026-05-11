@@ -1,0 +1,64 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "target_group_id": {
+      "type": "string"
+    },
+    "target_group_name": {
+      "type": "string"
+    },
+    "target_group_tag": {
+      "type": "string"
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "FRIENDLY",
+        "NEUTRAL",
+        "UNKNOWN",
+        "HOSTILE"
+      ]
+    },
+    "threat_level": {
+      "type": "string",
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ]
+    },
+    "known_games": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "known_tactics": {
+      "type": "string"
+    },
+    "known_equipment": {
+      "type": "string"
+    },
+    "engagement_history": {
+      "type": "string"
+    },
+    "last_contact_date": {
+      "type": "string"
+    },
+    "analyst_notes": {
+      "type": "string"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "created_by_callsign": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "ThreatProfile"
+}

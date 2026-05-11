@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "role_id": {
+      "type": "string"
+    },
+    "role_name": {
+      "type": "string"
+    },
+    "min_ops_per_30d": {
+      "type": "number"
+    },
+    "min_training_per_30d": {
+      "type": "number"
+    },
+    "min_aars_per_30d": {
+      "type": "number"
+    },
+    "min_apps_reviewed_per_30d": {
+      "type": "number"
+    },
+    "lapse_after_days": {
+      "type": "number"
+    },
+    "is_leadership": {
+      "type": "boolean"
+    },
+    "is_instructor": {
+      "type": "boolean"
+    },
+    "is_admin": {
+      "type": "boolean"
+    }
+  },
+  "required": [],
+  "name": "RoleExpectation"
+}

@@ -25,10 +25,34 @@
     "steam_group_url": {
       "type": "string"
     },
+    "twitter_url": {
+      "type": "string"
+    },
+    "instagram_url": {
+      "type": "string"
+    },
+    "tiktok_url": {
+      "type": "string"
+    },
+    "youtube_url": {
+      "type": "string"
+    },
+    "twitch_url": {
+      "type": "string"
+    },
     "logo_url": {
       "type": "string"
     },
+    "banner_url": {
+      "type": "string"
+    },
+    "banner_position": {
+      "type": "string"
+    },
     "sops": {
+      "type": "string"
+    },
+    "roe": {
       "type": "string"
     },
     "orbat": {
@@ -104,28 +128,19 @@
       "type": "boolean"
     },
     "chain_of_command": {
-      "type": "array",
-      "description": "Array of CoC positions: [{id, title, roster_id, callsign, sort_order}]",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "roster_id": {
-            "type": "string"
-          },
-          "callsign": {
-            "type": "string"
-          },
-          "sort_order": {
-            "type": "number"
-          }
-        }
-      }
+      "type": "array"
+    },
+    "app_policy": {
+      "type": "string"
+    },
+    "structure_doctrine": {
+      "type": "string"
+    },
+    "structure_lock_roles": {
+      "type": "boolean"
+    },
+    "featured_requested": {
+      "type": "boolean"
     }
   },
   "required": [],

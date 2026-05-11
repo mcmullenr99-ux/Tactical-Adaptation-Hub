@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "game": {
+      "type": "string"
+    },
+    "server_address": {
+      "type": "string"
+    },
+    "port": {
+      "type": "string"
+    },
+    "password": {
+      "type": "string"
+    },
+    "modset_url": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "is_primary": {
+      "type": "boolean"
+    },
+    "is_active": {
+      "type": "boolean"
+    },
+    "created_by": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "GameServer"
+}

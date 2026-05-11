@@ -53,6 +53,8 @@ import TwoFactorAuth from "@/pages/portal/TwoFactorAuth";
 import Support from "@/pages/portal/Support";
 import SupportAdmin from "@/pages/portal/SupportAdmin";
 import CommanderPro from "@/pages/CommanderPro";
+import JointOps from "@/pages/JointOps";
+import RecruitmentMarketplace from "@/pages/RecruitmentMarketplace";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -117,6 +119,9 @@ function Router() {
       <Route path="/portal/support-admin" component={SupportAdmin} />
       <Route path="/commander-pro" component={CommanderPro} />
       <Route path="/stats" component={Stats} />
+      <Route path="/joint-ops" component={JointOps} />
+      <Route path="/recruitment" component={RecruitmentMarketplace} />
+      <Route path="/leaderboard" component={JointOps} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     // Check if existing Stripe customer
     const existing = await base44.asServiceRole.entities.CommanderPro.filter({ group_id });
     let customerId: string | undefined;
-    if (existing.length > 0 && existing[0].stripe_customer_id && !existing[0].stripe_customer_id.startsWith('dev_')) {
+    if (existing.length > 0 && existing[0].stripe_customer_id && !existing[0].stripe_customer_id.startsWith('dev_') && existing[0].stripe_customer_id !== 'manual_override') {
       customerId = existing[0].stripe_customer_id;
     }
 

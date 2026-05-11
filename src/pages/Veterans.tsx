@@ -7,6 +7,7 @@ import {
   Compass, MapPin, ChevronDown, Loader2, Globe,
 } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
+import { TAG_DISCORD_URL } from '@/lib/constants';
 
 // ── Resource types ─────────────────────────────────────────────────────────────
 
@@ -717,7 +718,7 @@ export default function Veterans() {
                 Join the Unit
               </Link>
               <a
-                href="https://discord.gg/matmFhU4yg"
+                href={TAG_DISCORD_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground font-display font-bold uppercase tracking-widest text-sm px-8 py-4 rounded clip-angled transition-all active:scale-95"

@@ -14,7 +14,13 @@ Deno.serve(async (req) => {
 
     // Check Pro status
     const proRecords = await base44.asServiceRole.entities.CommanderPro.filter({ group_id });
-    const isPro = proRecords.some((r: any) => r.status === 'active' || r.status === 'trialing');
+    const isPro = proRecords.some((r: any) =>
+      r.status === 'active' ||
+      r.status === 'trialing' ||
+      r.status === 'manual_override' ||
+      r.stripe_customer_id === 'manual_override' ||
+      r.stripe_subscription_id === 'manual_override'
+    );
     if (!isPro) {
       return new Response(JSON.stringify({ error: 'Commander Pro required', code: 'NOT_PRO' }), { status: 403 });
     }

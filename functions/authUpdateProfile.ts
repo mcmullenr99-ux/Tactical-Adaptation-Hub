@@ -56,7 +56,8 @@ Deno.serve(async (req) => {
     // PATCH — update profile fields
     if (req.method === 'PATCH') {
       const body = await req.json().catch(() => ({}));
-      const { bio, discordTag, nationality, steamProfileUrl, xboxGamertag, psnId, currentPassword, newPassword } = body;
+      const { bio, discordTag, nationality, steamProfileUrl, xboxGamertag, psnId, currentPassword, newPassword,
+              looking_for_unit, operator_profile_public, sme_tags, preferred_roles, preferred_games, years_experience, availability } = body;
 
       const updates: Record<string, any> = {};
       if (bio !== undefined) updates.bio = bio;
@@ -65,6 +66,13 @@ Deno.serve(async (req) => {
       if (steamProfileUrl !== undefined) updates.steam_profile_url = steamProfileUrl;
       if (xboxGamertag !== undefined) updates.xbox_gamertag = xboxGamertag;
       if (psnId !== undefined) updates.psn_id = psnId;
+      if (looking_for_unit !== undefined) updates.looking_for_unit = looking_for_unit;
+      if (operator_profile_public !== undefined) updates.operator_profile_public = operator_profile_public;
+      if (sme_tags !== undefined) updates.sme_tags = Array.isArray(sme_tags) ? sme_tags : [];
+      if (preferred_roles !== undefined) updates.preferred_roles = Array.isArray(preferred_roles) ? preferred_roles : [];
+      if (preferred_games !== undefined) updates.preferred_games = Array.isArray(preferred_games) ? preferred_games : [];
+      if (years_experience !== undefined) updates.years_experience = years_experience ? parseInt(String(years_experience)) : null;
+      if (availability !== undefined) updates.availability = availability || null;
 
       if (newPassword) {
         if (!currentPassword) return Response.json({ error: 'Current password required' }, { status: 400 });

@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "from_rank_id": {
+      "type": "string"
+    },
+    "to_rank_id": {
+      "type": "string"
+    },
+    "from_rank_name": {
+      "type": "string"
+    },
+    "to_rank_name": {
+      "type": "string"
+    },
+    "min_ops": {
+      "type": "number"
+    },
+    "min_tenure_days": {
+      "type": "number"
+    },
+    "require_aar": {
+      "type": "boolean"
+    },
+    "require_no_active_conduct": {
+      "type": "boolean"
+    },
+    "is_active": {
+      "type": "boolean"
+    },
+    "created_by": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "PromotionRule"
+}

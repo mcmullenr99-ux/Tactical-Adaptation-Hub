@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "properties": {
+    "challenger_group_id": {
+      "type": "string"
+    },
+    "challenger_group_name": {
+      "type": "string"
+    },
+    "challenger_group_tag": {
+      "type": "string"
+    },
+    "defender_group_id": {
+      "type": "string"
+    },
+    "defender_group_name": {
+      "type": "string"
+    },
+    "defender_group_tag": {
+      "type": "string"
+    },
+    "game": {
+      "type": "string"
+    },
+    "op_type": {
+      "type": "string",
+      "enum": [
+        "competitive",
+        "cooperative",
+        "training_exercise"
+      ]
+    },
+    "proposed_date": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined",
+        "expired",
+        "cancelled"
+      ]
+    },
+    "response_note": {
+      "type": "string"
+    },
+    "responded_at": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "JointOpChallenge"
+}

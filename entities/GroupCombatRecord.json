@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "group_name": {
+      "type": "string"
+    },
+    "group_tag": {
+      "type": "string"
+    },
+    "tier": {
+      "type": "number"
+    },
+    "total_points": {
+      "type": "number"
+    },
+    "wins": {
+      "type": "number"
+    },
+    "losses": {
+      "type": "number"
+    },
+    "draws": {
+      "type": "number"
+    },
+    "ops_played": {
+      "type": "number"
+    },
+    "ops_cooperative": {
+      "type": "number"
+    },
+    "win_rate": {
+      "type": "number"
+    },
+    "current_streak": {
+      "type": "number"
+    },
+    "best_streak": {
+      "type": "number"
+    },
+    "last_op_at": {
+      "type": "string"
+    },
+    "season": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "GroupCombatRecord"
+}

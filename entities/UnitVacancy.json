@@ -1,0 +1,90 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "group_name": {
+      "type": "string"
+    },
+    "group_tag": {
+      "type": "string"
+    },
+    "group_logo_url": {
+      "type": "string"
+    },
+    "role_tag": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "games": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "min_ops": {
+      "type": "number"
+    },
+    "min_months_on_platform": {
+      "type": "number"
+    },
+    "min_reputation_score": {
+      "type": "number"
+    },
+    "require_no_blacklist": {
+      "type": "boolean"
+    },
+    "required_qualifications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "preferred_timezone": {
+      "type": "string"
+    },
+    "preferred_availability": {
+      "type": "string"
+    },
+    "preferred_doctrine": {
+      "type": "string"
+    },
+    "comms_standard": {
+      "type": "string"
+    },
+    "require_prior_leadership": {
+      "type": "boolean"
+    },
+    "our_standard": {
+      "type": "string"
+    },
+    "selection_process": {
+      "type": "string"
+    },
+    "probation_detail": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "filled"
+      ]
+    },
+    "expires_at": {
+      "type": "string"
+    },
+    "applicant_count": {
+      "type": "number"
+    }
+  },
+  "required": [],
+  "name": "UnitVacancy"
+}

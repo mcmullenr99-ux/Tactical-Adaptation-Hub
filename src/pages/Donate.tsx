@@ -1,13 +1,12 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
+import { useState, useCallback } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Heart, Server, Shield, Crosshair, Users, ExternalLink, CreditCard, RefreshCw, Loader2 } from "lucide-react";
+import { Heart, Server, Shield, Crosshair, Users, ExternalLink, CreditCard, Loader2 } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import { apiFetch } from "@/lib/apiFetch";
-import { useQuery } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
 
 const KOFI_URL = "https://ko-fi.com/tagtacticaladaptationgroup";
+const DONATION_FN_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/createDonationSession";
 
 const SERVER_USES = [
   { icon: Crosshair, title: "Arma 3 & Reforger", description: "Dedicated mission servers for our weekly ops and training events." },
@@ -21,51 +20,50 @@ function formatAmount(amount: number, currency: string) {
   return `${symbol}${(amount / 100).toFixed(2).replace(/\.00$/, "")}`;
 }
 
-function useStripeProducts() {
-  return useQuery({
-    queryKey: ["stripe-products"],
-    queryFn: () => apiFetch<{ data: any[] }>("/createProCheckout?path=products"),
-    staleTime: 5 * 60 * 1000,
-  });
-}
 
-function useMe() {
-  return useQuery({
-    queryKey: ["me"],
-    queryFn: () => apiFetch<{ id: number; username: string } | null>("/authMe").catch(() => null),
-    staleTime: 30 * 1000,
-  });
+function StripeCardButton() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleClick = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(DONATION_FN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || "Could not start checkout. Try again.");
+        setLoading(false);
+      }
+    } catch {
+      setError("Network error. Please try again.");
+      setLoading(false);
+    }
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <button
+        onClick={handleClick}
+        disabled={loading}
+        className="inline-flex items-center gap-3 bg-primary/10 hover:bg-primary/20 border border-primary/40 text-primary font-display font-black uppercase tracking-widest text-base px-10 py-4 rounded clip-angled transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+      >
+        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
+        {loading ? "Redirecting..." : "Pay by Card"}
+      </button>
+      {error && <p className="text-xs text-red-400 font-sans">{error}</p>}
+    </div>
+  );
 }
 
 export default function Donate() {
   useSEO({ title: "Support TAG", description: "Support TAG via card payment or Ko-fi. Your contributions fund servers, events, and keep the community running." });
-  const { toast } = useToast();
-  const { data: productsData } = useStripeProducts();
-  const { data: me } = useMe();
-  const [loadingPrice, setLoadingPrice] = useState<string | null>(null);
-
-  const products = productsData?.data ?? [];
-  const supporter = products.find((p: any) => p.name === "TAG Supporter");
-  const donationProduct = products.find((p: any) => p.name === "TAG Donation");
-
-  const handleCheckout = async (priceId: string, mode: "subscription" | "payment") => {
-    if (!me) {
-      window.location.href = "/portal/login?returnTo=/donate";
-      return;
-    }
-    setLoadingPrice(priceId);
-    try {
-      const { url } = await apiFetch<{ url: string }>("/createProCheckout", {
-        method: "POST",
-        body: JSON.stringify({ priceId, mode }),
-      });
-      window.location.href = url;
-    } catch (err: any) {
-      toast({ title: "Checkout Failed", description: err.message, variant: "destructive" });
-    } finally {
-      setLoadingPrice(null);
-    }
-  };
 
   return (
     <MainLayout>
@@ -97,11 +95,7 @@ export default function Donate() {
               >
                 <Heart className="w-5 h-5" /> Donate via Ko-fi <ExternalLink className="w-4 h-4 opacity-70" />
               </a>
-              <a href="#stripe-donate"
-                className="inline-flex items-center gap-3 bg-primary/10 hover:bg-primary/20 border border-primary/40 text-primary font-display font-black uppercase tracking-widest text-base px-10 py-4 rounded clip-angled transition-all active:scale-95"
-              >
-                <CreditCard className="w-5 h-5" /> Pay by Card
-              </a>
+              <StripeCardButton />
             </div>
             <p className="mt-4 text-xs text-muted-foreground font-sans">
               Ko-fi · Stripe · Secure payments · No hidden fees
@@ -138,86 +132,6 @@ export default function Donate() {
           </div>
         </div>
       </section>
-
-      {/* Stripe Supporter Subscription */}
-      {supporter && (
-        <section className="py-20">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
-              <h2 className="font-display font-black text-3xl md:text-4xl uppercase tracking-tight text-foreground mb-4">
-                Become a <span className="text-primary">TAG Supporter</span>
-              </h2>
-              <p className="text-muted-foreground font-sans max-w-xl mx-auto">
-                Monthly or annual recurring support — cancel anytime. Requires a TAG account.
-              </p>
-            </motion.div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
-              {supporter.prices.map((price: any) => (
-                <motion.div key={price.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                  className="bg-card border border-primary/30 rounded-lg p-8 text-center hover:border-primary/60 transition-colors"
-                >
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <RefreshCw className="w-4 h-4 text-primary" />
-                    <span className="font-display font-bold uppercase tracking-wider text-primary text-sm">
-                      {price.recurring?.interval === "month" ? "Monthly" : "Annual"}
-                    </span>
-                  </div>
-                  <div className="font-display font-black text-4xl text-foreground mb-1">
-                    {formatAmount(price.unit_amount, price.currency)}
-                  </div>
-                  <p className="text-muted-foreground text-sm font-sans mb-6">
-                    per {price.recurring?.interval}
-                    {price.recurring?.interval === "year" && <span className="ml-2 text-accent font-bold">Save 17%</span>}
-                  </p>
-                  <button
-                    onClick={() => handleCheckout(price.id, "subscription")}
-                    disabled={loadingPrice === price.id}
-                    className="w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-black uppercase tracking-widest text-sm px-6 py-3 rounded transition-all active:scale-95 disabled:opacity-60"
-                  >
-                    {loadingPrice === price.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-                    {me ? "Subscribe" : "Login to Subscribe"}
-                  </button>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Stripe One-Time Donations */}
-      {donationProduct && (
-        <section id="stripe-donate" className="py-20 bg-secondary/20 border-y border-border">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
-              <h2 className="font-display font-black text-3xl md:text-4xl uppercase tracking-tight text-foreground mb-4">
-                One-Time <span className="text-primary">Donation</span>
-              </h2>
-              <p className="text-muted-foreground font-sans max-w-xl mx-auto">
-                Pay once, direct card payment. Requires a TAG account to process.
-              </p>
-            </motion.div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-12">
-              {donationProduct.prices.sort((a: any, b: any) => a.unit_amount - b.unit_amount).map((price: any, i: number) => (
-                <motion.div key={price.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                  className="bg-card border border-border hover:border-primary/60 rounded-lg p-6 text-center transition-all hover:bg-primary/5"
-                >
-                  <div className="text-3xl font-display font-black text-primary mb-3">
-                    {formatAmount(price.unit_amount, price.currency)}
-                  </div>
-                  <button
-                    onClick={() => handleCheckout(price.id, "payment")}
-                    disabled={loadingPrice === price.id}
-                    className="w-full inline-flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 border border-primary/40 text-primary font-display font-bold uppercase tracking-wider text-xs px-4 py-2 rounded transition-all active:scale-95 disabled:opacity-60"
-                  >
-                    {loadingPrice === price.id ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                    {me ? "Donate" : "Login to Donate"}
-                  </button>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Ko-fi CTA */}
       <section className="py-20">

@@ -37,9 +37,9 @@ async function uploadFile(bytes: Uint8Array, filename: string): Promise<string> 
   const serviceToken = Deno.env.get('BASE44_SERVICE_TOKEN') ?? '';
   const form = new FormData();
   form.append('file', new Blob([bytes], { type: 'text/plain' }), filename);
-  const r = await fetch(`https://api.base44.com/api/apps/${BASE44_APP_ID}/files/upload`, {
+  const r = await fetch(`https://base44.app/api/apps/${BASE44_APP_ID}/integration-endpoints/Core/UploadFile`, {
     method: 'POST',
-    headers: { 'x-api-key': serviceToken },
+    headers: { 'Authorization': `Bearer ${serviceToken}` },
     body: form,
   });
   if (!r.ok) throw new Error(`Upload failed ${r.status}: ${await r.text()}`);

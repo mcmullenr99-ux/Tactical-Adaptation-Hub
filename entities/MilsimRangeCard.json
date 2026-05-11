@@ -1,0 +1,63 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "group_name": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "own_position_gr": {
+      "type": "string"
+    },
+    "aiming_point": {
+      "type": "string"
+    },
+    "aiming_gr": {
+      "type": "string"
+    },
+    "aiming_bearings": {
+      "type": "string"
+    },
+    "aiming_descrip": {
+      "type": "string"
+    },
+    "aiming_range": {
+      "type": "string"
+    },
+    "made_out_by": {
+      "type": "string"
+    },
+    "made_out_by_id": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string"
+    },
+    "map_sheet": {
+      "type": "string"
+    },
+    "scale": {
+      "type": "string"
+    },
+    "max_range_m": {
+      "type": "number"
+    },
+    "targets": {
+      "type": "array"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "saved",
+        "archived"
+      ]
+    }
+  },
+  "required": [],
+  "name": "MilsimRangeCard"
+}

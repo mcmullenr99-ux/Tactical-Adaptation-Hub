@@ -1,0 +1,100 @@
+{
+  "type": "object",
+  "properties": {
+    "challenge_id": {
+      "type": "string"
+    },
+    "group_a_id": {
+      "type": "string"
+    },
+    "group_a_name": {
+      "type": "string"
+    },
+    "group_a_tag": {
+      "type": "string"
+    },
+    "group_b_id": {
+      "type": "string"
+    },
+    "group_b_name": {
+      "type": "string"
+    },
+    "group_b_tag": {
+      "type": "string"
+    },
+    "game": {
+      "type": "string"
+    },
+    "op_type": {
+      "type": "string",
+      "enum": [
+        "competitive",
+        "cooperative",
+        "training_exercise"
+      ]
+    },
+    "scheduled_at": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "in_progress",
+        "completed",
+        "disputed",
+        "cancelled"
+      ]
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "group_a_win",
+        "group_b_win",
+        "draw",
+        "null"
+      ]
+    },
+    "outcome_note": {
+      "type": "string"
+    },
+    "submitted_by": {
+      "type": "string"
+    },
+    "submitted_by_group": {
+      "type": "string"
+    },
+    "confirmed_by": {
+      "type": "string"
+    },
+    "confirmed_by_group": {
+      "type": "string"
+    },
+    "confirmed_at": {
+      "type": "string"
+    },
+    "disputed": {
+      "type": "boolean"
+    },
+    "dispute_reason": {
+      "type": "string"
+    },
+    "dispute_raised_by": {
+      "type": "string"
+    },
+    "group_a_points_delta": {
+      "type": "number"
+    },
+    "group_b_points_delta": {
+      "type": "number"
+    },
+    "aar_url": {
+      "type": "string"
+    },
+    "eyewitness_count": {
+      "type": "number"
+    }
+  },
+  "required": [],
+  "name": "JointOp"
+}

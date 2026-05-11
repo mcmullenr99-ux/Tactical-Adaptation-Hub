@@ -19,32 +19,39 @@ async function getUserFromRequest(req: Request, base44: any): Promise<any | null
 
 /**
  * Count unique active days in the last 7 days from activity_dates array.
- * activity_dates = ["2026-03-20", "2026-03-22", ...] — deduplicated ISO date strings
- * populated by AAR participation, Op attendance, and Training completion.
+ * Also merges last_active_at as a signal so login activity counts.
  */
-function computeWeeklyActiveDays(activityDates: string[] | null | undefined): number {
-  if (!activityDates || activityDates.length === 0) return 0;
+function computeWeeklyActiveDays(activityDates: string[] | null | undefined, lastActiveAt: string | null | undefined): number {
   const now = new Date();
   const sevenDaysAgo = new Date(now);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const cutoff = sevenDaysAgo.toISOString().slice(0, 10); // "YYYY-MM-DD"
-  const unique = new Set(activityDates.filter(d => d >= cutoff));
-  return unique.size;
+  const cutoff = sevenDaysAgo.toISOString().slice(0, 10);
+
+  const dates = new Set<string>(
+    (activityDates ?? []).filter(d => d >= cutoff)
+  );
+
+  // Also count last_active_at as a login signal — each day you visit the platform counts
+  if (lastActiveAt) {
+    const lastDate = lastActiveAt.slice(0, 10);
+    if (lastDate >= cutoff) dates.add(lastDate);
+  }
+
+  return dates.size;
 }
 
 /**
- * Derive duty status from weekly active days (cross-referenced with real activity).
- * - 5-7 days/week → "active"      (fully committed)
- * - 3-4 days/week → "available"   (regularly active)
- * - 1-2 days/week → "on-leave"    (light activity)
- * - 0 days/week   → "mia"         (no recorded activity this week)
+ * Derive duty status from weekly active days.
+ * - 5-7 days/week → "active"
+ * - 3-4 days/week → "available"
+ * - 1-2 days/week → "on-leave"
+ * - 0 days/week   → "mia"
  */
-function computeDutyStatus(activityDates: string[] | null | undefined): string {
-  const weekly = computeWeeklyActiveDays(activityDates);
-  if (weekly >= 5) return 'active';
-  if (weekly >= 3) return 'available';
-  if (weekly >= 1) return 'on-leave';
-  return 'mia';
+function computeDutyStatus(activityDates: string[] | null | undefined, lastActiveAt: string | null | undefined): string {
+  const weekly = computeWeeklyActiveDays(activityDates, lastActiveAt);
+  if (weekly >= 4) return 'active';
+  if (weekly >= 1) return 'available';
+  return 'on-leave';
 }
 
 Deno.serve(async (req) => {
@@ -63,8 +70,23 @@ Deno.serve(async (req) => {
 
     // GET / — return current user
     if (method === 'GET' && parts.length === 0) {
-      const weeklyActiveDays = computeWeeklyActiveDays(user.activity_dates);
-      const dutyStatus = computeDutyStatus(user.activity_dates);
+      const weeklyActiveDays = computeWeeklyActiveDays(user.activity_dates, user.last_active_at);
+      const dutyStatus = computeDutyStatus(user.activity_dates, user.last_active_at);
+
+      // Update last_active_at on every dashboard load (background, fire-and-forget)
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const existingDates: string[] = user.activity_dates ?? [];
+      if (!existingDates.includes(todayStr)) {
+        const updated = [...existingDates, todayStr].slice(-60); // keep last 60 days
+        base44.asServiceRole.entities.AppUser.update(user.id, {
+          last_active_at: new Date().toISOString(),
+          activity_dates: updated,
+        }).catch(() => {});
+      } else {
+        base44.asServiceRole.entities.AppUser.update(user.id, {
+          last_active_at: new Date().toISOString(),
+        }).catch(() => {});
+      }
 
       return Response.json({
         id: user.id,

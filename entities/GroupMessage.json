@@ -1,0 +1,46 @@
+{
+  "type": "object",
+  "properties": {
+    "channel_id": {
+      "type": "string"
+    },
+    "group_id": {
+      "type": "string"
+    },
+    "author_id": {
+      "type": "string"
+    },
+    "author_callsign": {
+      "type": "string"
+    },
+    "author_rank": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "mentions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "is_pinned": {
+      "type": "boolean"
+    },
+    "pinned_by": {
+      "type": "string"
+    },
+    "edited_at": {
+      "type": "string"
+    },
+    "deleted": {
+      "type": "boolean"
+    }
+  },
+  "required": [],
+  "name": "GroupMessage"
+}

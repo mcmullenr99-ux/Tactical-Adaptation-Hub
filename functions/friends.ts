@@ -20,6 +20,18 @@ async function getFriendship(base44: any, userAId: string, userBId: string) {
   return b[0] ?? null;
 }
 
+async function pushNotif(base44: any, userId: string, type: string, title: string, body: string, link?: string) {
+  try {
+    await base44.asServiceRole.entities.Notification.create({
+      user_id: userId, type, title, body,
+      ...(link ? { link } : {}),
+      is_read: false,
+    });
+  } catch (e) {
+    console.error('[pushNotif] failed:', e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   try {
@@ -39,9 +51,23 @@ Deno.serve(async (req) => {
         base44.asServiceRole.entities.Friendship.filter({ requester_id: full.id, status: 'accepted' }),
         base44.asServiceRole.entities.Friendship.filter({ addressee_id: full.id, status: 'accepted' }),
       ]);
-      const friendIds = [...asRequester.map((f: any) => f.addressee_id), ...asAddressee.map((f: any) => f.requester_id)];
+      // Build map: friendUserId → { friendship_id, friends_since }
+      const friendMap: Record<string, { friendship_id: string; friends_since: string }> = {};
+      asRequester.forEach((f: any) => { friendMap[f.addressee_id] = { friendship_id: f.id, friends_since: f.created_date }; });
+      asAddressee.forEach((f: any) => { friendMap[f.requester_id] = { friendship_id: f.id, friends_since: f.created_date }; });
+      const friendIds = Object.keys(friendMap);
       const friends = await Promise.all(friendIds.map((id: string) => base44.asServiceRole.entities.AppUser.get(id)));
-      return Response.json(friends.filter(Boolean).map((u: any) => ({ id: u.id, username: u.username, role: u.role, bio: u.bio ?? null, discord_tag: u.discord_tag ?? null, nationality: u.nationality ?? null })));
+      return Response.json(friends.filter(Boolean).map((u: any) => ({
+        id: u.id,
+        friendship_id: friendMap[u.id]?.friendship_id ?? null,
+        friends_since: friendMap[u.id]?.friends_since ?? null,
+        username: u.username,
+        role: u.role,
+        bio: u.bio ?? null,
+        discord_tag: u.discord_tag ?? null,
+        nationality: u.nationality ?? null,
+        avatar_url: u.avatar_url ?? null,
+      })));
     }
 
     // GET /friends/requests
@@ -51,7 +77,17 @@ Deno.serve(async (req) => {
       const pending = await base44.asServiceRole.entities.Friendship.filter({ addressee_id: full.id, status: 'pending' });
       const withUsers = await Promise.all(pending.map(async (f: any) => {
         const sender = await base44.asServiceRole.entities.AppUser.get(f.requester_id);
-        return { friendship_id: f.id, ...f, user: sender };
+        return {
+          friendship_id: f.id,
+          friends_since: f.created_date,
+          id: sender?.id ?? f.requester_id,
+          username: sender?.username ?? f.requester_username,
+          role: sender?.role ?? 'member',
+          bio: sender?.bio ?? null,
+          discord_tag: sender?.discord_tag ?? null,
+          nationality: sender?.nationality ?? null,
+          avatar_url: sender?.avatar_url ?? null,
+        };
       }));
       return Response.json(withUsers);
     }
@@ -77,6 +113,15 @@ Deno.serve(async (req) => {
         requester_id: full.id, requester_username: full.username,
         addressee_id: parts[1], addressee_username: other?.username ?? '', status: 'pending',
       });
+      // Notify addressee of the incoming request
+      await pushNotif(
+        base44,
+        parts[1],
+        'friend_request',
+        full.username + ' sent you a connection request',
+        'Head to Comms & Connections to accept or decline.',
+        '/portal/comms?section=requests'
+      );
       return Response.json(friendship, { status: 201 });
     }
 
@@ -86,7 +131,17 @@ Deno.serve(async (req) => {
       if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const row = await base44.asServiceRole.entities.Friendship.get(parts[0]);
       if (!row || row.addressee_id !== full.id) return Response.json({ error: 'Not authorised' }, { status: 403 });
-      return Response.json(await base44.asServiceRole.entities.Friendship.update(parts[0], { status: 'accepted' }));
+      const updated = await base44.asServiceRole.entities.Friendship.update(parts[0], { status: 'accepted' });
+      // Notify the original requester that they were accepted
+      await pushNotif(
+        base44,
+        row.requester_id,
+        'friend_accepted',
+        full.username + ' accepted your connection request',
+        'You are now connected. Send them a message in Comms.',
+        '/portal/comms?section=connections'
+      );
+      return Response.json(updated);
     }
 
     // PATCH /friends/:id/decline
@@ -110,7 +165,7 @@ Deno.serve(async (req) => {
     }
 
     return Response.json({ error: 'Not found' }, { status: 404 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[friends]', error);
     return Response.json({ error: error.message }, { status: 500 });
   }

@@ -1,0 +1,74 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "group_name": {
+      "type": "string"
+    },
+    "owner_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "looking_for": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "discord_url": {
+      "type": "string"
+    },
+    "youtube_url": {
+      "type": "string"
+    },
+    "twitch_url": {
+      "type": "string"
+    },
+    "steam_url": {
+      "type": "string"
+    },
+    "website_url": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "min_age": {
+      "type": "number"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused"
+      ]
+    },
+    "interval_hours": {
+      "type": "number"
+    },
+    "last_posted_at": {
+      "type": "string"
+    },
+    "post_count": {
+      "type": "number"
+    }
+  },
+  "required": [],
+  "name": "RecruitmentSchedule"
+}

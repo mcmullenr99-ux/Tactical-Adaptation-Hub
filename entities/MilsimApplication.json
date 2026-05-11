@@ -31,6 +31,8 @@
       "type": "string",
       "enum": [
         "pending",
+        "reviewing",
+        "interview",
         "approved",
         "rejected"
       ],
@@ -41,6 +43,26 @@
     },
     "reviewed_by": {
       "type": "string"
+    },
+    "service_dossier": {
+      "type": "object",
+      "description": "Full auto-generated service history snapshot compiled at application time"
+    },
+    "rejection_cooldown_until": {
+      "type": "string",
+      "description": "ISO date \u2014 applicant cannot reapply until after this date"
+    },
+    "rejection_cooldown_days": {
+      "type": "number",
+      "description": "Number of days the cooldown was set for, for display purposes"
+    },
+    "reapply_notified": {
+      "type": "boolean",
+      "description": "True once the re-apply eligible notification has been sent"
+    },
+    "score_notify_sent": {
+      "type": "boolean",
+      "description": "True once the score-threshold-crossed notification has been sent"
     }
   },
   "required": [

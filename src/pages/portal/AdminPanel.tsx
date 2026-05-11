@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { PortalLayout } from "@/components/layout/PortalLayout";
 import {
   Settings, Shield, Radio, Send, Loader2, KeyRound, Link as LinkIcon, MessageSquare, Save, Trash2,
-  Users, CheckCircle2, XCircle, Globe, AlertTriangle, Ban, Flag, RotateCcw, Eye, FileText, UserCheck, RefreshCw, MailCheck,
+  Users, CheckCircle2, XCircle, Globe, AlertTriangle, Ban, Flag, RotateCcw, Eye, FileText, UserCheck, RefreshCw, MailCheck, Swords, GitCommit, Mail, ExternalLink,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/apiFetch";
+import { formatDistanceToNow } from "date-fns";
 
 interface ResetToken {
   id: number; token: string; username: string; email: string;
@@ -26,7 +27,7 @@ export default function AdminPanel() {
   });
 
   const { toast } = useToast();
-  const [tab, setTab] = useState<"roster" | "broadcast" | "resets" | "motd" | "groups" | "aar_flags" | "pending_verify">("roster");
+  const [tab, setTab] = useState<"roster" | "broadcast" | "resets" | "motd" | "groups" | "aar_flags" | "pending_verify" | "disputes" | "github">("roster");
   const [bSubject, setBSubject] = useState("");
   const [bBody, setBBody] = useState("");
 
@@ -58,35 +59,63 @@ export default function AdminPanel() {
     navigator.clipboard.writeText(url).then(() => toast({ title: "Reset link copied to clipboard." }));
   };
 
+  const NAV_ITEMS = [
+    { key: "roster",         label: "Personnel",       icon: <Shield className="w-4 h-4" />,      desc: "User accounts & roles" },
+    { key: "broadcast",      label: "Broadcast",       icon: <Radio className="w-4 h-4" />,       desc: "System-wide messages" },
+    { key: "resets",         label: "Password Resets", icon: <KeyRound className="w-4 h-4" />,    desc: "Pending reset tokens" },
+    { key: "motd",           label: "MOTD / SITRAP",   icon: <MessageSquare className="w-4 h-4" />, desc: "Message of the day" },
+    { key: "groups",         label: "MilSim Groups",   icon: <Globe className="w-4 h-4" />,       desc: "Group management" },
+    { key: "aar_flags",      label: "AAR Flags",       icon: <Flag className="w-4 h-4" />,        desc: "Flagged after-action reports" },
+    { key: "pending_verify", label: "Pending Verify",  icon: <UserCheck className="w-4 h-4" />,   desc: "Groups awaiting verification" },
+    { key: "disputes",       label: "Op Disputes",     icon: <Swords className="w-4 h-4" />,      desc: "Disputed joint operations" },
+    { key: "github",         label: "Deploy Feed",     icon: <GitCommit className="w-4 h-4" />,    desc: "Recent commits & deployments" },
+  ];
+  const activeNav = NAV_ITEMS.find(n => n.key === tab);
+
   return (
     <PortalLayout requireRole={["admin"]}>
-      <div className="space-y-8">
-        <div className="flex items-center gap-4 border-b border-border pb-6">
-          <div className="w-12 h-12 bg-destructive/20 text-destructive rounded flex items-center justify-center clip-angled-sm">
-            <Settings className="w-6 h-6" />
+      <div className="flex flex-col gap-0 min-h-screen">
+        {/* Header */}
+        <div className="flex items-center gap-4 border-b border-border pb-5 mb-0">
+          <div className="w-11 h-11 bg-destructive/20 text-destructive rounded flex items-center justify-center shrink-0">
+            <Settings className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-3xl font-display font-bold uppercase tracking-wider text-foreground">Command Console</h1>
-            <p className="text-muted-foreground font-sans">Full administrative override privileges.</p>
+            <h1 className="text-2xl font-display font-bold uppercase tracking-wider text-foreground">Command Console</h1>
+            <p className="text-xs text-muted-foreground font-sans">Full administrative override privileges.</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1 border-b border-border">
-          {[
-            { key: "roster",    label: "Personnel",       icon: <Shield className="w-4 h-4" /> },
-            { key: "broadcast", label: "Broadcast",       icon: <Radio className="w-4 h-4" /> },
-            { key: "resets",    label: "Password Resets", icon: <KeyRound className="w-4 h-4" /> },
-            { key: "motd",      label: "MOTD / SITRAP",   icon: <MessageSquare className="w-4 h-4" /> },
-            { key: "groups",    label: "MilSim Groups",    icon: <Globe className="w-4 h-4" /> },
-            { key: "aar_flags", label: "AAR Flags",        icon: <Flag className="w-4 h-4" /> },
-            { key: "pending_verify", label: "Pending Verify", icon: <UserCheck className="w-4 h-4" /> },
-          ].map(t => (
-            <button key={t.key} onClick={() => setTab(t.key as any)}
-              className={`flex items-center gap-2 px-5 py-3 font-display font-bold uppercase tracking-widest text-sm transition-colors border-b-2 ${tab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-              {t.icon} {t.label}
-            </button>
-          ))}
-        </div>
+        {/* Sidebar + content layout */}
+        <div className="flex gap-0 flex-1 pt-5">
+          {/* Sidebar */}
+          <aside className="w-56 shrink-0 border-r border-border pr-4 space-y-0.5 mr-6">
+            <p className="text-[9px] font-display font-bold uppercase tracking-widest text-muted-foreground/50 px-3 pb-2">Navigation</p>
+            {NAV_ITEMS.map(item => (
+              <button key={item.key} onClick={() => setTab(item.key as any)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-left transition-colors group ${
+                  tab === item.key
+                    ? "bg-destructive/10 border border-destructive/20 text-destructive"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent"
+                }`}>
+                <span className={`shrink-0 ${tab === item.key ? "text-destructive" : "text-muted-foreground group-hover:text-foreground"}`}>{item.icon}</span>
+                <span className="font-display font-bold uppercase tracking-widest text-[11px] leading-tight">{item.label}</span>
+              </button>
+            ))}
+          </aside>
+
+          {/* Main content */}
+          <div className="flex-1 min-w-0 space-y-6">
+            {/* Section header */}
+            {activeNav && (
+              <div className="flex items-center gap-3 pb-4 border-b border-border">
+                <span className="text-destructive">{activeNav.icon}</span>
+                <div>
+                  <h2 className="font-display font-bold uppercase tracking-widest text-base text-foreground">{activeNav.label}</h2>
+                  <p className="text-[10px] text-muted-foreground font-sans">{activeNav.desc}</p>
+                </div>
+              </div>
+            )}
 
         {tab === "roster" && (
           <div className="bg-card border border-border rounded overflow-hidden shadow-lg">
@@ -205,7 +234,11 @@ export default function AdminPanel() {
         {tab === "groups" && <GroupsTab toast={toast} />}
         {tab === "aar_flags" && <AarFlagsTab toast={toast} />}
         {tab === "pending_verify" && <PendingVerifyTab toast={toast} />}
-      </div>
+        {tab === "disputes" && <OpDisputesTab toast={toast} />}
+        {tab === "github" && <DeployFeedTab />}
+          </div>{/* end main content */}
+        </div>{/* end sidebar+content */}
+      </div>{/* end outer */}
     </PortalLayout>
   );
 }
@@ -298,7 +331,7 @@ function MotdTab({ toast }: { toast: any }) {
                 <div className="flex-1 min-w-0">
                   <p className="font-display font-bold uppercase tracking-wider text-sm">{m.title}</p>
                   <p className="text-xs mt-1 opacity-80 font-sans">{m.content.slice(0, 120)}{m.content.length > 120 ? "..." : ""}</p>
-                  <p className="text-xs opacity-60 mt-1 font-mono">{m.type.toUpperCase()} · {format(new Date(m.created_at), "MMM dd HH:mm")}{m.expires_at ? ` · Expires ${format(new Date(m.expires_at), "MMM dd HH:mm")}` : ""}</p>
+                  <p className="text-xs opacity-60 mt-1 font-mono">{(m.type ?? "").toUpperCase()} · {format(new Date(m.created_at), "MMM dd HH:mm")}{m.expires_at ? ` · Expires ${format(new Date(m.expires_at), "MMM dd HH:mm")}` : ""}</p>
                 </div>
                 <button onClick={() => remove(m.id)} className="p-1.5 opacity-60 hover:opacity-100 transition-opacity shrink-0"><Trash2 className="w-4 h-4" /></button>
               </div>
@@ -857,6 +890,192 @@ function PendingVerifyTab({ toast }: { toast: any }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Op Disputes Tab ─────────────────────────────────────────────────────────
+function OpDisputesTab({ toast }: { toast: any }) {
+  const [ops, setOps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [resolving, setResolving] = useState<string | null>(null);
+  const [resolveData, setResolveData] = useState<Record<string, { outcome: string; note: string }>>({});
+
+  const API = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions";
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/jointOpsData?type=ops`);
+      const d = await res.json();
+      const disputed = (d.ops || []).filter((o: any) => o.status === "disputed" || o.disputed === true);
+      setOps(disputed);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const resolve = async (opId: string) => {
+    const data = resolveData[opId];
+    if (!data?.outcome) return;
+    setResolving(opId);
+    try {
+      const d = await apiFetch<any>(`/jointOpsAction`, {
+        method: "POST",
+        body: JSON.stringify({ action: "resolve_dispute", op_id: opId, outcome: data.outcome, admin_note: data.note || "" }),
+      });
+      if (d.error) throw new Error(d.error);
+      toast({ title: "Dispute Resolved", description: `Points awarded. ΔA: ${d.deltaA}, ΔB: ${d.deltaB}` });
+      load();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setResolving(null);
+    }
+  };
+
+  if (loading) return <div className="py-16 text-center text-muted-foreground font-sans text-sm">Loading disputed ops...</div>;
+
+  return (
+    <div className="space-y-4 mt-4">
+      <p className="text-xs text-muted-foreground font-sans">
+        Ops where both sides submitted conflicting results, or tier gap triggered a flag. Resolve by picking the correct outcome.
+      </p>
+      {ops.length === 0 ? (
+        <div className="py-12 text-center border border-dashed border-border rounded-lg">
+          <Swords className="w-8 h-8 mx-auto mb-2 opacity-30" />
+          <p className="text-sm text-muted-foreground font-sans">No disputed ops. All clear.</p>
+        </div>
+      ) : ops.map((op: any) => (
+        <div key={op.id} className="bg-card border border-orange-500/30 rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-display font-bold text-foreground">{op.group_a_name}</span>
+                <span className="text-muted-foreground text-xs font-sans">vs</span>
+                <span className="font-display font-bold text-foreground">{op.group_b_name}</span>
+              </div>
+              <div className="text-xs text-muted-foreground font-sans">{op.game} · {op.op_type?.replace(/_/g, " ")} · {op.scheduled_at ? new Date(op.scheduled_at).toLocaleDateString("en-GB") : "TBC"}</div>
+            </div>
+            <span className="text-xs font-display font-bold uppercase tracking-widest text-orange-400 border border-orange-400/30 bg-orange-400/10 px-2.5 py-1 rounded">
+              {op.status === "disputed" ? "Disputed" : "Flagged"}
+            </span>
+          </div>
+
+          {op.dispute_reason && (
+            <div className="bg-orange-400/5 border border-orange-400/20 rounded p-3">
+              <p className="text-xs text-orange-300 font-sans">{op.dispute_reason}</p>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Admin Ruling</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: "group_a_win", label: `${op.group_a_name} Win` },
+                  { value: "group_b_win", label: `${op.group_b_name} Win` },
+                  { value: "draw", label: "Draw" },
+                ].map(opt => (
+                  <button key={opt.value}
+                    onClick={() => setResolveData(d => ({ ...d, [op.id]: { ...d[op.id], outcome: opt.value } }))}
+                    className={`text-xs font-display font-bold uppercase tracking-widest px-3 py-2 rounded border transition-colors ${
+                      resolveData[op.id]?.outcome === opt.value
+                        ? "bg-primary/15 text-primary border-primary/40"
+                        : "bg-secondary border-border text-muted-foreground hover:border-primary/20"
+                    }`}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <textarea
+              value={resolveData[op.id]?.note || ""}
+              onChange={e => setResolveData(d => ({ ...d, [op.id]: { ...d[op.id], note: e.target.value } }))}
+              placeholder="Admin note (optional)..."
+              className="mf-input w-full min-h-[60px] resize-none text-xs"
+            />
+            <button
+              onClick={() => resolve(op.id)}
+              disabled={!resolveData[op.id]?.outcome || resolving === op.id}
+              className="inline-flex items-center gap-2 text-xs font-display font-bold uppercase tracking-widest bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 rounded px-5 py-2 transition-colors disabled:opacity-50">
+              {resolving === op.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+              Apply Ruling & Award Points
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Deploy Feed Tab ────────────────────────────────────────────────────────────
+function DeployFeedTab() {
+  const [commits, setCommits] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch("https://api.github.com/repos/mcmullenr99-ux/Tactical-Adaptation-Hub/commits?per_page=20", {
+          headers: { "Accept": "application/vnd.github+json" }
+        });
+        if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+        const data = await res.json();
+        setCommits(data);
+      } catch (e: any) {
+        setError(e.message || "Failed to load commits");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-16 text-muted-foreground">
+      <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading deploy feed...
+    </div>
+  );
+
+  if (error) return (
+    <div className="bg-destructive/10 border border-destructive/30 rounded p-4 text-sm text-destructive font-sans">{error}</div>
+  );
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground font-sans">Last 20 commits · mcmullenr99-ux/Tactical-Adaptation-Hub</p>
+        <a href="https://github.com/mcmullenr99-ux/Tactical-Adaptation-Hub/commits/main" target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs font-display font-bold uppercase tracking-widest text-primary hover:underline">
+          View on GitHub <ExternalLink className="w-3 h-3" />
+        </a>
+      </div>
+      <div className="space-y-2">
+        {commits.map((c: any) => {
+          const sha = c.sha?.slice(0, 7) ?? "unknown";
+          const msg = c.commit?.message?.split("\n")[0] ?? "No message";
+          const author = c.commit?.author?.name ?? c.author?.login ?? "Unknown";
+          const date = c.commit?.author?.date ? new Date(c.commit.author.date).toLocaleString("en-GB", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" }) : "";
+          return (
+            <div key={c.sha} className="bg-card border border-border rounded p-3 flex items-start gap-3">
+              <span className="font-mono text-[10px] text-primary bg-primary/10 border border-primary/20 rounded px-1.5 py-0.5 shrink-0 mt-0.5">{sha}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-sans text-foreground truncate">{msg}</p>
+                <p className="text-[10px] text-muted-foreground font-sans mt-0.5">{author} · {date}</p>
+              </div>
+              <a href={c.html_url} target="_blank" rel="noopener noreferrer" className="shrink-0 text-muted-foreground hover:text-primary transition-colors">
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

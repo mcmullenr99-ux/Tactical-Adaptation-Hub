@@ -1,0 +1,67 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "op_id": {
+      "type": "string"
+    },
+    "op_name": {
+      "type": "string"
+    },
+    "filed_by": {
+      "type": "string"
+    },
+    "filed_by_callsign": {
+      "type": "string"
+    },
+    "report_time": {
+      "type": "string"
+    },
+    "size": {
+      "type": "string"
+    },
+    "activity": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "time_observed": {
+      "type": "string"
+    },
+    "equipment": {
+      "type": "string"
+    },
+    "threat_level": {
+      "type": "string",
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ]
+    },
+    "game": {
+      "type": "string"
+    },
+    "map": {
+      "type": "string"
+    },
+    "confirmed": {
+      "type": "boolean"
+    },
+    "confirmed_by": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "SaluteReport"
+}

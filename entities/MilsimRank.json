@@ -13,11 +13,30 @@
     "tier": {
       "type": "integer",
       "default": 0
+    },
+    "icon_url": {
+      "type": "string"
+    },
+    "min_roster_size": {
+      "type": "integer",
+      "description": "Minimum roster headcount before this rank can be held. 0 = always available."
+    },
+    "max_holders": {
+      "type": "integer",
+      "description": "Maximum number of roster members that can hold this rank simultaneously. 0 = unlimited."
+    },
+    "rank_class": {
+      "type": "string",
+      "enum": [
+        "enlisted",
+        "nco",
+        "snco",
+        "officer",
+        "staff"
+      ],
+      "default": "enlisted"
     }
   },
-  "required": [
-    "group_id",
-    "name"
-  ],
+  "required": [],
   "name": "MilsimRank"
 }

@@ -4,7 +4,7 @@ import { MainLayout } from "./MainLayout";
 import { useLocation, Link } from "wouter";
 import {
   PenTool, LayoutDashboard, ShieldCheck, Settings,
-  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert, Calendar, KeyRound,
+  LogOut, Loader2, User, Shield, Terminal, Users, Menu, X, ChevronRight, ShieldAlert, KeyRound,
   LifeBuoy, Radio, Mail,
 } from "lucide-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiFetch } from "@/lib/apiFetch";
 
-export function PortalLayout({ children, requireRole }: { children: React.ReactNode, requireRole?: string[] }) {
+export function PortalLayout({ children, requireRole, wide }: { children: React.ReactNode, requireRole?: string[], wide?: boolean }) {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -24,10 +24,27 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
 
   const { data: notifCounts } = useQuery({
     queryKey: ["notification-counts"],
-    queryFn: () => apiFetch("/notifications?path=counts"),
+    queryFn: () => apiFetch("/api/notifications/count"),
     enabled: isAuthenticated,
     refetchInterval: 30_000,
   });
+
+  // HQ access check — show Unit HQ if user owns a group OR has delegated HQ access
+  const { data: ownGroup } = useQuery({
+    queryKey: ["mine-own"],
+    queryFn: () => apiFetch<any>("/milsimGroups?path=mine/own").catch(() => null),
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+    retry: 2,
+  });
+  const { data: hqAccess } = useQuery({
+    queryKey: ["hq-access"],
+    queryFn: () => apiFetch<any[]>("/milsimGroups?path=mine/hq-access").catch(() => []),
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+    retry: 2,
+  });
+  const hasHqAccess = !!(ownGroup?.id) || (Array.isArray(hqAccess) && hqAccess.length > 0);
 
   useEffect(() => {
     if (isLoading) return;
@@ -36,6 +53,10 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
       return;
     }
     if (requireRole && !requireRole.includes(user.role)) {
+      setLocation("/portal/dashboard");
+    }
+    // Block outsider preview mode from accessing admin/security pages
+    if (outsiderMode && requireRole && (requireRole.includes("admin") || requireRole.includes("moderator"))) {
       setLocation("/portal/dashboard");
     }
   }, [isLoading, isAuthenticated, user, requireRole, setLocation]);
@@ -56,6 +77,7 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
 
   if (!isAuthenticated || !user) return null;
   if (requireRole && !requireRole.includes(user.role)) return null;
+  if (outsiderMode && requireRole && (requireRole.includes("admin") || requireRole.includes("moderator"))) return null;
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -80,12 +102,10 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
 
   const navLinks = [
     { href: "/portal/dashboard", icon: <LayoutDashboard className="w-4 h-4 text-primary" />, label: "Dashboard" },
-    { href: "/portal/comms", icon: <Radio className="w-4 h-4 text-primary" />, label: "Comms" },
-    { href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "Unit HQ" },
+    ...(hasHqAccess ? [{ href: "/portal/milsim", icon: <Shield className="w-4 h-4 text-primary" />, label: "Unit HQ" }] : []),
     { href: "/portal/member-hq", icon: <Users className="w-4 h-4 text-primary" />, label: "Member HQ" },
     { href: "/portal/support", icon: <LifeBuoy className="w-4 h-4 text-primary" />, label: "Support" },
     { href: "/portal/2fa", icon: <KeyRound className="w-4 h-4 text-primary" />, label: "2FA Security" },
-    { href: "/ops", icon: <Calendar className="w-4 h-4 text-primary" />, label: "Ops Calendar" },
     ...(user.role === "member"
       ? [{ href: "/portal/apply", icon: <PenTool className="w-4 h-4 text-primary" />, label: "Staff App" }]
       : []),
@@ -96,7 +116,7 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
           { href: "/portal/command", icon: <Terminal className="w-4 h-4 text-destructive" />, label: "Command Center" },
         ]
       : []),
-    ...(user.role === "admin"
+    ...(!outsiderMode && user.role === "admin"
       ? [
           { href: "/portal/admin", icon: <Settings className="w-4 h-4 text-destructive" />, label: "Admin Panel" },
           { href: "/portal/security", icon: <ShieldAlert className="w-4 h-4 text-red-500" />, label: "Security Protocol" },
@@ -164,7 +184,7 @@ export function PortalLayout({ children, requireRole }: { children: React.ReactN
     <OutsiderModeBanner />
     <MainLayout>
       <div className="pt-20 pb-16 min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className={wide ? "w-full px-4 sm:px-6 lg:px-8" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"}>
 
           <div className="md:hidden flex items-center justify-between py-4 mb-4 border-b border-border">
             <div className="flex items-center gap-3">

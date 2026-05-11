@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/apiFetch";
 import { motion } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/components/auth/AuthContext";
@@ -7,8 +8,11 @@ import { useSEO } from "@/hooks/useSEO";
 import { useLocation } from "wouter";
 import {
   Crown, Check, BarChart3, Shield, FileText, Map,
-  Award, Users, Bot, Loader2, Star, ChevronRight, Zap, Globe, Zap,
-  Archive, AlertCircle
+  Award, Users, Loader2, Star, Zap,
+  Archive, AlertCircle, Eye, Calendar, Flag, Layers,
+  PhoneCall, GitBranch, Radio, UserMinus, Activity,
+  ChevronUp, Flame, Megaphone, Heart, Target,
+  Brain, ClipboardList, TrendingUp, Package
 } from "lucide-react";
 
 const CHECKOUT_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/createProCheckout";
@@ -18,46 +22,150 @@ const FREE_FEATURES = [
   "Group registration & public profile",
   "Unlimited roster management",
   "Ranks, roles & ORBAT builder",
-  "Applications system",
+  "Applications system (pipeline & questions)",
   "Ops scheduling & RSVPs",
-  "After Action Reports",
-  "LOA management",
+  "After Action Reports (AARs)",
+  "WARNOs, LACE, SITREPs, MEDEVAC",
   "Briefings & orders",
+  "LOA management",
+  "Conduct Reports",
+  "Op Intel documents",
+  "Awards & Qualifications",
+  "Training Docs (5 max)",
+  "SOPs, ROE documentation",
+  "Loadout Kits & Game Servers",
+  "Service Files & Discharges",
   "Public registry listing",
   "Forum & community access",
 ];
 
-const PRO_FEATURES = [
-  { icon: BarChart3, title: "Analytics Dashboard", desc: "Attendance trends, duty status over time, member retention, op frequency — full insight into your unit's health at a glance." },
-  { icon: Zap, title: "Campaign System + Ribbons", desc: "Group ops into named campaigns with progression tracking, campaign banners, ribbon rack display, and a full archived history." },
-  { icon: FileText, title: "Unlimited Training Docs", desc: "Upload without limits. AI-powered document scoring, quality flags, depth analysis, and auto-summaries generated for every doc." },
-  { icon: Map, title: "Visual ORBAT Builder + PDF Export", desc: "Build your unit's command structure visually with NATO APP-6 symbology and drag-and-drop hierarchy. Export print-ready classified PDF briefing packs." },
-  { icon: Globe, title: "Priority Registry Listing + Verified Badge", desc: "Your unit is featured at the top of the registry with a TAG Verified checkmark — the first impression for every recruit browsing for a unit." },
-  { icon: Bot, title: "Discord Bot — Pro Suite", desc: "Automated op announcements, AAR summaries posted to your channels, and role-sync on roster changes. Set it and forget it." },
-  { icon: Shield, title: "Full Reputation Reports", desc: "Access complete operator reputation history with export support. Free users see summary only — Pro commanders see everything." },
-  { icon: Star, title: "Duty Roster Scheduling", desc: "Advanced rotation planner with assignment scheduling, conflict detection, and member notifications built in." },
-  { icon: Zap, title: "Recruit Pipeline Board", desc: "Kanban-style applicant tracker: Applied → Reviewing → Interview → Accepted. Full history and notes per applicant." },
-  { icon: Archive, title: "Unit Legacy & Era Timeline", desc: "A permanent public record of every op, campaign, and AAR — a visual history your unit can be proud of." },
-  { icon: AlertCircle, title: "Smart LOA Alerts", desc: "Auto-flag when too many members are on LOA before an upcoming op. Never go undermanned again." },
-  { icon: Users, title: "Inactivity Purge Assistant", desc: "Weekly report of members with no activity in 30 days. One-click bulk status update to keep your roster clean." },
+// Grouped by PJHQ section for clarity
+const PRO_GROUPS = [
+  {
+    section: "S2 Intelligence",
+    icon: Eye,
+    color: "text-purple-400",
+    border: "border-purple-500/20",
+    bg: "bg-purple-500/5",
+    features: [
+      { icon: Eye,          title: "S2 Intelligence Room",       desc: "Full situational awareness suite: S2 Dashboard, SALUTE Reports, Op Intel documents, and Threat Profile tracking for rival units." },
+    ],
+  },
+  {
+    section: "J3 Operations Room",
+    icon: Flag,
+    color: "text-orange-400",
+    border: "border-orange-500/20",
+    bg: "bg-orange-500/5",
+    features: [
+      { icon: Calendar, title: "Ops Calendar",     desc: "Full interactive calendar view of all scheduled ops, training, and events. Drag, filter, and plan across your entire unit schedule." },
+      { icon: Zap,      title: "Campaign System",  desc: "Group ops into named campaigns with progression tracking, campaign banners, and a fully archived history of every major operation." },
+    ],
+  },
+  {
+    section: "J5 Planning",
+    icon: Layers,
+    color: "text-blue-400",
+    border: "border-blue-500/20",
+    bg: "bg-blue-500/5",
+    features: [
+      { icon: Layers,    title: "Op Planning Room",        desc: "7-phase structured operation planning (Planning → Consolidation) with fill-progress indicators, linked records, and team discussion." },
+      { icon: PhoneCall, title: "Comms Plan Generator",    desc: "Auto-generate NATO-formatted comms plans with call signs, frequencies, and encryption codes. Export as classified PDF." },
+    ],
+  },
+  {
+    section: "J6 Comms & Info Systems",
+    icon: GitBranch,
+    color: "text-cyan-400",
+    border: "border-cyan-500/20",
+    bg: "bg-cyan-500/5",
+    features: [
+      { icon: GitBranch, title: "API & Webhooks",           desc: "Full REST API access with key management, webhook endpoints, and event subscriptions. Build your own integrations against your unit's data." },
+      { icon: Radio,     title: "Stream Integration",       desc: "Connect your Twitch or YouTube stream directly to your unit page. Go-live detection with live badge on your registry listing." },
+    ],
+  },
+  {
+    section: "J7 Dev & Training",
+    icon: Brain,
+    color: "text-green-400",
+    border: "border-green-500/20",
+    bg: "bg-green-500/5",
+    features: [
+      { icon: FileText,  title: "Unlimited Training Docs",  desc: "Upload without limits. AI-powered document scoring, quality flags, depth analysis, and auto-summaries generated for every doc." },
+    ],
+  },
+  {
+    section: "J8 Human Resources",
+    icon: Users,
+    color: "text-yellow-400",
+    border: "border-yellow-500/20",
+    bg: "bg-yellow-500/5",
+    features: [
+      { icon: UserMinus,   title: "Inactivity Purge Assistant",  desc: "Weekly report of members with no activity in 30 days. One-click bulk status update to keep your roster clean and accurate." },
+      { icon: Activity,    title: "Engagement Score System",     desc: "Auto-scored member engagement based on ops, AARs, training, and LOA discipline. Red/Amber/Green flagging for at-risk members." },
+      { icon: ChevronUp,   title: "Automated Promotion Engine",  desc: "Define promotion rules (min ops, tenure, AAR requirement). System auto-flags eligible members so leadership never misses a promotion." },
+      { icon: Flame,       title: "Accountability Tracker",      desc: "Role Fitness Reviews, Performance Improvement Orders, and role-lapsing system. Leadership accountability, automated." },
+      { icon: AlertCircle, title: "Smart LOA Alerts",            desc: "Auto-flag when too many members are on LOA before an upcoming op. Never go undermanned again." },
+    ],
+  },
+  {
+    section: "J4 Logistics",
+    icon: Package,
+    color: "text-teal-400",
+    border: "border-teal-500/20",
+    bg: "bg-teal-500/5",
+    features: [
+      { icon: ClipboardList, title: "Duty Roster Scheduling", desc: "Advanced rotation planner with assignment scheduling, conflict detection, and automatic member notifications." },
+    ],
+  },
+  {
+    section: "Media & Recruitment",
+    icon: Megaphone,
+    color: "text-pink-400",
+    border: "border-pink-500/20",
+    bg: "bg-pink-500/5",
+    features: [
+      { icon: Megaphone,   title: "Auto Recruitment Scheduler",  desc: "Set it and forget it. Automated recurring recruitment posts with custom intervals, banners, Discord links, and game tags. Pro-only automation." },
+      { icon: Star,        title: "Featured Registry Listing",   desc: "Your unit is pinned at the top of the registry with a TAG Verified checkmark — the first impression for every recruit browsing for a unit." },
+      { icon: Archive,     title: "Unit Legacy & Era Timeline",  desc: "A permanent public record of every op, campaign, and AAR — a visual history your unit can be proud of." },
+    ],
+  },
+  {
+    section: "Analytics Hub",
+    icon: BarChart3,
+    color: "text-indigo-400",
+    border: "border-indigo-500/20",
+    bg: "bg-indigo-500/5",
+    features: [
+      { icon: Heart,       title: "Unit Health Dashboard",       desc: "Composite health score across attendance, training, leadership, and morale indicators. Know your unit's true readiness state." },
+      { icon: Target,      title: "Readiness Score",             desc: "Operational readiness rating built from active member ratio, recent ops tempo, LOA levels, and conduct metrics." },
+      { icon: BarChart3,   title: "Unit Analytics",              desc: "Attendance trends, op frequency, member retention, duty status over time — the full data story of your unit's performance." },
+      { icon: TrendingUp,  title: "Member Scores",               desc: "Ranked leaderboard of every member's engagement score. Identify your most committed operators and those falling behind." },
+    ],
+  },
 ];
 
 const COMPARISON = [
-  { label: "Training docs", free: "5 max", pro: "Unlimited" },
-  { label: "Operator reputation", free: "Summary only", pro: "Full history + export" },
-  { label: "Registry placement", free: "Standard listing", pro: "Priority featured" },
-  { label: "Analytics", free: "None", pro: "Full dashboard" },
-  { label: "Campaigns", free: "None", pro: "Unlimited campaigns" },
-  { label: "ORBAT builder", free: "None", pro: "Visual builder + PDF export" },
-  { label: "Discord bot", free: "Basic", pro: "Full Pro automation suite" },
-  { label: "API / Webhooks", free: "None", pro: "Full access" },
-  { label: "Recruit pipeline", free: "None", pro: "Full Kanban board" },
-  { label: "Unit legacy page", free: "None", pro: "Full timeline + ribbons" },
-  { label: "Duty roster planner", free: "Basic", pro: "Advanced scheduling" },
+  { label: "Training docs",         free: "5 max",          pro: "Unlimited + AI scoring" },
+  { label: "Operator reputation",   free: "Summary only",   pro: "Full history + export" },
+  { label: "Registry placement",    free: "Standard",       pro: "Priority featured + verified badge" },
+  { label: "Analytics",             free: "None",           pro: "Full dashboard (4 modules)" },
+  { label: "Campaigns",             free: "None",           pro: "Unlimited + timeline" },
+  { label: "S2 Intelligence",       free: "None",           pro: "Full suite" },
+  { label: "API / Webhooks",        free: "None",           pro: "Full access + key management" },
+  { label: "Recruit pipeline",      free: "View only",      pro: "Full Kanban + auto scheduler" },
+  { label: "Duty roster planner",   free: "None",           pro: "Advanced scheduling" },
+  { label: "Unit legacy page",      free: "None",           pro: "Full timeline + ribbons" },
+  { label: "HR automation",         free: "None",           pro: "Promotions, purge, engagement" },
+  { label: "Ops Calendar",          free: "None",           pro: "Full calendar view" },
+  { label: "Planning Room",         free: "None",           pro: "7-phase structured planning" },
+  { label: "Comms Plan",            free: "None",           pro: "NATO format + PDF export" },
+  { label: "Stream integration",    free: "None",           pro: "Live badge + auto detect" },
+  { label: "Accountability tools",  free: "None",           pro: "PIOs, fitness reviews, role lapsing" },
 ];
 
 const STATS = [
-  { value: "12+", label: "Pro-only features" },
+  { value: "25+", label: "Pro-only features" },
   { value: "£10", label: "Per month, per unit" },
   { value: "Cancel", label: "Anytime, no questions" },
   { value: "Instant", label: "Activation on payment" },
@@ -72,6 +180,7 @@ export default function CommanderPro() {
   const [loading, setLoading] = useState(false);
   const [myGroups, setMyGroups] = useState<any[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string>("");
+  const [groupsLoading, setGroupsLoading] = useState(false);
   const [proStatus, setProStatus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -86,11 +195,11 @@ export default function CommanderPro() {
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
-    // Try to load groups owned by this user via milsim groups filter
-    fetch(`https://agent-tag-lead-developer-cff87ae4.base44.app/functions/milsimGroups?path=my-groups&user_id=${user.id}`)
-      .then(r => r.json())
+    setGroupsLoading(true);
+    apiFetch<any>("/milsimGroups?path=mine/own")
       .then(data => {
-        const groups = Array.isArray(data) ? data : (data?.groups || []);
+        const group = data && data.id ? data : null;
+        const groups = group ? [group] : [];
         setMyGroups(groups);
         if (groups.length === 1) setSelectedGroup(groups[0].id);
         groups.forEach((g: any) => {
@@ -99,14 +208,12 @@ export default function CommanderPro() {
             .then(s => setProStatus(prev => ({ ...prev, [g.id]: s.is_pro })));
         });
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setGroupsLoading(false));
   }, [isAuthenticated, user]);
 
   const handleSubscribe = async () => {
-    if (!isAuthenticated) {
-      navigate("/portal/login");
-      return;
-    }
+    if (!isAuthenticated) { navigate("/portal/login"); return; }
     if (myGroups.length > 1 && !selectedGroup) {
       toast({ title: "Select a unit", description: "Choose which unit to upgrade.", variant: "destructive" });
       return;
@@ -114,17 +221,16 @@ export default function CommanderPro() {
     setLoading(true);
     try {
       const group = myGroups.find(g => g.id === selectedGroup) || myGroups[0];
+      if (!group?.id) {
+        toast({ title: "No Unit Found", description: "Register a MilSim unit before upgrading.", variant: "destructive" });
+        setLoading(false);
+        window.location.href = "/milsim/register";
+        return;
+      }
       const res = await fetch(CHECKOUT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          group_id: group?.id || user!.id,
-          group_name: group?.name || "My Unit",
-          user_id: user!.id,
-          username: (user as any).username || user!.full_name || "",
-          email: user!.email,
-          billing,
-        }),
+        body: JSON.stringify({ group_id: group.id, group_name: group.name || "My Unit", user_id: user!.id, username: (user as any).username || user!.full_name || "", email: user!.email, billing }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Failed to create checkout session");
@@ -141,6 +247,8 @@ export default function CommanderPro() {
   const annualMonthly = (annualPrice / 12).toFixed(2);
   const saving = Math.round(100 - (annualPrice / (monthlyPrice * 12)) * 100);
 
+  const totalPro = PRO_GROUPS.reduce((acc, g) => acc + g.features.length, 0);
+
   return (
     <MainLayout>
 
@@ -150,236 +258,176 @@ export default function CommanderPro() {
         <div className="absolute inset-0 opacity-[0.04]" style={{
           backgroundImage: `repeating-linear-gradient(0deg,transparent,transparent 40px,hsl(var(--border)) 40px,hsl(var(--border)) 41px),repeating-linear-gradient(90deg,transparent,transparent 40px,hsl(var(--border)) 40px,hsl(var(--border)) 41px)`,
         }} />
-
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded font-display font-bold uppercase tracking-widest text-xs text-yellow-400 mb-8">
               <Crown className="w-3.5 h-3.5" /> Commander Pro
             </div>
-
             <h1 className="font-display font-black text-5xl md:text-7xl uppercase tracking-tight leading-none text-foreground mb-6">
               More Platform.<br />
               <span className="text-yellow-400">Less Price.</span>
             </h1>
-
             <p className="font-sans text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-4">
-              Everything a serious milsim commander needs — analytics, campaigns, AI training docs, Discord automation, API access — for <span className="text-foreground font-semibold">£10 a month</span>.
+              Everything a serious milsim commander needs — {totalPro}+ Pro-only features across intelligence, planning, HR, analytics, and more — for <span className="text-foreground font-semibold">£10 a month</span>.
             </p>
-            <p className="font-sans text-sm text-muted-foreground mb-10">
-              Less than a takeaway. More than the competition.
-            </p>
+            <p className="font-sans text-sm text-muted-foreground mb-10">Less than a takeaway. More than the competition.</p>
 
-            {/* Quick stats */}
+            {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto mb-12">
-              {STATS.map(s => (
-                <div key={s.label} className="bg-card border border-border rounded-lg px-4 py-3">
-                  <div className="font-display font-black text-xl text-yellow-400">{s.value}</div>
-                  <div className="font-sans text-xs text-muted-foreground">{s.label}</div>
+              {STATS.map((s, i) => (
+                <div key={i} className="bg-card/60 border border-border/60 rounded-lg p-4">
+                  <div className="font-display font-black text-2xl text-yellow-400">{s.value}</div>
+                  <div className="text-xs text-muted-foreground font-sans mt-0.5">{s.label}</div>
                 </div>
               ))}
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button onClick={handleSubscribe} disabled={loading}
-                className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-base px-10 py-4 rounded transition-all active:scale-95 disabled:opacity-60 shadow-[0_0_30px_hsla(48,96%,53%,0.4)] hover:shadow-[0_0_40px_hsla(48,96%,53%,0.6)]"
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Crown className="w-5 h-5" />}
-                {loading ? "One moment..." : "Upgrade Now — £10/mo"}
-              </button>
-              <a href="#compare" className="font-display font-bold uppercase tracking-widest text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                See what's included <ChevronRight className="w-4 h-4" />
-              </a>
+            {/* Billing toggle */}
+            <div className="flex items-center justify-center gap-3 mb-8">
+              {(["monthly", "annual"] as const).map(b => (
+                <button key={b} onClick={() => setBilling(b)}
+                  className={`px-5 py-2.5 rounded border font-display font-bold uppercase tracking-widest text-xs transition-all ${
+                    billing === b ? "bg-yellow-500/15 border-yellow-500/40 text-yellow-400" : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+                  }`}>
+                  {b === "monthly" ? `Monthly — £${monthlyPrice}/mo` : `Annual — £${annualMonthly}/mo`}
+                  {b === "annual" && <span className="ml-1.5 text-green-400">save {saving}%</span>}
+                </button>
+              ))}
             </div>
+
+            {/* Group selector */}
+            {isAuthenticated && myGroups.length > 1 && (
+              <div className="mb-6 flex justify-center">
+                <select value={selectedGroup} onChange={e => setSelectedGroup(e.target.value)}
+                  className="bg-card border border-border rounded px-4 py-2 text-sm font-sans text-foreground focus:outline-none focus:ring-1 focus:ring-yellow-500/50">
+                  <option value="">Select unit to upgrade…</option>
+                  {myGroups.map(g => (
+                    <option key={g.id} value={g.id}>{g.name}{proStatus[g.id] ? " ✓ Pro" : ""}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Already Pro message */}
+            {isAuthenticated && myGroups.length > 0 && myGroups.every(g => proStatus[g.id]) && (
+              <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/30 rounded text-green-400 text-sm font-display font-bold uppercase tracking-widest">
+                <Check className="w-4 h-4" /> Your unit is already on Commander Pro
+              </div>
+            )}
+
+            <button onClick={handleSubscribe} disabled={loading || groupsLoading}
+              className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-black font-display font-black uppercase tracking-widest text-sm px-10 py-4 rounded transition-colors disabled:opacity-60">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
+              {loading ? "Redirecting…" : `Upgrade to Pro — £${billing === "monthly" ? monthlyPrice : annualPrice}/${billing === "monthly" ? "mo" : "yr"}`}
+            </button>
+            <p className="text-xs text-muted-foreground mt-3 font-sans">Secure checkout via Stripe · Cancel anytime · Instant activation</p>
           </motion.div>
         </div>
       </section>
 
-      {/* ── PRICING CARD ── */}
-      <section className="py-16">
-        <div className="max-w-lg mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-
-            {/* Toggle */}
-            <div className="flex items-center justify-center gap-2 mb-8">
-              <button onClick={() => setBilling("monthly")}
-                className={`px-5 py-2 rounded font-display font-bold uppercase tracking-widest text-sm transition-all border ${billing === "monthly" ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/40" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-              >Monthly</button>
-              <button onClick={() => setBilling("annual")}
-                className={`px-5 py-2 rounded font-display font-bold uppercase tracking-widest text-sm transition-all border relative ${billing === "annual" ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/40" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-              >
-                Annual
-                <span className="absolute -top-2.5 -right-2 bg-green-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">-{saving}%</span>
-              </button>
-            </div>
-
-            <div className="bg-card border-2 border-yellow-500/50 rounded-xl p-8 shadow-[0_0_60px_hsla(48,96%,53%,0.08)]">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Crown className="w-5 h-5 text-yellow-400" />
-                  <span className="font-display font-black uppercase tracking-wider text-yellow-400 text-sm">Commander Pro</span>
-                </div>
-                <span className="text-xs font-sans text-muted-foreground bg-secondary px-2 py-1 rounded">Per unit</span>
-              </div>
-
-              <div className="flex items-end gap-2 mb-1">
-                <span className="font-display font-black text-6xl text-foreground">
-                  £{billing === "annual" ? annualMonthly : monthlyPrice}
-                </span>
-                <span className="text-muted-foreground font-sans mb-3">/ month</span>
-              </div>
-
-              {billing === "annual" ? (
-                <p className="text-sm text-green-400 font-sans mb-1 font-medium">Billed annually at £{annualPrice} — you save £{(monthlyPrice * 12 - annualPrice).toFixed(0)}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground font-sans mb-1">Switch to annual and save £{(monthlyPrice * 12 - annualPrice).toFixed(0)}/yr</p>
-              )}
-              <p className="text-xs text-muted-foreground font-sans mb-6">Cancel anytime · Instant activation · No hidden fees</p>
-
-              {isAuthenticated && myGroups.length > 1 && (
-                <div className="mb-5">
-                  <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Upgrade which unit?</label>
-                  <select value={selectedGroup} onChange={e => setSelectedGroup(e.target.value)}
-                    className="w-full bg-background border border-border rounded px-3 py-2 text-foreground font-sans text-sm focus:outline-none focus:border-yellow-500/60"
-                  >
-                    <option value="">Select a unit...</option>
-                    {myGroups.map(g => (
-                      <option key={g.id} value={g.id}>{g.name}{proStatus[g.id] ? " ✓ Already Pro" : ""}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <button onClick={handleSubscribe} disabled={loading}
-                className="w-full inline-flex items-center justify-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-base px-8 py-4 rounded transition-all active:scale-95 disabled:opacity-60 shadow-[0_0_20px_hsla(48,96%,53%,0.4)]"
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Crown className="w-5 h-5" />}
-                {loading ? "Redirecting to checkout..." : isAuthenticated ? "Upgrade to Pro" : "Get Started — Create Account"}
-              </button>
-
-              {!isAuthenticated && (
-                <p className="text-center text-xs text-muted-foreground font-sans mt-3">Free TAG account required. Takes 60 seconds.</p>
-              )}
-
-              <div className="mt-6 pt-6 border-t border-border grid grid-cols-2 gap-2">
-                {["Analytics dashboard", "Campaign system", "Recruit pipeline", "Discord Pro bot", "ORBAT PDF export", "Priority listing + Verified badge", "Unit legacy page", "Smart LOA alerts"].map(f => (
-                  <div key={f} className="flex items-center gap-2 text-xs text-muted-foreground font-sans">
-                    <Check className="w-3 h-3 text-yellow-400 shrink-0" /> {f}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── PRO FEATURES ── */}
-      <section id="compare" className="py-20 bg-secondary/20 border-y border-border">
+      {/* ── PRO FEATURES BY SECTION ── */}
+      <section className="py-24 border-t border-border/40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
-            <h2 className="font-display font-black text-4xl md:text-5xl uppercase tracking-tight text-foreground mb-4">
-              What You <span className="text-yellow-400">Unlock</span>
-            </h2>
-            <p className="text-muted-foreground font-sans max-w-xl mx-auto">
-              Every Pro feature is purpose-built for serious milsim command. Not token upsells — actual tools that change how you run your unit.
-            </p>
-          </motion.div>
+          <div className="text-center mb-16">
+            <h2 className="font-display font-black text-3xl md:text-4xl uppercase tracking-tight mb-3">What You Get</h2>
+            <p className="text-muted-foreground font-sans">Every Pro-gated feature, by section. No vague promises.</p>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {PRO_FEATURES.map((f, i) => (
-              <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
-                className="bg-card border border-yellow-500/15 hover:border-yellow-500/35 rounded-lg p-6 flex items-start gap-5 transition-colors"
-              >
-                <div className="w-12 h-12 shrink-0 bg-yellow-500/10 border border-yellow-500/25 rounded flex items-center justify-center">
-                  <f.icon className="w-5 h-5 text-yellow-400" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold uppercase tracking-wider text-foreground mb-1.5 text-sm">{f.title}</h3>
-                  <p className="text-muted-foreground font-sans text-sm leading-relaxed">{f.desc}</p>
-                </div>
-              </motion.div>
-            ))}
+          <div className="space-y-10">
+            {PRO_GROUPS.map((group, gi) => {
+              const SectionIcon = group.icon;
+              return (
+                <motion.div key={gi} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: gi * 0.05 }}>
+                  {/* Section header */}
+                  <div className={`flex items-center gap-2 mb-4 pb-3 border-b ${group.border}`}>
+                    <SectionIcon className={`w-4 h-4 ${group.color}`} />
+                    <span className={`font-display font-black uppercase tracking-widest text-xs ${group.color}`}>{group.section}</span>
+                    <span className="ml-auto text-[10px] font-display uppercase tracking-widest text-muted-foreground">{group.features.length} feature{group.features.length > 1 ? "s" : ""}</span>
+                  </div>
+
+                  {/* Feature cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {group.features.map((f, fi) => {
+                      const FIcon = f.icon;
+                      return (
+                        <div key={fi} className={`rounded-lg border ${group.border} ${group.bg} p-4 space-y-2`}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-7 h-7 rounded flex items-center justify-center ${group.bg} border ${group.border}`}>
+                              <FIcon className={`w-3.5 h-3.5 ${group.color}`} />
+                            </div>
+                            <span className="font-display font-black uppercase tracking-wider text-xs text-foreground">{f.title}</span>
+                          </div>
+                          <p className="text-xs font-sans text-muted-foreground leading-relaxed">{f.desc}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ── COMPARISON TABLE ── */}
-      <section className="py-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
-            <h2 className="font-display font-black text-4xl uppercase tracking-tight text-foreground mb-3">Free vs <span className="text-yellow-400">Pro</span></h2>
-            <p className="text-muted-foreground font-sans">Core command tools always stay free. Pro is for units that want to go further.</p>
-          </motion.div>
-
-          <div className="bg-card border border-border rounded-xl overflow-hidden mb-8">
-            <div className="grid grid-cols-3 bg-secondary/50 border-b border-border text-xs font-display font-bold uppercase tracking-wider">
-              <div className="p-4 text-muted-foreground">Feature</div>
-              <div className="p-4 text-center text-muted-foreground">Free</div>
-              <div className="p-4 text-center text-yellow-400 flex items-center justify-center gap-1.5"><Crown className="w-3.5 h-3.5" /> Pro</div>
+      {/* ── FREE vs PRO COMPARISON ── */}
+      <section className="py-24 border-t border-border/40 bg-card/20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="font-display font-black text-3xl md:text-4xl uppercase tracking-tight mb-3">Free vs Pro</h2>
+            <p className="text-muted-foreground font-sans">Side by side. No tricks.</p>
+          </div>
+          <div className="rounded-lg border border-border overflow-hidden">
+            {/* Header */}
+            <div className="grid grid-cols-3 bg-secondary/50 border-b border-border">
+              <div className="px-4 py-3 font-display font-bold uppercase tracking-widest text-xs text-muted-foreground">Feature</div>
+              <div className="px-4 py-3 font-display font-bold uppercase tracking-widest text-xs text-muted-foreground text-center border-l border-border">Free</div>
+              <div className="px-4 py-3 font-display font-bold uppercase tracking-widest text-xs text-yellow-400 text-center border-l border-border flex items-center justify-center gap-1.5">
+                <Crown className="w-3 h-3" /> Pro
+              </div>
             </div>
             {COMPARISON.map((row, i) => (
-              <div key={row.label} className={`grid grid-cols-3 border-b border-border last:border-0 ${i % 2 === 0 ? "" : "bg-secondary/10"}`}>
-                <div className="p-4 font-sans text-sm text-foreground">{row.label}</div>
-                <div className="p-4 text-center font-sans text-sm text-muted-foreground">{row.free}</div>
-                <div className="p-4 text-center font-sans text-sm text-yellow-400 font-medium">{row.pro}</div>
+              <div key={i} className={`grid grid-cols-3 border-b border-border/40 ${i % 2 === 0 ? "" : "bg-secondary/10"}`}>
+                <div className="px-4 py-3 text-xs font-sans text-foreground">{row.label}</div>
+                <div className="px-4 py-3 text-xs font-sans text-muted-foreground text-center border-l border-border/40">{row.free}</div>
+                <div className="px-4 py-3 text-xs font-sans text-yellow-400 font-semibold text-center border-l border-border/40 flex items-center justify-center gap-1">
+                  <Check className="w-3 h-3 shrink-0" />{row.pro}
+                </div>
               </div>
             ))}
-          </div>
-
-          {/* Always free box */}
-          <div className="bg-card border border-border rounded-xl p-6">
-            <h3 className="font-display font-bold uppercase tracking-wider text-foreground mb-4 text-sm flex items-center gap-2">
-              <Check className="w-4 h-4 text-green-400" /> Always Free — No Paywall on Essentials
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {FREE_FEATURES.map(f => (
-                <div key={f} className="flex items-center gap-2 text-sm text-muted-foreground font-sans">
-                  <Check className="w-3.5 h-3.5 text-green-400 shrink-0" /> {f}
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>
 
-      {/* ── WHY TAG ── */}
-      <section className="py-20 bg-secondary/20 border-t border-border">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="font-display font-black text-4xl md:text-5xl uppercase tracking-tight text-foreground mb-6">
-              Not Just a Tool.<br /><span className="text-primary">A Community.</span>
-            </h2>
-            <p className="text-muted-foreground font-sans text-lg max-w-2xl mx-auto mb-12 leading-relaxed">
-              TAG is a full tactical community — a public registry, cross-unit reputation system, veterans recognition, active forum, and operator identity platform. Your Pro unit doesn't just get better tools. It gets <span className="text-foreground font-semibold">visibility</span> in front of every serious milsim player looking for a unit to join.
-            </p>
+      {/* ── FREE FEATURES ── */}
+      <section className="py-24 border-t border-border/40">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="font-display font-black text-3xl md:text-4xl uppercase tracking-tight mb-3">Already Free</h2>
+            <p className="text-muted-foreground font-sans">These are included in every TAG unit, no subscription needed.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {FREE_FEATURES.map((f, i) => (
+              <div key={i} className="flex items-center gap-3 bg-card/40 border border-border/40 rounded-lg px-4 py-3">
+                <Check className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                <span className="text-sm font-sans text-foreground">{f}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
-              {[
-                { icon: Globe, title: "Public Visibility", desc: "Priority listing in the registry. Serious recruits find you first." },
-                { icon: Users, title: "Cross-Unit Reputation", desc: "Operator reputation follows players across units — you see exactly who you're recruiting." },
-                { icon: Shield, title: "Command Credibility", desc: "Verified, structured, professional — the mark of a unit that takes milsim seriously." },
-              ].map((item, i) => (
-                <motion.div key={item.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                  className="bg-card border border-border hover:border-primary/40 rounded-lg p-6 text-left transition-colors"
-                >
-                  <div className="w-10 h-10 bg-primary/10 border border-primary/30 rounded flex items-center justify-center mb-4">
-                    <item.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <h3 className="font-display font-bold uppercase tracking-wider text-foreground mb-2 text-sm">{item.title}</h3>
-                  <p className="text-muted-foreground font-sans text-sm leading-relaxed">{item.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-
-            <button onClick={handleSubscribe} disabled={loading}
-              className="inline-flex items-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-display font-black uppercase tracking-widest text-base px-12 py-5 rounded transition-all active:scale-95 disabled:opacity-60 shadow-[0_0_30px_hsla(48,96%,53%,0.35)] hover:shadow-[0_0_50px_hsla(48,96%,53%,0.5)]"
-            >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Crown className="w-5 h-5" />}
-              {loading ? "One moment..." : `Upgrade Your Unit — £${billing === "annual" ? annualMonthly : monthlyPrice}/mo`}
-              <ChevronRight className="w-5 h-5" />
-            </button>
-
-            <p className="mt-4 text-xs text-muted-foreground font-sans">Cancel anytime. No long-term commitment.</p>
-          </motion.div>
+      {/* ── BOTTOM CTA ── */}
+      <section className="py-24 border-t border-border/40 bg-yellow-500/5">
+        <div className="max-w-2xl mx-auto px-4 text-center">
+          <Crown className="w-10 h-10 text-yellow-400 mx-auto mb-6" />
+          <h2 className="font-display font-black text-3xl md:text-4xl uppercase tracking-tight mb-4">Ready to Upgrade?</h2>
+          <p className="text-muted-foreground font-sans mb-8">One payment. {totalPro}+ features unlocked. Your unit running at full capacity.</p>
+          <button onClick={handleSubscribe} disabled={loading || groupsLoading}
+            className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-black font-display font-black uppercase tracking-widest text-sm px-10 py-4 rounded transition-colors disabled:opacity-60">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
+            {loading ? "Redirecting…" : `Upgrade Now — £${billing === "monthly" ? monthlyPrice : annualPrice}/${billing === "monthly" ? "mo" : "yr"}`}
+          </button>
+          <p className="text-xs text-muted-foreground mt-3 font-sans">Secure checkout via Stripe · Cancel anytime</p>
         </div>
       </section>
 

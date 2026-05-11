@@ -1,7 +1,5 @@
 // mapProxy.ts — proxies map tile images from external sources to avoid CORS issues
 // Supports: plan-ops.fr Arma 3 map screenshots via query params
-import { base44 } from "../src/lib/base44Client";
-
 const ALLOWED_HOSTS = [
   "atlas.plan-ops.fr",
   "reforger.recoil.org",
@@ -9,14 +7,25 @@ const ALLOWED_HOSTS = [
   "i.imgur.com",
 ];
 
-export default async function handler(req: Request): Promise<Response> {
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+Deno.serve(async (req: Request) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+
   const url = new URL(req.url);
   const mapUrl = url.searchParams.get("url");
 
   if (!mapUrl) {
     return new Response(JSON.stringify({ error: "Missing ?url= param" }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
   }
 
@@ -26,7 +35,7 @@ export default async function handler(req: Request): Promise<Response> {
   } catch {
     return new Response(JSON.stringify({ error: "Invalid URL" }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
   }
 
@@ -37,7 +46,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!hostAllowed) {
     return new Response(JSON.stringify({ error: "Host not allowed" }), {
       status: 403,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
   }
 
@@ -52,7 +61,7 @@ export default async function handler(req: Request): Promise<Response> {
     if (!upstream.ok) {
       return new Response(JSON.stringify({ error: `Upstream ${upstream.status}` }), {
         status: upstream.status,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...CORS_HEADERS },
       });
     }
 
@@ -64,13 +73,13 @@ export default async function handler(req: Request): Promise<Response> {
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=86400",
-        "Access-Control-Allow-Origin": "*",
+        ...CORS_HEADERS,
       },
     });
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 502,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
   }
-}
+});

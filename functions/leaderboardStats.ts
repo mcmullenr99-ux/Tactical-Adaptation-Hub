@@ -106,7 +106,13 @@ Deno.serve(async (req: Request) => {
     // Build pro map
     const proMap = new Map<string, boolean>();
     proRecords.forEach((p: any) => {
-      if (p.status === "active") proMap.set(p.group_id, true);
+      if (
+        p.status === "active" ||
+        p.status === "trialing" ||
+        p.status === "manual_override" ||
+        p.stripe_customer_id === "manual_override" ||
+        p.stripe_subscription_id === "manual_override"
+      ) proMap.set(p.group_id, true);
     });
 
     // Add is_pro to groups

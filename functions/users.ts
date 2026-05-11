@@ -9,20 +9,21 @@ const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-
  * - 1-2 days/week → "on-leave"
  * - 0 days/week   → "mia"
  */
-function computeWeeklyActiveDays(activityDates: string[] | null | undefined): number {
-  if (!activityDates || activityDates.length === 0) return 0;
-  const sevenDaysAgo = new Date();
+function computeWeeklyActiveDays(activityDates: string[] | null | undefined, lastActiveAt?: string | null): number {
+  const now = new Date();
+  const sevenDaysAgo = new Date(now);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const cutoff = sevenDaysAgo.toISOString().slice(0, 10);
-  return new Set(activityDates.filter(d => d >= cutoff)).size;
+  const dates = new Set<string>((activityDates ?? []).filter(d => d >= cutoff));
+  if (lastActiveAt) { const d = lastActiveAt.slice(0, 10); if (d >= cutoff) dates.add(d); }
+  return dates.size;
 }
 
-function computeDutyStatus(activityDates: string[] | null | undefined): string {
-  const weekly = computeWeeklyActiveDays(activityDates);
-  if (weekly >= 5) return 'active';
-  if (weekly >= 3) return 'available';
-  if (weekly >= 1) return 'on-leave';
-  return 'mia';
+function computeDutyStatus(activityDates: string[] | null | undefined, lastActiveAt?: string | null): string {
+  const weekly = computeWeeklyActiveDays(activityDates, lastActiveAt);
+  if (weekly >= 4) return 'active';
+  if (weekly >= 1) return 'available';
+  return 'on-leave';
 }
 
 
@@ -76,6 +77,14 @@ Deno.serve(async (req) => {
       return Response.json(results);
     }
 
+    // GET /users?roster=true — internal engagement scan (returns id + last_active_at only)
+    if (method === 'GET' && parts.length === 0 && url.searchParams.get('roster') === 'true') {
+      const users = await base44.asServiceRole.entities.AppUser.list();
+      return Response.json(users
+        .filter((u: any) => u.status === 'active')
+        .map((u: any) => ({ id: u.id, last_active_at: u.last_active_at ?? null })));
+    }
+
     // GET /users — list users (public, limited fields)
     if (method === 'GET' && parts.length === 0) {
       const users = await base44.asServiceRole.entities.AppUser.list();
@@ -84,7 +93,7 @@ Deno.serve(async (req) => {
         .map((u: any) => ({
           id: u.id, username: u.username, role: u.role,
           nationality: u.nationality ?? null,
-          on_duty_status: computeDutyStatus(u.activity_dates),
+          on_duty_status: computeDutyStatus(u.activity_dates, u.last_active_at),
           createdAt: u.created_date,
         })));
     }
@@ -97,7 +106,7 @@ Deno.serve(async (req) => {
         id: user.id, username: user.username, role: user.role,
         bio: user.bio ?? null, nationality: user.nationality ?? null,
         discordTag: user.discord_tag ?? null,
-        on_duty_status: computeDutyStatus(user.activity_dates),
+        on_duty_status: computeDutyStatus(user.activity_dates, user.last_active_at),
         createdAt: user.created_date,
       });
     }

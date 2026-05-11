@@ -1,0 +1,92 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "group_name": {
+      "type": "string"
+    },
+    "author_id": {
+      "type": "string"
+    },
+    "author_callsign": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "Order",
+        "Memo",
+        "Directive",
+        "Bulletin"
+      ]
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "unclassified",
+        "confidential",
+        "classified",
+        "top-secret"
+      ]
+    },
+    "subject": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "audience": {
+      "type": "string",
+      "enum": [
+        "all",
+        "role",
+        "rank"
+      ]
+    },
+    "audience_role_id": {
+      "type": "string"
+    },
+    "audience_role_name": {
+      "type": "string"
+    },
+    "audience_rank_id": {
+      "type": "string"
+    },
+    "audience_rank_name": {
+      "type": "string"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "routine",
+        "priority",
+        "immediate",
+        "flash"
+      ]
+    },
+    "requires_ack": {
+      "type": "boolean"
+    },
+    "ack_by": {
+      "type": "string"
+    },
+    "acknowledged_by": {
+      "type": "array"
+    },
+    "expires_at": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "issued",
+        "archived"
+      ]
+    }
+  },
+  "required": [],
+  "name": "MilsimOrderMemo"
+}

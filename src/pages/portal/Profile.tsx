@@ -42,6 +42,15 @@ export default function Profile() {
   const [xboxGamertag, setXboxGamertag] = useState((user as any)?.xbox_gamertag ?? "");
   const [psnId, setPsnId] = useState((user as any)?.psn_id ?? "");
   const [savingProfile, setSavingProfile] = useState(false);
+  const APPROVED_GAMES = ['Arma 3','Arma Reforger','Squad','Ready Or Not','Escape From Tarkov','Ground Branch','DayZ','Grey Zone Warfare','Body Cam','Operator','Exfil','Hell Let Loose'];
+  const SME_TAGS_OPTIONS = ['Squad Leader','Platoon Commander','Company Commander','Sniper','Breacher','Medic','Combat Controller','Forward Observer','Drone Operator','Machine Gunner','Logistics','Intelligence Analyst','Signals','Artillery','Sapper/Engineer','Pilot','Vehicle Commander','Anti-Tank','JTAC','Instructor','CBRN','EOD'];
+  const [lookingForUnit, setLookingForUnit] = useState<boolean>((user as any)?.looking_for_unit ?? false);
+  const [operatorPublic, setOperatorPublic] = useState<boolean>((user as any)?.operator_profile_public ?? false);
+  const [smeTags, setSmeTags] = useState<string[]>((user as any)?.sme_tags ?? []);
+  const [preferredRoles, setPreferredRoles] = useState<string[]>((user as any)?.preferred_roles ?? []);
+  const [preferredGames, setPreferredGames] = useState<string[]>((user as any)?.preferred_games ?? []);
+  const [yearsExperience, setYearsExperience] = useState<string>(String((user as any)?.years_experience ?? ""));
+  const [availability, setAvailability] = useState<string>((user as any)?.availability ?? "");
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -79,7 +88,7 @@ export default function Profile() {
       await apiFetch("/authUpdateProfile?path=profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bio, discordTag, nationality: nationality || null, steamProfileUrl: steamProfileUrl || null, xboxGamertag: xboxGamertag || null, psnId: psnId || null }),
+        body: JSON.stringify({ bio, discordTag, nationality: nationality || null, steamProfileUrl: steamProfileUrl || null, xboxGamertag: xboxGamertag || null, psnId: psnId || null, looking_for_unit: lookingForUnit, operator_profile_public: operatorPublic, sme_tags: smeTags, preferred_roles: preferredRoles, preferred_games: preferredGames, years_experience: yearsExperience ? parseInt(yearsExperience) : null, availability: availability || null }),
       });
       qc.invalidateQueries({ queryKey: ["me"] });
       toast({ title: "Profile Updated", description: "Your profile has been saved." });
@@ -312,6 +321,72 @@ export default function Profile() {
                 className="mf-input w-full"
                 placeholder="Your PSN ID"
               />
+            </div>
+          </div>
+
+          {/* ── Operator Profile ── */}
+          <div className="pt-4 space-y-4 border-t border-border">
+            <p className="text-[10px] font-display font-bold uppercase tracking-widest text-muted-foreground">Operator Profile — Unit Search Visibility</p>
+
+            <div className="flex items-center justify-between p-3 bg-secondary/30 border border-border rounded-lg">
+              <div>
+                <p className="text-sm font-display font-bold uppercase tracking-wider">Looking for Unit</p>
+                <p className="text-xs text-muted-foreground">Commanders can discover and contact you</p>
+              </div>
+              <button onClick={() => setLookingForUnit(v => !v)} className={`w-12 h-6 rounded-full transition-colors relative ${lookingForUnit ? 'bg-primary' : 'bg-border'}`}>
+                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${lookingForUnit ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-secondary/30 border border-border rounded-lg">
+              <div>
+                <p className="text-sm font-display font-bold uppercase tracking-wider">Public Operator Profile</p>
+                <p className="text-xs text-muted-foreground">Show your SME tags and availability on your public profile</p>
+              </div>
+              <button onClick={() => setOperatorPublic(v => !v)} className={`w-12 h-6 rounded-full transition-colors relative ${operatorPublic ? 'bg-primary' : 'bg-border'}`}>
+                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${operatorPublic ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">SME / Specialist Tags</label>
+              <div className="flex flex-wrap gap-2">
+                {SME_TAGS_OPTIONS.map(tag => (
+                  <button key={tag} onClick={() => setSmeTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                    className={`px-2 py-1 rounded text-xs font-display font-bold uppercase tracking-wider border transition-colors ${smeTags.includes(tag) ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary border-border text-muted-foreground hover:border-primary/40'}`}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Preferred Games</label>
+              <div className="flex flex-wrap gap-2">
+                {APPROVED_GAMES.map(g => (
+                  <button key={g} onClick={() => setPreferredGames(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
+                    className={`px-2 py-1 rounded text-xs font-display font-bold uppercase tracking-wider border transition-colors ${preferredGames.includes(g) ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary border-border text-muted-foreground hover:border-primary/40'}`}>
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Years of Milsim Experience</label>
+                <input type="number" min="0" max="20" value={yearsExperience} onChange={e => setYearsExperience(e.target.value)} className="mf-input w-full" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-2">Availability</label>
+                <select value={availability} onChange={e => setAvailability(e.target.value)} className="mf-input w-full">
+                  <option value="">— Not set —</option>
+                  <option value="Weekends">Weekends only</option>
+                  <option value="Evenings">Weekday evenings</option>
+                  <option value="Flexible">Flexible</option>
+                  <option value="Full-time">Full-time milsim</option>
+                </select>
+              </div>
             </div>
           </div>
 

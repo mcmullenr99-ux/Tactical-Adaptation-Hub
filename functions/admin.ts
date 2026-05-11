@@ -1,8 +1,18 @@
+// admin.ts v5 — strip TAG JWT from SDK init to fix asServiceRole 403
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 import bcrypt from 'npm:bcryptjs@2.4.3';
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+
+// Strip Authorization header so SDK doesn't try to use our TAG JWT as a Base44 session
+// (which causes 403 "app is private" and breaks asServiceRole)
+function makeCleanRequest(req: Request): Request {
+  const headers = new Headers(req.headers);
+  headers.delete('Authorization');
+  headers.delete('authorization');
+  return new Request(req.url, { method: req.method, headers });
+}
 
 async function getCallerUser(base44: any, req: Request) {
   const authHeader = req.headers.get('Authorization') ?? '';
@@ -10,8 +20,8 @@ async function getCallerUser(base44: any, req: Request) {
   if (!token) return null;
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
-    const user = await base44.asServiceRole.entities.AppUser.get(payload.sub);
-    return user ?? null;
+    const results = await base44.asServiceRole.entities.AppUser.filter({ id: payload.sub });
+    return results[0] ?? null;
   } catch {
     return null;
   }
@@ -20,7 +30,8 @@ async function getCallerUser(base44: any, req: Request) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   try {
-    const base44 = createClientFromRequest(req);
+    // Use clean request (no Authorization) so asServiceRole initialises properly
+    const base44 = createClientFromRequest(makeCleanRequest(req));
     const url = new URL(req.url);
     const pathOverride = url.searchParams.get('path');
     const parts = pathOverride
@@ -36,7 +47,7 @@ Deno.serve(async (req) => {
     // GET /admin/users — mod+
     if (method === 'GET' && parts[0] === 'users' && parts.length === 1) {
       if (!isMod) return Response.json({ error: 'Forbidden' }, { status: 403 });
-      const users = await base44.asServiceRole.entities.AppUser.list({ limit: 500 });
+      const users = await base44.asServiceRole.entities.AppUser.filter({ status: ["active","suspended","banned","pending_verification"] }, { limit: 500 });
       return Response.json(users.map((u: any) => ({
         id: u.id, username: u.username, email: u.email, role: u.role, status: u.status,
         email_verified: u.email_verified ?? false, bio: u.bio ?? null, discordTag: u.discord_tag ?? null, createdAt: u.created_date,
@@ -46,7 +57,8 @@ Deno.serve(async (req) => {
     // GET /admin/users/:id
     if (method === 'GET' && parts[0] === 'users' && parts.length === 2) {
       if (!isMod) return Response.json({ error: 'Forbidden' }, { status: 403 });
-      const user = await base44.asServiceRole.entities.AppUser.get(parts[1]);
+      const userRes = await base44.asServiceRole.entities.AppUser.filter({ id: parts[1] });
+      const user = userRes[0] ?? null;
       if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
       return Response.json({ id: user.id, username: user.username, email: user.email, role: user.role, status: user.status });
     }
@@ -122,9 +134,9 @@ Deno.serve(async (req) => {
       if (!isMod) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const tokens = await base44.asServiceRole.entities.PasswordResetToken.list();
       const unused = tokens.filter((t: any) => !t.used && new Date(t.expires_at) > new Date());
-      // Enrich with user info
       const enriched = await Promise.all(unused.map(async (t: any) => {
-        const user = await base44.asServiceRole.entities.AppUser.get(t.user_id).catch(() => null);
+        const userRes2 = await base44.asServiceRole.entities.AppUser.filter({ id: t.user_id }).catch(() => []);
+        const user = userRes2[0] ?? null;
         return { ...t, username: user?.username ?? 'Unknown', email: user?.email ?? '' };
       }));
       return Response.json(enriched);
@@ -135,7 +147,6 @@ Deno.serve(async (req) => {
       if (!isMod) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
       if (!body.userId) return Response.json({ error: 'userId required' }, { status: 400 });
-      // Expire any existing unused tokens for this user
       const existing = await base44.asServiceRole.entities.PasswordResetToken.filter({ user_id: body.userId, used: false });
       for (const t of existing) {
         await base44.asServiceRole.entities.PasswordResetToken.update(t.id, { used: true });
@@ -148,7 +159,7 @@ Deno.serve(async (req) => {
       return Response.json({ token: rec.token, expiresAt: rec.expires_at });
     }
 
-    // POST /admin/broadcast — admin only — creates a MOTD/site-wide notice
+    // POST /admin/broadcast — admin only
     if (method === 'POST' && parts[0] === 'broadcast') {
       if (!isAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
@@ -187,9 +198,8 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.SiteSetting.create({ key: 'lockdown_mode', value: body.active ? 'true' : 'false' });
       }
       await base44.asServiceRole.entities.AuditLog.create({
-        user_id: full.id, username: full.username,
-        action_type: body.active ? 'LOCKDOWN_ON' : 'LOCKDOWN_OFF',
-        description: `Lockdown ${body.active ? 'activated' : 'deactivated'} by ${full.username}`,
+        user_id: full.id, username: full.username, action_type: 'LOCKDOWN_TOGGLE',
+        description: `${full.username} set lockdown to ${body.active}`,
       });
       return Response.json({ active: body.active });
     }
@@ -197,67 +207,92 @@ Deno.serve(async (req) => {
     // GET /admin/milsim-groups — all groups
     if (method === 'GET' && parts[0] === 'milsim-groups') {
       if (!isMod) return Response.json({ error: 'Forbidden' }, { status: 403 });
-      const groups = await base44.asServiceRole.entities.MilsimGroup.list();
-      return Response.json(groups);
+      const groups = await base44.asServiceRole.entities.MilsimGroup.filter({ status: ["approved","pending","suspended","rejected"] }, { limit: 500 });
+      return Response.json(Array.isArray(groups) ? groups : []);
     }
 
     // PATCH /admin/milsim-groups/:id/status
     if (method === 'PATCH' && parts[0] === 'milsim-groups' && parts[2] === 'status') {
       if (!isMod) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
-      const updated = await base44.asServiceRole.entities.MilsimGroup.update(parts[1], { status: body.status });
+      const updates: Record<string, any> = {};
+      if ('status' in body) updates.status = body.status;
+      if ('featured_requested' in body) updates.featured_requested = body.featured_requested;
+      const updated = await base44.asServiceRole.entities.MilsimGroup.update(parts[1], updates);
       return Response.json(updated);
     }
 
-    // PATCH /admin/milsim-groups/:id — general field update (verify_override, is_verified, etc.)
+    // PATCH /admin/milsim-groups/:id — general field update
     if (method === 'PATCH' && parts[0] === 'milsim-groups' && parts.length === 2) {
       if (!isAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
-      const allowed = ['verify_override', 'is_verified', 'verified_at', 'status', 'visibility'];
+      const allowed = ['verify_override', 'is_verified', 'verified_at', 'status', 'visibility', 'featured_requested'];
       const updates: Record<string, any> = {};
       for (const key of allowed) { if (key in body) updates[key] = body[key]; }
       const updated = await base44.asServiceRole.entities.MilsimGroup.update(parts[1], updates);
       return Response.json(updated);
     }
 
-    // DELETE /admin/milsim-groups/:id
+    // DELETE /admin/milsim-groups/:id — cascade delete
     if (method === 'DELETE' && parts[0] === 'milsim-groups' && parts.length === 2) {
       if (!isAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
-      await base44.asServiceRole.entities.MilsimGroup.delete(parts[1]);
-      return new Response(null, { status: 204 });
+      const gid = parts[1];
+      try {
+        const childEntities = [
+          'MilsimRole','MilsimRank','MilsimRoster','MilsimAppQuestion','MilsimApplication',
+          'MilsimOp','MilsimAAR','MilsimBriefing','MilsimAward','MilsimAwardDef',
+          'Qualification','QualificationGrant','MilsimLOA','MilsimCampaign',
+          'MilsimWarno','MilsimLace','MilsimSitrep','MilsimTrainingReview',
+          'MilsimConductReport','DutyRoster','GroupChannel','GroupMessage',
+          'WebhookEndpoint','MilsimApiKey','MilsimDischarge','PromotionRule',
+          'PromotionFlag','RoleFitnessReview','PerformanceImprovementOrder',
+          'RoleExpectation','IntelDocument','ThreatProfile','MilsimOrderMemo',
+          'MilsimRangeCard','SaluteReport','LoadoutKit','GameServer',
+          'GroupCombatRecord','TrainingDoc',
+        ];
+        for (const entity of childEntities) {
+          try {
+            const records = await (base44.asServiceRole.entities as any)[entity]?.filter({ group_id: gid }) ?? [];
+            await Promise.allSettled(records.map((r: any) => (base44.asServiceRole.entities as any)[entity].delete(r.id)));
+          } catch {}
+        }
+        await base44.asServiceRole.entities.MilsimGroup.delete(gid);
+        return new Response(null, { status: 204 });
+      } catch (err: any) {
+        console.error('[admin] group delete failed:', err);
+        return Response.json({ error: err.message ?? 'Delete failed' }, { status: 500 });
+      }
     }
 
-
-    // POST /admin/users/create — admin: manually create a user account (already verified)
+    // POST /admin/users/create — admin: manually create a user account
     if (method === 'POST' && parts[0] === 'users' && parts[1] === 'create') {
       if (!isAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const body = await req.json().catch(() => ({}));
       const { username, email, password, role } = body;
       if (!username || !email || !password) return Response.json({ error: 'username, email and password required' }, { status: 400 });
-
-      // Check for duplicates
-      const existingEmail = await base44.asServiceRole.entities.AppUser.filter({ email: email.toLowerCase().trim() });
-      if (existingEmail.length > 0) return Response.json({ error: 'Email already in use' }, { status: 409 });
-      const allUsers = await base44.asServiceRole.entities.AppUser.list({ limit: 500 });
-      const dupUsername = allUsers.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
-      if (dupUsername) return Response.json({ error: 'Username already taken' }, { status: 409 });
-
+      const dupeCheck = await base44.asServiceRole.entities.AppUser.filter({ email });
+      if (dupeCheck.length > 0) return Response.json({ error: 'Email already registered' }, { status: 409 });
+      const dupeUser = await base44.asServiceRole.entities.AppUser.filter({ username });
+      if (dupeUser.length > 0) return Response.json({ error: 'Username already taken' }, { status: 409 });
       const password_hash = await bcrypt.hash(password, 10);
-      const user = await base44.asServiceRole.entities.AppUser.create({
-        username,
-        full_name: username,
-        email: email.toLowerCase().trim(),
-        password_hash,
-        role: role || 'member',
+      const newUser = await base44.asServiceRole.entities.AppUser.create({
+        username, email, password_hash,
+        role: role ?? 'member',
         status: 'active',
         email_verified: true,
+        login_count: 0,
       });
-      return Response.json({ ok: true, id: user.id, username: user.username, email: user.email });
+      await base44.asServiceRole.entities.AuditLog.create({
+        user_id: full.id, username: full.username, action_type: 'USER_CREATE',
+        target_table: 'AppUser', target_id: newUser.id,
+        description: `${full.username} manually created account for ${username}`,
+      });
+      return Response.json({ id: newUser.id, username: newUser.username, email: newUser.email }, { status: 201 });
     }
 
-    return Response.json({ error: 'Not found' }, { status: 404 });
-  } catch (error) {
-    console.error('[admin]', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: 'Not Found' }, { status: 404 });
+  } catch (err: any) {
+    console.error('[admin] unhandled error:', err);
+    return Response.json({ error: err.message ?? 'Internal error' }, { status: 500 });
   }
 });

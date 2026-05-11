@@ -178,10 +178,10 @@ export default function SupportAdmin() {
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Open", value: stats.tickets.open, icon: <Clock className="w-4 h-4" />, color: "text-blue-400" },
-            { label: "In Progress", value: stats.tickets.in_progress, icon: <Loader2 className="w-4 h-4" />, color: "text-yellow-400" },
-            { label: "Critical", value: stats.tickets.critical, icon: <AlertTriangle className="w-4 h-4" />, color: "text-red-400" },
-            { label: "Unread FB", value: stats.feedback.unreviewed, icon: <Star className="w-4 h-4" />, color: "text-yellow-400" },
+            { label: "Open", value: stats.open ?? 0, icon: <Clock className="w-4 h-4" />, color: "text-blue-400" },
+            { label: "In Progress", value: stats.in_progress ?? 0, icon: <Loader2 className="w-4 h-4" />, color: "text-yellow-400" },
+            { label: "Total", value: stats.total ?? 0, icon: <AlertTriangle className="w-4 h-4" />, color: "text-red-400" },
+            { label: "Unread FB", value: stats.feedback_unreviewed ?? 0, icon: <Star className="w-4 h-4" />, color: "text-yellow-400" },
             { label: "Bug Reports", value: tickets.filter(t => t.category === "bug").length, icon: <Bug className="w-4 h-4" />, color: "text-orange-400" },
           ].map(s => (
             <Card key={s.label} className="bg-zinc-900 border-zinc-800">

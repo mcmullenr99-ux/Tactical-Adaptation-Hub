@@ -16,26 +16,22 @@
     "role": {
       "type": "string",
       "enum": [
-        "member",
-        "staff",
-        "moderator",
-        "admin"
-      ],
-      "default": "member"
+        "user",
+        "admin",
+        "moderator"
+      ]
     },
     "status": {
       "type": "string",
       "enum": [
-        "pending_verification",
         "active",
         "suspended",
-        "banned"
-      ],
-      "default": "pending_verification"
+        "banned",
+        "pending"
+      ]
     },
     "email_verified": {
-      "type": "boolean",
-      "default": false
+      "type": "boolean"
     },
     "email_verify_token": {
       "type": "string"
@@ -68,29 +64,55 @@
       "type": "string"
     },
     "login_count": {
-      "type": "number",
-      "default": 0
+      "type": "integer"
     },
     "totp_secret": {
       "type": "string"
     },
     "totp_enabled": {
-      "type": "boolean",
-      "default": false
+      "type": "boolean"
     },
     "force_password_reset": {
-      "type": "boolean",
-      "default": false
+      "type": "boolean"
     },
     "last_login_ip": {
       "type": "string"
     },
     "is_verified": {
-      "type": "boolean",
-      "default": false
+      "type": "boolean"
     },
     "verified_at": {
       "type": "string"
+    },
+    "sme_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "looking_for_unit": {
+      "type": "boolean"
+    },
+    "preferred_games": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "preferred_roles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "years_experience": {
+      "type": "integer"
+    },
+    "availability": {
+      "type": "string"
+    },
+    "operator_profile_public": {
+      "type": "boolean"
     }
   },
   "required": [],

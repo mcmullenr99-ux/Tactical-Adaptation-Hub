@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "role_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "game": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "mandatory": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "created_by_callsign": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean"
+    }
+  },
+  "required": [],
+  "name": "LoadoutKit"
+}

@@ -1,0 +1,62 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "group_name": {
+      "type": "string"
+    },
+    "roster_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "callsign": {
+      "type": "string"
+    },
+    "discharge_type": {
+      "type": "string",
+      "enum": [
+        "Honourable",
+        "Administrative",
+        "Dishonourable",
+        "Medical",
+        "Voluntary"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "effective_date": {
+      "type": "string"
+    },
+    "conducted_by": {
+      "type": "string"
+    },
+    "conducted_by_username": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "final_rank": {
+      "type": "string"
+    },
+    "final_role": {
+      "type": "string"
+    },
+    "ops_served": {
+      "type": "number"
+    },
+    "join_date": {
+      "type": "string"
+    },
+    "reinstatement_eligible": {
+      "type": "boolean"
+    }
+  },
+  "required": [],
+  "name": "MilsimDischarge"
+}

@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { Shield, Disc, Twitter, Youtube, Coffee } from "lucide-react";
+import { TAG_DISCORD_URL } from '@/lib/constants';
 
 export function Footer() {
   return (
@@ -23,8 +24,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-muted-foreground max-w-md font-sans">
-              Tactical Adaptation Group is a premier gaming community dedicated to mastering warfighting fundamentals, 
-              building unbreakable brotherhood, and dominating the battlefield across the tactical gaming spectrum.
+              The command platform for serious milsim units. Roster management, op planning, awards, intel, and more — built for units that take it seriously.
             </p>
           </div>
 
@@ -32,18 +32,18 @@ export function Footer() {
             <h4 className="font-display font-bold text-foreground tracking-wider mb-6">Nav</h4>
             <ul className="space-y-4 text-muted-foreground font-sans">
               <li><Link href="/" className="hover:text-primary transition-colors">Home</Link></li>
-              <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
+              <li><Link href="/about" className="hover:text-primary transition-colors">About</Link></li>
+              <li><Link href="/registry" className="hover:text-primary transition-colors">Unit Registry</Link></li>
               <li><Link href="/games" className="hover:text-primary transition-colors">Supported Games</Link></li>
-              <li><Link href="/training" className="hover:text-primary transition-colors">Training Doctrine</Link></li>
               <li><Link href="/ops" className="hover:text-primary transition-colors">Ops Calendar</Link></li>
-              <li><Link href="/join" className="hover:text-accent transition-colors">Enlistment</Link></li>
+              <li><Link href="/register" className="hover:text-accent transition-colors">Register Your Unit</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-display font-bold text-foreground tracking-wider mb-6">Comms</h4>
             <div className="flex flex-wrap gap-3 mb-6">
-              <a href="https://discord.gg/matmFhU4yg" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded bg-secondary text-muted-foreground hover:bg-[#5865F2] hover:text-white transition-all text-sm font-display font-bold uppercase tracking-wider" title="Join our Discord">
+              <a href={TAG_DISCORD_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded bg-secondary text-muted-foreground hover:bg-[#5865F2] hover:text-white transition-all text-sm font-display font-bold uppercase tracking-wider" title="Join our Discord">
                 <Disc className="w-4 h-4" /> Discord
               </a>
               <a href="https://ko-fi.com/tagtacticaladaptationgroup" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded bg-secondary text-muted-foreground hover:bg-[#FF5E5B] hover:text-white transition-all text-sm font-display font-bold uppercase tracking-wider" title="Support us on Ko-fi">

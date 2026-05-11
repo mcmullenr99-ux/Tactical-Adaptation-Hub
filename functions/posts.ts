@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.21';
 import { verify } from 'npm:jsonwebtoken@9.0.2';
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET') ?? 'tag-secret-fallback-change-in-production';
+const RECRUITMENT_COOLDOWN_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 async function getCallerUser(base44: any, req: Request) {
   const authHeader = req.headers.get('Authorization') ?? '';
@@ -10,6 +11,23 @@ async function getCallerUser(base44: any, req: Request) {
   try {
     const payload = verify(token, JWT_SECRET) as { sub: string };
     return await base44.asServiceRole.entities.AppUser.get(payload.sub) ?? null;
+  } catch { return null; }
+}
+
+async function isProMember(base44: any, userId: string): Promise<boolean> {
+  try {
+    const records = await base44.asServiceRole.entities.CommanderPro.filter({ owner_id: userId });
+    return records.some((r: any) => r.status === 'active' || r.stripe_customer_id === 'manual_override');
+  } catch { return false; }
+}
+
+async function getLastRecruitmentPost(base44: any, userId: string): Promise<any | null> {
+  try {
+    const posts = await base44.asServiceRole.entities.Post.filter({ user_id: userId, category: 'recruitment' });
+    if (!posts.length) return null;
+    return posts.sort((a: any, b: any) =>
+      new Date(b.created_date).getTime() - new Date(a.created_date).getTime()
+    )[0];
   } catch { return null; }
 }
 
@@ -23,6 +41,28 @@ Deno.serve(async (req) => {
       ? pathOverride.split('/').filter(Boolean)
       : url.pathname.replace(/^\/functions\/posts/, '').split('/').filter(Boolean);
     const method = req.method;
+
+    // GET /posts?path=recruitment-cooldown — Pro status + cooldown check for current user
+    if (method === 'GET' && parts[0] === 'recruitment-cooldown') {
+      const full = await getCallerUser(base44, req);
+      if (!full) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+      const lastPost = await getLastRecruitmentPost(base44, full.id);
+      if (!lastPost) return Response.json({ on_cooldown: false, cooldown_ends_at: null, can_post: true });
+
+      const lastPostTime = new Date(lastPost.created_date).getTime();
+      const cooldownEnds = lastPostTime + RECRUITMENT_COOLDOWN_MS;
+      const now = Date.now();
+      const onCooldown = now < cooldownEnds;
+
+      return Response.json({
+        on_cooldown: onCooldown,
+        cooldown_ends_at: onCooldown ? new Date(cooldownEnds).toISOString() : null,
+        can_post: !onCooldown,
+        last_post_at: lastPost.created_date,
+        last_post_title: lastPost.title ?? null,
+      });
+    }
 
     // GET /posts
     if (method === 'GET' && parts.length === 0) {
@@ -58,6 +98,23 @@ Deno.serve(async (req) => {
       const body = await req.json().catch(() => ({}));
       const { title, postBody, category, milsim_group_id, image_url } = body;
       if (!postBody) return Response.json({ error: 'Body is required' }, { status: 400 });
+
+      // ── Recruitment cooldown (applies to everyone) ──────────────────────
+      if (category === 'recruitment') {
+        const lastPost = await getLastRecruitmentPost(base44, full.id);
+        if (lastPost) {
+          const elapsed = Date.now() - new Date(lastPost.created_date).getTime();
+          if (elapsed < RECRUITMENT_COOLDOWN_MS) {
+            const cooldownEnds = new Date(new Date(lastPost.created_date).getTime() + RECRUITMENT_COOLDOWN_MS).toISOString();
+            return Response.json(
+              { error: 'You can only post one recruitment post every 48 hours.', code: 'ON_COOLDOWN', cooldown_ends_at: cooldownEnds },
+              { status: 429 }
+            );
+          }
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────────
+
       const post = await base44.asServiceRole.entities.Post.create({
         user_id: full.id, username: full.username, user_role: full.role,
         user_nationality: full.nationality ?? null, title: title ?? null,

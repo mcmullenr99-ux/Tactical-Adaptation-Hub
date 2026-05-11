@@ -54,7 +54,7 @@ function isAnniversary(createdAt: string) {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, token: authToken } = useAuth() as any;
   const { data: inbox } = useQuery<Message[]>({
     queryKey: ["inbox"],
     queryFn: () => apiFetch("/messages?path=inbox"),
@@ -83,7 +83,7 @@ export default function Dashboard() {
   // Email verification banner state
   const isUnverified = user && (user as any).email_verified === false;
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
-  const { token } = useAuth() as any;
+  const token = authToken;
 
   const handleResendVerification = async () => {
     setResendState("sending");

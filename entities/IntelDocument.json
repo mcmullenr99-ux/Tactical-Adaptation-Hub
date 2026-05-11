@@ -1,0 +1,67 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "op_id": {
+      "type": "string"
+    },
+    "campaign_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "UNCLASSIFIED",
+        "RESTRICTED",
+        "SECRET",
+        "TOP SECRET"
+      ]
+    },
+    "doc_type": {
+      "type": "string",
+      "enum": [
+        "THREAT ASSESSMENT",
+        "AREA STUDY",
+        "INTELLIGENCE SUMMARY",
+        "ORDER OF BATTLE",
+        "CONTACT REPORT",
+        "SIGNALS INTEL",
+        "OTHER"
+      ]
+    },
+    "content": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "authored_by": {
+      "type": "string"
+    },
+    "authored_by_callsign": {
+      "type": "string"
+    },
+    "is_current": {
+      "type": "boolean"
+    },
+    "archived_at": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [],
+  "name": "IntelDocument"
+}

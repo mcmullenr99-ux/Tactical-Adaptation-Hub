@@ -3,17 +3,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/components/auth/AuthContext";
 import { apiFetch } from "@/lib/apiFetch";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
-  MessageSquare, ThumbsUp, Pin, Plus, X, ChevronDown, ChevronUp,
+  MessageSquare, ThumbsUp, Pin, Plus, X, ChevronDown, ChevronUp, Shield, Swords,
   Loader2, Trash2, Shield, Pencil, Send, Filter, StickyNote,
-  Megaphone, Gamepad2, Users, ImagePlus, FileVideo
+  Megaphone, Gamepad2, Users, ImagePlus, FileVideo, Crown, Clock, Lock, Check, Film, Shield
 } from "lucide-react";
 import { countryFlag } from "@/lib/countries";
 import { UavHudScene } from "./UavHudScene";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { useUpload } from "@/stubs/object-storage-web";
 import { useCoCTitles } from "@/hooks/useCoCTitles";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -57,15 +56,15 @@ interface MilsimGroup {
 
 const CATEGORIES = [
   { key: "all",         label: "All Posts",    icon: StickyNote,  color: "text-muted-foreground" },
-  { key: "gaming",      label: "Gaming",       icon: Gamepad2,    color: "text-blue-400"  },
-  { key: "unit",        label: "Unit News",    icon: Shield,      color: "text-primary"   },
-  { key: "recruitment", label: "Recruitment",  icon: Megaphone,   color: "text-amber-400" },
+  { key: "gaming",      label: "Gaming",       icon: Gamepad2,    color: "text-blue-400"   },
   { key: "general",     label: "General",      icon: Users,       color: "text-purple-400" },
+  { key: "recruitment", label: "Recruitment",  icon: Megaphone,   color: "text-amber-400"  },
 ];
 
 const CATEGORY_BADGE: Record<string, string> = {
   gaming:      "text-blue-400 border-blue-400/30 bg-blue-400/10",
   unit:        "text-primary border-primary/30 bg-primary/10",
+  media:       "text-pink-400 border-pink-400/30 bg-pink-400/10",
   recruitment: "text-amber-400 border-amber-400/30 bg-amber-400/10",
   general:     "text-purple-400 border-purple-400/30 bg-purple-400/10",
 };
@@ -89,9 +88,13 @@ function CreatePostModal({
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("general");
-  const [milsimGroupId, setMilsimGroupId] = useState<number | "">("");
+  const [milsimGroupId, setMilsimGroupId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Recruitment Pro gate + cooldown
+  const [recruitStatus, setRecruitStatus] = useState<{ is_pro: boolean; on_cooldown: boolean; cooldown_ends_at: string | null; can_post: boolean } | null>(null);
+  const [recruitStatusLoading, setRecruitStatusLoading] = useState(false);
 
   // Media upload state
   const [mediaFile, setMediaFile] = useState<File | null>(null);
@@ -99,11 +102,50 @@ function CreatePostModal({
   const [mediaPath, setMediaPath] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { uploadFile, isUploading, progress } = useUpload({
-    onError: (err) => setError(`Upload failed: ${err.message}`),
-  });
+  const [isUploading, setIsUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const uploadFile = async (file: File): Promise<string | null> => {
+    setIsUploading(true);
+    setProgress(10);
+    try {
+      const jwt = sessionStorage.getItem("tag_auth_token") ?? localStorage.getItem("tag_auth_token") ?? "";
+      const formData = new FormData();
+      formData.append("file", file);
+      const UPLOAD_URL = "https://agent-tag-lead-developer-cff87ae4.base44.app/functions/rankReorder?path=upload";
+      const res = await fetch(UPLOAD_URL, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${jwt}` },
+        body: formData,
+      });
+      setProgress(80);
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "Upload failed");
+        throw new Error(txt);
+      }
+      const data = await res.json();
+      setProgress(100);
+      return (data.url ?? data.objectPath ?? null) as string | null;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error("Upload failed");
+      setError(`Upload failed: ${error.message}`);
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const { toast } = useToast();
+
+  // Fetch recruitment cooldown status when recruitment category is selected
+  useEffect(() => {
+    if (category !== "recruitment") { setRecruitStatus(null); return; }
+    setRecruitStatusLoading(true);
+    apiFetch<any>("/posts?path=recruitment-cooldown")
+      .then(d => setRecruitStatus(d))
+      .catch(() => setRecruitStatus(null))
+      .finally(() => setRecruitStatusLoading(false));
+  }, [category]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -154,6 +196,10 @@ function CreatePostModal({
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) { setError("Title and content are required."); return; }
     if (mediaFile && !mediaPath) { setError("Please wait for the media to finish uploading."); return; }
+    // Recruitment gate checks
+    if (category === "recruitment") {
+      if (recruitStatus && recruitStatus.on_cooldown) { setError("You\'re on cooldown — you can only post once every 48 hours."); return; }
+    }
 
     setSubmitting(true);
     setError(null);
@@ -162,10 +208,10 @@ function CreatePostModal({
         method: "POST",
         body: JSON.stringify({
           title: title.trim(),
-          content: content.trim(),
+          postBody: content.trim(),
           category,
           milsim_group_id: milsimGroupId || undefined,
-          mediaPath: mediaPath ?? undefined,
+          image_url: mediaPath ?? undefined,
         }),
       });
       toast({ title: "Post published!" });
@@ -213,15 +259,51 @@ function CreatePostModal({
             </div>
           </div>
 
+          {/* Recruitment Pro gate */}
+          {category === "recruitment" && (
+            <div>
+              {recruitStatusLoading ? (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-amber-500/30 bg-amber-500/5 text-amber-400 text-xs font-display">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking Pro status...
+                </div>
+              ) : recruitStatus && recruitStatus.on_cooldown ? (
+                <div className="rounded-lg border border-red-500/40 bg-red-500/8 p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-red-400">
+                    <Clock className="w-4 h-4" />
+                    <span className="font-display font-bold uppercase tracking-wider text-sm">Cooldown Active</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                    You can post one recruitment post every <strong className="text-foreground">48 hours</strong>. Your next slot opens at:
+                  </p>
+                  <div className="flex items-center gap-2 px-3 py-2 bg-secondary rounded border border-border">
+                    <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="text-sm font-display font-bold text-foreground">
+                      {recruitStatus.cooldown_ends_at ? new Date(recruitStatus.cooldown_ends_at).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZoneName: "short" }) : "—"}
+                    </span>
+                  </div>
+                </div>
+              ) : recruitStatus && recruitStatus.can_post ? (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-green-500/30 bg-green-500/8 text-green-400 text-xs font-display font-bold uppercase tracking-widest">
+                  <Check className="w-3.5 h-3.5" /> Slot available · 48h cooldown applies
+                </div>
+              ) : null}
+            </div>
+          )}
+
           {/* MilSim group */}
           {userGroups.length > 0 && (
             <div>
               <label className="block text-xs font-display font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Post on behalf of (optional)</label>
-              <select value={milsimGroupId} onChange={e => setMilsimGroupId(e.target.value ? parseInt(e.target.value, 10) : "")}
-                className="mf-input w-full">
-                <option value="">Just me</option>
-                {userGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-              </select>
+              <div className="relative">
+                <select value={milsimGroupId} onChange={e => setMilsimGroupId(e.target.value)}
+                  className="mf-input w-full appearance-none cursor-pointer" style={{ position: "relative", zIndex: 60 }}>
+                  <option value="">Just me</option>
+                  {userGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                  <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </div>
             </div>
           )}
 
@@ -309,7 +391,7 @@ function CreatePostModal({
           <button onClick={onClose} className="px-5 py-2 font-display font-bold uppercase tracking-wider text-sm text-muted-foreground hover:text-foreground transition-colors">
             Cancel
           </button>
-          <button onClick={handleSubmit} disabled={submitting || isUploading || !title.trim() || !content.trim()}
+          <button onClick={handleSubmit} disabled={submitting || isUploading || !title.trim() || !content.trim() || (category === "recruitment" && (!recruitStatus?.can_post || recruitStatus?.on_cooldown))}
             className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-display font-bold uppercase tracking-wider text-sm rounded clip-angled-sm transition-all disabled:opacity-50">
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             Publish
@@ -479,7 +561,7 @@ function PostCard({
         {/* Author */}
         <div className="flex items-center flex-wrap gap-2 mb-3">
           <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center shrink-0">
-            <span className="text-[10px] font-display font-bold text-primary">{post.username[0].toUpperCase()}</span>
+            <span className="text-[10px] font-display font-bold text-primary">{(post.username ?? "?")[0].toUpperCase()}</span>
           </div>
           <Link href={`/u/${post.username}`}>
             <span className="text-sm font-display font-bold text-muted-foreground hover:text-primary transition-colors cursor-pointer">
@@ -551,7 +633,7 @@ function PostCard({
                 {comments.map(c => (
                   <div key={c.id} className="flex items-start gap-2.5 group">
                     <div className="w-6 h-6 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="text-[9px] font-display font-bold text-muted-foreground">{c.username[0].toUpperCase()}</span>
+                      <span className="text-[9px] font-display font-bold text-muted-foreground">{(c.username ?? "?")[0].toUpperCase()}</span>
                     </div>
                     <div className="flex-1 min-w-0 bg-secondary/40 rounded-lg px-3 py-2">
                       <div className="flex items-center justify-between gap-2">
@@ -601,8 +683,9 @@ function PostCard({
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-export default function Forum() {
+export default function Forum({ standalone = true }: { standalone?: boolean }) {
   const { user, isAuthenticated } = useAuth();
+  const [location, setLocation] = useLocation();
   const [posts, setPosts] = useState<Post[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -678,8 +761,24 @@ export default function Forum() {
     .replace(/ /g, "").toUpperCase();
   const militaryTime = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(":", "") + "Z";
 
-  return (
-    <MainLayout>
+  const inner = (
+    <>
+      {/* Community Tab Navigation */}
+      <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex gap-0">
+            <Link href="/milsim" className={`flex items-center gap-2 px-5 py-3.5 text-sm font-display font-bold uppercase tracking-widest border-b-2 transition-colors ${location === '/milsim' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+              <Shield className="w-3.5 h-3.5" /> Registry
+            </Link>
+            <Link href="/forum" className={`flex items-center gap-2 px-5 py-3.5 text-sm font-display font-bold uppercase tracking-widest border-b-2 transition-colors ${location === '/forum' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+              <MessageSquare className="w-3.5 h-3.5" /> Forums
+            </Link>
+            <Link href="/joint-ops" className={`flex items-center gap-2 px-5 py-3.5 text-sm font-display font-bold uppercase tracking-widest border-b-2 transition-colors ${location === '/joint-ops' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+              <Swords className="w-3.5 h-3.5" /> Joint Operations
+            </Link>
+          </div>
+        </div>
+      </div>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
 
         {/* Page Header — UAV Overwatch HUD // WHITE-HOT THERMAL */}
@@ -786,7 +885,7 @@ export default function Forum() {
           {CATEGORIES.map(cat => {
             const Icon = cat.icon;
             return (
-              <button key={cat.key} onClick={() => { setActiveCategory(cat.key); }}
+              <button key={cat.key} onClick={() => { if (cat.key === "recruitment") { setLocation("/recruitment"); return; } setActiveCategory(cat.key); }}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded font-display font-bold uppercase tracking-wider text-xs transition-all ${
                   activeCategory === cat.key
                     ? "bg-card border border-border text-foreground shadow-sm"
@@ -878,6 +977,7 @@ export default function Forum() {
           <CreatePostModal onClose={() => setShowCreate(false)} onCreated={handleCreated} userGroups={userGroups} />
         )}
       </AnimatePresence>
-    </MainLayout>
+    </>
   );
+  return standalone ? <MainLayout>{inner}</MainLayout> : inner;
 }

@@ -1,0 +1,51 @@
+{
+  "type": "object",
+  "properties": {
+    "requester_group_id": {
+      "type": "string"
+    },
+    "requester_group_name": {
+      "type": "string"
+    },
+    "requester_group_tag": {
+      "type": "string"
+    },
+    "requester_logo_url": {
+      "type": "string"
+    },
+    "addressee_group_id": {
+      "type": "string"
+    },
+    "addressee_group_name": {
+      "type": "string"
+    },
+    "addressee_group_tag": {
+      "type": "string"
+    },
+    "addressee_logo_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "rejected"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "responded_at": {
+      "type": "string"
+    },
+    "dissolved_at": {
+      "type": "string"
+    },
+    "dissolved_by_group_id": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "UnitAlliance"
+}

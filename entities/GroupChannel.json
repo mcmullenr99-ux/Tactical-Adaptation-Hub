@@ -1,0 +1,58 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "channel_type": {
+      "type": "string",
+      "enum": [
+        "text",
+        "announcements",
+        "ops",
+        "intel"
+      ]
+    },
+    "allowed_role_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "allowed_rank_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "is_readonly": {
+      "type": "boolean"
+    },
+    "sort_order": {
+      "type": "number"
+    },
+    "last_message_at": {
+      "type": "string"
+    },
+    "last_message_preview": {
+      "type": "string"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "created_by_callsign": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "GroupChannel"
+}

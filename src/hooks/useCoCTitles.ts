@@ -38,7 +38,7 @@ async function buildCoCMap(): Promise<Record<string, CoCTitle>> {
         for (const pos of coc) {
           if (!pos.callsign) continue;
           const shortTitle = pos.title.replace(/\(.*?\)/g, "").trim();
-          map[pos.callsign.toLowerCase()] = {
+          map[(pos.callsign ?? "").toLowerCase()] = {
             shortTitle,
             fullTitle: pos.title,
             groupName: g.name,

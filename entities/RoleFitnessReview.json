@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "properties": {
+    "group_id": {
+      "type": "string"
+    },
+    "roster_id": {
+      "type": "string"
+    },
+    "callsign": {
+      "type": "string"
+    },
+    "role_name": {
+      "type": "string"
+    },
+    "reviewer_id": {
+      "type": "string"
+    },
+    "reviewer_callsign": {
+      "type": "string"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "needs_improvement",
+        "unfit"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    },
+    "review_date": {
+      "type": "string"
+    },
+    "acknowledged_at": {
+      "type": "string"
+    },
+    "acknowledged_by": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "RoleFitnessReview"
+}
